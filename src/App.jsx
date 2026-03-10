@@ -361,11 +361,23 @@ const COLORSDATA=[
 // Helpers
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
 const nClr=(n)=>["#FF6B6B","#4ECDC4","#45B7D1","#FF8C42","#A855F7","#F472B6","#34D399","#FBBF24","#60A5FA","#F87171"][(Math.floor((n-1)/10))%10];
-// Normalize speech: "13" → "thirteen", strip filler words
+// Normalize speech: "17" → "seventeen", strip filler words, fix common mishears
 const normalizeSpoken=(text)=>{
   let t=text.trim().toLowerCase();
+  // Replace digits with words: "17" → "seventeen"
   t=t.replace(/\b(\d+)\b/g,(match)=>{const n=parseInt(match);if(n>=0&&n<=100&&NW[n])return NW[n];return match;});
-  t=t.replace(/^(the |a |an |uh |um |oh )/i,'');
+  // Strip filler words at start
+  t=t.replace(/^(the |a |an |uh |um |oh |i said |it's |its |say )/i,'');
+  // Common speech-to-text mishears
+  const fixes={"for":"four","to":"two","too":"two","won":"one","ate":"eight","tree":"three","free":"three","sex":"six","tin":"ten","night":"nine",
+    "read":"red","blew":"blue","grin":"green","greed":"green","yell":"yellow","yell oh":"yellow","pin":"pink","pinkish":"pink","orangey":"orange",
+    "hart":"heart","hard":"heart","hut":"heart","start":"star","stare":"star",
+    "sickle":"circle","circus":"circle","sir cool":"circle","squire":"square","try angle":"triangle","dime and":"diamond","dim end":"diamond",
+    "rectangle":"rectangle","wreck tangle":"rectangle","oval":"oval","oh val":"oval"
+  };
+  for(const[wrong,right] of Object.entries(fixes)){
+    if(t===wrong) t=right;
+  }
   return t.trim();
 };
 const calcAcc=(e,g)=>{if(!e||!g)return 0;const a=e.trim().toLowerCase(),b=normalizeSpoken(g);if(a===b)return 100;const m=Array.from({length:a.length+1},(_,i)=>Array.from({length:b.length+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)m[i][j]=a[i-1]===b[j-1]?m[i-1][j-1]:1+Math.min(m[i-1][j],m[i][j-1],m[i-1][j-1]);return Math.max(0,Math.round((1-m[a.length][b.length]/Math.max(a.length,b.length))*100));};
@@ -393,85 +405,89 @@ const useRec=()=>{
   const[on,setOn]=useState(false);
   const[txt,setTxt]=useState("");
   const[err,setErr]=useState("");
-  const[supported,setSupported]=useState(true);
+  const supported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
   const cbRef=useRef(null);
   const recRef=useRef(null);
   const timeoutRef=useRef(null);
+  const gotResultRef=useRef(false);
 
-  useEffect(()=>{
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR)setSupported(false);
-  },[]);
-
-  // Create FRESH recognition each time (fixes mobile bug)
   const start=useCallback((cb)=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){setSupported(false);setErr("Speech not supported on this browser");return;}
+    if(!SR){setErr("Speech not supported");return;}
 
-    // Stop any existing
     try{recRef.current?.abort();}catch(e){}
     clearTimeout(timeoutRef.current);
-
-    const r=new SR();
-    r.continuous=false;
-    r.interimResults=true;
-    r.lang="en-US";
-    r.maxAlternatives=5;
-    recRef.current=r;
     cbRef.current=cb;
-
+    gotResultRef.current=false;
     setTxt("");setErr("");setOn(true);
 
-    r.onresult=(e)=>{
-      let f="",interim="";
-      for(let x=0;x<e.results.length;x++){
-        if(e.results[x].isFinal)f+=e.results[x][0].transcript;
-        else interim+=e.results[x][0].transcript;
-      }
-      const t=(f||interim).toLowerCase().trim();
-      setTxt(t);
-      if(f){
-        clearTimeout(timeoutRef.current);
-        cbRef.current?.(t);
+    // 300ms delay lets TTS fully release audio hardware
+    setTimeout(()=>{
+      const r=new SR();
+      r.continuous=false;
+      r.interimResults=true;
+      r.lang="en-US";
+      r.maxAlternatives=3;
+      recRef.current=r;
+
+      r.onresult=(e)=>{
+        let f="",interim="";
+        for(let x=0;x<e.results.length;x++){
+          if(e.results[x].isFinal)f+=e.results[x][0].transcript;
+          else interim+=e.results[x][0].transcript;
+        }
+        const t=(f||interim).toLowerCase().trim();
+        setTxt(t);
+        if(f && t){
+          gotResultRef.current=true;
+          clearTimeout(timeoutRef.current);
+          try{r.stop();}catch(e){}
+          setOn(false);
+          cbRef.current?.(t);
+        }
+      };
+      r.onerror=(e)=>{
+        if(e.error==="not-allowed")setErr("Mic blocked. Allow microphone in browser settings.");
+        else if(e.error!=="aborted"&&e.error!=="no-speech")setErr("Mic error: "+e.error);
+        else if(e.error==="no-speech")setErr("No speech heard. Tap mic to try again.");
         setOn(false);
-      }
-    };
-    r.onerror=(e)=>{
-      console.log("Speech error:",e.error);
-      if(e.error==="not-allowed")setErr("Mic blocked! Tap the lock icon in your browser address bar → allow microphone.");
-      else if(e.error==="no-speech")setErr("No speech heard. Tap the mic and try again.");
-      else setErr("Mic error: "+e.error);
-      setOn(false);
-    };
-    r.onend=()=>{
-      // If still "on" but no result, it ended silently
-      setOn(prev=>{
-        if(prev && !txt){setErr("Didn't catch that. Tap the mic and speak clearly.");}
-        return false;
-      });
-    };
-
-    // Request mic permission first on mobile
-    if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
-      navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
-        stream.getTracks().forEach(t=>t.stop()); // release immediately
-        try{r.start();}catch(e){setErr("Could not start mic. Try again.");setOn(false);}
-      }).catch(()=>{
-        setErr("Microphone access denied. Please allow mic access in your browser settings.");
+      };
+      r.onend=()=>{
+        if(!gotResultRef.current){
+          setErr("Didn't catch that. Tap the mic and speak louder.");
+        }
         setOn(false);
-      });
-    }else{
-      try{r.start();}catch(e){setErr("Could not start mic.");setOn(false);}
-    }
+      };
 
-    // Auto-timeout after 10 seconds
-    timeoutRef.current=setTimeout(()=>{
-      try{r.stop();}catch(e){}
-      setOn(false);
-      setErr("Timed out. Tap the mic and try again, or type your answer.");
-    },10000);
+      // getUserMedia first — REQUIRED on mobile to get mic permission
+      const doStart=()=>{
+        try{r.start();}catch(e){
+          setErr("Could not start mic. Tap to retry.");
+          setOn(false);
+        }
+      };
+      if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+        navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+          stream.getTracks().forEach(t=>t.stop()); // release stream, just needed permission
+          doStart();
+        }).catch(()=>{
+          setErr("Microphone access denied. Please allow mic in browser settings.");
+          setOn(false);
+        });
+      } else {
+        doStart();
+      }
 
+      timeoutRef.current=setTimeout(()=>{
+        if(!gotResultRef.current){
+          try{r.stop();}catch(e){}
+          setOn(false);
+          setErr("Timed out. Tap mic to try again.");
+        }
+      },12000);
+    },300);
   },[]);
+
 
   // Quick listen - opens mic for a few seconds, returns what was heard (or "")
   const quickListen=useCallback((timeoutMs=5000)=>{
@@ -735,8 +751,8 @@ export default function App(){
       await wait(500);
     }
     setCountdown(0);
-    await speak("Go.",{rate:0.75,pitch:1.0});
-    await wait(250);
+    await speak("Go.",{rate:0.75,pitch:1.0,noCancel:true});
+    await wait(400);
     onStart();
   };
 
@@ -885,6 +901,7 @@ export default function App(){
       setNStep("countdown");
       await speak(`${kidName}, your turn. Say, ${w}.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
       await doCountdown(()=>{
+        stop(); // Kill TTS before mic
         setNStep("listening");pRef.current=false;
         rec.start(handleNumResult);
       });
@@ -900,7 +917,7 @@ export default function App(){
     setNStep("countdown");
     await speak(`${kidName}, let's try one more time. Say, ${NW[selNum]}.`,{rate:0.75,pitch:1.0});await wait(300);
     await doCountdown(()=>{
-      setNStep("listening");
+      stop();setNStep("listening");
       rec.start(handleNumResult);
     });
   };
@@ -942,6 +959,7 @@ export default function App(){
       setPhStep("countdown");
       await speak(`${kidName}, your turn. Say, ${wd.word}.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
       await doCountdown(()=>{
+        stop();
         setPhStep("listening");pRef.current=false;
         rec.start(handlePhResult);
       });
@@ -957,7 +975,7 @@ export default function App(){
     setPhStep("countdown");
     await speak(`${kidName}, let's try again. Say, ${phW.word}.`,{rate:0.75,pitch:1.0});await wait(300);
     await doCountdown(()=>{
-      setPhStep("listening");
+      stop();setPhStep("listening");
       rec.start(handlePhResult);
     });
   };
@@ -995,10 +1013,10 @@ export default function App(){
     if(speakMode){
       setShStep("countdown");
       await speak(`${kidName}, your turn. Say, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      await doCountdown(()=>{setShStep("listening");pRef.current=false;rec.start(handleShResult);});
+      await doCountdown(()=>{stop();setShStep("listening");pRef.current=false;rec.start(handleShResult);});
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
-  const retryShape=async()=>{setShRes(null);setShAcc(null);setShStep("countdown");await speak(`${kidName}, try again. Say, ${selShape.name}.`,{rate:0.75,pitch:1.0});await wait(300);await doCountdown(()=>{setShStep("listening");rec.start(handleShResult);});};
+  const retryShape=async()=>{setShRes(null);setShAcc(null);setShStep("countdown");await speak(`${kidName}, try again. Say, ${selShape.name}.`,{rate:0.75,pitch:1.0});await wait(300);await doCountdown(()=>{stop();setShStep("listening");rec.start(handleShResult);});};
 
   // ═══ COLOR PLAY FLOW ═══
   const handleCoResult=(result)=>{
@@ -1033,10 +1051,10 @@ export default function App(){
     if(speakMode){
       setCoStep("countdown");
       await speak(`${kidName}, your turn. Say, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      await doCountdown(()=>{setCoStep("listening");pRef.current=false;rec.start(handleCoResult);});
+      await doCountdown(()=>{stop();setCoStep("listening");pRef.current=false;rec.start(handleCoResult);});
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
-  const retryColor=async()=>{setCoRes(null);setCoAcc(null);setCoStep("countdown");await speak(`${kidName}, try again. Say, ${selColor.name}.`,{rate:0.75,pitch:1.0});await wait(300);await doCountdown(()=>{setCoStep("listening");rec.start(handleCoResult);});};
+  const retryColor=async()=>{setCoRes(null);setCoAcc(null);setCoStep("countdown");await speak(`${kidName}, try again. Say, ${selColor.name}.`,{rate:0.75,pitch:1.0});await wait(300);await doCountdown(()=>{stop();setCoStep("listening");rec.start(handleCoResult);});};
 
   const buyR=(r)=>{if((prof?.points||0)<r.cost)return;save({...prof,points:prof.points-r.cost,rewards:[...(prof.rewards||[]),{...r,at:Date.now()}]});boom();setRwdMsg(`${r.emoji} Yay! You earned ${r.name}! Show your parents!`);setTimeout(()=>setRwdMsg(null),4000);};
 
@@ -1050,7 +1068,7 @@ export default function App(){
   </div><style>{CSS}</style></div>;
 
   if(scr==="home")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto",position:"relative",overflow:"hidden"}}><Particles/><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<div style={{background:"linear-gradient(135deg,#6366F1,#8B5CF6,#A855F7)",padding:"20px 20px 44px",borderRadius:"0 0 36px 36px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:-30,right:-30,width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,0.08)"}}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",position:"relative",zIndex:2}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{fontSize:36,animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div><div><div style={{color:"#fff",fontWeight:800,fontSize:16}}>{prof?.name||"Buddy"}</div><div style={{color:"#ffffffaa",fontSize:11,fontWeight:600}}>Age {prof?.age||4} • {aCfg.diff}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",padding:"8px 16px",borderRadius:24}}><span style={{fontSize:18,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><span style={{color:"#FFE66D",fontWeight:900,fontSize:18,fontFamily:"'Baloo 2',cursive"}}>{prof?.points||0}</span></div></div><h2 style={{fontFamily:"'Baloo 2',cursive",color:"#fff",fontSize:22,marginTop:14,position:"relative",zIndex:2}}>What shall we learn? 🎯</h2></div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"18px 16px 10px",marginTop:-22,position:"relative",zIndex:3}}>{[{id:"numbers",icon:"🔢",title:"Numbers",sub:`1 to ${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#ee5a24)"},{id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & sounds",grad:"linear-gradient(135deg,#4ECDC4,#0abde3)"},{id:"shapes",icon:"🔷",title:"Shapes",sub:"Learn shapes",grad:"linear-gradient(135deg,#A855F7,#7c3aed)"},{id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow fun!",grad:"linear-gradient(135deg,#F472B6,#ec4899)"},{id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend points!",grad:"linear-gradient(135deg,#FBBF24,#f59e0b)"},{id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748b)"}].map((m,i)=><button key={m.id} onClick={()=>setScr(m.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"20px 10px 14px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",background:m.grad,animation:`cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both`,position:"relative",overflow:"hidden"}}><span style={{fontSize:36,marginBottom:4,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{m.icon}</span><span style={{color:"#fff",fontWeight:800,fontSize:15,fontFamily:"'Baloo 2',cursive"}}>{m.title}</span><span style={{color:"rgba(255,255,255,0.85)",fontSize:11,fontWeight:600}}>{m.sub}</span>{(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"80%",height:5,background:"rgba(255,255,255,0.25)",borderRadius:6,marginTop:8,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:6,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}</button>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"18px 16px 10px",marginTop:-22,position:"relative",zIndex:3}}>{[{id:"numbers",icon:"🔢",title:"Numbers",sub:`1 to ${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#ee5a24)"},{id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & sounds",grad:"linear-gradient(135deg,#4ECDC4,#0abde3)"},{id:"shapes",icon:"🔷",title:"Shapes",sub:"Learn shapes",grad:"linear-gradient(135deg,#A855F7,#7c3aed)"},{id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow fun!",grad:"linear-gradient(135deg,#F472B6,#ec4899)"},{id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend points!",grad:"linear-gradient(135deg,#FBBF24,#f59e0b)"},{id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748b)"}].map((m,i)=><button key={m.id} onClick={()=>setScr(m.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"20px 10px 14px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",background:m.grad,animation:`gridPop 0.6s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardBounce ${3+i*0.3}s ease-in-out ${0.7+i*0.1}s infinite`,position:"relative",overflow:"hidden"}}><span style={{fontSize:36,marginBottom:4,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{m.icon}</span><span style={{color:"#fff",fontWeight:800,fontSize:15,fontFamily:"'Baloo 2',cursive"}}>{m.title}</span><span style={{color:"rgba(255,255,255,0.85)",fontSize:11,fontWeight:600}}>{m.sub}</span>{(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"80%",height:5,background:"rgba(255,255,255,0.25)",borderRadius:6,marginTop:8,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:6,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}</button>)}</div>
     <div style={{margin:"6px 16px 16px",padding:"14px 16px",background:"linear-gradient(135deg,#FFF7ED,#FFFBEB)",borderRadius:18,border:"2px solid #FBBF2433",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:26,animation:"tipW 2s ease-in-out infinite"}}>💡</span><p style={{fontSize:12,color:"#92400E",fontWeight:700,flex:1}}>⭐⭐⭐⭐⭐ = 20 points per word!</p></div><style>{CSS}</style></div>;
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
@@ -1160,7 +1178,7 @@ export default function App(){
     </div><style>{CSS}</style></div>;}
 
   // ═══ NUMBERS GRID ═══
-  if(scr==="numbers")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8}/><SubHead title={`Numbers 1-${aCfg.max}`} onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,padding:"14px 12px"}}>{Array.from({length:aCfg.max}).map((_,i)=>{const n=i+1;const done=isDone("numbers",n);return<button key={n} onClick={()=>{setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{position:"relative",padding:"12px 4px 8px",borderRadius:14,border:`2px solid ${done?nClr(n)+"44":"#eee"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,fontFamily:"'Nunito',sans-serif",background:done?`linear-gradient(135deg,${nClr(n)}08,${nClr(n)}15)`:"#fff",animation:`cardIn 0.3s cubic-bezier(0.34,1.56,0.64,1) ${i*0.02}s both`,boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>{done&&<span style={{position:"absolute",top:2,right:3,fontSize:10,color:"#22C55E",fontWeight:900}}>✓</span>}<span style={{fontFamily:"'Baloo 2',cursive",fontSize:18,fontWeight:700,color:nClr(n)}}>{n}</span></button>;})}</div><style>{CSS}</style></div>;
+  if(scr==="numbers")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8}/><SubHead title={`Numbers 1-${aCfg.max}`} onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8,padding:"14px 12px"}}>{Array.from({length:aCfg.max}).map((_,i)=>{const n=i+1;const done=isDone("numbers",n);return<button key={n} onClick={()=>{setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{position:"relative",padding:"12px 4px 8px",borderRadius:14,border:`2px solid ${done?nClr(n)+"44":"#eee"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,fontFamily:"'Nunito',sans-serif",background:done?`linear-gradient(135deg,${nClr(n)}08,${nClr(n)}15)`:"#fff",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.02}s both, cardFloat ${2+Math.random()*2}s ease-in-out ${0.5+i*0.02}s infinite`,boxShadow:"0 4px 16px rgba(0,0,0,0.06)"}}>{done&&<span style={{position:"absolute",top:2,right:3,fontSize:10,color:"#22C55E",fontWeight:900}}>✓</span>}<span style={{fontFamily:"'Baloo 2',cursive",fontSize:20,fontWeight:800,color:nClr(n),animation:`numBounce ${1.5+Math.random()}s ease-in-out ${Math.random()*2}s infinite`}}>{n}</span></button>;})}</div><style>{CSS}</style></div>;
 
   // ═══ PHONICS DETAIL ═══
   if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto",position:"relative"}}><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
@@ -1272,7 +1290,7 @@ export default function App(){
     </div><style>{CSS}</style></div>;}
 
   // ═══ PHONICS GRID ═══
-  if(scr==="phonics")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"rgba(255,255,255,0.9)",borderBottom:"1px solid #eee"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"#fff",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={()=>{setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`cardIn 0.3s cubic-bezier(0.34,1.56,0.64,1) ${i*0.05}s both`,boxShadow:"0 4px 16px rgba(0,0,0,0.04)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:`iconF 3s ease-in-out ${i*0.2}s infinite`}}>{w.img}</span><span style={{fontFamily:"'Baloo 2',cursive",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#f3f4f6",color:"#888",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div><style>{CSS}</style></div>;
+  if(scr==="phonics")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"rgba(255,255,255,0.9)",borderBottom:"1px solid #eee"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"#fff",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={()=>{setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both, cardFloat ${2.5+Math.random()*1.5}s ease-in-out ${0.5+i*0.06}s infinite`,boxShadow:"0 6px 20px rgba(0,0,0,0.06)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:`iconF 3s ease-in-out ${i*0.2}s infinite`}}>{w.img}</span><span style={{fontFamily:"'Baloo 2',cursive",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#f3f4f6",color:"#888",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div><style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
@@ -1299,7 +1317,7 @@ export default function App(){
     </div><style>{CSS}</style></div>;}
 
   // ═══ SHAPES GRID ═══
-  if(scr==="shapes")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={()=>{setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:20,borderRadius:22,border:`2px solid ${done?"#A855F744":"#eee"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`cardIn 0.4s ease ${i*0.08}s both`,boxShadow:"0 4px 16px rgba(0,0,0,0.04)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{s.emoji}</span><span style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#888",fontWeight:600}}>{s.desc}</span></button>;})}</div><style>{CSS}</style></div>;
+  if(scr==="shapes")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={()=>{setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:20,borderRadius:22,border:`2px solid ${done?"#A855F744":"#eee"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardFloat ${2.5+Math.random()*2}s ease-in-out ${0.6+i*0.1}s infinite`,boxShadow:"0 6px 20px rgba(0,0,0,0.06)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{s.emoji}</span><span style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#888",fontWeight:600}}>{s.desc}</span></button>;})}</div><style>{CSS}</style></div>;
 
 
   // ═══ COLORS ═══
@@ -1327,7 +1345,7 @@ export default function App(){
     </div><style>{CSS}</style></div>;}
 
   // ═══ COLORS GRID ═══
-  if(scr==="colors")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#eee"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`cardIn 0.4s ease ${i*0.08}s both`,boxShadow:"0 4px 16px rgba(0,0,0,0.04)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div><style>{CSS}</style></div>;
+  if(scr==="colors")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#eee"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardFloat ${2.5+Math.random()*2}s ease-in-out ${0.6+i*0.1}s infinite`,boxShadow:"0 6px 20px rgba(0,0,0,0.06)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div><style>{CSS}</style></div>;
 
 
   // ═══ REWARDS ═══
@@ -1348,13 +1366,17 @@ body{background:#f0f0fa;overflow-x:hidden;}
 button:active{transform:scale(0.95)!important;}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-@keyframes cardIn{from{opacity:0;transform:scale(0.7) translateY(20px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@keyframes cardIn{from{opacity:0;transform:scale(0.5) translateY(30px) rotate(-5deg)}to{opacity:1;transform:scale(1) translateY(0) rotate(0)}}
+@keyframes cardFloat{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-6px) rotate(1deg)}50%{transform:translateY(-2px) rotate(0)}75%{transform:translateY(-8px) rotate(-1deg)}}
+@keyframes cardBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes numBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.1)}}
+@keyframes gridPop{0%{transform:scale(0) rotate(-10deg);opacity:0}60%{transform:scale(1.15) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
 @keyframes splashPop{0%{opacity:0;transform:scale(0.5) rotate(-8deg)}60%{transform:scale(1.05) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 @keyframes numPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
 @keyframes mascotB{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes dotB{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-14px)}}
-@keyframes iconF{0%,100%{transform:translateY(0)}25%{transform:translateY(-4px) rotate(2deg)}75%{transform:translateY(2px) rotate(-2deg)}}
+@keyframes iconF{0%,100%{transform:translateY(0) scale(1)}25%{transform:translateY(-8px) scale(1.1) rotate(5deg)}50%{transform:translateY(-3px) scale(1.05)}75%{transform:translateY(-10px) scale(1.08) rotate(-3deg)}}
 @keyframes coinSp{0%,100%{transform:rotateY(0)}50%{transform:rotateY(180deg)}}
 @keyframes btnP{0%,100%{box-shadow:0 8px 28px rgba(0,0,0,0.15)}50%{box-shadow:0 12px 36px rgba(0,0,0,0.22)}}
 @keyframes tipW{0%,100%{transform:rotate(-8deg) scale(1)}50%{transform:rotate(8deg) scale(1.1)}}
