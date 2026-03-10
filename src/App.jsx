@@ -358,6 +358,10 @@ const COLORSDATA=[
     scene:{bg:"linear-gradient(180deg,#D2B48C,#92400E,#78350F)",elements:[{emoji:"🐻",size:56,x:50,y:35,anim:"puppyWag",dur:1.5},{emoji:"🌰",size:24,x:25,y:60,anim:"floatBob",dur:2},{emoji:"🍫",size:28,x:70,y:55,anim:"eggWobble",dur:2}]}},
 ];
 
+// Fun facts for numbers 1-20 (used in Basics)
+const NUM_FUN={1:"1 egg in an egg cup!",2:"2 eyes to see!",3:"3 little kittens!",4:"4 legs on a dog!",5:"5 fingers on a hand!",6:"6 legs on a bug!",7:"7 colors in a rainbow!",8:"8 legs on an octopus!",9:"9 planets long ago!",10:"10 toes on your feet!",11:"11 players in football!",12:"12 months in a year!",13:"13 is a baker\'s dozen!",14:"14 days in two weeks!",15:"15 minutes is a quarter hour!",16:"16 ounces in a pound!",17:"17 is a prime number!",18:"18 holes on a golf course!",19:"19 is almost twenty!",20:"20 fingers and toes!"};
+const NUM_EMOJI={1:"🥚",2:"👀",3:"🐱",4:"🐕",5:"🖐️",6:"🐛",7:"🌈",8:"🐙",9:"🪐",10:"🦶",11:"⚽",12:"📅",13:"🍩",14:"📆",15:"⏰",16:"⚖️",17:"🔢",18:"⛳",19:"🔟",20:"👣"};
+
 // Helpers
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
 const nClr=(n)=>["#FF6B6B","#4ECDC4","#45B7D1","#FF8C42","#A855F7","#F472B6","#34D399","#FBBF24","#60A5FA","#F87171"][(Math.floor((n-1)/10))%10];
@@ -621,7 +625,12 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[ptAnim,setPtAnim]=useState(null);const[rwdMsg,setRwdMsg]=useState(null);
+  const[confetti,setConfetti]=useState(false);
+  // Basics module state
+  const[basicsTab,setBasicsTab]=useState("find"); // "find" or "write"
+  const[findTarget,setFindTarget]=useState(null);const[findScore,setFindScore]=useState(0);const[findStreak,setFindStreak]=useState(0);const[findFeedback,setFindFeedback]=useState(null);
+  const[writeNum,setWriteNum]=useState(1);const[writePaths,setWritePaths]=useState([]);const[isDrawing,setIsDrawing]=useState(false);const[writeResult,setWriteResult]=useState(null);
+  const canvasRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);const[rwdMsg,setRwdMsg]=useState(null);
   const[speakMode,setSpeakMode]=useState(true); // toggle for speech practice
   const[countdown,setCountdown]=useState(0); // 3,2,1 countdown
   const[activeSpellIdx,setActiveSpellIdx]=useState(-1); // which letter is being spelled
@@ -1004,6 +1013,82 @@ export default function App(){
   };
   const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(300);setCoStep("listening");rec.start(handleCoResult);};
 
+
+  // ═══ BASICS: FIND THE NUMBER GAME ═══
+  const startFind=()=>{
+    const max=aCfg?.max||20;
+    const n=Math.floor(Math.random()*max)+1;
+    setFindTarget(n);setFindFeedback(null);
+    const fact=NUM_FUN[n]?` ${NUM_FUN[n]}`:"";
+    speak(`Find number ${NW[n]||n}.${fact}`,{rate:0.75,pitch:1.0});
+  };
+  const handleFindTap=(n)=>{
+    if(!findTarget)return;
+    if(n===findTarget){
+      setFindFeedback({correct:true,n});
+      setFindScore(s=>s+1);setFindStreak(s=>s+1);
+      const emoji=NUM_EMOJI[n]||"🎉";
+      const fact=NUM_FUN[n]||`${NW[n]||n} is great!`;
+      speak(`${NW[n]||n}! ${fact} Well done!`,{rate:0.8,pitch:1.0});
+      if(!isDone("basics_find",n)) awardPoints(3,"basics_find",n);
+      if((findStreak+1)%5===0) boom();
+      setTimeout(startFind,2000);
+    } else {
+      setFindFeedback({correct:false,n});
+      setFindStreak(0);
+      speak(`That's ${NW[n]||n}. Try again. Find ${NW[findTarget]||findTarget}.`,{rate:0.8,pitch:1.0});
+      setTimeout(()=>setFindFeedback(null),1000);
+    }
+  };
+
+  // ═══ BASICS: WRITE/TRACE NUMBER ═══
+  const getCanvasCtx=()=>canvasRef.current?.getContext("2d");
+  const startDraw=(e)=>{
+    const ctx=getCanvasCtx();if(!ctx)return;
+    setIsDrawing(true);setWriteResult(null);
+    const rect=canvasRef.current.getBoundingClientRect();
+    const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+    const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+    ctx.beginPath();ctx.moveTo(x,y);
+    ctx.lineWidth=8;ctx.lineCap="round";ctx.strokeStyle="#6366F1";
+    setWritePaths(p=>[...p,{x,y}]);
+  };
+  const doDraw=(e)=>{
+    if(!isDrawing)return;
+    const ctx=getCanvasCtx();if(!ctx)return;
+    const rect=canvasRef.current.getBoundingClientRect();
+    const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+    const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+    ctx.lineTo(x,y);ctx.stroke();
+    setWritePaths(p=>[...p,{x,y}]);
+  };
+  const endDraw=()=>{
+    if(!isDrawing)return;
+    setIsDrawing(false);
+    // Simple validation: if enough points drawn, accept it
+    if(writePaths.length>15){
+      setWriteResult("correct");
+      const fact=NUM_FUN[writeNum]||"";
+      speak(`Good job! That looks like ${NW[writeNum]||writeNum}! ${fact}`,{rate:0.8,pitch:1.0});
+      if(!isDone("basics_write",writeNum)) awardPoints(5,"basics_write",writeNum);
+      setTimeout(()=>{
+        setWriteNum(n=>n>=100?1:n+1);
+        setWriteResult(null);setWritePaths([]);
+        const ctx=getCanvasCtx();if(ctx)ctx.clearRect(0,0,300,200);
+      },2500);
+    }
+  };
+  const clearCanvas=()=>{
+    const ctx=getCanvasCtx();if(ctx)ctx.clearRect(0,0,300,200);
+    setWritePaths([]);setWriteResult(null);
+  };
+  const skipWrite=()=>{
+    setWriteNum(n=>n>=100?1:n+1);
+    setWritePaths([]);setWriteResult(null);
+    const ctx=getCanvasCtx();if(ctx)ctx.clearRect(0,0,300,200);
+    speak(`Now write ${NW[writeNum>=100?1:writeNum+1]||writeNum+1}.`,{rate:0.8,pitch:1.0});
+  };
+
   const buyR=(r)=>{if((prof?.points||0)<r.cost)return;save({...prof,points:prof.points-r.cost,rewards:[...(prof.rewards||[]),{...r,at:Date.now()}]});boom();setRwdMsg(`${r.emoji} Yay! You earned ${r.name}! Show your parents!`);setTimeout(()=>setRwdMsg(null),4000);};
 
   // ═══ SCREENS ═══
@@ -1016,7 +1101,7 @@ export default function App(){
   </div><style>{CSS}</style></div>;
 
   if(scr==="home")return<div style={{fontFamily:"'Nunito',sans-serif",height:"100dvh",overflow:"auto",background:"#f0f0fa",maxWidth:520,margin:"0 auto",position:"relative",overflow:"hidden"}}><Particles/><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<div style={{background:"linear-gradient(135deg,#6366F1,#8B5CF6,#A855F7)",padding:"20px 20px 44px",borderRadius:"0 0 36px 36px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:-30,right:-30,width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,0.08)"}}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",position:"relative",zIndex:2}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{fontSize:36,animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div><div><div style={{color:"#fff",fontWeight:800,fontSize:16}}>{prof?.name||"Buddy"}</div><div style={{color:"#ffffffaa",fontSize:11,fontWeight:600}}>Age {prof?.age||4} • {aCfg.diff}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",padding:"8px 16px",borderRadius:24}}><span style={{fontSize:18,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><span style={{color:"#FFE66D",fontWeight:900,fontSize:18,fontFamily:"'Baloo 2',cursive"}}>{prof?.points||0}</span></div></div><h2 style={{fontFamily:"'Baloo 2',cursive",color:"#fff",fontSize:22,marginTop:14,position:"relative",zIndex:2}}>What shall we learn? 🎯</h2></div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"18px 16px 10px",marginTop:-22,position:"relative",zIndex:3}}>{[{id:"numbers",icon:"🔢",title:"Numbers",sub:`1 to ${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#ee5a24)"},{id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & sounds",grad:"linear-gradient(135deg,#4ECDC4,#0abde3)"},{id:"shapes",icon:"🔷",title:"Shapes",sub:"Learn shapes",grad:"linear-gradient(135deg,#A855F7,#7c3aed)"},{id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow fun!",grad:"linear-gradient(135deg,#F472B6,#ec4899)"},{id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend points!",grad:"linear-gradient(135deg,#FBBF24,#f59e0b)"},{id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748b)"}].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();setScr(m.id);}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"20px 10px 14px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",background:m.grad,animation:`gridPop 0.6s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardBounce ${3+i*0.3}s ease-in-out ${0.7+i*0.1}s infinite`,position:"relative",overflow:"hidden"}}><span style={{fontSize:36,marginBottom:4,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{m.icon}</span><span style={{color:"#fff",fontWeight:800,fontSize:15,fontFamily:"'Baloo 2',cursive"}}>{m.title}</span><span style={{color:"rgba(255,255,255,0.85)",fontSize:11,fontWeight:600}}>{m.sub}</span>{(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"80%",height:5,background:"rgba(255,255,255,0.25)",borderRadius:6,marginTop:8,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:6,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}</button>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,padding:"14px 12px 10px",marginTop:-22,position:"relative",zIndex:3}}>{[{id:"numbers",icon:"🔢",title:"Numbers",sub:`1-${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#ee5a24)"},{id:"phonics",icon:"🔤",title:"Phonics",sub:"Words",grad:"linear-gradient(135deg,#4ECDC4,#0abde3)"},{id:"basics",icon:"🧩",title:"Basics",sub:"Find & Write",grad:"linear-gradient(135deg,#F59E0B,#D97706)"},{id:"shapes",icon:"🔷",title:"Shapes",sub:"Shapes",grad:"linear-gradient(135deg,#A855F7,#7c3aed)"},{id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow",grad:"linear-gradient(135deg,#F472B6,#ec4899)"},{id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend!",grad:"linear-gradient(135deg,#FBBF24,#f59e0b)"},{id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748b)"}].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();setScr(m.id);}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"14px 6px 10px",borderRadius:18,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",background:m.grad,animation:`gridPop 0.6s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both, cardBounce ${3+i*0.3}s ease-in-out ${0.7+i*0.08}s infinite`,position:"relative",overflow:"hidden"}}><span style={{fontSize:28,marginBottom:2,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{m.icon}</span><span style={{color:"#fff",fontWeight:800,fontSize:12,fontFamily:"'Baloo 2',cursive"}}>{m.title}</span><span style={{color:"rgba(255,255,255,0.85)",fontSize:9,fontWeight:600}}>{m.sub}</span>{(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"80%",height:4,background:"rgba(255,255,255,0.25)",borderRadius:6,marginTop:6,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:6,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}</button>)}</div>
     <div style={{margin:"6px 16px 16px",padding:"14px 16px",background:"linear-gradient(135deg,#FFF7ED,#FFFBEB)",borderRadius:18,border:"2px solid #FBBF2433",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:26,animation:"tipW 2s ease-in-out infinite"}}>💡</span><p style={{fontSize:12,color:"#92400E",fontWeight:700,flex:1}}>⭐⭐⭐⭐⭐ = 20 points per word!</p></div><style>{CSS}</style></div>;
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
@@ -1296,6 +1381,86 @@ export default function App(){
   if(scr==="colors")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#eee"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardFloat ${2.5+Math.random()*2}s ease-in-out ${0.6+i*0.1}s infinite`,boxShadow:"0 6px 20px rgba(0,0,0,0.06)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div><style>{CSS}</style></div>;
 
 
+
+  // ═══ BASICS DASHBOARD ═══
+  if(scr==="basics")return<div style={{fontFamily:"'Nunito',sans-serif",height:"100dvh",overflow:"hidden",background:"#f0f0fa",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <SubHead title="Basics 🧩" onBack={goHome} points={prof?.points||0}/>
+    {/* Tab switcher */}
+    <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#fff",borderBottom:"1px solid #eee"}}>
+      {[{id:"find",icon:"🔍",label:"Find Number"},{id:"write",icon:"✏️",label:"Write Number"}].map(t=>
+        <button key={t.id} onClick={()=>{setBasicsTab(t.id);if(t.id==="find"&&!findTarget)startFind();if(t.id==="write"){const ctx=getCanvasCtx();if(ctx)ctx.clearRect(0,0,300,200);setWritePaths([]);speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});}}} style={{flex:1,padding:"8px 6px",borderRadius:14,border:"2px solid",borderColor:basicsTab===t.id?"#6366F1":"#eee",background:basicsTab===t.id?"linear-gradient(135deg,#6366F1,#8B5CF6)":"#fff",color:basicsTab===t.id?"#fff":"#555",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif",transition:"all 0.3s"}}>{t.icon} {t.label}</button>)}
+    </div>
+
+    {/* FIND THE NUMBER TAB */}
+    {basicsTab==="find"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      {/* Target display */}
+      <div style={{textAlign:"center",padding:"8px 10px",background:"linear-gradient(135deg,#FEF3C7,#FDE68A)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          {findTarget&&<>
+            <span style={{fontSize:28,animation:"numPulse 1s ease-in-out infinite"}}>{NUM_EMOJI[findTarget]||"🔢"}</span>
+            <span style={{fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800,color:"#92400E"}}>Find: {findTarget}</span>
+            <span style={{fontFamily:"'Baloo 2',cursive",fontSize:14,fontWeight:700,color:"#D97706",background:"#fff",padding:"2px 10px",borderRadius:10}}>🏆 {findScore}</span>
+            {findStreak>=3&&<span style={{fontSize:12,fontWeight:800,color:"#EF4444",animation:"pulse 1s infinite"}}>🔥{findStreak}</span>}
+          </>}
+          {!findTarget&&<button onClick={startFind} style={{padding:"10px 24px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6366F1,#8B5CF6)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>▶️ Start Game</button>}
+        </div>
+        {findFeedback&&<div style={{fontSize:12,fontWeight:800,color:findFeedback.correct?"#16A34A":"#DC2626",animation:"slideUp 0.2s ease-out",marginTop:2}}>{findFeedback.correct?"✅ Correct!":"❌ Try again!"}</div>}
+      </div>
+      {/* Number grid */}
+      <div style={{flex:1,overflow:"auto",padding:"6px 8px"}}><div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>
+        {Array.from({length:aCfg?.max||20}).map((_,i)=>{const n=i+1;const isTarget=findTarget===n;const wasTapped=findFeedback?.n===n;return<button key={n} onClick={()=>handleFindTap(n)} style={{
+          padding:"8px 2px",borderRadius:10,border:"2px solid",
+          borderColor:wasTapped?(findFeedback.correct?"#22C55E":"#EF4444"):(isTarget?"#F59E0B22":"#eee"),
+          background:wasTapped?(findFeedback.correct?"#ECFDF5":"#FEF2F2"):"#fff",
+          cursor:"pointer",fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,
+          color:nClr(n),
+          transform:wasTapped&&findFeedback.correct?"scale(1.2)":"scale(1)",
+          animation:isTarget&&!wasTapped?`cardBounce 1.5s ease-in-out infinite`:`gridPop 0.3s ease ${i*0.01}s both`,
+          transition:"all 0.2s"
+        }}>{n}</button>;})}
+      </div></div>
+    </div>}
+
+    {/* WRITE THE NUMBER TAB */}
+    {basicsTab==="write"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",padding:"6px 10px"}}>
+      {/* Number display + fact */}
+      <div style={{textAlign:"center",padding:"6px",background:"linear-gradient(135deg,#EEF2FF,#E0E7FF)",borderRadius:14,marginBottom:6}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+          <span style={{fontSize:24}}>{NUM_EMOJI[writeNum]||"🔢"}</span>
+          <span style={{fontFamily:"'Baloo 2',cursive",fontSize:56,fontWeight:800,color:"#6366F1",lineHeight:1}}>{writeNum}</span>
+          <span style={{fontFamily:"'Baloo 2',cursive",fontSize:18,fontWeight:700,color:"#4338CA",textTransform:"capitalize"}}>{NW[writeNum]||""}</span>
+        </div>
+        {NUM_FUN[writeNum]&&<p style={{fontSize:11,fontWeight:700,color:"#4338CA",margin:0}}>{NUM_FUN[writeNum]}</p>}
+      </div>
+
+      {/* Guide number (faded, behind canvas) + Canvas */}
+      <div style={{position:"relative",flex:1,borderRadius:16,overflow:"hidden",border:"3px solid #e5e7eb",background:"#fff",touchAction:"none"}}>
+        {/* Ghost number to trace over */}
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:0}}>
+          <span style={{fontFamily:"'Baloo 2',cursive",fontSize:160,fontWeight:800,color:"#e5e7eb",userSelect:"none",lineHeight:1}}>{writeNum}</span>
+        </div>
+        {/* Drawing canvas */}
+        <canvas ref={canvasRef} width={300} height={200}
+          style={{width:"100%",height:"100%",position:"relative",zIndex:1,cursor:"crosshair"}}
+          onMouseDown={startDraw} onMouseMove={doDraw} onMouseUp={endDraw} onMouseLeave={endDraw}
+          onTouchStart={(e)=>{e.preventDefault();startDraw(e);}} onTouchMove={(e)=>{e.preventDefault();doDraw(e);}} onTouchEnd={endDraw}
+        />
+        {/* Result overlay */}
+        {writeResult==="correct"&&<div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(34,197,94,0.15)",zIndex:2,animation:"slideUp 0.3s ease-out"}}>
+          <span style={{fontSize:64,animation:"starPop 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>✅</span>
+        </div>}
+      </div>
+
+      {/* Controls */}
+      <div style={{display:"flex",gap:8,marginTop:6}}>
+        <button onClick={clearCanvas} style={{flex:1,padding:"8px",borderRadius:12,border:"2px solid #eee",background:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>🗑️ Clear</button>
+        <button onClick={()=>{speak(`This is ${NW[writeNum]||writeNum}. ${NUM_FUN[writeNum]||""}`,{rate:0.75,pitch:1.0});}} style={{flex:1,padding:"8px",borderRadius:12,border:"2px solid #eee",background:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>🔊 Hear</button>
+        <button onClick={skipWrite} style={{flex:1,padding:"8px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#6366F1,#8B5CF6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Next ➡️</button>
+      </div>
+    </div>}
+    <style>{CSS}</style>
+  </div>;
+
   // ═══ REWARDS ═══
   if(scr==="rewards")return<div style={{fontFamily:"'Nunito',sans-serif",height:"100dvh",overflow:"auto",background:"#f0f0fa",maxWidth:520,margin:"0 auto",position:"relative"}}><Confetti active={confetti}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#fff",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:22,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px #FBBF2444"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#fff",fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"#ffffffcc",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#888",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#f3f4f6"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"'Nunito',sans-serif",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Baloo 2',cursive",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#888",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,color:"#fff",fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#22C55E,#16A34A)":"#94A3B8"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:14,border:"1px solid #eee",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#999"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<style>{CSS}</style></div>;
 
@@ -1318,6 +1483,7 @@ button:active{transform:scale(0.95)!important;}
 @keyframes cardFloat{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-6px) rotate(1deg)}50%{transform:translateY(-2px) rotate(0)}75%{transform:translateY(-8px) rotate(-1deg)}}
 @keyframes cardBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 @keyframes numBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.1)}}
+@keyframes findPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0.4)}50%{box-shadow:0 0 0 8px rgba(245,158,11,0)}}
 @keyframes gridPop{0%{transform:scale(0) rotate(-10deg);opacity:0}60%{transform:scale(1.15) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
 @keyframes splashPop{0%{opacity:0;transform:scale(0.5) rotate(-8deg)}60%{transform:scale(1.05) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
