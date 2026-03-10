@@ -1,0 +1,145 @@
+# 🧒 Little Genius — Deployment Guide
+
+## 🚀 Option 1: Deploy to Vercel (EASIEST — Free, 2 minutes)
+
+### Steps:
+1. **Go to** [vercel.com](https://vercel.com) and sign up (free) with GitHub
+2. **Create a GitHub repo:**
+   - Go to [github.com/new](https://github.com/new)
+   - Name it `little-genius`
+   - Upload ALL files from this folder
+3. **On Vercel:**
+   - Click "Add New Project"
+   - Import your `little-genius` repo
+   - Framework: **Vite**
+   - Click **Deploy**
+4. **Done!** You'll get a URL like `little-genius.vercel.app`
+
+### Or use Vercel CLI (even faster):
+```bash
+npm install -g vercel
+cd little-genius
+npm install
+vercel
+```
+
+---
+
+## 🌐 Option 2: Deploy to Netlify (Free, 2 minutes)
+
+1. Go to [netlify.com](https://netlify.com) and sign up
+2. Build locally first:
+   ```bash
+   npm install
+   npm run build
+   ```
+3. Drag the `dist/` folder onto Netlify's deploy page
+4. Done! You get a URL like `little-genius.netlify.app`
+
+---
+
+## 💻 Option 3: Run Locally (For testing)
+
+### Prerequisites:
+- [Node.js](https://nodejs.org) (v18 or newer)
+
+### Steps:
+```bash
+# 1. Open terminal in this folder
+cd little-genius
+
+# 2. Install dependencies
+npm install
+
+# 3. Start dev server
+npm run dev
+```
+
+This opens the app at `http://localhost:5173` — just open it in Chrome on your computer or phone!
+
+### To test on your phone (same WiFi):
+1. Find your computer's IP: run `ipconfig` (Windows) or `ifconfig` (Mac)
+2. On your phone browser, go to `http://YOUR_IP:5173`
+
+---
+
+## 📱 Option 4: Make it a Phone App (PWA)
+
+Add this file as `public/manifest.json`:
+```json
+{
+  "name": "Little Genius",
+  "short_name": "LilGenius",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#6366F1",
+  "theme_color": "#6366F1",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
+```
+
+Then add to `index.html` head:
+```html
+<link rel="manifest" href="/manifest.json">
+```
+
+After deploying, users can "Add to Home Screen" on their phone and it works like a native app!
+
+---
+
+## 📂 Project Structure
+```
+little-genius/
+├── index.html          ← HTML entry point
+├── package.json        ← Dependencies & scripts
+├── vite.config.js      ← Build config
+└── src/
+    ├── main.jsx        ← App bootstrap
+    ├── storage.js      ← Storage polyfill (replaces Claude's storage)
+    └── App.jsx         ← The full app code
+```
+
+---
+
+## ⚠️ Important Notes
+
+### Speech Recognition (Microphone)
+- **HTTPS required!** Speech recognition only works on HTTPS or localhost
+- Vercel/Netlify automatically give you HTTPS ✅
+- On localhost, it works too ✅
+- Won't work on plain HTTP (file:// or http://)
+
+### Browser Support
+- **Best:** Chrome (desktop & Android) — full speech support
+- **Good:** Safari (iOS) — speech synthesis works, recognition may need permission
+- **Limited:** Firefox — speech synthesis works, recognition needs flag
+
+### Storage
+- The app uses `localStorage` to save profiles, points, and progress
+- Data persists across sessions on the same device/browser
+- Clearing browser data will reset progress
+
+---
+
+## 🧪 Quick Test Checklist
+
+After deploying, test these:
+- [ ] Splash screen shows and auto-navigates
+- [ ] Can create profile (name, age, gender, avatar)
+- [ ] Numbers grid shows correct range for selected age
+- [ ] Clicking a number shows animated scene
+- [ ] Play button speaks the number clearly
+- [ ] Sentence matches the animation
+- [ ] Phonics sounds play individual letter sounds
+- [ ] Microphone opens and listens
+- [ ] Star rating and points are awarded
+- [ ] Points save between page refreshes
+- [ ] Phonics section works with same flow
+- [ ] Rewards shop lets you buy with points
+- [ ] Settings shows stats correctly
