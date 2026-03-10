@@ -707,134 +707,109 @@ export default function App(){
     onStart();
   };
 
-  // ═══ SPELLING: CLEAN 2-ROUND APPROACH ═══
-  // ROUND 1: App says each letter → 2 sec pause → green tick → next. ZERO mic.
-  // ROUND 2: "Your turn!" → ONE mic → kid spells whole word → validate each letter
+  // ═══ SPELLING: 2-ROUND APPROACH ═══
+  // ROUND 1: App says each letter → 2 sec pause → green tick (ZERO mic)
+  // ROUND 2: Tap-the-letters game — scrambled letters, kid taps in order
   
   const LN={a:"A",b:"B",c:"C",d:"D",e:"E",f:"F",g:"G",h:"H",i:"I",j:"J",k:"K",l:"L",m:"M",n:"N",o:"O",p:"P",q:"Q",r:"R",s:"S",t:"T",u:"U",v:"V",w:"W",x:"X",y:"Y",z:"Z"};
-  
-  // Extract individual letters from speech (handles "tee" → t, "see" → c, etc)
-  const extractLetters=(speech)=>{
-    if(!speech) return [];
-    const s=speech.toLowerCase().trim();
-    const map={ay:"a",bee:"b",see:"c",sea:"c",dee:"d",ee:"e",ef:"f",eff:"f",gee:"g",aitch:"h",age:"h",eye:"i",jay:"j",kay:"k",el:"l",em:"m",en:"n",oh:"o",pee:"p",queue:"q",cue:"q",are:"r",es:"s",tee:"t",tea:"t",you:"u",vee:"v","double you":"w","double u":"w",ex:"x",why:"y",zee:"z",zed:"z"};
-    // Replace multi-word matches first
-    let processed=s.replace(/double you/g,"w").replace(/double u/g,"w");
-    const chunks=processed.split(/[\s,\.]+/).filter(Boolean);
-    const result=[];
-    for(const chunk of chunks){
-      if(map[chunk]) result.push(map[chunk]);
-      else if(chunk.length===1 && /[a-z]/.test(chunk)) result.push(chunk);
-      else { for(const ch of chunk){ if(/[a-z]/.test(ch)) result.push(ch); } }
+
+  const [spellRound,setSpellRound]=useState(0); // 0=not started, 1=app demo, 2=kid tap game
+  const [scrambledLetters,setScrambledLetters]=useState([]);
+  const [tapIndex,setTapIndex]=useState(0);
+  const [tapWrong,setTapWrong]=useState(-1); // index of wrong tap (flash red)
+  const spellResolveRef=useRef(null); // to resolve the tap game promise
+
+  // Shuffle array (Fisher-Yates)
+  const shuffle=(arr)=>{const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+  // Handle letter tap in Round 2
+  const handleLetterTap=(tappedLetter,tappedIdx)=>{
+    const letters=spellResolveRef.current?.letters;
+    if(!letters) return;
+    const expectedLetter=letters[tapIndex];
+    
+    if(tappedLetter.toLowerCase()===expectedLetter){
+      // CORRECT
+      setSpellStatus(prev=>{const n=[...prev];n[tapIndex]='correct';return n;});
+      setScrambledLetters(prev=>prev.map((s,i)=>i===tappedIdx?{...s,used:true}:s));
+      const nextIdx=tapIndex+1;
+      setTapIndex(nextIdx);
+      
+      if(nextIdx>=letters.length){
+        // ALL DONE!
+        setTimeout(()=>spellResolveRef.current?.resolve(true),300);
+      }
+    } else {
+      // WRONG — flash red on the tapped button
+      setTapWrong(tappedIdx);
+      setTimeout(()=>setTapWrong(-1),600);
     }
-    return result;
   };
 
   const spellWord=async(word)=>{
     const letters=word.toLowerCase().split('');
     setSpellStatus(letters.map(()=>'waiting'));
+    setSpellRound(0);
 
-    // ─── ROUND 1: App spells it out. NO mic. Just listen & watch. ───
+    // ─── ROUND 1: App spells it. NO mic. Just watch & listen. ───
+    setSpellRound(1);
     for(let i=0;i<letters.length;i++){
       if(!pRef.current) return;
       setActiveSpellIdx(i);
       setSpellStatus(prev=>{const n=[...prev];n[i]='listening';return n;});
       
-      // Say the letter boldly
       await speak(LN[letters[i]]||letters[i],{rate:0.5,pitch:1.0,noCancel:true});
-      
-      // 2 second pause — kid watches
       await wait(2000);
       
-      // Green tick → next
       setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
       await wait(200);
     }
     setActiveSpellIdx(-1);
     await wait(400);
 
-    // ─── ROUND 2: Kid's turn (only in speakMode) ───
-    if(!speakMode || !pRef.current) return;
+    // ─── ROUND 2: Tap game (if speakMode) ───
+    if(!speakMode || !pRef.current){setSpellRound(0);return;}
 
-    // Reset all letters to waiting
+    setSpellRound(2);
     setSpellStatus(letters.map(()=>'waiting'));
-    setActiveSpellIdx(0);
-    
-    await speak("Now it's your turn. Spell it.",{rate:0.75,pitch:1.0});
-    await wait(800);
+    setTapIndex(0);
+    setTapWrong(-1);
 
-    // Open ONE mic session — kid spells the whole word
-    const kidSaid = await new Promise((resolve)=>{
-      const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-      if(!SR){resolve("");return;}
-      try{rec.stop();}catch(e){}
-      
-      const r=new SR();
-      r.continuous=true;
-      r.interimResults=false;
-      r.lang="en-US";
-      let allText="";
-      let silenceTimer=null;
-      
-      r.onresult=(e)=>{
-        for(let x=0;x<e.results.length;x++){
-          if(e.results[x].isFinal) allText+=" "+e.results[x][0].transcript;
-        }
-        // Reset silence timer — kid still talking
-        clearTimeout(silenceTimer);
-        silenceTimer=setTimeout(()=>{try{r.stop();}catch(e){}},4000);
-      };
-      r.onerror=()=>resolve(allText.trim());
-      r.onend=()=>resolve(allText.trim());
-      
-      try{r.start();}catch(e){resolve("");}
-      // Max 25 seconds
-      setTimeout(()=>{clearTimeout(silenceTimer);try{r.stop();}catch(e){}},25000);
+    // Create scrambled letter buttons (with unique IDs for duplicates)
+    const scrambled=shuffle(letters.map((l,i)=>({letter:l.toUpperCase(),id:i,used:false})));
+    setScrambledLetters(scrambled);
+
+    await speak("Now tap the letters in the right order.",{rate:0.75,pitch:1.0});
+    await wait(400);
+
+    // Wait for kid to finish tapping (resolved by handleLetterTap)
+    const success=await new Promise((resolve)=>{
+      spellResolveRef.current={resolve,letters};
+      // Timeout: 30 seconds max
+      setTimeout(()=>resolve(false),30000);
     });
 
-    rec.stop();
-    await wait(400);
+    spellResolveRef.current=null;
+    setSpellRound(0);
+    await wait(300);
 
-    // ─── VALIDATE letter by letter ───
-    const spoken=extractLetters(kidSaid);
-    let allCorrect=true;
-    const mistakes=[];
-
-    for(let i=0;i<letters.length;i++){
-      setActiveSpellIdx(i);
-      if(i<spoken.length && spoken[i]===letters[i]){
-        setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
-      } else {
-        allCorrect=false;
-        setSpellStatus(prev=>{const n=[...prev];n[i]='wrong';return n;});
-        mistakes.push({idx:i,expected:letters[i],got:spoken[i]||""});
-      }
-      await wait(400);
-    }
-    setActiveSpellIdx(-1);
-    await wait(400);
-
-    if(allCorrect){
+    if(success){
       await speak("Perfect spelling!",{rate:0.8,pitch:1.0});
-    } else if(mistakes.length>0){
-      // Tell them the mistakes and correct them
-      const wrongNames=mistakes.map(m=>LN[m.expected]).join(", ");
-      await speak("Almost. Let me help with "+wrongNames+".",{rate:0.75,pitch:1.0});
-      await wait(400);
-      
-      // Flash each wrong letter with the correct one
-      for(const m of mistakes){
+    } else {
+      // Show correct order
+      await speak("Let me show you.",{rate:0.75,pitch:1.0});
+      setSpellStatus(letters.map(()=>'waiting'));
+      for(let i=0;i<letters.length;i++){
         if(!pRef.current) return;
-        setActiveSpellIdx(m.idx);
-        setSpellStatus(prev=>{const n=[...prev];n[m.idx]='listening';return n;});
-        await speak(LN[m.expected],{rate:0.5,pitch:1.0,noCancel:true});
-        await wait(1500);
-        setSpellStatus(prev=>{const n=[...prev];n[m.idx]='correct';return n;});
-        await wait(200);
+        setActiveSpellIdx(i);
+        setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
+        await speak(LN[letters[i]],{rate:0.5,pitch:1.0,noCancel:true});
+        await wait(1000);
       }
       setActiveSpellIdx(-1);
     }
   };
+
 
   // NUMBER PLAY FLOW
   const playNum=async(num)=>{
@@ -1001,34 +976,60 @@ export default function App(){
           </div>
         </>}
         {nStep==="saying_number"&&<Mascot mood="speaking" msg={`Listen! "${w.toUpperCase()}" 🔊`}/>}
-        {/* INTERACTIVE SPELLING */}
+        {/* SPELLING */}
         {nStep==="spelling"&&(
           <div style={{animation:"slideUp 0.3s ease-out"}}>
-            <Mascot mood="thinking" msg={speakMode?"Watch and listen, then you spell it! 🔤":"Follow along! 🔤"}/>
+            <Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters in order! 👆":"🔤"}/>
             <div style={{padding:16,background:"#fff",borderRadius:20}}>
-              <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+              {/* Letter slots (top row) */}
+              <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>
                 {w.replace(/\s/g,'').toUpperCase().split('').map((letter,i)=>{
                   const st=spellStatus[i]||'waiting';
                   const isActive=activeSpellIdx===i;
+                  const isTapTarget=spellRound===2 && i===tapIndex;
                   return <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
                     <span style={{
                       fontSize:32,fontFamily:"'Baloo 2',cursive",fontWeight:800,
                       padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",
-                      background:isActive?color:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":st==='skipped'?"#F59E0B":"#f3f4f6",
-                      color:(isActive||st==='correct'||st==='wrong'||st==='skipped')?"#fff":"#ccc",
-                      transform:isActive?"scale(1.3) translateY(-6px)":"scale(1)",
-                      boxShadow:isActive?`0 8px 24px ${color}55`:"none",
+                      background:isActive?color:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#f3f4f6",
+                      color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",
+                      transform:isActive?"scale(1.2) translateY(-4px)":isTapTarget?"scale(1.1)":"scale(1)",
+                      boxShadow:isActive?`0 6px 20px ${color}55`:isTapTarget?`0 4px 16px ${color}33`:"none",
                       transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-                    }}>{letter}</span>
-                    {isActive&&<span style={{fontSize:14,animation:"pulse 1s ease-in-out infinite",marginTop:2}}>👂</span>}
-                    {st==='correct'&&!isActive&&<span style={{fontSize:14}}>✅</span>}
-                    {st==='wrong'&&!isActive&&<span style={{fontSize:14}}>❌</span>}
-                    {st==='skipped'&&!isActive&&<span style={{fontSize:12,color:"#F59E0B"}}>⏭️</span>}
+                    }}>{st==='correct'||st==='wrong'||isActive||spellRound===1?letter:"?"}</span>
+                    {st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}
+                    {st==='wrong'&&!isActive&&<span style={{fontSize:12}}>❌</span>}
+                    {isActive&&spellRound===1&&<span style={{fontSize:12,animation:"pulse 1s ease-in-out infinite"}}>👂</span>}
+                    {isTapTarget&&spellRound===2&&<span style={{fontSize:12,color:color,fontWeight:800,animation:"pulse 1s ease-in-out infinite"}}>👆</span>}
                   </div>;
                 })}
               </div>
-              {speakMode&&activeSpellIdx>=0&&<div style={{textAlign:"center",marginTop:14,padding:"10px 16px",background:"linear-gradient(135deg,#EEF2FF,#E0E7FF)",borderRadius:14}}>
-                <p style={{fontSize:14,fontWeight:800,color:"#4338CA"}}>👀 Watch and listen!</p>
+              {/* Scrambled tappable letters (Round 2 only) */}
+              {spellRound===2&&(
+                <div>
+                  <div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6366F1",marginBottom:10}}>Tap each letter:</div>
+                  <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+                    {scrambledLetters.map((item,i)=>(
+                      <button key={item.id} disabled={item.used}
+                        onClick={()=>!item.used&&handleLetterTap(item.letter,i)}
+                        style={{
+                          fontSize:28,fontFamily:"'Baloo 2',cursive",fontWeight:800,
+                          padding:"12px 16px",borderRadius:16,minWidth:50,
+                          border:"3px solid",cursor:item.used?"default":"pointer",
+                          borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#6366F1",
+                          background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",
+                          color:item.used?"#ddd":tapWrong===i?"#EF4444":"#1a1a2e",
+                          transform:tapWrong===i?"scale(0.9) rotate(-5deg)":item.used?"scale(0.8)":"scale(1)",
+                          opacity:item.used?0.4:1,
+                          transition:"all 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+                          boxShadow:!item.used&&tapWrong!==i?"0 4px 12px rgba(99,102,241,0.15)":"none",
+                        }}>{item.letter}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px 14px",background:"#EEF2FF",borderRadius:12}}>
+                <p style={{fontSize:13,fontWeight:700,color:"#4338CA"}}>👀 Watch and listen!</p>
               </div>}
             </div>
           </div>
@@ -1074,31 +1075,55 @@ export default function App(){
         {phStep==="saying_word"&&<Mascot mood="speaking" msg={`Listen! "${phW.word.toUpperCase()}" 🔊`}/>}
         {phStep==="spelling"&&(
           <div style={{animation:"slideUp 0.3s ease-out"}}>
-            <Mascot mood="thinking" msg={speakMode?"Watch and listen, then you spell it! 🔤":"Follow along! 🔤"}/>
+            <Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters in order! 👆":"🔤"}/>
             <div style={{padding:16,background:"#fff",borderRadius:20}}>
-              <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+              <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>
                 {phW.word.toUpperCase().split('').map((letter,i)=>{
                   const st=spellStatus[i]||'waiting';
                   const isActive=activeSpellIdx===i;
+                  const isTapTarget=spellRound===2 && i===tapIndex;
                   return <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
                     <span style={{
                       fontSize:32,fontFamily:"'Baloo 2',cursive",fontWeight:800,
                       padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",
-                      background:isActive?cc:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":st==='skipped'?"#F59E0B":"#f3f4f6",
-                      color:(isActive||st==='correct'||st==='wrong'||st==='skipped')?"#fff":"#ccc",
-                      transform:isActive?"scale(1.3) translateY(-6px)":"scale(1)",
-                      boxShadow:isActive?`0 8px 24px ${cc}55`:"none",
+                      background:isActive?cc:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#f3f4f6",
+                      color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",
+                      transform:isActive?"scale(1.2) translateY(-4px)":isTapTarget?"scale(1.1)":"scale(1)",
+                      boxShadow:isActive?`0 6px 20px ${cc}55`:isTapTarget?`0 4px 16px ${cc}33`:"none",
                       transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-                    }}>{letter}</span>
-                    {isActive&&<span style={{fontSize:14,animation:"pulse 1s ease-in-out infinite",marginTop:2}}>👂</span>}
-                    {st==='correct'&&!isActive&&<span style={{fontSize:14}}>✅</span>}
-                    {st==='wrong'&&!isActive&&<span style={{fontSize:14}}>❌</span>}
-                    {st==='skipped'&&!isActive&&<span style={{fontSize:12,color:"#F59E0B"}}>⏭️</span>}
+                    }}>{st==='correct'||st==='wrong'||isActive||spellRound===1?letter:"?"}</span>
+                    {st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}
+                    {st==='wrong'&&!isActive&&<span style={{fontSize:12}}>❌</span>}
+                    {isActive&&spellRound===1&&<span style={{fontSize:12,animation:"pulse 1s ease-in-out infinite"}}>👂</span>}
+                    {isTapTarget&&spellRound===2&&<span style={{fontSize:12,color:cc,fontWeight:800,animation:"pulse 1s ease-in-out infinite"}}>👆</span>}
                   </div>;
                 })}
               </div>
-              {speakMode&&activeSpellIdx>=0&&<div style={{textAlign:"center",marginTop:14,padding:"10px 16px",background:"linear-gradient(135deg,#EEF2FF,#E0E7FF)",borderRadius:14}}>
-                <p style={{fontSize:14,fontWeight:800,color:"#4338CA"}}>👀 Watch and listen!</p>
+              {spellRound===2&&(
+                <div>
+                  <div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6366F1",marginBottom:10}}>Tap each letter:</div>
+                  <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+                    {scrambledLetters.map((item,i)=>(
+                      <button key={item.id} disabled={item.used}
+                        onClick={()=>!item.used&&handleLetterTap(item.letter,i)}
+                        style={{
+                          fontSize:28,fontFamily:"'Baloo 2',cursive",fontWeight:800,
+                          padding:"12px 16px",borderRadius:16,minWidth:50,
+                          border:"3px solid",cursor:item.used?"default":"pointer",
+                          borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":cc,
+                          background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",
+                          color:item.used?"#ddd":tapWrong===i?"#EF4444":"#1a1a2e",
+                          transform:tapWrong===i?"scale(0.9) rotate(-5deg)":item.used?"scale(0.8)":"scale(1)",
+                          opacity:item.used?0.4:1,
+                          transition:"all 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+                          boxShadow:!item.used&&tapWrong!==i?`0 4px 12px ${cc}22`:"none",
+                        }}>{item.letter}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px 14px",background:"#EEF2FF",borderRadius:12}}>
+                <p style={{fontSize:13,fontWeight:700,color:"#4338CA"}}>👀 Watch and listen!</p>
               </div>}
             </div>
           </div>
