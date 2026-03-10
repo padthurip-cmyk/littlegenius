@@ -707,36 +707,11 @@ export default function App(){
     onStart();
   };
 
-  // INTERACTIVE SPELLING: Say letter → WAIT for kid (retries until spoken) → next
-  // Lenient matching: accepts letter name, phonetic sound, or anything close
-  const letterMatchHints={
-    a:["a","ay","hey","eh","aye"],b:["b","be","bee","bea","pee","p"],c:["c","see","sea","si","ce"],
-    d:["d","de","dee","di","the"],e:["e","ee","ea","he","ye"],f:["f","ef","eff","eth"],
-    g:["g","ge","gee","ji","je"],h:["h","age","aitch","ach","ha"],i:["i","eye","ai","aye","hi"],
-    j:["j","jay","je","jai"],k:["k","kay","ca","ke","ok"],l:["l","el","le","al","ell"],
-    m:["m","em","am","me"],n:["n","en","an","ne","in"],o:["o","oh","owe","ho"],
-    p:["p","pe","pee","pi","be"],q:["q","queue","cu","qu","cue"],r:["r","are","ar","er","or"],
-    s:["s","es","ass","is","yes"],t:["t","te","tee","tea","ti","the"],u:["u","you","yu","ew"],
-    v:["v","ve","vee","we","vi"],w:["w","double","dub"],x:["x","ex","ax","ix","eggs"],
-    y:["y","why","wi","wie","ye"],z:["z","ze","zed","zee","zi","set"]
-  };
-  
-  const matchesLetter=(heard,letter)=>{
-    if(!heard) return false;
-    const h=heard.toLowerCase().trim();
-    if(h.length===0) return false;
-    // Direct match
-    if(h===letter) return true;
-    // Check hints
-    const hints=letterMatchHints[letter]||[letter];
-    for(const hint of hints){
-      if(h.includes(hint) || hint.includes(h)) return true;
-    }
-    // First char match (if kid just says the letter sound)
-    if(h[0]===letter) return true;
-    // Accept anything - kid spoke SOMETHING, that's good enough for a 3-year-old
-    return h.length > 0;
-  };
+  // SPELLING APPROACH: 
+  // 1. App says each letter with a big pause → kid repeats along naturally
+  // 2. After all letters, ONE mic session: "Now spell it yourself!"
+  // 3. Accept any attempt — this is for 3-5 year olds
+  // NO per-letter mic (doesn't work on mobile)
 
   const spellWord=async(word)=>{
     const letters=word.toLowerCase().split('');
@@ -744,68 +719,89 @@ export default function App(){
     
     setSpellStatus(letters.map(()=>'waiting'));
     
+    // ROUND 1: App says each letter, kid repeats along (call-and-response)
     for(let i=0;i<letters.length;i++){
       if(!pRef.current) return;
-      const letter=letters[i];
-      const name=LN[letter]||letter;
+      const name=LN[letters[i]]||letters[i];
       
       setActiveSpellIdx(i);
       setSpellStatus(prev=>{const n=[...prev];n[i]='listening';return n;});
       
-      // Stop any lingering mic
-      rec.stop();
-      await wait(200);
-      
-      // Say the letter boldly
+      // App says the letter boldly
       await speak(name,{rate:0.5,pitch:1.0,noCancel:true});
-      await wait(500);
       
-      if(speakMode){
-        let gotIt=false;
-        let attempts=0;
-        const maxAttempts=3;
-        
-        while(!gotIt && attempts<maxAttempts && pRef.current){
-          attempts++;
-          
-          // Listen for kid (5 second window - generous)
-          const heard=await rec.quickListen(5000);
-          
-          // Fully stop mic
-          rec.stop();
-          await wait(200);
-          
-          if(heard && heard.trim().length>0){
-            // Kid said something — accept it! (lenient for young kids)
-            gotIt=true;
-            setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
-            await wait(300);
-          } else {
-            // Silence — re-prompt
-            if(attempts<maxAttempts && pRef.current){
-              setSpellStatus(prev=>{const n=[...prev];n[i]='listening';return n;});
-              await speak(`Say, ${name}.`,{rate:0.65,pitch:1.0,noCancel:true});
-              await wait(400);
-            }
-          }
-        }
-        
-        // If still didn't get it after 3 tries, mark and move on
-        if(!gotIt){
-          setSpellStatus(prev=>{const n=[...prev];n[i]='skipped';return n;});
-          await speak(`That's okay. ${name}.`,{rate:0.7,pitch:1.0,noCancel:true});
-          await wait(400);
-        }
-      } else {
-        // Speaking mode off
-        setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
-        await wait(500);
-      }
+      // Long pause — kid repeats this letter during the pause
+      // Visual shows 🎤 so they know to speak
+      await wait(1500);
       
-      // Gap before next letter
+      // Mark as done (we trust they're repeating along)
+      setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
       await wait(200);
     }
     setActiveSpellIdx(-1);
+    
+    // ROUND 2: Kid spells it alone (one mic session for the whole word)
+    if(speakMode && pRef.current){
+      await wait(300);
+      await speak(`Good. Now you spell it by yourself.`,{rate:0.75,pitch:1.0});
+      await wait(500);
+      
+      // Reset visual for round 2
+      setSpellStatus(letters.map(()=>'waiting'));
+      setActiveSpellIdx(0);
+      
+      // ONE mic session — listen for kid to spell the whole word
+      const heard = await new Promise((resolve)=>{
+        const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+        if(!SR){resolve("");return;}
+        try{rec.stop();}catch(e){}
+        
+        const r=new SR();
+        r.continuous=true;
+        r.interimResults=true;
+        r.lang="en-US";
+        let result="";
+        let letterIdx=0;
+        let silenceTimer=null;
+        
+        r.onresult=(e)=>{
+          let all="";
+          for(let x=0;x<e.results.length;x++){
+            all+=e.results[x][0].transcript+" ";
+          }
+          result=all.toLowerCase().trim();
+          
+          // Update visual as letters are detected
+          const spoken=result.replace(/[^a-z]/g,'');
+          for(let j=letterIdx;j<letters.length&&j<spoken.length;j++){
+            setSpellStatus(prev=>{const n=[...prev];n[j]='correct';return n;});
+            setActiveSpellIdx(j+1<letters.length?j+1:-1);
+            letterIdx=j+1;
+          }
+          
+          // Reset silence timer on each result
+          clearTimeout(silenceTimer);
+          silenceTimer=setTimeout(()=>{
+            try{r.stop();}catch(e){}
+          },3000);
+        };
+        
+        r.onerror=()=>resolve(result);
+        r.onend=()=>resolve(result);
+        
+        try{r.start();}catch(e){resolve("");}
+        
+        // Max 15 seconds for full spelling
+        setTimeout(()=>{try{r.stop();}catch(e){}},15000);
+      });
+      
+      setActiveSpellIdx(-1);
+      
+      // Mark remaining letters
+      if(heard){
+        setSpellStatus(letters.map(()=>'correct'));
+      }
+    }
   };
 
   // NUMBER PLAY FLOW
@@ -823,10 +819,10 @@ export default function App(){
 
     // Step 2: Interactive spelling
     setNStep("spelling");
-    await speak(`Spell with me.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+    await speak(`Repeat after me.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
     await spellWord(w.replace(/\s/g,''));
     await wait(400);if(!pRef.current)return;
-    await speak(`Good job. That spells, ${w}.`,{rate:0.75,pitch:1.0});
+    await speak(`Well done. That spells, ${w}.`,{rate:0.75,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
     // Step 3: Sentence
@@ -884,10 +880,10 @@ export default function App(){
 
     // Step 2: Interactive spelling
     setPhStep("spelling");
-    await speak(`Spell with me.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+    await speak(`Repeat after me.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
     await spellWord(wd.word);
     await wait(400);if(!pRef.current)return;
-    await speak(`Good job. That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
+    await speak(`Well done. That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
     // Step 3: Sentence
@@ -978,7 +974,7 @@ export default function App(){
         {/* INTERACTIVE SPELLING */}
         {nStep==="spelling"&&(
           <div style={{animation:"slideUp 0.3s ease-out"}}>
-            <Mascot mood="thinking" msg={speakMode?"I say a letter, you say it back! 🔤":"Follow along! 🔤"}/>
+            <Mascot mood="thinking" msg={speakMode?"Repeat each letter after me! 🔤":"Follow along! 🔤"}/>
             <div style={{padding:16,background:"#fff",borderRadius:20}}>
               <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
                 {w.replace(/\s/g,'').toUpperCase().split('').map((letter,i)=>{
@@ -1001,7 +997,7 @@ export default function App(){
                 })}
               </div>
               {speakMode&&activeSpellIdx>=0&&<div style={{textAlign:"center",marginTop:14,padding:"10px 16px",background:"linear-gradient(135deg,#FEE2E2,#FECACA)",borderRadius:14,animation:"micP 2s ease-in-out infinite"}}>
-                <p style={{fontSize:14,fontWeight:800,color:"#DC2626"}}>🎤 Now say this letter!</p>
+                <p style={{fontSize:14,fontWeight:800,color:"#DC2626"}}>🗣️ Say it back!</p>
               </div>}
             </div>
           </div>
@@ -1047,7 +1043,7 @@ export default function App(){
         {phStep==="saying_word"&&<Mascot mood="speaking" msg={`Listen! "${phW.word.toUpperCase()}" 🔊`}/>}
         {phStep==="spelling"&&(
           <div style={{animation:"slideUp 0.3s ease-out"}}>
-            <Mascot mood="thinking" msg={speakMode?"I say a letter, you say it back! 🔤":"Follow along! 🔤"}/>
+            <Mascot mood="thinking" msg={speakMode?"Repeat each letter after me! 🔤":"Follow along! 🔤"}/>
             <div style={{padding:16,background:"#fff",borderRadius:20}}>
               <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
                 {phW.word.toUpperCase().split('').map((letter,i)=>{
@@ -1070,7 +1066,7 @@ export default function App(){
                 })}
               </div>
               {speakMode&&activeSpellIdx>=0&&<div style={{textAlign:"center",marginTop:14,padding:"10px 16px",background:"linear-gradient(135deg,#FEE2E2,#FECACA)",borderRadius:14,animation:"micP 2s ease-in-out infinite"}}>
-                <p style={{fontSize:14,fontWeight:800,color:"#DC2626"}}>🎤 Now say this letter!</p>
+                <p style={{fontSize:14,fontWeight:800,color:"#DC2626"}}>🗣️ Say it back!</p>
               </div>}
             </div>
           </div>
