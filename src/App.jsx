@@ -707,101 +707,143 @@ export default function App(){
     onStart();
   };
 
-  // SPELLING APPROACH: 
-  // 1. App says each letter with a big pause → kid repeats along naturally
-  // 2. After all letters, ONE mic session: "Now spell it yourself!"
-  // 3. Accept any attempt — this is for 3-5 year olds
-  // NO per-letter mic (doesn't work on mobile)
+  // SPELLING: ONE continuous mic session validates letter by letter
+  // Mic stays open. For each letter: highlight → wait for speech → validate → next
+  // Letter matching is lenient (maps "see"→C, "are"→R, etc)
+  const LETTER_SOUNDS={
+    a:["a","ay","hey","eh","aye","eight"],b:["b","be","bee","bee"],c:["c","see","sea","si"],
+    d:["d","dee","de","the"],e:["e","ee","he","ye","ea"],f:["f","ef","eff"],
+    g:["g","gee","ge","ji"],h:["h","aitch","age","ha"],i:["i","eye","ai","aye","hi"],
+    j:["j","jay","ja"],k:["k","kay","ca","ok"],l:["l","el","le","al"],
+    m:["m","em","am"],n:["n","en","an","in"],o:["o","oh","owe"],
+    p:["p","pee","pe"],q:["q","queue","cue","cu"],r:["r","are","ar"],
+    s:["s","es","as","yes","ass"],t:["t","tee","te","tea"],u:["u","you","yu"],
+    v:["v","vee","ve","we"],w:["w","double you","dub"],x:["x","ex","ax","eggs"],
+    y:["y","why","wi"],z:["z","zee","zed","ze","set"]
+  };
+
+  const checkLetterMatch=(heard,letter)=>{
+    if(!heard)return false;
+    const h=heard.toLowerCase().trim();
+    if(!h)return false;
+    const matches=LETTER_SOUNDS[letter]||[letter];
+    for(const m of matches){if(h===m||h.endsWith(m)||h.startsWith(m))return true;}
+    return false;
+  };
 
   const spellWord=async(word)=>{
     const letters=word.toLowerCase().split('');
     const LN={a:"A",b:"B",c:"C",d:"D",e:"E",f:"F",g:"G",h:"H",i:"I",j:"J",k:"K",l:"L",m:"M",n:"N",o:"O",p:"P",q:"Q",r:"R",s:"S",t:"T",u:"U",v:"V",w:"W",x:"X",y:"Y",z:"Z"};
     
     setSpellStatus(letters.map(()=>'waiting'));
-    
-    // ROUND 1: App says each letter, kid repeats along (call-and-response)
+
+    if(!speakMode){
+      // Non-speaking mode: just show letters one by one
+      for(let i=0;i<letters.length;i++){
+        if(!pRef.current)return;
+        setActiveSpellIdx(i);
+        setSpellStatus(prev=>{const n=[...prev];n[i]='listening';return n;});
+        await speak(LN[letters[i]]||letters[i],{rate:0.5,pitch:1.0,noCancel:true});
+        await wait(800);
+        setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
+        await wait(200);
+      }
+      setActiveSpellIdx(-1);
+      return;
+    }
+
+    // SPEAKING MODE: Interactive with ONE continuous mic session
+    await speak("Repeat after me.",{rate:0.75,pitch:1.0});
+    await wait(400);
+
+    // Open ONE mic session that stays open throughout spelling
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){
+      // Fallback: non-interactive
+      for(let i=0;i<letters.length;i++){
+        if(!pRef.current)return;
+        setActiveSpellIdx(i);
+        setSpellStatus(prev=>{const n=[...prev];n[i]='listening';return n;});
+        await speak(LN[letters[i]],{rate:0.5,pitch:1.0,noCancel:true});
+        await wait(1200);
+        setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
+      }
+      setActiveSpellIdx(-1);
+      return;
+    }
+
+    // Process letters one by one, each waits for correct speech
     for(let i=0;i<letters.length;i++){
       if(!pRef.current) return;
-      const name=LN[letters[i]]||letters[i];
-      
+      const letter=letters[i];
+      const name=LN[letter]||letter;
+
       setActiveSpellIdx(i);
       setSpellStatus(prev=>{const n=[...prev];n[i]='listening';return n;});
-      
-      // App says the letter boldly
+
+      // App says the letter
       await speak(name,{rate:0.5,pitch:1.0,noCancel:true});
-      
-      // Long pause — kid repeats this letter during the pause
-      // Visual shows 🎤 so they know to speak
-      await wait(1500);
-      
-      // Mark as done (we trust they're repeating along)
-      setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
+      await wait(300);
+
+      // Wait for kid to say it back — up to 3 attempts
+      let matched=false;
+      for(let attempt=0;attempt<3&&!matched&&pRef.current;attempt++){
+        const heard=await new Promise((resolve)=>{
+          try{rec.stop();}catch(e){}
+          const r2=new SR();
+          r2.continuous=false;
+          r2.interimResults=true;
+          r2.lang="en-US";
+          let best="";
+          let done=false;
+          const finish=(v)=>{if(!done){done=true;try{r2.abort();}catch(e){}resolve(v);}};
+          
+          r2.onresult=(e)=>{
+            for(let x=0;x<e.results.length;x++){
+              const t=e.results[x][0].transcript.toLowerCase().trim();
+              if(t)best=t;
+              if(e.results[x].isFinal){finish(best);return;}
+            }
+          };
+          r2.onspeechend=()=>setTimeout(()=>finish(best),500);
+          r2.onerror=()=>finish(best);
+          r2.onend=()=>finish(best);
+          try{r2.start();}catch(e){finish("");}
+          // 6 second timeout per letter attempt
+          setTimeout(()=>finish(best),6000);
+        });
+
+        if(heard && heard.trim()){
+          if(checkLetterMatch(heard,letter)){
+            matched=true;
+            setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
+            await wait(300);
+          } else {
+            // Wrong letter — re-prompt
+            if(attempt<2 && pRef.current){
+              await speak(`That was ${heard}. Say, ${name}.`,{rate:0.75,pitch:1.0,noCancel:true});
+              await wait(300);
+            }
+          }
+        } else {
+          // Silence — re-prompt
+          if(attempt<2 && pRef.current){
+            await speak(`Say, ${name}.`,{rate:0.7,pitch:1.0,noCancel:true});
+            await wait(300);
+          }
+        }
+      }
+
+      if(!matched){
+        // After 3 attempts, mark and move on
+        setSpellStatus(prev=>{const n=[...prev];n[i]='skipped';return n;});
+        await speak(`It's ${name}. Let's keep going.`,{rate:0.75,pitch:1.0,noCancel:true});
+        await wait(400);
+      }
+
       await wait(200);
     }
     setActiveSpellIdx(-1);
-    
-    // ROUND 2: Kid spells it alone (one mic session for the whole word)
-    if(speakMode && pRef.current){
-      await wait(300);
-      await speak(`Good. Now you spell it by yourself.`,{rate:0.75,pitch:1.0});
-      await wait(500);
-      
-      // Reset visual for round 2
-      setSpellStatus(letters.map(()=>'waiting'));
-      setActiveSpellIdx(0);
-      
-      // ONE mic session — listen for kid to spell the whole word
-      const heard = await new Promise((resolve)=>{
-        const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-        if(!SR){resolve("");return;}
-        try{rec.stop();}catch(e){}
-        
-        const r=new SR();
-        r.continuous=true;
-        r.interimResults=true;
-        r.lang="en-US";
-        let result="";
-        let letterIdx=0;
-        let silenceTimer=null;
-        
-        r.onresult=(e)=>{
-          let all="";
-          for(let x=0;x<e.results.length;x++){
-            all+=e.results[x][0].transcript+" ";
-          }
-          result=all.toLowerCase().trim();
-          
-          // Update visual as letters are detected
-          const spoken=result.replace(/[^a-z]/g,'');
-          for(let j=letterIdx;j<letters.length&&j<spoken.length;j++){
-            setSpellStatus(prev=>{const n=[...prev];n[j]='correct';return n;});
-            setActiveSpellIdx(j+1<letters.length?j+1:-1);
-            letterIdx=j+1;
-          }
-          
-          // Reset silence timer on each result
-          clearTimeout(silenceTimer);
-          silenceTimer=setTimeout(()=>{
-            try{r.stop();}catch(e){}
-          },3000);
-        };
-        
-        r.onerror=()=>resolve(result);
-        r.onend=()=>resolve(result);
-        
-        try{r.start();}catch(e){resolve("");}
-        
-        // Max 15 seconds for full spelling
-        setTimeout(()=>{try{r.stop();}catch(e){}},15000);
-      });
-      
-      setActiveSpellIdx(-1);
-      
-      // Mark remaining letters
-      if(heard){
-        setSpellStatus(letters.map(()=>'correct'));
-      }
-    }
   };
 
   // NUMBER PLAY FLOW
@@ -819,7 +861,6 @@ export default function App(){
 
     // Step 2: Interactive spelling
     setNStep("spelling");
-    await speak(`Repeat after me.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
     await spellWord(w.replace(/\s/g,''));
     await wait(400);if(!pRef.current)return;
     await speak(`Well done. That spells, ${w}.`,{rate:0.75,pitch:1.0});
@@ -880,7 +921,6 @@ export default function App(){
 
     // Step 2: Interactive spelling
     setPhStep("spelling");
-    await speak(`Repeat after me.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
     await spellWord(wd.word);
     await wait(400);if(!pRef.current)return;
     await speak(`Well done. That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
