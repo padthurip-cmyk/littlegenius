@@ -665,7 +665,13 @@ export default function App(){
   const[spellStatus,setSpellStatus]=useState([]); // per-letter: 'waiting'|'listening'|'correct'|'skipped'
   const pRef=useRef(false);
 
-  useEffect(()=>{if(!loaded)return;const t=setTimeout(()=>setScr(prof?"home":"onboard"),2500);return()=>clearTimeout(t);},[loaded,prof]);
+  const initDone=useRef(false);
+  useEffect(()=>{
+    if(!loaded||initDone.current)return;
+    initDone.current=true;
+    const t=setTimeout(()=>setScr(prof?"home":"onboard"),2500);
+    return()=>clearTimeout(t);
+  },[loaded]);
   const aCfg=prof?AGE_CFG[prof.age]||AGE_CFG[4]:AGE_CFG[4];
   const boom=()=>{setConfetti(true);setTimeout(()=>setConfetti(false),3000);};
   const flyPts=(n)=>{setPtAnim(`+${n}`);setTimeout(()=>setPtAnim(null),1500);};
@@ -1070,29 +1076,35 @@ export default function App(){
   // Drawing pad
   const initCanvas=()=>{
     const c=cRef.current;if(!c)return;
-    const ctx=c.getContext("2d");
-    c.width=c.offsetWidth*2;c.height=c.offsetHeight*2;
-    ctx.scale(2,2);ctx.lineWidth=6;ctx.lineCap="round";ctx.strokeStyle="#6366F1";
-  };
-  const draw=(e)=>{
-    const c=cRef.current;if(!c)return;
-    const ctx=c.getContext("2d");
+    // Match canvas pixels to display pixels exactly — no scaling
     const rect=c.getBoundingClientRect();
-    const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-    const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
-    ctx.lineTo(x,y);ctx.stroke();
-    setDrawPts(p=>p+1);
+    c.width=rect.width;
+    c.height=rect.height;
+    const ctx=c.getContext("2d");
+    ctx.lineWidth=5;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="var(--cyan)";
+  };
+  const getPos=(e)=>{
+    const c=cRef.current;if(!c)return{x:0,y:0};
+    const rect=c.getBoundingClientRect();
+    const touch=e.touches?e.touches[0]:e;
+    return{x:touch.clientX-rect.left,y:touch.clientY-rect.top};
   };
   const drawStart=(e)=>{
     const c=cRef.current;if(!c)return;
     const ctx=c.getContext("2d");
-    const rect=c.getBoundingClientRect();
-    const x=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-    const y=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+    const{x,y}=getPos(e);
     ctx.beginPath();ctx.moveTo(x,y);
+    ctx.strokeStyle="#33EEFF";ctx.lineWidth=5;ctx.lineCap="round";ctx.lineJoin="round";
     c._drawing=true;
+    setDrawPts(p=>p+1);
   };
-  const drawMove=(e)=>{if(cRef.current?._drawing)draw(e);};
+  const drawMove=(e)=>{
+    const c=cRef.current;if(!c||!c._drawing)return;
+    const ctx=c.getContext("2d");
+    const{x,y}=getPos(e);
+    ctx.lineTo(x,y);ctx.stroke();
+    setDrawPts(p=>p+1);
+  };
   const drawEnd=()=>{
     if(!cRef.current)return;
     cRef.current._drawing=false;
@@ -1104,14 +1116,13 @@ export default function App(){
   };
   const clearPad=()=>{
     const c=cRef.current;if(!c)return;
-    const ctx=c.getContext("2d");
-    ctx.clearRect(0,0,c.width,c.height);
+    initCanvas(); // Re-init instead of just clearing
     setDrawPts(0);setWriteOk(false);
   };
   const nextWrite=()=>{
     setWriteNum(n=>n>=100?1:n+1);
     setDrawPts(0);setWriteOk(false);
-    const c=cRef.current;if(c){const ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);}
+    setTimeout(()=>{initCanvas();},100);
     speak(`Write ${NW[writeNum>=100?1:writeNum+1]||writeNum+1}.`,{rate:0.75,pitch:1.0});
   };
 
@@ -1417,7 +1428,7 @@ export default function App(){
         <button key={t.id} onClick={()=>{
           setBasicsTab(t.id);
           if(t.id==="find"&&!findTarget)newFindTarget();
-          if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},200);}
+          if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}
         }} style={{flex:1,padding:"6px",borderRadius:10,border:"none",fontWeight:800,fontSize:11,cursor:"pointer",fontFamily:"'Nunito',sans-serif",
           background:basicsTab===t.id?"#6366F1":"#f3f4f6",color:basicsTab===t.id?"#fff":"#888",transition:"all 0.2s"
         }}>{t.label}</button>
@@ -1469,37 +1480,50 @@ export default function App(){
 
     {/* ═══ WRITE TAB: Split screen - top shows number, bottom is notepad ═══ */}
     {basicsTab==="write"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      {/* TOP HALF: Number display */}
-      <div style={{flex:"0 0 35%",display:"flex",alignItems:"center",justifyContent:"center",background:"linear-gradient(135deg,#EEF2FF,#E0E7FF)",padding:"6px",gap:12,borderBottom:"2px solid #e5e7eb"}}>
-        <span style={{fontSize:28}}>{NUM_EMOJI[writeNum]||"🔢"}</span>
-        <div style={{textAlign:"center"}}>
-          <div style={{fontFamily:"'Fredoka One',cursive",fontSize:48,fontWeight:800,color:"#6366F1",lineHeight:1}}>{writeNum}</div>
-          <div style={{fontFamily:"'Fredoka One',cursive",fontSize:14,fontWeight:700,color:"var(--cyan)",textTransform:"capitalize"}}>{NW[writeNum]||""}</div>
+      {/* TOP: Reference number with stroke hints */}
+      <div style={{flex:"0 0 auto",padding:"8px 12px",background:"var(--card)",borderBottom:"3px solid var(--pink)",display:"flex",alignItems:"center",gap:12}}>
+        <span style={{fontSize:32}}>{NUM_EMOJI[writeNum]||"🔢"}</span>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+            <span style={{fontFamily:"'Fredoka One',cursive",fontSize:44,color:"var(--cyan)",lineHeight:1,textShadow:"0 0 20px rgba(51,238,255,.4)"}}>{writeNum}</span>
+            <span style={{fontFamily:"'Nunito',sans-serif",fontWeight:900,fontSize:16,color:"var(--yellow)",textTransform:"capitalize"}}>{NW[writeNum]||""}</span>
+          </div>
+          {NUM_FUN[writeNum]&&<p style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,.5)",margin:0}}>{NUM_FUN[writeNum]}</p>}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:4}}>
-          <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_FUN[writeNum]||""}`,{rate:0.7,pitch:1.0})} style={{padding:"6px 10px",borderRadius:8,border:"none",background:"#6366F1",color:"#fff",fontSize:10,fontWeight:800,cursor:"pointer"}}>🔊 Hear</button>
-          {writeOk&&<span style={{fontSize:16,textAlign:"center"}}>✅</span>}
+          <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_FUN[writeNum]||""}`,{rate:0.7,pitch:1.0})} style={{padding:"6px 12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,var(--pink),var(--purple))",color:"#fff",fontSize:10,fontWeight:800,cursor:"pointer"}}>🔊</button>
+          {writeOk&&<span style={{fontSize:18,textAlign:"center",animation:"starPop 0.5s ease"}}>✅</span>}
         </div>
       </div>
-      {/* BOTTOM HALF: Drawing notepad */}
-      <div style={{flex:1,position:"relative",background:"rgba(255,255,255,0.06)",touchAction:"none"}}>
-        {/* Lined paper effect */}
-        <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:"repeating-linear-gradient(transparent,transparent 29px,#e5e7eb 29px,#e5e7eb 30px)",backgroundSize:"100% 30px"}}/>
-        {/* Ghost number to trace */}
+      {/* NOTEBOOK: Ruled paper with ghost number */}
+      <div style={{flex:1,position:"relative",touchAction:"none",overflow:"hidden",
+        background:"var(--card2)",
+      }}>
+        {/* Red margin line */}
+        <div style={{position:"absolute",left:40,top:0,bottom:0,width:2,background:"rgba(255,68,85,.25)",zIndex:1,pointerEvents:"none"}}/>
+        {/* Blue ruled lines */}
+        <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,
+          backgroundImage:"repeating-linear-gradient(transparent,transparent 31px,rgba(51,238,255,.12) 31px,rgba(51,238,255,.12) 32px)",
+          backgroundSize:"100% 32px",backgroundPosition:"0 16px"
+        }}/>
+        {/* Ghost number to trace — large, centered, very faint */}
         <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:0}}>
-          <span style={{fontFamily:"'Fredoka One',cursive",fontSize:140,fontWeight:800,color:"#f3f4f6",userSelect:"none",lineHeight:1}}>{writeNum}</span>
+          <span style={{fontFamily:"'Fredoka One',cursive",fontSize:Math.min(160,writeNum>9?120:160),fontWeight:800,color:"rgba(255,255,255,.06)",userSelect:"none",lineHeight:1,
+            textShadow:"0 0 30px rgba(51,238,255,.05)"
+          }}>{writeNum}</span>
         </div>
-        {/* Canvas */}
+        {/* Drawing canvas — sized to fill exactly */}
         <canvas ref={cRef}
-          style={{width:"100%",height:"100%",position:"relative",zIndex:1,cursor:"crosshair"}}
+          style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:2,cursor:"crosshair"}}
           onMouseDown={drawStart} onMouseMove={drawMove} onMouseUp={drawEnd} onMouseLeave={drawEnd}
           onTouchStart={(e)=>{e.preventDefault();drawStart(e);}} onTouchMove={(e)=>{e.preventDefault();drawMove(e);}} onTouchEnd={drawEnd}
         />
       </div>
       {/* Bottom controls */}
-      <div style={{display:"flex",gap:6,padding:"6px 8px",background:"rgba(255,255,255,0.06)",borderTop:"1px solid #eee"}}>
-        <button onClick={clearPad} style={{flex:1,padding:"8px",borderRadius:10,border:"2px solid rgba(255,255,255,0.08)",background:"rgba(255,255,255,0.06)",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>🗑️ Clear</button>
-        <button onClick={nextWrite} style={{flex:1,padding:"8px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#6366F1,#8B5CF6)",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>Next ➡️</button>
+      <div style={{display:"flex",gap:6,padding:"6px 8px",background:"var(--card)",borderTop:"1px solid rgba(255,255,255,.06)"}}>
+        <button onClick={clearPad} style={{flex:1,padding:"8px",borderRadius:10,border:"2px solid rgba(255,255,255,.1)",background:"transparent",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>🗑️ Clear</button>
+        <button onClick={()=>speak(`${NW[writeNum]||writeNum}`,{rate:0.7,pitch:1.0})} style={{flex:1,padding:"8px",borderRadius:10,border:"2px solid rgba(255,255,255,.1)",background:"transparent",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'Nunito',sans-serif"}}>🔊 Say</button>
+        <button onClick={nextWrite} style={{flex:1,padding:"8px",borderRadius:10,border:"none",background:"linear-gradient(135deg,var(--green),var(--cyan))",color:"#000",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka One',cursive"}}>Next ➡️</button>
       </div>
     </div>}
     <style>{CSS}</style>
