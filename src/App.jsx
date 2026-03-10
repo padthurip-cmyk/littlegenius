@@ -343,7 +343,22 @@ const getStars=(a)=>a>=95?5:a>=85?4:a>=75?3:a>=60?2:a>=40?1:0;
 const getStarPts=(s)=>[0,2,5,10,15,20][s]||0;
 
 // Hooks
-const useSpeech=()=>{const[v,setV]=useState([]);useEffect(()=>{const l=()=>{const x=speechSynthesis.getVoices();if(x.length)setV(x);};l();speechSynthesis.onvoiceschanged=l;return()=>{speechSynthesis.onvoiceschanged=null;};},[]);const gV=useCallback(()=>{for(const n of["Google US English","Samantha","Karen"]){const x=v.find(y=>y.name.includes(n));if(x)return x;}return v.find(x=>x.lang.startsWith("en"))||v[0];},[v]);const speak=useCallback((t,o={})=>new Promise(r=>{const u=new SpeechSynthesisUtterance(t);const x=gV();if(x)u.voice=x;u.rate=o.rate||0.9;u.pitch=o.pitch||1;u.lang="en-US";u.onend=()=>r();u.onerror=()=>r();speechSynthesis.cancel();setTimeout(()=>speechSynthesis.speak(u),60);}),[gV]);return{speak,stop:useCallback(()=>speechSynthesis.cancel(),[])};};
+const useSpeech=()=>{const[v,setV]=useState([]);
+  useEffect(()=>{const l=()=>{const x=speechSynthesis.getVoices();if(x.length)setV(x);};l();speechSynthesis.onvoiceschanged=l;return()=>{speechSynthesis.onvoiceschanged=null;};},[]);
+  const getV=useCallback(()=>{
+    const prefs=["Google US English","Samantha","Karen","Moira","Tessa","Victoria","Google UK English Female","Microsoft Zira","Microsoft Jenny"];
+    for(const n of prefs){const x=v.find(y=>y.name.includes(n));if(x)return x;}
+    return v.find(x=>x.lang.startsWith("en"))||v[0];
+  },[v]);
+  const speak=useCallback((t,o={})=>new Promise(r=>{
+    const u=new SpeechSynthesisUtterance(t);const x=getV();if(x)u.voice=x;
+    u.rate=o.rate||0.9;u.pitch=o.pitch||1;u.lang="en-US";u.volume=1;
+    u.onend=()=>r();u.onerror=()=>r();
+    if(!o.noCancel) speechSynthesis.cancel();
+    setTimeout(()=>speechSynthesis.speak(u),o.noCancel?20:60);
+  }),[getV]);
+  return{speak,stop:useCallback(()=>speechSynthesis.cancel(),[])};
+};
 const useRec=()=>{
   const[on,setOn]=useState(false);
   const[txt,setTxt]=useState("");
@@ -495,7 +510,42 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected})=>{
     </div>
   </div>;
 };
-const ResultBox=({acc,result,expected,onRetry,onDone,color,kidName})=>{const s=getStars(acc);const p=getStarPts(s);const nm=kidName||"Buddy";return<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:28,boxShadow:"0 12px 40px rgba(0,0,0,0.06)",animation:"resBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}><Stars count={s}/><div style={{position:"relative",display:"inline-block",margin:"8px 0"}}><ProgressRing pct={acc} color={acc>=75?"#22C55E":acc>=50?"#F59E0B":"#EF4444"}/><div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontFamily:"'Baloo 2',cursive",fontSize:26,fontWeight:800,color:acc>=75?"#22C55E":acc>=50?"#F59E0B":"#EF4444"}}>{acc}%</span></div></div><Mascot mood={s>=4?"cheering":s>=3?"excited":s>=1?"happy":"sad"} msg={s===5?`WOW ${nm}! PERFECT! You're a SUPERSTAR! 🌟✨`:s===4?`AMAZING ${nm}! Almost perfect! So proud! 🎉`:s===3?`Great work ${nm}! You're getting better! 💪`:s>=1?`Good try ${nm}! Practice makes perfect! 🎯`:`Keep going ${nm}! You'll get it next time! 💫`}/><div style={{display:"flex",gap:10,justifyContent:"center",margin:"10px 0",fontSize:13,fontWeight:700,flexWrap:"wrap"}}><span style={{padding:"6px 14px",borderRadius:12,background:acc>=75?"#ECFDF5":"#FEF2F2",color:acc>=75?"#065F46":"#991B1B"}}>You: "{result}"</span><span style={{padding:"6px 14px",borderRadius:12,background:"#EEF2FF",color:"#3730A3"}}>✓ "{expected}"</span></div>{p>0&&<div style={{fontSize:22,fontWeight:900,color:"#22C55E",fontFamily:"'Baloo 2',cursive",margin:"8px 0",animation:"ptFly 0.5s ease-out"}}>+{p} points! 💰</div>}<div style={{display:"flex",gap:10,marginTop:12}}>{acc<75&&<button onClick={onRetry} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",fontSize:15,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer"}}>🔄 Retry</button>}<button onClick={onDone} style={{flex:1,padding:14,borderRadius:18,border:"none",background:`linear-gradient(135deg,${color||"#22C55E"},${color||"#16A34A"})`,color:"#fff",fontSize:15,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer"}}>{acc>=75?"🎉 Next!":"✅ Done"}</button></div></div>;};
+const ResultBox=({acc,result,expected,onRetry,onDone,color,kidName,currentPoints})=>{
+  const s=getStars(acc);const p=getStarPts(s);const nm=kidName||"Buddy";
+  // Find nearest reward they can work toward
+  const nextReward=REWARDS.filter(r=>r.cost>(currentPoints||0)).sort((a,b)=>a.cost-b.cost)[0];
+  const ptsNeeded=nextReward?(nextReward.cost-(currentPoints||0)):0;
+  return<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:28,boxShadow:"0 12px 40px rgba(0,0,0,0.06)",animation:"resBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>
+    <Stars count={s}/>
+    <div style={{position:"relative",display:"inline-block",margin:"8px 0"}}>
+      <ProgressRing pct={acc} color={acc>=75?"#22C55E":acc>=50?"#F59E0B":"#EF4444"}/>
+      <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <span style={{fontFamily:"'Baloo 2',cursive",fontSize:26,fontWeight:800,color:acc>=75?"#22C55E":acc>=50?"#F59E0B":"#EF4444"}}>{acc}%</span>
+      </div>
+    </div>
+    <Mascot mood={s>=4?"cheering":s>=3?"excited":s>=1?"happy":"sad"}
+      msg={s===5?`WOW ${nm}! PERFECT! You're a SUPERSTAR! 🌟✨`:s===4?`AMAZING ${nm}! Almost perfect! So proud! 🎉`:s===3?`Great work ${nm}! You're getting better! 💪`:s>=1?`Good try ${nm}! Practice makes perfect! 🎯`:`Keep going ${nm}! You'll get it! 💫`}/>
+    <div style={{display:"flex",gap:8,justifyContent:"center",margin:"10px 0",fontSize:13,fontWeight:700,flexWrap:"wrap"}}>
+      <span style={{padding:"6px 14px",borderRadius:12,background:acc>=75?"#ECFDF5":"#FEF2F2",color:acc>=75?"#065F46":"#991B1B"}}>You said: "{result}"</span>
+      <span style={{padding:"6px 14px",borderRadius:12,background:"#EEF2FF",color:"#3730A3"}}>Correct: "{expected}"</span>
+    </div>
+    {p>0&&<div style={{fontSize:24,fontWeight:900,color:"#22C55E",fontFamily:"'Baloo 2',cursive",margin:"10px 0",animation:"ptFly 0.5s ease-out"}}>
+      🎉 +{p} points earned! 💰
+    </div>}
+    {/* REWARD MOTIVATION */}
+    {nextReward&&<div style={{margin:"10px 0",padding:"12px 16px",background:"linear-gradient(135deg,#FFF7ED,#FFFBEB)",borderRadius:16,border:"2px solid #FBBF2433"}}>
+      <p style={{fontSize:13,fontWeight:800,color:"#92400E"}}>
+        {ptsNeeded<=20?`🔥 Almost there! Just ${ptsNeeded} more points for ${nextReward.emoji} ${nextReward.name}!`
+        :ptsNeeded<=50?`💪 Only ${ptsNeeded} points to ${nextReward.emoji} ${nextReward.name}! Keep going!`
+        :`🎯 ${ptsNeeded} points to ${nextReward.emoji} ${nextReward.name}! You can do it ${nm}!`}
+      </p>
+    </div>}
+    <div style={{display:"flex",gap:10,marginTop:12}}>
+      {acc<75&&<button onClick={onRetry} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#fff",fontSize:15,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer"}}>🔄 Try Again</button>}
+      <button onClick={onDone} style={{flex:1,padding:14,borderRadius:18,border:"none",background:`linear-gradient(135deg,${color||"#22C55E"},${color||"#16A34A"})`,color:"#fff",fontSize:15,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer"}}>{acc>=75?"🎉 Next!":"✅ Done"}</button>
+    </div>
+  </div>;
+};
 
 const NUM_STEPS=[{id:"saying_number",icon:"🔊",label:"Number"},{id:"spelling",icon:"🔤",label:"Spelling"},{id:"saying_sentence",icon:"💬",label:"Sentence"},{id:"saying_phonics",icon:"🔡",label:"Phonics"},{id:"countdown",icon:"⏱️",label:"Ready"},{id:"result",icon:"⭐",label:"Stars"}];
 const PH_STEPS=[{id:"saying_word",icon:"🔊",label:"Word"},{id:"spelling",icon:"🔤",label:"Spelling"},{id:"saying_sentence",icon:"💬",label:"Sentence"},{id:"saying_phonics",icon:"🔡",label:"Phonics"},{id:"countdown",icon:"⏱️",label:"Ready"},{id:"result",icon:"⭐",label:"Stars"}];
@@ -519,8 +569,23 @@ export default function App(){
   const aCfg=prof?AGE_CFG[prof.age]||AGE_CFG[4]:AGE_CFG[4];
   const boom=()=>{setConfetti(true);setTimeout(()=>setConfetti(false),3000);};
   const flyPts=(n)=>{setPtAnim(`+${n}`);setTimeout(()=>setPtAnim(null),1500);};
-  const addPts=useCallback((p)=>{if(!prof)return;save({...prof,points:(prof.points||0)+p,totalEarned:(prof.totalEarned||0)+p});flyPts(p);},[prof,save]);
-  const markDone=useCallback((t,id)=>{if(!prof)return;const c={...(prof.completed||{})};if(!c[t])c[t]=[];if(!c[t].includes(id))c[t].push(id);save({...prof,completed:c});},[prof,save]);
+  // CRITICAL: Combined save to prevent stale state overwrites
+  const awardPoints=useCallback((pts, type, id)=>{
+    if(!prof)return;
+    const c={...(prof.completed||{})};
+    if(!c[type])c[type]=[];
+    const alreadyDone=c[type].includes(id);
+    if(alreadyDone) return; // already earned
+    c[type].push(id);
+    const updated={
+      ...prof,
+      points:(prof.points||0)+pts,
+      totalEarned:(prof.totalEarned||0)+pts,
+      completed:c,
+    };
+    save(updated);
+    flyPts(pts);
+  },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}return 0;};
   const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");};
@@ -533,27 +598,43 @@ export default function App(){
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(w,normalized);setSpRes(normalized);setSpAcc(acc);setNStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0&&!isDone("numbers",selNum)){addPts(p);markDone("numbers",selNum);}
+    if(p>0) awardPoints(p,"numbers",selNum);
     if(s>=3)boom();
-    // Voice cheer with name!
+    // Voice cheer with name and reward motivation!
     setTimeout(()=>{
-      if(s>=4) speak(`Woohoo! Amazing job ${kidName}! You are a superstar!`,{rate:1.05,pitch:1.3});
-      else if(s>=3) speak(`Great work ${kidName}! You're doing awesome!`,{rate:1.0,pitch:1.2});
-      else if(s>=1) speak(`Good try ${kidName}! You can do even better! Let's try again!`,{rate:0.95,pitch:1.1});
-      else speak(`No worries ${kidName}! Practice makes perfect! Try one more time!`,{rate:0.95,pitch:1.1});
+      const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
+      const need=nextR?(nextR.cost-((prof?.points||0)+p)):0;
+      if(s>=4){
+        speak(`Woohoo! Amazing job ${kidName}! You are a superstar!`,{rate:1.05,pitch:1.35});
+        if(nextR&&need<=30) setTimeout(()=>speak(`Ooh! Just ${need} more points for a ${nextR.name}!`,{rate:1.0,pitch:1.25}),2500);
+      }
+      else if(s>=3) speak(`Great work ${kidName}! You're doing awesome! Keep going!`,{rate:1.0,pitch:1.25});
+      else if(s>=1){
+        speak(`Good try ${kidName}! You can do even better!`,{rate:0.95,pitch:1.15});
+        if(nextR) setTimeout(()=>speak(`Practice more to earn your ${nextR.name}!`,{rate:0.95,pitch:1.15}),2200);
+      }
+      else speak(`No worries ${kidName}! Practice makes perfect! Let's try again!`,{rate:0.95,pitch:1.15});
     },300);
   };
   const handlePhResult=(result)=>{
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(phW.word,normalized);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0&&!isDone("phonics",phW.word)){addPts(p);markDone("phonics",phW.word);}
+    if(p>0) awardPoints(p,"phonics",phW.word);
     if(s>=3)boom();
     setTimeout(()=>{
-      if(s>=4) speak(`Yaaay ${kidName}! That was brilliant! You said it perfectly!`,{rate:1.05,pitch:1.3});
-      else if(s>=3) speak(`Well done ${kidName}! Keep it up superstar!`,{rate:1.0,pitch:1.2});
-      else if(s>=1) speak(`Nice try ${kidName}! Almost there! Give it another go!`,{rate:0.95,pitch:1.1});
-      else speak(`Don't give up ${kidName}! You're learning and that's amazing!`,{rate:0.95,pitch:1.1});
+      const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
+      const need=nextR?(nextR.cost-((prof?.points||0)+p)):0;
+      if(s>=4){
+        speak(`Yaaay ${kidName}! That was brilliant! You said it perfectly!`,{rate:1.05,pitch:1.35});
+        if(nextR&&need<=30) setTimeout(()=>speak(`Almost there! ${need} more points for a ${nextR.name}!`,{rate:1.0,pitch:1.25}),2500);
+      }
+      else if(s>=3) speak(`Well done ${kidName}! Keep it up superstar!`,{rate:1.0,pitch:1.25});
+      else if(s>=1){
+        speak(`Nice try ${kidName}! Almost there! Give it another go!`,{rate:0.95,pitch:1.15});
+        if(nextR) setTimeout(()=>speak(`Keep practicing for your ${nextR.name}!`,{rate:0.95,pitch:1.15}),2200);
+      }
+      else speak(`Don't give up ${kidName}! You're learning and that's amazing!`,{rate:0.95,pitch:1.15});
     },300);
   };
 
@@ -562,31 +643,39 @@ export default function App(){
   const typeNum=(typed)=>handleNumResult(typed);
   const typePh=(typed)=>handlePhResult(typed);
 
-  // Countdown: "Ready? Three! Two! One! Go!" (words not digits)
+  // Countdown: sing-song "Ready? Three! Two! One! Gooo!"
   const doCountdown=async(onStart)=>{
-    await speak("Ready?",{rate:1.0,pitch:1.2});await wait(300);
+    await speak("Are you ready?",{rate:0.9,pitch:1.35});await wait(400);
     const nums=["three","two","one"];
+    const pitches=[1.2,1.25,1.3];
     for(let i=0;i<3;i++){
       setCountdown(3-i);
-      await speak(nums[i],{rate:0.9,pitch:1.15});
-      await wait(400);
+      await speak(nums[i]+"!",{rate:0.85,pitch:pitches[i],noCancel:true});
+      await wait(500);
     }
     setCountdown(0);
-    await speak("Go!",{rate:1.1,pitch:1.4});
-    await wait(200);
+    await speak("Gooo!",{rate:0.9,pitch:1.45});
+    await wait(250);
     onStart();
   };
 
-  // Spell word using lowercase letters so TTS says "see ay tee" not "capital C"
+  // Spell word letter by letter using LETTER NAMES (not phonics)
+  // noCancel prevents each letter from killing the previous one
   const spellWord=async(word)=>{
     const letters=word.toLowerCase().split('');
     for(let i=0;i<letters.length;i++){
       setActiveSpellIdx(i);
-      // Use phonetic hints for tricky letters
       const letter=letters[i];
-      const phonetic={a:"ay",b:"bee",c:"see",d:"dee",e:"ee",f:"eff",g:"jee",h:"aitch",i:"eye",j:"jay",k:"kay",l:"el",m:"em",n:"en",o:"oh",p:"pee",q:"queue",r:"are",s:"ess",t:"tee",u:"you",v:"vee",w:"double you",x:"ex",y:"why",z:"zed"};
-      await speak(phonetic[letter]||letter,{rate:0.85,pitch:1.15});
-      await wait(300);
+      // Full letter name strings that TTS reads clearly
+      const letterName={
+        a:"A",b:"B",c:"C",d:"D",e:"E",f:"F",g:"G",h:"H",
+        i:"I",j:"J",k:"K",l:"L",m:"M",n:"N",o:"O",p:"P",
+        q:"Q",r:"R",s:"S",t:"T",u:"U",v:"V",w:"W",x:"X",
+        y:"Y",z:"Z"
+      };
+      // Speak each letter as its name (not phonics sound)
+      await speak(letterName[letter]||letter,{rate:0.75,pitch:1.2,noCancel:true});
+      await wait(450);
     }
     setActiveSpellIdx(-1);
   };
@@ -597,33 +686,35 @@ export default function App(){
     pRef.current=true;setSelNum(num);setSpRes(null);setSpAcc(null);setAPhI(-1);setActiveSpellIdx(-1);
     const w=NW[num];const scene=getScene(num);
 
-    // Step 1: Say the number with excitement
+    // Step 1: Say the number with excitement (high pitch, warm)
     setNStep("saying_number");
-    await speak(`${kidName}! This number is, ${w}!`,{rate:0.85,pitch:1.15});
+    await speak(`Hey ${kidName}! This number is`,{rate:0.95,pitch:1.25,noCancel:false});
+    await wait(100);
+    await speak(`${w}!`,{rate:0.7,pitch:1.1});
     await wait(500);if(!pRef.current)return;
 
-    // Step 2: Spell it letter by letter
+    // Step 2: Spell it letter by letter (medium pitch, rhythmic)
     setNStep("spelling");
-    await speak(`Let's spell it together!`,{rate:1.0,pitch:1.2});await wait(300);if(!pRef.current)return;
+    await speak(`Let's spell it together! Ready?`,{rate:1.0,pitch:1.3});await wait(400);if(!pRef.current)return;
     await spellWord(w.replace(/\s/g,''));
-    await wait(400);if(!pRef.current)return;
-    await speak(`That spells, ${w}! Wonderful!`,{rate:0.95,pitch:1.15});
+    await wait(300);if(!pRef.current)return;
+    await speak(`Yes! That spells ${w}! Well done!`,{rate:0.95,pitch:1.25});
     await wait(500);if(!pRef.current)return;
 
-    // Step 3: Sentence
+    // Step 3: Sentence (storytelling voice - slower, warmer)
     setNStep("saying_sentence");
-    await speak(`Now listen to this!`,{rate:1.0,pitch:1.2});await wait(200);if(!pRef.current)return;
-    await speak(scene.sentence,{rate:0.85,pitch:1.05});
+    await speak(`Now listen to a fun sentence!`,{rate:1.0,pitch:1.2});await wait(250);if(!pRef.current)return;
+    await speak(scene.sentence,{rate:0.8,pitch:1.05});
     await wait(600);if(!pRef.current)return;
 
-    // Step 4: Phonics (numbers 1-20 only)
+    // Step 4: Phonics (numbers 1-20 only) - excited voice
     const phs=NPH[num];
     if(phs){
       setNStep("saying_phonics");
-      await speak(`Ooh! Let's break it into sounds ${kidName}!`,{rate:1.0,pitch:1.2});await wait(300);if(!pRef.current)return;
-      for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.55,pitch:1.1});await wait(400);}
+      await speak(`Ooh! Now let's hear the sounds, ${kidName}!`,{rate:1.0,pitch:1.3});await wait(300);if(!pRef.current)return;
+      for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.5,pitch:1.15,noCancel:true});await wait(450);}
       setAPhI(-1);await wait(300);if(!pRef.current)return;
-      await speak(`Put it together, ${w}! Yay!`,{rate:0.9,pitch:1.2});await wait(400);if(!pRef.current)return;
+      await speak(`Put it together and it's, ${w}! Yay!`,{rate:0.9,pitch:1.3});await wait(400);if(!pRef.current)return;
     }
 
     // Step 5: Speaking practice (if enabled)
@@ -636,7 +727,7 @@ export default function App(){
       });
     }else{
       pRef.current=false;
-      if(!isDone("numbers",num)){addPts(5);markDone("numbers",num);}
+      if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
       await speak(`Great learning ${kidName}!`,{rate:1.0,pitch:1.2});
       setNStep("idle");
     }
@@ -644,7 +735,8 @@ export default function App(){
   const retryNum=async()=>{
     setSpRes(null);setSpAcc(null);
     setNStep("countdown");
-    await speak(`You got this ${kidName}! Let's try again! Say, ${NW[selNum]}!`,{rate:0.95,pitch:1.15});await wait(400);
+    await speak(`You got this ${kidName}! I believe in you! Let's try again!`,{rate:0.95,pitch:1.3});await wait(400);
+    await speak(`Say, ${NW[selNum]}!`,{rate:0.85,pitch:1.15});await wait(300);
     await doCountdown(()=>{
       setNStep("listening");
       rec.start(handleNumResult);
@@ -658,29 +750,31 @@ export default function App(){
 
     // Step 1: Say the word with excitement
     setPhStep("saying_word");
-    await speak(`${kidName}! This word is, ${wd.word}!`,{rate:0.85,pitch:1.15});
+    await speak(`Hey ${kidName}! This word is`,{rate:0.95,pitch:1.25});
+    await wait(100);
+    await speak(`${wd.word}!`,{rate:0.7,pitch:1.1});
     await wait(500);if(!pRef.current)return;
 
-    // Step 2: Spell it
+    // Step 2: Spell it (rhythmic, musical)
     setPhStep("spelling");
-    await speak(`Let's spell it together!`,{rate:1.0,pitch:1.2});await wait(300);if(!pRef.current)return;
+    await speak(`Let's spell it! Ready?`,{rate:1.0,pitch:1.3});await wait(400);if(!pRef.current)return;
     await spellWord(wd.word);
-    await wait(400);if(!pRef.current)return;
-    await speak(`That spells, ${wd.word}! Awesome!`,{rate:0.95,pitch:1.15});
+    await wait(300);if(!pRef.current)return;
+    await speak(`Yes! That spells ${wd.word}! Awesome!`,{rate:0.95,pitch:1.25});
     await wait(500);if(!pRef.current)return;
 
-    // Step 3: Sentence
+    // Step 3: Sentence (warm storytelling)
     setPhStep("saying_sentence");
-    await speak(`Listen to this sentence!`,{rate:1.0,pitch:1.2});await wait(200);if(!pRef.current)return;
-    await speak(wd.sentence,{rate:0.85,pitch:1.05});
+    await speak(`Here's a fun sentence!`,{rate:1.0,pitch:1.2});await wait(250);if(!pRef.current)return;
+    await speak(wd.sentence,{rate:0.8,pitch:1.05});
     await wait(600);if(!pRef.current)return;
 
-    // Step 4: Phonics
+    // Step 4: Phonics (excited)
     setPhStep("saying_phonics");
-    await speak(`Now let's hear the sounds ${kidName}!`,{rate:1.0,pitch:1.2});await wait(300);if(!pRef.current)return;
-    for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.55,pitch:1.1});await wait(400);}
+    await speak(`Now let's hear the sounds, ${kidName}!`,{rate:1.0,pitch:1.3});await wait(300);if(!pRef.current)return;
+    for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.5,pitch:1.15,noCancel:true});await wait(450);}
     setPhAI(-1);await wait(300);if(!pRef.current)return;
-    await speak(`Together it's, ${wd.word}! Fantastic!`,{rate:0.9,pitch:1.2});await wait(400);if(!pRef.current)return;
+    await speak(`Together it's, ${wd.word}! Fantastic!`,{rate:0.9,pitch:1.3});await wait(400);if(!pRef.current)return;
 
     // Step 5: Speaking (if enabled)
     if(speakMode){
@@ -692,7 +786,7 @@ export default function App(){
       });
     }else{
       pRef.current=false;
-      if(!isDone("phonics",wd.word)){addPts(5);markDone("phonics",wd.word);}
+      if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
       await speak(`Great learning ${kidName}!`,{rate:1.0,pitch:1.2});
       setPhStep("idle");
     }
@@ -700,7 +794,8 @@ export default function App(){
   const retryPh=async()=>{
     setPhRes(null);setPhAcc(null);
     setPhStep("countdown");
-    await speak(`Come on ${kidName}! You can do it! Say, ${phW.word}!`,{rate:0.95,pitch:1.15});await wait(400);
+    await speak(`Come on ${kidName}! You're so close! Let's do it!`,{rate:0.95,pitch:1.3});await wait(400);
+    await speak(`Say, ${phW.word}!`,{rate:0.85,pitch:1.15});await wait(300);
     await doCountdown(()=>{
       setPhStep("listening");
       rec.start(handlePhResult);
@@ -784,7 +879,7 @@ export default function App(){
           </div>
         )}
         {nStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]}/>}
-        {nStep==="result"&&spRes!==null&&<ResultBox acc={spAcc} result={spRes} expected={w} onRetry={retryNum} onDone={()=>{setNStep("idle");setSpRes(null);}} color={color} kidName={kidName}/>}
+        {nStep==="result"&&spRes!==null&&<ResultBox acc={spAcc} result={spRes} expected={w} onRetry={retryNum} onDone={()=>{setNStep("idle");setSpRes(null);}} color={color} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><style>{CSS}</style></div>;}
 
@@ -839,7 +934,7 @@ export default function App(){
           </div>
         )}
         {phStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""}/>}
-        {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhStep("idle");setPhRes(null);}} color={cc} kidName={kidName}/>}
+        {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhStep("idle");setPhRes(null);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><style>{CSS}</style></div>;}
 
