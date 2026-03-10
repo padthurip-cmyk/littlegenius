@@ -325,8 +325,38 @@ const WCATS={
 };
 
 const REWARDS=[{id:1,name:"Sticker Pack",emoji:"🌟",cost:50,desc:"5 shiny stickers!"},{id:2,name:"Ice Cream",emoji:"🍦",cost:100,desc:"A yummy treat!"},{id:3,name:"Toy Car",emoji:"🚗",cost:200,desc:"Vroom vroom!"},{id:4,name:"Burger Meal",emoji:"🍔",cost:150,desc:"Burger + fries!"},{id:5,name:"Teddy Bear",emoji:"🧸",cost:300,desc:"Soft & cuddly!"},{id:6,name:"Lego Set",emoji:"🧩",cost:500,desc:"Build anything!"},{id:7,name:"Book",emoji:"📚",cost:75,desc:"A new story!"},{id:8,name:"Candy Bag",emoji:"🍬",cost:50,desc:"Sweet treats!"},{id:9,name:"Movie Night",emoji:"🎬",cost:400,desc:"Pick a movie!"},{id:10,name:"Pizza Party",emoji:"🍕",cost:350,desc:"Yum yum!"},{id:11,name:"Art Kit",emoji:"🖍️",cost:200,desc:"Color & draw!"},{id:12,name:"Bike Ride",emoji:"🚲",cost:250,desc:"Outdoor fun!"}];
-const SHAPES=[{name:"circle",emoji:"🔵",desc:"Round!",sides:0},{name:"square",emoji:"🟧",desc:"4 equal sides!",sides:4},{name:"triangle",emoji:"🔺",desc:"3 corners!",sides:3},{name:"star",emoji:"⭐",desc:"Twinkle!",sides:5},{name:"heart",emoji:"❤️",desc:"Love!",sides:0},{name:"diamond",emoji:"💎",desc:"Sparkly!",sides:4}];
-const COLORSDATA=[{name:"Red",hex:"#EF4444",emoji:"🍎",things:["apple","fire truck"]},{name:"Blue",hex:"#3B82F6",emoji:"🌊",things:["ocean","sky"]},{name:"Green",hex:"#22C55E",emoji:"🌿",things:["grass","frog"]},{name:"Yellow",hex:"#EAB308",emoji:"🌻",things:["sun","banana"]},{name:"Orange",hex:"#F97316",emoji:"🍊",things:["orange"]},{name:"Purple",hex:"#A855F7",emoji:"🍇",things:["grapes"]},{name:"Pink",hex:"#EC4899",emoji:"🌸",things:["flower"]}];
+const SHAPES=[
+  {name:"circle",emoji:"🔵",desc:"Round like a ball!",sides:0,ph:["s","ir","c","l"],sentence:"A circle is round like a ball!",
+    scene:{bg:"linear-gradient(180deg,#87CEEB,#B0E0E6,#98FB98)",elements:[{emoji:"🔵",size:70,x:50,y:35,anim:"floatBob",dur:2},{emoji:"⚽",size:30,x:25,y:55,anim:"ballBounce",dur:1.5},{emoji:"🍩",size:28,x:75,y:55,anim:"eggWobble",dur:2},{emoji:"🌕",size:32,x:50,y:15,anim:"moonGlow",dur:3}]}},
+  {name:"square",emoji:"🟧",desc:"Four equal sides!",sides:4,ph:["s","qu","air"],sentence:"A square has four equal sides!",
+    scene:{bg:"linear-gradient(180deg,#FFECD2,#FCB69F,#FF9A9E)",elements:[{emoji:"🟧",size:70,x:50,y:35,anim:"eggWobble",dur:2},{emoji:"📦",size:30,x:25,y:60,anim:"floatBob",dur:2},{emoji:"🧱",size:28,x:75,y:60,anim:"floatBob",dur:2.5,delay:0.3}]}},
+  {name:"triangle",emoji:"🔺",desc:"Three corners!",sides:3,ph:["t","r","igh","a","ng","l"],sentence:"A triangle has three corners!",
+    scene:{bg:"linear-gradient(180deg,#A8E6CF,#DCEDC1,#FFD3B6)",elements:[{emoji:"🔺",size:70,x:50,y:35,anim:"floatBob",dur:2},{emoji:"⛰️",size:40,x:25,y:55,anim:"sway",dur:3},{emoji:"🏔️",size:44,x:75,y:50,anim:"sway",dur:3.5,delay:0.3}]}},
+  {name:"star",emoji:"⭐",desc:"Twinkle twinkle!",sides:5,ph:["s","t","ar"],sentence:"Stars twinkle in the night sky!",
+    scene:{bg:"linear-gradient(180deg,#0D1B2A,#1B2838,#2C3E50)",elements:[...Array.from({length:12},(_,i)=>({emoji:"⭐",size:12+Math.random()*20,x:5+Math.random()*90,y:5+Math.random()*70,anim:"twinkle",dur:1+Math.random()*2,delay:Math.random()*2})),{emoji:"🌙",size:40,x:80,y:15,anim:"moonGlow",dur:3}]}},
+  {name:"heart",emoji:"❤️",desc:"Full of love!",sides:0,ph:["h","ar","t"],sentence:"A heart means love!",
+    scene:{bg:"linear-gradient(180deg,#FFE4E1,#FFC0CB,#FF69B4)",elements:[...Array.from({length:6},(_,i)=>({emoji:["❤️","💕","💗","💖"][i%4],size:18+Math.random()*20,x:10+Math.random()*80,y:10+Math.random()*60,anim:"floatBob",dur:2+Math.random()*2,delay:i*0.3}))]}},
+  {name:"diamond",emoji:"💎",desc:"Sparkly!",sides:4,ph:["d","igh","m","u","n","d"],sentence:"A diamond sparkles in the light!",
+    scene:{bg:"linear-gradient(180deg,#1B1B4B,#2B1B5B,#4B0082)",elements:[{emoji:"💎",size:60,x:50,y:35,anim:"sunPulse",dur:2},...Array.from({length:8},(_,i)=>({emoji:"✨",size:10+Math.random()*16,x:10+Math.random()*80,y:10+Math.random()*70,anim:"twinkle",dur:1+Math.random()*2,delay:i*0.2}))]}},
+];
+const COLORSDATA=[
+  {name:"red",hex:"#EF4444",emoji:"🍎",things:["apple","fire truck","strawberry"],ph:["r","e","d"],sentence:"Red is the color of a fire truck!",
+    scene:{bg:"linear-gradient(180deg,#FCA5A5,#EF4444,#DC2626)",elements:[{emoji:"🍎",size:40,x:30,y:30,anim:"floatBob",dur:2},{emoji:"🚒",size:50,x:60,y:50,anim:"truckDrive",dur:3},{emoji:"🍓",size:28,x:20,y:60,anim:"eggWobble",dur:2},{emoji:"🌹",size:30,x:75,y:25,anim:"sway",dur:3}]}},
+  {name:"blue",hex:"#3B82F6",emoji:"🌊",things:["ocean","sky","blueberry"],ph:["b","l","oo"],sentence:"The sky is bright blue!",
+    scene:{bg:"linear-gradient(180deg,#3B82F6,#60A5FA,#93C5FD)",elements:[{emoji:"☁️",size:36,x:20,y:15,anim:"cloudDrift",dur:8},{emoji:"☁️",size:30,x:70,y:10,anim:"cloudDrift",dur:10,delay:2},{emoji:"🌊",size:50,x:50,y:70,anim:"waveBob",dur:2},{emoji:"🐟",size:24,x:30,y:60,anim:"fishSwim",dur:4}]}},
+  {name:"green",hex:"#22C55E",emoji:"🌿",things:["grass","frog","tree"],ph:["g","r","ee","n"],sentence:"Grass is always green!",
+    scene:{bg:"linear-gradient(180deg,#86EFAC,#22C55E,#16A34A)",elements:[{emoji:"🌳",size:50,x:20,y:30,anim:"sway",dur:3},{emoji:"🌳",size:55,x:80,y:25,anim:"sway",dur:3.5,delay:0.3},{emoji:"🐸",size:36,x:50,y:55,anim:"birdBob",dur:1.5},{emoji:"🌿",size:24,x:40,y:70,anim:"sway",dur:2}]}},
+  {name:"yellow",hex:"#EAB308",emoji:"🌻",things:["sun","banana","star"],ph:["y","e","l","ow"],sentence:"The sun is bright yellow!",
+    scene:{bg:"linear-gradient(180deg,#FEF08A,#EAB308,#CA8A04)",elements:[{emoji:"☀️",size:60,x:50,y:25,anim:"sunPulse",dur:3},{emoji:"🌻",size:36,x:25,y:60,anim:"sway",dur:2.5},{emoji:"🍌",size:30,x:70,y:55,anim:"floatBob",dur:2}]}},
+  {name:"orange",hex:"#F97316",emoji:"🍊",things:["orange","pumpkin","carrot"],ph:["o","r","i","n","j"],sentence:"An orange is round and sweet!",
+    scene:{bg:"linear-gradient(180deg,#FDBA74,#F97316,#EA580C)",elements:[{emoji:"🍊",size:44,x:40,y:30,anim:"floatBob",dur:2},{emoji:"🎃",size:40,x:65,y:45,anim:"eggWobble",dur:2.5},{emoji:"🥕",size:28,x:25,y:55,anim:"sway",dur:2}]}},
+  {name:"purple",hex:"#A855F7",emoji:"🍇",things:["grapes","plum","violet"],ph:["p","ur","p","l"],sentence:"Grapes are yummy and purple!",
+    scene:{bg:"linear-gradient(180deg,#C084FC,#A855F7,#7C3AED)",elements:[{emoji:"🍇",size:44,x:40,y:30,anim:"floatBob",dur:2},{emoji:"🔮",size:36,x:65,y:45,anim:"sunPulse",dur:3},{emoji:"🦄",size:30,x:25,y:60,anim:"birdBob",dur:1.8}]}},
+  {name:"pink",hex:"#EC4899",emoji:"🌸",things:["flower","flamingo","candy"],ph:["p","i","n","k"],sentence:"Pink flowers smell so nice!",
+    scene:{bg:"linear-gradient(180deg,#FBCFE8,#EC4899,#DB2777)",elements:[...Array.from({length:6},(_,i)=>({emoji:["🌸","🌷","🌺","💮"][i%4],size:20+Math.random()*16,x:10+Math.random()*80,y:10+Math.random()*60,anim:"floatBob",dur:2+Math.random()*2,delay:i*0.2})),{emoji:"🦩",size:36,x:50,y:70,anim:"birdBob",dur:1.8}]}},
+  {name:"brown",hex:"#92400E",emoji:"🐻",things:["bear","chocolate","tree trunk"],ph:["b","r","ow","n"],sentence:"Bears are big and brown!",
+    scene:{bg:"linear-gradient(180deg,#D2B48C,#92400E,#78350F)",elements:[{emoji:"🐻",size:56,x:50,y:35,anim:"puppyWag",dur:1.5},{emoji:"🌰",size:24,x:25,y:60,anim:"floatBob",dur:2},{emoji:"🍫",size:28,x:70,y:55,anim:"eggWobble",dur:2}]}},
+];
 
 // Helpers
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
@@ -606,6 +636,9 @@ export default function App(){
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
   const[selNum,setSelNum]=useState(null);const[nStep,setNStep]=useState("idle");const[aPhI,setAPhI]=useState(-1);const[spRes,setSpRes]=useState(null);const[spAcc,setSpAcc]=useState(null);
   const[phCat,setPhCat]=useState("animals");const[phW,setPhW]=useState(null);const[phStep,setPhStep]=useState("idle");const[phAI,setPhAI]=useState(-1);const[phRes,setPhRes]=useState(null);const[phAcc,setPhAcc]=useState(null);
+  // Shapes + Colors detail
+  const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
+  const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
   const[confetti,setConfetti]=useState(false);const[ptAnim,setPtAnim]=useState(null);const[rwdMsg,setRwdMsg]=useState(null);
   const[speakMode,setSpeakMode]=useState(true); // toggle for speech practice
   const[countdown,setCountdown]=useState(0); // 3,2,1 countdown
@@ -635,8 +668,8 @@ export default function App(){
     flyPts(pts);
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
-  const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}return 0;};
-  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");};
+  const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
+  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -929,6 +962,82 @@ export default function App(){
     });
   };
 
+  // ═══ SHAPE PLAY FLOW ═══
+  const handleShResult=(result)=>{
+    const normalized=normalizeSpoken(result);
+    const acc=calcAcc(selShape.name,normalized);setShRes(normalized);setShAcc(acc);setShStep("result");
+    const s=getStars(acc);const p=getStarPts(s);
+    if(p>0) awardPoints(p,"shapes",selShape.name);
+    if(s>=3)boom();
+    setTimeout(()=>{
+      if(s>=3) speak(`${kidName}, that was great.`,{rate:0.8,pitch:1.0});
+      else speak(`Good try ${kidName}.`,{rate:0.8,pitch:1.0});
+    },300);
+  };
+  const playShape=async(sh)=>{
+    if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
+    pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    setShStep("saying_word");
+    await speak(`Hello ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
+    await speak(`This shape is, ${sh.name}.`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+    setShStep("spelling");
+    await spellWord(sh.name);await wait(400);if(!pRef.current)return;
+    await speak(`Well done. That spells, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+    setShStep("saying_sentence");
+    await speak(sh.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
+    if(sh.ph){
+      setShStep("saying_phonics");
+      await speak("Now, let's understand how to speak this word.",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      for(let i=0;i<sh.ph.length;i++){if(!pRef.current)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.45,pitch:1.0,noCancel:true});await wait(500);}
+      setShAI(-1);await wait(400);if(!pRef.current)return;
+      await speak(`And the word is, ${sh.name}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+    }
+    if(speakMode){
+      setShStep("countdown");
+      await speak(`${kidName}, your turn. Say, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await doCountdown(()=>{setShStep("listening");pRef.current=false;rec.start(handleShResult);});
+    }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});setShStep("idle");}
+  };
+  const retryShape=async()=>{setShRes(null);setShAcc(null);setShStep("countdown");await speak(`${kidName}, try again. Say, ${selShape.name}.`,{rate:0.75,pitch:1.0});await wait(300);await doCountdown(()=>{setShStep("listening");rec.start(handleShResult);});};
+
+  // ═══ COLOR PLAY FLOW ═══
+  const handleCoResult=(result)=>{
+    const normalized=normalizeSpoken(result);
+    const acc=calcAcc(selColor.name,normalized);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
+    const s=getStars(acc);const p=getStarPts(s);
+    if(p>0) awardPoints(p,"colors",selColor.name);
+    if(s>=3)boom();
+    setTimeout(()=>{
+      if(s>=3) speak(`${kidName}, that was great.`,{rate:0.8,pitch:1.0});
+      else speak(`Good try ${kidName}.`,{rate:0.8,pitch:1.0});
+    },300);
+  };
+  const playColor=async(co)=>{
+    if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
+    pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    setCoStep("saying_word");
+    await speak(`Hello ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
+    await speak(`This color is, ${co.name}.`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+    setCoStep("spelling");
+    await spellWord(co.name);await wait(400);if(!pRef.current)return;
+    await speak(`Well done. That spells, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+    setCoStep("saying_sentence");
+    await speak(co.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
+    if(co.ph){
+      setCoStep("saying_phonics");
+      await speak("Now, let's understand how to speak this word.",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      for(let i=0;i<co.ph.length;i++){if(!pRef.current)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.45,pitch:1.0,noCancel:true});await wait(500);}
+      setCoAI(-1);await wait(400);if(!pRef.current)return;
+      await speak(`And the word is, ${co.name}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+    }
+    if(speakMode){
+      setCoStep("countdown");
+      await speak(`${kidName}, your turn. Say, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await doCountdown(()=>{setCoStep("listening");pRef.current=false;rec.start(handleCoResult);});
+    }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});setCoStep("idle");}
+  };
+  const retryColor=async()=>{setCoRes(null);setCoAcc(null);setCoStep("countdown");await speak(`${kidName}, try again. Say, ${selColor.name}.`,{rate:0.75,pitch:1.0});await wait(300);await doCountdown(()=>{setCoStep("listening");rec.start(handleCoResult);});};
+
   const buyR=(r)=>{if((prof?.points||0)<r.cost)return;save({...prof,points:prof.points-r.cost,rewards:[...(prof.rewards||[]),{...r,at:Date.now()}]});boom();setRwdMsg(`${r.emoji} Yay! You earned ${r.name}! Show your parents!`);setTimeout(()=>setRwdMsg(null),4000);};
 
   // ═══ SCREENS ═══
@@ -941,7 +1050,7 @@ export default function App(){
   </div><style>{CSS}</style></div>;
 
   if(scr==="home")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto",position:"relative",overflow:"hidden"}}><Particles/><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<div style={{background:"linear-gradient(135deg,#6366F1,#8B5CF6,#A855F7)",padding:"20px 20px 44px",borderRadius:"0 0 36px 36px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:-30,right:-30,width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,0.08)"}}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",position:"relative",zIndex:2}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{fontSize:36,animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div><div><div style={{color:"#fff",fontWeight:800,fontSize:16}}>{prof?.name||"Buddy"}</div><div style={{color:"#ffffffaa",fontSize:11,fontWeight:600}}>Age {prof?.age||4} • {aCfg.diff}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",padding:"8px 16px",borderRadius:24}}><span style={{fontSize:18,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><span style={{color:"#FFE66D",fontWeight:900,fontSize:18,fontFamily:"'Baloo 2',cursive"}}>{prof?.points||0}</span></div></div><h2 style={{fontFamily:"'Baloo 2',cursive",color:"#fff",fontSize:22,marginTop:14,position:"relative",zIndex:2}}>What shall we learn? 🎯</h2></div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"18px 16px 10px",marginTop:-22,position:"relative",zIndex:3}}>{[{id:"numbers",icon:"🔢",title:"Numbers",sub:`1 to ${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#ee5a24)"},{id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & sounds",grad:"linear-gradient(135deg,#4ECDC4,#0abde3)"},{id:"shapes",icon:"🔷",title:"Shapes",sub:"Learn shapes",grad:"linear-gradient(135deg,#A855F7,#7c3aed)"},{id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow fun!",grad:"linear-gradient(135deg,#F472B6,#ec4899)"},{id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend points!",grad:"linear-gradient(135deg,#FBBF24,#f59e0b)"},{id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748b)"}].map((m,i)=><button key={m.id} onClick={()=>setScr(m.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"20px 10px 14px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",background:m.grad,animation:`cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both`,position:"relative",overflow:"hidden"}}><span style={{fontSize:36,marginBottom:4,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{m.icon}</span><span style={{color:"#fff",fontWeight:800,fontSize:15,fontFamily:"'Baloo 2',cursive"}}>{m.title}</span><span style={{color:"rgba(255,255,255,0.85)",fontSize:11,fontWeight:600}}>{m.sub}</span>{(m.id==="numbers"||m.id==="phonics")&&<div style={{width:"80%",height:5,background:"rgba(255,255,255,0.25)",borderRadius:6,marginTop:8,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:6,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}</button>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"18px 16px 10px",marginTop:-22,position:"relative",zIndex:3}}>{[{id:"numbers",icon:"🔢",title:"Numbers",sub:`1 to ${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#ee5a24)"},{id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & sounds",grad:"linear-gradient(135deg,#4ECDC4,#0abde3)"},{id:"shapes",icon:"🔷",title:"Shapes",sub:"Learn shapes",grad:"linear-gradient(135deg,#A855F7,#7c3aed)"},{id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow fun!",grad:"linear-gradient(135deg,#F472B6,#ec4899)"},{id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend points!",grad:"linear-gradient(135deg,#FBBF24,#f59e0b)"},{id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748b)"}].map((m,i)=><button key={m.id} onClick={()=>setScr(m.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"20px 10px 14px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",background:m.grad,animation:`cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both`,position:"relative",overflow:"hidden"}}><span style={{fontSize:36,marginBottom:4,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{m.icon}</span><span style={{color:"#fff",fontWeight:800,fontSize:15,fontFamily:"'Baloo 2',cursive"}}>{m.title}</span><span style={{color:"rgba(255,255,255,0.85)",fontSize:11,fontWeight:600}}>{m.sub}</span>{(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"80%",height:5,background:"rgba(255,255,255,0.25)",borderRadius:6,marginTop:8,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:6,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}</button>)}</div>
     <div style={{margin:"6px 16px 16px",padding:"14px 16px",background:"linear-gradient(135deg,#FFF7ED,#FFFBEB)",borderRadius:18,border:"2px solid #FBBF2433",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:26,animation:"tipW 2s ease-in-out infinite"}}>💡</span><p style={{fontSize:12,color:"#92400E",fontWeight:700,flex:1}}>⭐⭐⭐⭐⭐ = 20 points per word!</p></div><style>{CSS}</style></div>;
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
@@ -996,7 +1105,7 @@ export default function App(){
                       transform:isActive?"scale(1.2) translateY(-4px)":isTapTarget?"scale(1.1)":"scale(1)",
                       boxShadow:isActive?`0 6px 20px ${color}55`:isTapTarget?`0 4px 16px ${color}33`:"none",
                       transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-                    }}>{st==='correct'||st==='wrong'||isActive||spellRound===1?letter:"?"}</span>
+                    }}>{letter}</span>
                     {st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}
                     {st==='wrong'&&!isActive&&<span style={{fontSize:12}}>❌</span>}
                     {isActive&&spellRound===1&&<span style={{fontSize:12,animation:"pulse 1s ease-in-out infinite"}}>👂</span>}
@@ -1056,9 +1165,28 @@ export default function App(){
   // ═══ PHONICS DETAIL ═══
   if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto",position:"relative"}}><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
     {phStep!=="idle"&&<FlowSteps current={phStep} steps={PH_STEPS}/>}
-    <div style={{padding:16}}><div style={{background:"#fff",borderRadius:24,padding:24,textAlign:"center",border:`3px solid ${cc}22`,animation:"slideUp 0.4s ease-out"}}><span style={{fontSize:68,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{phW.img}</span><h2 style={{fontFamily:"'Baloo 2',cursive",fontSize:36,fontWeight:800,color:phStep==="saying_word"?cc:"#1a1a2e",letterSpacing:3,margin:"8px 0",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>{phW.word.toUpperCase()}{phStep==="saying_word"&&<span style={{animation:"pulse 0.5s infinite",fontSize:22}}>🔊</span>}</h2>
-      {phStep==="saying_sentence"&&<div style={{padding:"10px 16px",background:"linear-gradient(135deg,#EEF2FF,#E0E7FF)",borderRadius:14,animation:"slideUp 0.3s ease-out",marginBottom:10}}><span style={{fontSize:13,fontWeight:700,color:"#4338CA"}}>💬 {phW.sentence}</span></div>}
-      <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{phW.ph.map((ph,i)=>{const d=gPh(ph);const act=phAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.55,pitch:1.1});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 14px 8px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",minWidth:46,background:act?cc:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${cc}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Baloo 2',cursive"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>
+    <div style={{padding:16}}>
+      {/* Animated Scene for phonics word */}
+      {(()=>{
+        const catBg={animals:"linear-gradient(180deg,#87CEEB,#90EE90,#228B22)",food:"linear-gradient(180deg,#FFECD2,#FCB69F,#FF9A9E)",nature:"linear-gradient(180deg,#87CEEB,#B0E0E6,#98FB98)",things:"linear-gradient(180deg,#E0E7FF,#C7D2FE,#A5B4FC)",colors:"linear-gradient(180deg,#FF9A9E,#FECFEF,#FBC2EB)"};
+        const catEmojis={animals:["🌳","🌿","☁️","🌸","🦋"],food:["🍽️","🧑‍🍳","✨","🌟","💫"],nature:["☀️","🌈","🦋","🌺","💧"],things:["🏠","⭐","☁️","🌟","✨"],colors:["🎨","✨","🌈","💫","🎉"]};
+        const bg=catBg[phCat]||catBg.things;
+        const extras=catEmojis[phCat]||catEmojis.things;
+        return <div style={{position:"relative",width:"100%",height:200,borderRadius:24,overflow:"hidden",background:bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)"}}>
+          {/* Main word emoji - big, bouncing */}
+          <div style={{position:"absolute",left:"50%",top:"40%",transform:"translate(-50%,-50%)",fontSize:80,zIndex:3,animation:"scene_floatBob 2s ease-in-out infinite",filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.2))"}}>{phW.img}</div>
+          {/* Category ambient elements */}
+          {extras.map((e,i)=><div key={i} style={{position:"absolute",left:`${15+i*18}%`,top:`${10+Math.sin(i)*20+15}%`,fontSize:20+Math.random()*12,zIndex:1,opacity:0.6,animation:`scene_${["floatBob","sway","twinkle","sparkle","cloudDrift"][i%5]} ${2+i*0.5}s ease-in-out ${i*0.3}s infinite`}}>{e}</div>)}
+          {/* Word label overlay */}
+          <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"24px 16px 12px",background:"linear-gradient(transparent,rgba(0,0,0,0.5))",zIndex:10,textAlign:"center"}}>
+            <h2 style={{fontFamily:"'Baloo 2',cursive",fontSize:32,fontWeight:800,color:"#fff",letterSpacing:3,margin:0,textShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>{phW.word.toUpperCase()}{phStep==="saying_word"&&<span style={{animation:"pulse 0.5s infinite",fontSize:20,marginLeft:8}}>🔊</span>}</h2>
+          </div>
+          {/* Sentence overlay */}
+          {phStep==="saying_sentence"&&<div style={{position:"absolute",top:8,left:8,right:8,padding:"8px 14px",background:"rgba(255,255,255,0.9)",borderRadius:14,zIndex:11,animation:"slideUp 0.3s ease-out"}}><span style={{fontSize:13,fontWeight:700,color:"#4338CA"}}>💬 {phW.sentence}</span></div>}
+        </div>;
+      })()}
+      {/* Phoneme chips */}
+      <div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{phW.ph.map((ph,i)=>{const d=gPh(ph);const act=phAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.45,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 14px 8px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",minWidth:46,background:act?cc:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${cc}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Baloo 2',cursive"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div>
       <div style={{marginTop:14}}>
         {phStep==="idle"&&<>
           <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:8}}>
@@ -1091,7 +1219,7 @@ export default function App(){
                       transform:isActive?"scale(1.2) translateY(-4px)":isTapTarget?"scale(1.1)":"scale(1)",
                       boxShadow:isActive?`0 6px 20px ${cc}55`:isTapTarget?`0 4px 16px ${cc}33`:"none",
                       transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-                    }}>{st==='correct'||st==='wrong'||isActive||spellRound===1?letter:"?"}</span>
+                    }}>{letter}</span>
                     {st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}
                     {st==='wrong'&&!isActive&&<span style={{fontSize:12}}>❌</span>}
                     {isActive&&spellRound===1&&<span style={{fontSize:12,animation:"pulse 1s ease-in-out infinite"}}>👂</span>}
@@ -1147,10 +1275,60 @@ export default function App(){
   if(scr==="phonics")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"rgba(255,255,255,0.9)",borderBottom:"1px solid #eee"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"#fff",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Nunito',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={()=>{setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`cardIn 0.3s cubic-bezier(0.34,1.56,0.64,1) ${i*0.05}s both`,boxShadow:"0 4px 16px rgba(0,0,0,0.04)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:`iconF 3s ease-in-out ${i*0.2}s infinite`}}>{w.img}</span><span style={{fontFamily:"'Baloo 2',cursive",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#f3f4f6",color:"#888",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div><style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
-  if(scr==="shapes")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{SHAPES.map((s,i)=><button key={s.name} onClick={()=>speak(s.name,{rate:0.8})} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:20,borderRadius:22,border:"2px solid #eee",background:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`cardIn 0.4s ease ${i*0.08}s both`}}><span style={{fontSize:48,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{s.emoji}</span><span style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#888",fontWeight:600}}>{s.desc}</span></button>)}</div><style>{CSS}</style></div>;
+  // ═══ SHAPE DETAIL ═══
+  if(scr==="shapes"&&selShape){const sh=selShape;const shColor="#A855F7";return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto",position:"relative"}}><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={sh.name} onBack={()=>{stop();pRef.current=false;setSelShape(null);setShStep("idle");}} points={prof?.points||0}/>
+    {shStep!=="idle"&&<FlowSteps current={shStep} steps={PH_STEPS}/>}
+    <div style={{padding:16}}>
+      {/* Animated Scene */}
+      {sh.scene&&<div style={{position:"relative",width:"100%",height:200,borderRadius:24,overflow:"hidden",background:sh.scene.bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)"}}>
+        {sh.scene.elements.map((el,i)=><div key={i} style={{position:"absolute",left:`${el.x}%`,top:`${el.y}%`,transform:"translate(-50%,-50%)",fontSize:el.size,zIndex:2,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))",animation:el.anim!=="none"?`scene_${el.anim} ${el.dur}s ease-in-out ${el.delay||0}s infinite`:"none"}}>{el.emoji}</div>)}
+        {shStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10}}><p style={{color:"#fff",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {sh.sentence}</p></div>}
+      </div>}
+      <div style={{textAlign:"center",marginTop:12}}><span style={{fontSize:48}}>{sh.emoji}</span><div style={{fontFamily:"'Baloo 2',cursive",fontSize:26,fontWeight:700,textTransform:"capitalize"}}>{sh.name}</div>{sh.sides>0&&<span style={{fontSize:12,fontWeight:700,background:"#EEF2FF",color:"#4338CA",padding:"4px 12px",borderRadius:10}}>{sh.sides} sides</span>}</div>
+      {sh.ph&&(shStep==="saying_phonics"||shStep==="idle")&&<div style={{marginTop:12,background:"#fff",borderRadius:20,padding:14}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🔊 Phonics</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{sh.ph.map((ph,i)=>{const d=gPh(ph);const act=shAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.45,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 14px 8px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",minWidth:44,background:act?shColor:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Baloo 2',cursive"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      <div style={{marginTop:12}}>
+        {shStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#999",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playShape(sh)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#fff",fontSize:14,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${shColor},${shColor}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
+        {shStep==="saying_word"&&<Mascot mood="speaking" msg={`This is a ${sh.name}! 🔊`}/>}
+        {shStep==="spelling"&&<div style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:16,background:"#fff",borderRadius:20}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{sh.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"'Baloo 2',cursive",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?shColor:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#f3f4f6",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)",transition:"all 0.3s"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6366F1",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"'Baloo 2',cursive",fontWeight:800,padding:"12px 16px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#6366F1",background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,transition:"all 0.2s",cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#EEF2FF",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#4338CA"}}>👀 Watch and listen!</p></div>}</div></div>}
+        {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
+        {shStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
+        {shStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:72,fontFamily:"'Baloo 2',cursive",fontWeight:800,color:countdown>0?shColor:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
+        {shStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleShResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
+        {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShStep("idle");setShRes(null);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
+      </div>
+    </div><style>{CSS}</style></div>;}
+
+  // ═══ SHAPES GRID ═══
+  if(scr==="shapes")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={()=>{setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:20,borderRadius:22,border:`2px solid ${done?"#A855F744":"#eee"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`cardIn 0.4s ease ${i*0.08}s both`,boxShadow:"0 4px 16px rgba(0,0,0,0.04)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{s.emoji}</span><span style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#888",fontWeight:600}}>{s.desc}</span></button>;})}</div><style>{CSS}</style></div>;
+
 
   // ═══ COLORS ═══
-  if(scr==="colors")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{COLORSDATA.map((c,i)=><button key={c.name} onClick={()=>speak(c.name,{rate:0.8})} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:22,border:"2px solid #eee",background:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`cardIn 0.4s ease ${i*0.08}s both`}}><div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span><div style={{display:"flex",gap:3,flexWrap:"wrap",justifyContent:"center",marginTop:4}}>{c.things.map((t,j)=><span key={j} style={{fontSize:9,fontWeight:700,background:"#f3f4f6",color:"#666",padding:"2px 7px",borderRadius:6}}>{t}</span>)}</div></button>)}</div><style>{CSS}</style></div>;
+  // ═══ COLOR DETAIL ═══
+  if(scr==="colors"&&selColor){const co=selColor;return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto",position:"relative"}}><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={co.name} onBack={()=>{stop();pRef.current=false;setSelColor(null);setCoStep("idle");}} points={prof?.points||0}/>
+    {coStep!=="idle"&&<FlowSteps current={coStep} steps={PH_STEPS}/>}
+    <div style={{padding:16}}>
+      {/* Animated Scene */}
+      {co.scene&&<div style={{position:"relative",width:"100%",height:200,borderRadius:24,overflow:"hidden",background:co.scene.bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)"}}>
+        {co.scene.elements.map((el,i)=><div key={i} style={{position:"absolute",left:`${el.x}%`,top:`${el.y}%`,transform:"translate(-50%,-50%)",fontSize:el.size,zIndex:2,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))",animation:el.anim!=="none"?`scene_${el.anim} ${el.dur}s ease-in-out ${el.delay||0}s infinite`:"none"}}>{el.emoji}</div>)}
+        {coStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10}}><p style={{color:"#fff",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {co.sentence}</p></div>}
+      </div>}
+      <div style={{textAlign:"center",marginTop:12}}><div style={{width:80,height:80,borderRadius:24,background:co.hex,margin:"0 auto 8px",boxShadow:`0 8px 24px ${co.hex}44`}}/><div style={{fontFamily:"'Baloo 2',cursive",fontSize:26,fontWeight:700,textTransform:"capitalize"}}>{co.name}</div><div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>{co.things.map((t,j)=><span key={j} style={{fontSize:11,fontWeight:700,background:"#f3f4f6",color:"#666",padding:"4px 10px",borderRadius:8}}>{t}</span>)}</div></div>
+      {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:12,background:"#fff",borderRadius:20,padding:14}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🔊 Phonics</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.45,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 14px 8px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"'Nunito',sans-serif",minWidth:44,background:act?co.hex:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Baloo 2',cursive"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      <div style={{marginTop:12}}>
+        {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#999",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#fff",fontSize:14,fontWeight:800,fontFamily:"'Nunito',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
+        {coStep==="saying_word"&&<Mascot mood="speaking" msg={`This color is ${co.name}! 🔊`}/>}
+        {coStep==="spelling"&&<div style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:16,background:"#fff",borderRadius:20}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{co.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"'Baloo 2',cursive",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?co.hex:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#f3f4f6",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)",transition:"all 0.3s"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6366F1",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"'Baloo 2',cursive",fontWeight:800,padding:"12px 16px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":co.hex,background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,transition:"all 0.2s",cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#EEF2FF",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#4338CA"}}>👀 Watch and listen!</p></div>}</div></div>}
+        {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
+        {coStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
+        {coStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24}}><div style={{fontSize:72,fontFamily:"'Baloo 2',cursive",fontWeight:800,color:countdown>0?co.hex:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
+        {coStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleCoResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
+        {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoStep("idle");setCoRes(null);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
+      </div>
+    </div><style>{CSS}</style></div>;}
+
+  // ═══ COLORS GRID ═══
+  if(scr==="colors")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#eee"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Nunito',sans-serif",animation:`cardIn 0.4s ease ${i*0.08}s both`,boxShadow:"0 4px 16px rgba(0,0,0,0.04)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div><style>{CSS}</style></div>;
+
 
   // ═══ REWARDS ═══
   if(scr==="rewards")return<div style={{fontFamily:"'Nunito',sans-serif",minHeight:"100vh",background:"#f0f0fa",maxWidth:520,margin:"0 auto",position:"relative"}}><Confetti active={confetti}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#fff",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:22,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px #FBBF2444"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#fff",fontFamily:"'Baloo 2',cursive",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"#ffffffcc",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#888",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#f3f4f6"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"'Nunito',sans-serif",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Baloo 2',cursive",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#888",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,color:"#fff",fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#22C55E,#16A34A)":"#94A3B8"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Baloo 2',cursive",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:14,border:"1px solid #eee",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#999"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<style>{CSS}</style></div>;
