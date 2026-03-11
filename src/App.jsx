@@ -1007,6 +1007,8 @@ const getStarPts=(s)=>[0,2,5,10,15,20][s]||0;
 
 // Hooks
 const useSpeech=()=>{const[v,setV]=useState([]);
+  const onSpeakRef=useRef(null); // callback when speak is called
+  const onDoneRef=useRef(null);  // callback when speech ends
   useEffect(()=>{const l=()=>{const x=speechSynthesis.getVoices();if(x.length)setV(x);};l();speechSynthesis.onvoiceschanged=l;return()=>{speechSynthesis.onvoiceschanged=null;};},[]);
   const getV=useCallback(()=>{
     const prefs=["Google US English","Samantha","Karen","Moira","Tessa","Victoria","Google UK English Female","Microsoft Zira","Microsoft Jenny"];
@@ -1014,13 +1016,15 @@ const useSpeech=()=>{const[v,setV]=useState([]);
     return v.find(x=>x.lang.startsWith("en"))||v[0];
   },[v]);
   const speak=useCallback((t,o={})=>new Promise(r=>{
+    if(onSpeakRef.current)onSpeakRef.current(t); // ← notify teacher of what's being said
     const u=new SpeechSynthesisUtterance(t);const x=getV();if(x)u.voice=x;
     u.rate=o.rate||0.9;u.pitch=o.pitch||1;u.lang="en-US";u.volume=1;
-    u.onend=()=>r();u.onerror=()=>r();
+    u.onend=()=>{if(onDoneRef.current)onDoneRef.current();r();};
+    u.onerror=()=>{r();};
     if(!o.noCancel) speechSynthesis.cancel();
     setTimeout(()=>speechSynthesis.speak(u),o.noCancel?20:60);
   }),[getV]);
-  return{speak,stop:useCallback(()=>speechSynthesis.cancel(),[])};
+  return{speak,stop:useCallback(()=>speechSynthesis.cancel(),[]),onSpeakRef,onDoneRef};
 };
 const useRec=()=>{
   const[on,setOn]=useState(false);
@@ -1422,7 +1426,7 @@ const PH_STEPS=[{id:"saying_word",icon:"🔊",label:"Word"},{id:"spelling",icon:
 // 🎮 MAIN APP
 // ═══════════════════════════════════════════════════════════════
 export default function App(){
-  const{data:prof,save,loaded}=useStore();const{speak,stop}=useSpeech();const rec=useRec();
+  const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef}=useSpeech();const rec=useRec();
   const[scr,setScr]=useState("splash");
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
   const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn"); // "learn" or "math"
@@ -1431,12 +1435,31 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("happy");const[teacherVis,setTeacherVis]=useState(false);
-  const teacherTimer=useRef(null);
-  const showTeacher=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);setTeacherVis(true);clearTimeout(teacherTimer.current);teacherTimer.current=setTimeout(()=>setTeacherVis(false),5000);};
-  // Trigger teacher on screen change
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("Hi! I'm Bella! \u{1F43C}");const[teacherMood,setTeacherMood]=useState("waving");
+  const teacherIdleRef=useRef(null);
+  const showTeacher=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);};
   useEffect(()=>{
-    const msgs={home:["waving","Hi! I'm Bella 🐼! Ready to learn? 🌟"],numbers:["excited","Let's explore numbers today! 🔢"],phonics:["happy","Time for word magic! Let's read! 🔤"],shapes:["excited","Shapes are everywhere! Let's find them! 🔷"],colors:["happy","Colors make everything beautiful! 🎨"],alphabet:["star","A-B-C time! Letters are super fun! 🔠"],basics:["pointing","Practice makes perfect! Let's go! ✏️"],rewards:["excited","Yay! Let's see your prizes! 🎁"],settings:["happy","Let's check your profile! ⚙️"]};
+    onSpeakRef.current=(text)=>{
+      let mood="happy";const lo=text.toLowerCase();
+      if(lo.includes("correct")||lo.includes("perfect")||lo.includes("well done")||lo.includes("amazing"))mood="star";
+      else if(lo.includes("try again")||lo.includes("not quite")||lo.includes("almost"))mood="thinking";
+      else if(lo.includes("find")||lo.includes("tap")||lo.includes("match"))mood="pointing";
+      else if(lo.includes("spell")||lo.includes("watch")||lo.includes("let"))mood="excited";
+      else if(lo.includes("great")||lo.includes("good")||lo.includes("earned"))mood="proud";
+      setTeacherMood(mood);setTeacherMsg(text.length>55?text.slice(0,52)+"...":text);
+      clearTimeout(teacherIdleRef.current);
+    };
+    onDoneRef.current=()=>{
+      clearTimeout(teacherIdleRef.current);
+      teacherIdleRef.current=setTimeout(()=>{
+        const idle=["What shall we do next?","Tap something!","I'm here to help!","Keep learning!","You're doing great!"];
+        setTeacherMood("happy");setTeacherMsg(idle[Math.floor(Math.random()*idle.length)]);
+      },4000);
+    };
+    return()=>{onSpeakRef.current=null;onDoneRef.current=null;clearTimeout(teacherIdleRef.current);};
+  },[]);
+  useEffect(()=>{
+    const msgs={home:["waving","Hi! Ready to learn?"],numbers:["excited","Numbers time!"],phonics:["happy","Word magic!"],shapes:["excited","Shape hunt!"],colors:["happy","Color world!"],alphabet:["star","ABC time!"],basics:["pointing","Practice time!"],rewards:["excited","Your prizes!"],settings:["happy","Your profile!"]};
     const m=msgs[scr];if(m)showTeacher(m[0],m[1]);
   },[scr]);
   // Basics state
@@ -1466,9 +1489,6 @@ export default function App(){
   },[loaded]);
   const aCfg=prof?AGE_CFG[prof.age]||AGE_CFG[4]:AGE_CFG[4];
 
-  // Virtual Teacher
-  const teacher=(mood,cat)=>{setTeacherMood(mood);setTeacherMsg(tMsg(cat));};
-  const teacherSay=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);};
   const boom=()=>{setConfetti(true);setTimeout(()=>setConfetti(false),3000);};
   const flyPts=(n)=>{setPtAnim(`+${n}`);setTimeout(()=>setPtAnim(null),1500);};
   // CRITICAL: Combined save to prevent stale state overwrites
@@ -1490,7 +1510,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setTeacherVis(false);stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2183,7 +2203,7 @@ export default function App(){
     const buyR=(r)=>{if((prof?.points||0)<r.cost)return;save({...prof,points:prof.points-r.cost,rewards:[...(prof.rewards||[]),{...r,at:Date.now()}]});boom();setRwdMsg(`${r.emoji} Yay! You earned ${r.name}! Show your parents!`);setTimeout(()=>setRwdMsg(null),4000);};
 
   // ═══ VIRTUAL TEACHER (renders on all screens) ═══
-  const TeacherBubble=teacherVis&&teacherMsg?<div style={{position:"fixed",bottom:10,left:8,right:8,zIndex:200,display:"flex",alignItems:"flex-end",gap:6,animation:"slideUp 0.4s ease-out",pointerEvents:"none",maxWidth:500,margin:"0 auto"}}>
+  const TeacherBubble=teacherMsg?<div style={{position:"fixed",bottom:10,left:8,right:8,zIndex:200,display:"flex",alignItems:"flex-end",gap:6,animation:"slideUp 0.4s ease-out",pointerEvents:"none",maxWidth:500,margin:"0 auto"}}>
     {/* Animated cartoon character */}
     <div style={{flexShrink:0,filter:"drop-shadow(0 4px 8px rgba(0,0,0,.15))"}}>
       <BellaChar mood={teacherMood} size={66}/>
