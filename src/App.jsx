@@ -1204,7 +1204,7 @@ const TEACHER_MSGS={
 };
 const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return msgs[Math.floor(Math.random()*msgs.length)];};
 
-const BellaChar=({mood,size=70,speaking=false,hiFive=false,joyMode=false})=>{
+const BellaChar=({mood,size=70,speaking=false,hiFive=false,joyMode=false,shake=""})=>{
   const s=size;
   const W=mood==="waving",C=mood==="clapping",T=mood==="thinking",P=mood==="pointing",S=mood==="star",E=mood==="excited",PR=mood==="proud";
   return<svg width={s} height={s} viewBox="0 0 80 85" style={{overflow:"visible"}}>
@@ -1224,11 +1224,14 @@ const BellaChar=({mood,size=70,speaking=false,hiFive=false,joyMode=false})=>{
       @keyframes pHiFive{0%{transform:rotate(0deg) scale(1)}30%{transform:rotate(-15deg) scale(1.2)}60%{transform:rotate(10deg) scale(1.1)}100%{transform:rotate(0deg) scale(1)}}
       @keyframes pJoySpin{0%{transform:rotate(0deg)}25%{transform:rotate(8deg)}50%{transform:rotate(-8deg)}75%{transform:rotate(5deg)}100%{transform:rotate(0deg)}}
       @keyframes pHandReach{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(10px,-15px) rotate(-30deg)}}
+      @keyframes pHeadYes{0%,100%{transform:rotate(0deg)}25%{transform:rotate(8deg)}50%{transform:rotate(-5deg)}75%{transform:rotate(6deg)}}
+      @keyframes pHeadNo{0%,100%{transform:rotate(0deg)}20%{transform:rotate(-10deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(7deg)}}
+      @keyframes pSadBody{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
     `}</style>
       <radialGradient id="pf" cx="40%" cy="30%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#EDEDED"/></radialGradient>
       <radialGradient id="pp" cx="50%" cy="40%"><stop offset="0%" stopColor="#3a3a3a"/><stop offset="100%" stopColor="#111"/></radialGradient>
     </defs>
-    <g style={{animation:joyMode?"pJoySpin 0.4s ease-in-out infinite":"pFloat 3s ease-in-out infinite"}}>
+    <g style={{animation:shake==="no"?"pSadBody 1s ease-in-out infinite":joyMode?"pJoySpin 0.4s ease-in-out infinite":"pFloat 3s ease-in-out infinite"}}>
       <ellipse cx="40" cy="83" rx="14" ry="2.5" fill="rgba(0,0,0,.06)"/>
       {/* Tail */}
       <g style={{transformOrigin:"54px 65px",animation:"pTailWag 1.2s ease-in-out infinite"}}>
@@ -1253,7 +1256,7 @@ const BellaChar=({mood,size=70,speaking=false,hiFive=false,joyMode=false})=>{
         {P&&<><line x1="62" y1="32" x2="66" y2="23" stroke="#333" strokeWidth="2.5" strokeLinecap="round"/><circle cx="66" cy="22" r="1.8" fill="#333"/></>}
       </g>
       {/* Head */}
-      <g style={{transformOrigin:"40px 26px",animation:joyMode?"pJoySpin 0.5s ease-in-out infinite":T?"pNod 3s ease-in-out infinite":speaking?"pNod 1.5s ease-in-out infinite":"pLookAround 6s ease-in-out infinite"}}>
+      <g style={{transformOrigin:"40px 26px",animation:shake==="yes"?"pHeadYes 0.4s ease-in-out infinite":shake==="no"?"pHeadNo 0.3s ease-in-out infinite":joyMode?"pJoySpin 0.5s ease-in-out infinite":T?"pNod 3s ease-in-out infinite":speaking?"pNod 1.5s ease-in-out infinite":"pLookAround 6s ease-in-out infinite"}}>
         <ellipse cx="40" cy="26" rx="17" ry="15" fill="url(#pf)"/>
         {/* Ears */}
         <g style={{transformOrigin:"24px 13px",animation:(E||S)?"pEar .5s ease-in-out infinite":"none"}}>
@@ -1278,7 +1281,7 @@ const BellaChar=({mood,size=70,speaking=false,hiFive=false,joyMode=false})=>{
           <ellipse cx="40" cy="35.5" rx="3" ry="2" fill="#D93B4B" stroke="#222" strokeWidth=".5" style={{animation:"pMouth .35s linear infinite"}}/>:
           (E||S)?<path d="M 35,35 Q 40,41 45,35" fill="#D93B4B" stroke="#222" strokeWidth=".6"/>:
           PR?<path d="M 36,35 Q 40,39 44,35" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>:
-          <path d="M 36,36 Q 38,38 40,35.5 Q 42,38 44,36" fill="none" stroke="#222" strokeWidth=".8" strokeLinecap="round"/>
+          {shake==="no"?<path d="M 36,38 Q 40,35 44,38" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>:<path d="M 36,36 Q 38,38 40,35.5 Q 42,38 44,36" fill="none" stroke="#222" strokeWidth=".8" strokeLinecap="round"/>}
         }
         {/* Blush */}
         <ellipse cx="25" cy="31" rx="3.5" ry="2" fill="#FFB4B4" opacity=".3" style={{animation:(E||PR||S||speaking)?"pBlush 1.2s ease-in-out infinite":"none"}}/>
@@ -1406,7 +1409,7 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(60);const[highFive,setHighFive]=useState(false);const[joyFly,setJoyFly]=useState(false);
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(100);const[highFive,setHighFive]=useState(false);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
   const teacherIdleRef=useRef(null);
   const showTeacher=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);};
   // Lip sync only — position handled by CSS
@@ -1415,15 +1418,51 @@ export default function App(){
     return()=>clearInterval(iv);
   },[]);
   const pandaEmojiTimer=useRef(null);
+  // Head reactions
+  const headYes=()=>{setHeadShake("yes");setTimeout(()=>setHeadShake(""),1500);};
+  const headNo=()=>{setHeadShake("no");setTimeout(()=>setHeadShake(""),1500);};
+
+  // Guided tour of home tiles
+  const doHomeTour=async()=>{
+    setGuideTour(true);
+    const tiles=[
+      {id:"numbers",msg:"This is Numbers! You can learn counting and math here!"},
+      {id:"alphabet",msg:"This is A B C! Learn all the letters of the alphabet!"},
+      {id:"phonics",msg:"This is Phonics! Learn to read over 500 words!"},
+      {id:"basics",msg:"This is Basics! Practice finding and writing numbers!"},
+      {id:"shapes",msg:"This is Shapes! Learn circles, triangles and more!"},
+      {id:"colors",msg:"This is Colors! Discover the rainbow!"},
+      {id:"rewards",msg:"This is Rewards! Spend your points on cool prizes!"},
+      {id:"settings",msg:"And this is Settings! Change your profile here!"},
+    ];
+    for(const tile of tiles){
+      if(!guideTour)break;
+      const el=document.querySelector('[data-tile="'+tile.id+'"]');
+      if(el){
+        const r=el.getBoundingClientRect();
+        setPandaPos({x:Math.min(r.left-10,window.innerWidth-110),y:Math.max(r.top-20,10)});
+        setTeacherMood("pointing");
+      }
+      await speak(tile.msg,{rate:0.6,pitch:1.0});
+      await wait(400);
+    }
+    setTeacherMood("star");
+    setPandaPos({x:window.innerWidth/2-50,y:window.innerHeight/2-50});
+    await speak("So, what do you want to learn today? Tap anything to start!",{rate:0.6,pitch:1.0});
+    await wait(500);
+    movePandaTo("topRight");
+    setGuideTour(false);
+  };
+
   // High-five: panda zooms to center, gets big, shows hand
   const doHighFive=async()=>{
     setHighFive(true);
-    setPandaSize(140);
-    setPandaPos({x:window.innerWidth/2-70,y:window.innerHeight/2-70});
+    setPandaSize(200);
+    setPandaPos({x:window.innerWidth/2-100,y:window.innerHeight/2-100});
     setTeacherMood("clapping");
     await wait(1800);
     setHighFive(false);
-    setPandaSize(60);
+    setPandaSize(100);
     movePandaTo("midRight");
   };
   // Joy fly: panda does a quick loop around screen
@@ -1442,7 +1481,7 @@ export default function App(){
   const flyTo=(e,mood)=>{
     if(!e?.currentTarget)return;
     const rect=e.currentTarget.getBoundingClientRect();
-    const x=Math.min(rect.right+8,window.innerWidth-70);
+    const x=Math.min(rect.right+10,window.innerWidth-110);
     const y=Math.max(rect.top+rect.height/2-30,10);
     setPandaPos({x,y});
     if(mood)setTeacherMood(mood);
@@ -1450,12 +1489,12 @@ export default function App(){
   const movePandaTo=(position)=>{
     const w=window.innerWidth,h=window.innerHeight;
     const positions={
-      topRight:{x:w-78,y:58},
-      midRight:{x:w-78,y:h/2-30},
-      bottomRight:{x:w-78,y:h-120},
+      topRight:{x:w-110,y:55},
+      midRight:{x:w-110,y:h/2-50},
+      bottomRight:{x:w-110,y:h-130},
       topLeft:{x:10,y:58},
       midLeft:{x:10,y:h/2-30},
-      center:{x:w/2-30,y:h/2-30},
+      center:{x:w/2-50,y:h/2-50},
     };
     setPandaPos(positions[position]||positions.midRight);
   };
@@ -1466,12 +1505,12 @@ export default function App(){
       if(!el)return;
       const r=el.getBoundingClientRect();
       let x,y;
-      if(side==="right"){x=Math.min(r.right+6,window.innerWidth-68);y=r.top+r.height/2-30;}
+      if(side==="right"){x=Math.min(r.right+6,window.innerWidth-110);y=r.top+r.height/2-30;}
       else if(side==="left"){x=Math.max(r.left-68,4);y=r.top+r.height/2-30;}
       else if(side==="above"){x=r.left+r.width/2-30;y=Math.max(r.top-68,4);}
-      else if(side==="below"){x=r.left+r.width/2-30;y=Math.min(r.bottom+6,window.innerHeight-80);}
+      else if(side==="below"){x=r.left+r.width/2-30;y=Math.min(r.bottom+6,window.innerHeight-110);}
       else{x=r.left+r.width/2-30;y=r.top+r.height/2-30;}
-      setPandaPos({x:Math.max(4,Math.min(x,window.innerWidth-68)),y:Math.max(4,Math.min(y,window.innerHeight-80))});
+      setPandaPos({x:Math.max(4,Math.min(x,window.innerWidth-110)),y:Math.max(4,Math.min(y,window.innerHeight-110))});
       if(mood)setTeacherMood(mood);
     },150); // small delay so DOM has rendered
   };
@@ -1529,20 +1568,23 @@ export default function App(){
   useEffect(()=>{
     if(!loaded||initDone.current)return;
     initDone.current=true;
-    const t=setTimeout(()=>{
-      setScr(prof?"home":"onboard");
-      setTimeout(()=>{
-        const name=prof?.name||"friend";
-        if(prof){
-          speak("Welcome back to Little Genius! Hi "+name+"! I am Bella, your panda friend! Let us have fun learning together!",{rate:0.55,pitch:1.0});
-          setTeacherMood("waving");
-          setTimeout(doJoyFly,500);
-        } else {
-          speak("Welcome to Little Genius! I am Bella, your friendly panda teacher! Let us have fun together!",{rate:0.55,pitch:1.0});
-          setTeacherMood("waving");
-        }
-      },600);
-    },2500);
+    // Speak immediately on splash
+      speak("Welcome to Little Genius! I am Bella, your friendly panda teacher!",{rate:0.55,pitch:1.0});
+      setTeacherMood("waving");
+      const t=setTimeout(()=>{
+        setScr(prof?"home":"onboard");
+        setTimeout(()=>{
+          if(prof){
+            const name=prof?.name||"friend";
+            speak("Hi "+name+"! Great to see you again! Let us have fun learning!",{rate:0.55,pitch:1.0});
+            setTimeout(()=>doHomeTour(),2000);
+          } else {
+            speak("Let us set up your profile! Type your name, little genius!",{rate:0.55,pitch:1.0});
+            setTeacherMood("pointing");
+            movePandaTo("center");
+          }
+        },800);
+      },3000);
     return()=>clearTimeout(t);
   },[loaded]);
   const aCfg=prof?AGE_CFG[prof.age]||AGE_CFG[4]:AGE_CFG[4];
@@ -1568,7 +1610,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(60);stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(100);stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -1593,7 +1635,7 @@ export default function App(){
         speak(`Good try ${kidName}. You can do better.`,{rate:0.8,pitch:1.0});
         if(nextR) setTimeout(()=>speak(`Practice more to earn your ${nextR.name}.`,{rate:0.8,pitch:1.0}),2200);
       }
-      else speak(`No worries ${kidName}. Let's try again.`,{rate:0.8,pitch:1.0});
+      else{headNo();setTeacherMood("thinking");speak(`No worries ${kidName}. Let us try again.`,{rate:0.8,pitch:1.0});}
     },300);
   };
   const handlePhResult=(result)=>{
@@ -1968,14 +2010,14 @@ export default function App(){
     setMathAnswer(choice);
     setMathTotal(t=>t+1);
     if(choice===mathProblem.answer){
-      setMathFb("correct");showTeacher("clapping","That's right! You're so smart! 🧠");
+      setMathFb("correct");headYes();showTeacher("clapping","That's right! You're so smart! 🧠");
       setMathScore(s=>s+1);
       awardPoints(3,"math",`${mathProblem.a}${mathProblem.op}${mathProblem.b}`);
       await speak(`${choice}! Correct! Well done!`,{rate:0.6,pitch:1.0});
       await wait(1000);
       genMath();
     } else {
-      setMathFb("wrong");showTeacher("thinking","Almost! Let me show you the answer 🤔");
+      setMathFb("wrong");headNo();showTeacher("thinking","Almost! Let me show you the answer 🤔");
       await speak(`Not quite. ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.55,pitch:1.0});
       await wait(2000);
       genMath();
@@ -2058,7 +2100,7 @@ export default function App(){
       setMatchCorrect(tappedLetter);
       setMatchDone(p=>[...p,tappedLetter]);
       setMatchScore(s=>s+1);
-      boom(); // 🎆 CONFETTI + teacher on every correct match!
+      boom();headYes(); // 🎆 CONFETTI + teacher on every correct match!
       await speak(`${tappedLetter}! Correct! Well done!`,{rate:0.7,pitch:1.0});
       await wait(800);
       setMatchCorrect(null);
@@ -2115,7 +2157,7 @@ export default function App(){
     if(!findTarget||foundNum)return;
     speak(NW[n]||String(n),{rate:0.55,pitch:1.0,noCancel:true});
     if(n===findTarget){
-      setFindFb({ok:true,n});setFindScore(s=>s+1);setFindStreak(s=>s+1);
+      setFindFb({ok:true,n});setFindScore(s=>s+1);headYes();setTeacherMood("star");setFindStreak(s=>s+1);
       if(!isDone("basics",n)) awardPoints(3,"basics",n);
       if((findStreak+1)%5===0) boom();
       showTeacher("clapping","You found it! Excellent! 🎯");
@@ -2142,7 +2184,7 @@ export default function App(){
         newFindTarget();
       })();
     } else {
-      setFindFb({ok:false,n});setFindStreak(0);
+      setFindFb({ok:false,n});setFindStreak(0);headNo();setTeacherMood("thinking");
       (async()=>{
         await wait(300);
         await speak(`That is ${NW[n]||n}. Try again. Find ${NW[findTarget]||findTarget}.`,{rate:0.55,pitch:1.0});
@@ -2234,11 +2276,11 @@ export default function App(){
       setWriteScore(score);
       if(score>=85){
         setWriteOk(true);
-        speak(`Perfect! Great job writing ${NW[writeNum]||writeNum}! ${NUM_FUN[writeNum]||""}`,{rate:0.6,pitch:1.0});
+        headYes();speak(`Perfect! Great job writing ${NW[writeNum]||writeNum}! ${NUM_FUN[writeNum]||""}`,{rate:0.6,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(5,"basics_w",writeNum);
       } else if(score>=50){
         setWriteOk(true);
-        speak(`Good! ${NW[writeNum]||writeNum}! That's a pass!`,{rate:0.6,pitch:1.0});
+        headYes();speak(`Good! ${NW[writeNum]||writeNum}! That's a pass!`,{rate:0.6,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(3,"basics_w",writeNum);
       } else if(score>=40){
         speak("Almost there! Keep tracing.",{rate:0.6,pitch:1.0});
@@ -2265,7 +2307,7 @@ export default function App(){
     {/* Reaction emoji floats up */}
     {pandaEmoji&&<div key={pandaEmoji+Date.now()} style={{position:"absolute",top:-24,left:"50%",transform:"translateX(-50%)",fontSize:22,animation:"ptFly 1.5s ease-out forwards"}}>{pandaEmoji}</div>}
     {highFive&&<div style={{position:"absolute",top:-40,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",padding:"6px 16px",borderRadius:20,fontSize:16,fontWeight:900,animation:"slideUp 0.3s ease-out",boxShadow:"0 4px 16px rgba(252,128,25,.3)"}}>High Five! ✋</div>}
-    <BellaChar mood={teacherMood} size={pandaSize} speaking={isSpeaking} hiFive={highFive} joyMode={joyFly}/>
+    <BellaChar mood={teacherMood} size={pandaSize} speaking={isSpeaking} hiFive={highFive} joyMode={joyFly} shake={headShake}/>
   </div>;
 
   // ═══ SCREENS ═══
@@ -2308,7 +2350,7 @@ export default function App(){
           boxShadow:obA===a?"0 4px 12px rgba(252,128,25,.3)":"none"
         }}>{a}</button>)}
       </div>
-      <button onClick={()=>setObSt(1)} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:24,boxShadow:"0 6px 20px rgba(252,128,25,.3)",letterSpacing:0.5}}>Next →</button>
+      <button onClick={()=>{setObSt(1);speak("Awesome! Now pick if you are a boy or a girl, and choose your look!",{rate:0.55,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:24,boxShadow:"0 6px 20px rgba(252,128,25,.3)",letterSpacing:0.5}}>Next →</button>
     </>:
     <>
       {/* Step 2: Gender + Avatar */}
@@ -2344,7 +2386,7 @@ export default function App(){
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
         <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:16,border:"2px solid #E8E8E8",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",color:"#93959F"}}>← Back</button>
-        <button onClick={()=>{rec.warmUp();save({name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()});setScr("home");}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",boxShadow:"0 6px 20px rgba(252,128,25,.3)"}}>Let's Go! 🚀</button>
+        <button onClick={()=>{rec.warmUp();save({name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()});speak("Right on! Let me show you around!",{rate:0.6,pitch:1.0});setTeacherMood("star");setScr("home");setTimeout(()=>doHomeTour(),2000);}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",boxShadow:"0 6px 20px rgba(252,128,25,.3)"}}>Let's Go! 🚀</button>
       </div>
     </>}
     </div>
@@ -2386,13 +2428,13 @@ export default function App(){
           {id:"colors",icon:"🎨",title:"Colors",sub:"13 Colors",grad:"linear-gradient(135deg,#F472B6,#EC4899)",shadow:"rgba(244,114,182,.2)"},
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",grad:"linear-gradient(135deg,#FBBF24,#F59E0B)",shadow:"rgba(251,191,36,.2)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748B)",shadow:"rgba(148,163,184,.2)"}
-        ].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();speak("Right on! I am excited! Let us go!",{rate:0.65,pitch:1.0});setTeacherMood("star");headYes();setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:12,
           padding:"18px 16px",borderRadius:20,border:"none",cursor:"pointer",
           fontFamily:"'Poppins',sans-serif",background:m.grad,
           boxShadow:`0 4px 16px ${m.shadow}`,
           animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.05}s both`,
-          position:"relative",overflow:"hidden",textAlign:"left",width:"100%"
+          position:"relative",overflow:"hidden",textAlign:"left",width:"100%","data-tile":m.id
         }}>
           <div style={{position:"absolute",top:-16,right:-16,width:56,height:56,borderRadius:"50%",background:"rgba(255,255,255,.1)"}}/>
           <span style={{fontSize:34,flexShrink:0}}>{m.icon}</span>
