@@ -1374,7 +1374,7 @@ export default function App(){
     const expectedLetter=letters[tapIndex];
     
     // ALWAYS speak the tapped letter
-    speak(tappedLetter,{rate:0.6,pitch:1.0,noCancel:true});
+    speak(tappedLetter,{rate:0.8,pitch:1.0,noCancel:true});
     
     if(tappedLetter.toLowerCase()===expectedLetter){
       setSpellStatus(prev=>{const n=[...prev];n[tapIndex]='correct';return n;});
@@ -1403,8 +1403,8 @@ export default function App(){
       setActiveSpellIdx(i);
       setSpellStatus(prev=>{const n=[...prev];n[i]='listening';return n;});
       
-      await speak(LN[letters[i]]||letters[i],{rate:0.5,pitch:1.0,noCancel:true});
-      await wait(2000);
+      await speak(LN[letters[i]]||letters[i],{rate:0.7,pitch:1.0,noCancel:true});
+      await wait(500);
       
       setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
       await wait(200);
@@ -1487,7 +1487,7 @@ export default function App(){
     if(phs){
       setNStep("saying_phonics");
       await speak(`Now, let's understand how to speak this word.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.45,pitch:1.0,noCancel:true});await wait(500);}
+      for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.55,pitch:1.0,noCancel:true});await wait(300);}
       setAPhI(-1);await wait(400);if(!pRef.current)return;
       await speak(`And the word is, ${w}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
@@ -1538,7 +1538,7 @@ export default function App(){
     // Step 4: Phonics - "let's understand how to speak this word"
     setPhStep("saying_phonics");
     await speak(`Now, let's understand how to speak this word.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-    for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.45,pitch:1.0,noCancel:true});await wait(500);}
+    for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.55,pitch:1.0,noCancel:true});await wait(300);}
     setPhAI(-1);await wait(400);if(!pRef.current)return;
     await speak(`And the word is, ${wd.word}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
 
@@ -1586,7 +1586,7 @@ export default function App(){
     if(sh.ph){
       setShStep("saying_phonics");
       await speak("Now, let's understand how to speak this word.",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<sh.ph.length;i++){if(!pRef.current)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.45,pitch:1.0,noCancel:true});await wait(500);}
+      for(let i=0;i<sh.ph.length;i++){if(!pRef.current)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.55,pitch:1.0,noCancel:true});await wait(300);}
       setShAI(-1);await wait(400);if(!pRef.current)return;
       await speak(`And the word is, ${sh.name}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
@@ -1623,7 +1623,7 @@ export default function App(){
     if(co.ph){
       setCoStep("saying_phonics");
       await speak("Now, let's understand how to speak this word.",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<co.ph.length;i++){if(!pRef.current)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.45,pitch:1.0,noCancel:true});await wait(500);}
+      for(let i=0;i<co.ph.length;i++){if(!pRef.current)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.55,pitch:1.0,noCancel:true});await wait(300);}
       setCoAI(-1);await wait(400);if(!pRef.current)return;
       await speak(`And the word is, ${co.name}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
@@ -1665,8 +1665,8 @@ export default function App(){
         await speak(`Let me spell it.`,{rate:0.6,pitch:1.0});
         await wait(300);
         for(const letter of letters){
-          await speak(letter.toUpperCase(),{rate:0.5,pitch:1.0,noCancel:true});
-          await wait(600);
+          await speak(letter.toUpperCase(),{rate:0.7,pitch:1.0,noCancel:true});
+          await wait(350);
         }
         await wait(300);
         await speak(`${NW[n]||n}! ${NUM_FUN[n]||""}`,{rate:0.55,pitch:1.0});
