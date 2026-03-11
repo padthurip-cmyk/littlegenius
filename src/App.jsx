@@ -1281,7 +1281,8 @@ const BellaChar=({mood,size=70,speaking=false,hiFive=false,joyMode=false,shake="
           <ellipse cx="40" cy="35.5" rx="3" ry="2" fill="#D93B4B" stroke="#222" strokeWidth=".5" style={{animation:"pMouth .35s linear infinite"}}/>:
           (E||S)?<path d="M 35,35 Q 40,41 45,35" fill="#D93B4B" stroke="#222" strokeWidth=".6"/>:
           PR?<path d="M 36,35 Q 40,39 44,35" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>:
-          {shake==="no"?<path d="M 36,38 Q 40,35 44,38" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>:<path d="M 36,36 Q 38,38 40,35.5 Q 42,38 44,36" fill="none" stroke="#222" strokeWidth=".8" strokeLinecap="round"/>}
+          shake==="no"?<path d="M 36,38 Q 40,35 44,38" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>:
+          <path d="M 36,36 Q 38,38 40,35.5 Q 42,38 44,36" fill="none" stroke="#222" strokeWidth=".8" strokeLinecap="round"/>
         }
         {/* Blush */}
         <ellipse cx="25" cy="31" rx="3.5" ry="2" fill="#FFB4B4" opacity=".3" style={{animation:(E||PR||S||speaking)?"pBlush 1.2s ease-in-out infinite":"none"}}/>
