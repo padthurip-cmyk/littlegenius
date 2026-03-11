@@ -1204,7 +1204,7 @@ const TEACHER_MSGS={
 };
 const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return msgs[Math.floor(Math.random()*msgs.length)];};
 
-const BellaChar=({mood,size=70,speaking=false})=>{
+const BellaChar=({mood,size=70,speaking=false,hiFive=false,joyMode=false})=>{
   const s=size;
   const W=mood==="waving",C=mood==="clapping",T=mood==="thinking",P=mood==="pointing",S=mood==="star",E=mood==="excited",PR=mood==="proud";
   return<svg width={s} height={s} viewBox="0 0 80 85" style={{overflow:"visible"}}>
@@ -1220,11 +1220,15 @@ const BellaChar=({mood,size=70,speaking=false})=>{
       @keyframes pTailWag{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(10deg)}}
       @keyframes pBlush{0%,100%{opacity:.3}50%{opacity:.65}}
       @keyframes pNod{0%,100%{transform:rotate(0deg)}50%{transform:rotate(3deg)}}
+      @keyframes pLookAround{0%{transform:rotate(-3deg)}20%{transform:rotate(4deg)}40%{transform:rotate(-2deg)}60%{transform:rotate(5deg)}80%{transform:rotate(-4deg)}100%{transform:rotate(-3deg)}}
+      @keyframes pHiFive{0%{transform:rotate(0deg) scale(1)}30%{transform:rotate(-15deg) scale(1.2)}60%{transform:rotate(10deg) scale(1.1)}100%{transform:rotate(0deg) scale(1)}}
+      @keyframes pJoySpin{0%{transform:rotate(0deg)}25%{transform:rotate(8deg)}50%{transform:rotate(-8deg)}75%{transform:rotate(5deg)}100%{transform:rotate(0deg)}}
+      @keyframes pHandReach{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(10px,-15px) rotate(-30deg)}}
     `}</style>
       <radialGradient id="pf" cx="40%" cy="30%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#EDEDED"/></radialGradient>
       <radialGradient id="pp" cx="50%" cy="40%"><stop offset="0%" stopColor="#3a3a3a"/><stop offset="100%" stopColor="#111"/></radialGradient>
     </defs>
-    <g style={{animation:"pFloat 3s ease-in-out infinite"}}>
+    <g style={{animation:joyMode?"pJoySpin 0.4s ease-in-out infinite":"pFloat 3s ease-in-out infinite"}}>
       <ellipse cx="40" cy="83" rx="14" ry="2.5" fill="rgba(0,0,0,.06)"/>
       {/* Tail */}
       <g style={{transformOrigin:"54px 65px",animation:"pTailWag 1.2s ease-in-out infinite"}}>
@@ -1249,7 +1253,7 @@ const BellaChar=({mood,size=70,speaking=false})=>{
         {P&&<><line x1="62" y1="32" x2="66" y2="23" stroke="#333" strokeWidth="2.5" strokeLinecap="round"/><circle cx="66" cy="22" r="1.8" fill="#333"/></>}
       </g>
       {/* Head */}
-      <g style={{transformOrigin:"40px 26px",animation:T?"pNod 3s ease-in-out infinite":speaking?"pNod 1.5s ease-in-out infinite":"none"}}>
+      <g style={{transformOrigin:"40px 26px",animation:joyMode?"pJoySpin 0.5s ease-in-out infinite":T?"pNod 3s ease-in-out infinite":speaking?"pNod 1.5s ease-in-out infinite":"pLookAround 6s ease-in-out infinite"}}>
         <ellipse cx="40" cy="26" rx="17" ry="15" fill="url(#pf)"/>
         {/* Ears */}
         <g style={{transformOrigin:"24px 13px",animation:(E||S)?"pEar .5s ease-in-out infinite":"none"}}>
@@ -1291,6 +1295,13 @@ const BellaChar=({mood,size=70,speaking=false})=>{
       )}
       {C&&<text x="34" y="46" fontSize="9" style={{animation:"pSpark .4s ease-in-out infinite"}}>👏</text>}
       {W&&<text x="65" y="30" fontSize="8" style={{animation:"pSpark .6s ease-in-out infinite"}}>✨</text>}
+      {/* High-five hand */}
+      {hiFive&&<g style={{animation:"pHiFive 0.8s ease-in-out infinite",transformOrigin:"60px 30px"}}>
+        <text x="50" y="20" fontSize="24" style={{animation:"pHandReach 0.6s ease-in-out infinite"}}>✋</text>
+        <text x="10" y="10" fontSize="10" style={{animation:"pSpark .5s ease-in-out infinite"}}>⭐</text>
+        <text x="60" y="5" fontSize="10" style={{animation:"pSpark .5s ease-in-out .2s infinite"}}>✨</text>
+        <text x="5" y="50" fontSize="8" style={{animation:"pSpark .5s ease-in-out .4s infinite"}}>🌟</text>
+      </g>}
     </g>
   </svg>;
 };
@@ -1395,7 +1406,7 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(60);const[highFive,setHighFive]=useState(false);const[joyFly,setJoyFly]=useState(false);
   const teacherIdleRef=useRef(null);
   const showTeacher=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);};
   // Lip sync only — position handled by CSS
@@ -1404,6 +1415,30 @@ export default function App(){
     return()=>clearInterval(iv);
   },[]);
   const pandaEmojiTimer=useRef(null);
+  // High-five: panda zooms to center, gets big, shows hand
+  const doHighFive=async()=>{
+    setHighFive(true);
+    setPandaSize(140);
+    setPandaPos({x:window.innerWidth/2-70,y:window.innerHeight/2-70});
+    setTeacherMood("clapping");
+    await wait(1800);
+    setHighFive(false);
+    setPandaSize(60);
+    movePandaTo("midRight");
+  };
+  // Joy fly: panda does a quick loop around screen
+  const doJoyFly=()=>{
+    setJoyFly(true);setTeacherMood("star");
+    const w=window.innerWidth,h=window.innerHeight;
+    const path=[{x:w/2-30,y:30},{x:w-70,y:h/3},{x:w/2-30,y:h/2},{x:10,y:h/3},{x:w/2-30,y:30}];
+    let i=0;
+    const step=()=>{
+      if(i>=path.length){setJoyFly(false);movePandaTo("midRight");return;}
+      setPandaPos(path[i]);i++;
+      setTimeout(step,350);
+    };
+    step();
+  };
   const flyTo=(e,mood)=>{
     if(!e?.currentTarget)return;
     const rect=e.currentTarget.getBoundingClientRect();
@@ -1494,7 +1529,20 @@ export default function App(){
   useEffect(()=>{
     if(!loaded||initDone.current)return;
     initDone.current=true;
-    const t=setTimeout(()=>setScr(prof?"home":"onboard"),2500);
+    const t=setTimeout(()=>{
+      setScr(prof?"home":"onboard");
+      setTimeout(()=>{
+        const name=prof?.name||"friend";
+        if(prof){
+          speak("Welcome back to Little Genius! Hi "+name+"! I am Bella, your panda friend! Let us have fun learning together!",{rate:0.55,pitch:1.0});
+          setTeacherMood("waving");
+          setTimeout(doJoyFly,500);
+        } else {
+          speak("Welcome to Little Genius! I am Bella, your friendly panda teacher! Let us have fun together!",{rate:0.55,pitch:1.0});
+          setTeacherMood("waving");
+        }
+      },600);
+    },2500);
     return()=>clearTimeout(t);
   },[loaded]);
   const aCfg=prof?AGE_CFG[prof.age]||AGE_CFG[4]:AGE_CFG[4];
@@ -1520,7 +1568,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(60);stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2213,10 +2261,11 @@ export default function App(){
     const buyR=(r)=>{if((prof?.points||0)<r.cost)return;save({...prof,points:prof.points-r.cost,rewards:[...(prof.rewards||[]),{...r,at:Date.now()}]});boom();setRwdMsg(`${r.emoji} Yay! You earned ${r.name}! Show your parents!`);setTimeout(()=>setRwdMsg(null),4000);};
 
   // ═══ VIRTUAL TEACHER (renders on all screens) ═══
-  const TeacherBubble=<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:"none",transition:"left 1.2s ease-in-out, top 1.2s ease-in-out",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.1))"}}>
+  const TeacherBubble=<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:highFive?"auto":"none",transition:joyFly?"left 0.3s ease-out, top 0.3s ease-out":"left 1.2s ease-in-out, top 1.2s ease-in-out",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.1))"}}>
     {/* Reaction emoji floats up */}
     {pandaEmoji&&<div key={pandaEmoji+Date.now()} style={{position:"absolute",top:-24,left:"50%",transform:"translateX(-50%)",fontSize:22,animation:"ptFly 1.5s ease-out forwards"}}>{pandaEmoji}</div>}
-    <BellaChar mood={teacherMood} size={60} speaking={isSpeaking}/>
+    {highFive&&<div style={{position:"absolute",top:-40,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",padding:"6px 16px",borderRadius:20,fontSize:16,fontWeight:900,animation:"slideUp 0.3s ease-out",boxShadow:"0 4px 16px rgba(252,128,25,.3)"}}>High Five! ✋</div>}
+    <BellaChar mood={teacherMood} size={pandaSize} speaking={isSpeaking} hiFive={highFive} joyMode={joyFly}/>
   </div>;
 
   // ═══ SCREENS ═══
