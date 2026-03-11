@@ -1153,7 +1153,7 @@ export default function App(){
     c.width=rect.width;
     c.height=rect.height;
     const ctx=c.getContext("2d");
-    ctx.lineWidth=5;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#FC8019";
+    ctx.lineWidth=14;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#FC8019";
   };
   const getPos=(e)=>{
     const c=cRef.current;if(!c)return{x:0,y:0};
@@ -1166,7 +1166,7 @@ export default function App(){
     const ctx=c.getContext("2d");
     const{x,y}=getPos(e);
     ctx.beginPath();ctx.moveTo(x,y);
-    ctx.strokeStyle="#FC8019";ctx.lineWidth=5;ctx.lineCap="round";ctx.lineJoin="round";
+    ctx.strokeStyle="#FC8019";ctx.lineWidth=14;ctx.lineCap="round";ctx.lineJoin="round";
     c._drawing=true;
     setDrawPts(p=>p+1);
   };
@@ -1177,60 +1177,64 @@ export default function App(){
     ctx.lineTo(x,y);ctx.stroke();
     setDrawPts(p=>p+1);
   };
-  // Score handwriting by comparing drawn pixels to template grid
+  // Score handwriting — check how many template cells have ink (forgiving)
   const scoreWriting=()=>{
     const c=cRef.current;if(!c)return 0;
     const ctx=c.getContext("2d");
     const w=c.width,h=c.height;
+    if(w===0||h===0)return 0;
     const COLS=6,ROWS=8;
-    const cellW=w/COLS,cellH=h/ROWS;
-    // Get which number's digits to check
     const digits=String(writeNum).split("").map(Number);
-    // For single digit, use full canvas. For 2 digits, split left/right
-    let totalMatch=0,totalCells=0;
+    let hit=0,total=0;
     digits.forEach((d,di)=>{
       const tpl=NUM_TPL[d];if(!tpl)return;
       const offX=digits.length>1?(di===0?0:w/2):0;
       const dW=digits.length>1?w/2:w;
-      const dCellW=dW/COLS;
-      for(let row=0;row<ROWS;row++){
-        for(let col=0;col<COLS;col++){
-          const expected=tpl[row*COLS+col];
-          const x=Math.floor(offX+col*dCellW);
-          const y=Math.floor(row*cellH);
-          const sw=Math.max(1,Math.floor(dCellW));
-          const sh=Math.max(1,Math.floor(cellH));
+      const cW=dW/COLS,cH=h/ROWS;
+      for(let r=0;r<ROWS;r++){
+        for(let cl=0;cl<COLS;cl++){
+          if(tpl[r*COLS+cl]!==1)continue;
+          total++;
+          // Sample center of cell + nearby — generous detection
+          const cx=Math.floor(offX+cl*cW+cW/2);
+          const cy=Math.floor(r*cH+cH/2);
+          const sz=Math.max(4,Math.floor(Math.min(cW,cH)*0.7));
+          const sx=Math.max(0,cx-Math.floor(sz/2));
+          const sy=Math.max(0,cy-Math.floor(sz/2));
+          const sw=Math.min(sz,w-sx);
+          const sh=Math.min(sz,h-sy);
+          if(sw<=0||sh<=0)continue;
           try{
-            const data=ctx.getImageData(x,y,sw,sh).data;
-            let hasInk=false;
-            for(let p=3;p<data.length;p+=4){if(data[p]>50){hasInk=true;break;}}
-            if(expected===1){totalCells++;if(hasInk)totalMatch++;}
-            else{if(hasInk)totalMatch=Math.max(0,totalMatch-0.3);} // penalty for ink outside template
+            const data=ctx.getImageData(sx,sy,sw,sh).data;
+            for(let p=0;p<data.length;p+=4){
+              // Check for any non-transparent pixel (R,G,B > 0 or A > 30)
+              if(data[p]>30||data[p+1]>30||data[p+2]>30||data[p+3]>30){hit++;break;}
+            }
           }catch(e){}
         }
       }
     });
-    return totalCells>0?Math.round((totalMatch/totalCells)*100):0;
+    return total>0?Math.min(100,Math.round((hit/total)*110)):0; // slight boost
   };
   const drawEnd=()=>{
     if(!cRef.current)return;
     cRef.current._drawing=false;
-    if(drawPts>15&&!writeOk){
+    // Only score after enough strokes — don't score tiny taps
+    if(drawPts>25&&!writeOk){
       const score=scoreWriting();
       setWriteScore(score);
-      if(score>=100){
+      if(score>=85){
         setWriteOk(true);
         speak(`Perfect! Great job writing ${NW[writeNum]||writeNum}! ${NUM_FUN[writeNum]||""}`,{rate:0.6,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(5,"basics_w",writeNum);
-      } else if(score>=80){
+      } else if(score>=60){
         setWriteOk(true);
         speak(`Good! ${NW[writeNum]||writeNum}! That's a pass!`,{rate:0.6,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(3,"basics_w",writeNum);
-      } else if(score>=50){
-        speak("Almost! Try again.",{rate:0.6,pitch:1.0});
-      } else if(drawPts>30){
-        speak("Try again. Follow the lines.",{rate:0.6,pitch:1.0});
+      } else if(score>=40){
+        speak("Almost there! Keep tracing.",{rate:0.6,pitch:1.0});
       }
+      // Don't say anything below 40% — kid is still drawing
     }
   };
   const clearPad=()=>{
@@ -1257,7 +1261,32 @@ export default function App(){
   </div><style>{CSS}</style></div>;
 
   if(scr==="home")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column",overflow:"hidden"}}><Particles/><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<div style={{background:"linear-gradient(135deg,#FC8019,#FF9933)",padding:"20px 20px 44px",borderRadius:"0 0 36px 36px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:-30,right:-30,width:120,height:120,borderRadius:"50%",background:"#F1F3F7"}}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",position:"relative",zIndex:2}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{fontSize:36,animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div><div><div style={{color:"#fff",fontWeight:800,fontSize:16}}>{prof?.name||"Buddy"}</div><div style={{color:"rgba(255,255,255,.7)",fontSize:11,fontWeight:600}}>Age {prof?.age||4} • {aCfg.diff}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",padding:"8px 16px",borderRadius:24}}><span style={{fontSize:18,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><span style={{color:"#FC8019",fontWeight:900,fontSize:18,fontFamily:"'Poppins',sans-serif"}}>{prof?.points||0}</span></div></div><h2 style={{fontFamily:"'Poppins',sans-serif",color:"#FC8019",fontSize:22,marginTop:14,position:"relative",zIndex:2}}>What shall we learn? 🎯</h2></div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,padding:"14px 12px 10px",marginTop:-22,position:"relative",zIndex:3}}>{[{id:"numbers",icon:"🔢",title:"Numbers",sub:`1-${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#ee5a24)"},{id:"phonics",icon:"🔤",title:"Phonics",sub:"Words",grad:"linear-gradient(135deg,#4ECDC4,#0abde3)"},{id:"basics",icon:"🧩",title:"Basics",sub:"Find & Write",grad:"linear-gradient(135deg,#F59E0B,#D97706)"},{id:"shapes",icon:"🔷",title:"Shapes",sub:"Shapes",grad:"linear-gradient(135deg,#A855F7,#7c3aed)"},{id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow",grad:"linear-gradient(135deg,#F472B6,#ec4899)"},{id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend!",grad:"linear-gradient(135deg,#FBBF24,#f59e0b)"},{id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748b)"}].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();setScr(m.id);}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 8px 14px",borderRadius:20,border:"none",cursor:"pointer",fontFamily:"'Poppins',sans-serif",background:m.grad,animation:`gridPop 0.6s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both, cardBounce ${3+i*0.3}s ease-in-out ${0.7+i*0.08}s infinite`,position:"relative",overflow:"hidden"}}><span style={{fontSize:36,marginBottom:4,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{m.icon}</span><span style={{color:"#fff",fontWeight:800,fontSize:14,fontFamily:"'Poppins',sans-serif"}}>{m.title}</span><span style={{color:"#1C1C2B",fontSize:10,fontWeight:600}}>{m.sub}</span>{(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"80%",height:4,background:"rgba(255,255,255,0.25)",borderRadius:6,marginTop:6,overflow:"hidden"}}><div style={{height:"100%",background:"#F1F3F7",borderRadius:6,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}</button>)}</div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"16px 14px 10px",marginTop:-22,position:"relative",zIndex:3}}>{[
+      {id:"numbers",icon:"🔢",title:"Numbers",sub:`Learn 1-${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#FF4757)",shadow:"rgba(255,71,87,.25)"},
+      {id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & Sounds",grad:"linear-gradient(135deg,#4ECDC4,#26D0CE)",shadow:"rgba(78,205,196,.25)"},
+      {id:"basics",icon:"🧩",title:"Basics",sub:"Find & Write",grad:"linear-gradient(135deg,#FC8019,#FF9F43)",shadow:"rgba(252,128,25,.25)"},
+      {id:"shapes",icon:"🔷",title:"Shapes",sub:"8 Shapes",grad:"linear-gradient(135deg,#A855F7,#8B5CF6)",shadow:"rgba(168,85,247,.25)"},
+      {id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow Fun",grad:"linear-gradient(135deg,#F472B6,#EC4899)",shadow:"rgba(244,114,182,.25)"},
+      {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points!",grad:"linear-gradient(135deg,#FBBF24,#F59E0B)",shadow:"rgba(251,191,36,.25)"},
+      {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748B)",shadow:"rgba(148,163,184,.25)"}
+    ].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();setScr(m.id);}} style={{
+      display:"flex",alignItems:"center",gap:12,
+      padding:"16px 14px",borderRadius:20,border:"none",cursor:"pointer",
+      fontFamily:"'Poppins',sans-serif",background:m.grad,
+      boxShadow:`0 6px 20px ${m.shadow}`,
+      animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,
+      position:"relative",overflow:"hidden",textAlign:"left"
+    }}>
+      {/* Decorative circle */}
+      <div style={{position:"absolute",top:-15,right:-15,width:60,height:60,borderRadius:"50%",background:"rgba(255,255,255,0.12)"}}/>
+      <div style={{position:"absolute",bottom:-10,right:20,width:30,height:30,borderRadius:"50%",background:"rgba(255,255,255,0.08)"}}/>
+      <span style={{fontSize:32,flexShrink:0}}>{m.icon}</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{color:"#fff",fontWeight:800,fontSize:15}}>{m.title}</div>
+        <div style={{color:"rgba(255,255,255,.75)",fontSize:11,fontWeight:600}}>{m.sub}</div>
+        {(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"100%",height:4,background:"rgba(255,255,255,0.2)",borderRadius:4,marginTop:6,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:4,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}
+      </div>
+    </button>)}</div>
     <div style={{margin:"6px 16px 16px",padding:"14px 16px",background:"rgba(251,191,36,0.1)",borderRadius:18,border:"2px solid rgba(255,224,51,0.15)",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:26,animation:"tipW 2s ease-in-out infinite"}}>💡</span><p style={{fontSize:12,color:"#FC8019",fontWeight:700,flex:1}}>⭐⭐⭐⭐⭐ = 20 points per word!</p></div><style>{CSS}</style></div>;
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
@@ -1542,33 +1571,38 @@ export default function App(){
   if(scr==="basics")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"hidden",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <SubHead title="Basics 🧩" onBack={goHome} points={prof?.points||0}/>
     {/* 3 Tab bar */}
-    <div style={{display:"flex",gap:4,padding:"4px 8px",background:"#F1F3F7"}}>
+    <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#F8F9FB",borderBottom:"1px solid #EFEFEF"}}>
       {[{id:"explore",label:"📖 Numbers"},{id:"find",label:"🔍 Find"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
           setBasicsTab(t.id);
           if(t.id==="find"&&!findTarget)newFindTarget();
           if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}
-        }} style={{flex:1,padding:"10px 6px",borderRadius:12,border:"none",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Poppins',sans-serif",
+        }} style={{flex:1,padding:"12px 8px",borderRadius:14,border:"none",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif",
           background:basicsTab===t.id?"#6366F1":"#f3f4f6",color:basicsTab===t.id?"#fff":"#888",transition:"all 0.2s"
         }}>{t.label}</button>
       )}
     </div>
 
     {/* ═══ EXPLORE: Grid of all numbers ═══ */}
-    {basicsTab==="explore"&&<div style={{flex:1,overflow:"auto",padding:"6px 8px"}}>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:5}}>
+    {basicsTab==="explore"&&<div style={{flex:1,overflow:"auto",padding:"10px 12px",display:"flex",alignItems:"flex-start"}}>
+      <div style={{display:"grid",gridTemplateColumns:`repeat(${(aCfg?.max||20)<=10?3:(aCfg?.max||20)<=20?4:5},1fr)`,gap:10,width:"100%"}}>
         {Array.from({length:aCfg?.max||20}).map((_,i)=>{const n=i+1;const em=NUM_EMOJI[n]||"";
           return<button key={n} onClick={()=>sayNum(n)} style={{
-            display:"flex",flexDirection:"column",alignItems:"center",padding:"5px 2px",borderRadius:10,border:"none",cursor:"pointer",
-            background:"#F1F3F7",boxShadow:"0 1px 4px rgba(0,0,0,.06)",fontFamily:"'Poppins',sans-serif",
-            animation:`gridPop 0.2s ease ${i*0.01}s both`,transition:"transform 0.1s"
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+            padding:(aCfg?.max||20)<=10?"16px 8px":"10px 4px",
+            borderRadius:16,border:"2px solid #F1F3F7",cursor:"pointer",
+            background:"#fff",boxShadow:"0 2px 8px rgba(0,0,0,.06)",fontFamily:"'Poppins',sans-serif",
+            animation:`gridPop 0.3s ease ${i*0.03}s both`,transition:"all 0.15s",
+            aspectRatio:(aCfg?.max||20)<=10?"1":"auto"
           }}>
-            <span style={{fontSize:18,fontWeight:800,color:nClr(n),lineHeight:1}}>{n}</span>
-            {em&&<span style={{fontSize:14,lineHeight:1}}>{em}</span>}
+            <span style={{fontSize:(aCfg?.max||20)<=10?28:(aCfg?.max||20)<=20?22:18,fontWeight:800,color:nClr(n),lineHeight:1}}>{n}</span>
+            {em&&<span style={{fontSize:(aCfg?.max||20)<=10?20:14,lineHeight:1,marginTop:4}}>{em}</span>}
+            <span style={{fontSize:(aCfg?.max||20)<=10?10:8,fontWeight:700,color:"#93959F",marginTop:2,textTransform:"capitalize"}}>{NW[n]||""}</span>
           </button>;
         })}
       </div>
     </div>}
+
 
     {/* ═══ FIND GAME ═══ */}
     {basicsTab==="find"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",position:"relative"}}>
@@ -1586,18 +1620,22 @@ export default function App(){
             <div style={{fontFamily:"'Poppins',sans-serif",fontSize:16,fontWeight:800,color:"#FC8019"}}>🏆 {findScore}</div>
             {findStreak>=3&&<span style={{fontSize:10,fontWeight:800,color:"#E23744"}}>🔥{findStreak}</span>}
           </div>
-        </>:<button onClick={newFindTarget} style={{width:"100%",padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>▶️ Start Game!</button>}
+        </>:<button onClick={newFindTarget} style={{width:"100%",padding:"16px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"'Poppins',sans-serif",boxShadow:"0 6px 20px rgba(252,128,25,.3)"}}>▶️ Start Game!</button>}
       </div>
       {/* Number grid */}
-      <div style={{flex:1,overflow:"auto",padding:"8px"}}><div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:5}}>
+      <div style={{flex:1,overflow:"auto",padding:"10px 12px"}}><div style={{display:"grid",gridTemplateColumns:`repeat(${(aCfg?.max||20)<=10?3:(aCfg?.max||20)<=20?4:5},1fr)`,gap:10}}>
         {Array.from({length:aCfg?.max||20}).map((_,i)=>{const n=i+1;const fb=findFb?.n===n?findFb:null;
           return<button key={n} onClick={()=>onFindTap(n)} style={{
-            padding:"10px 4px",borderRadius:12,border:"2px solid",cursor:"pointer",
+            padding:(aCfg?.max||20)<=10?"18px 8px":"12px 4px",
+            borderRadius:16,border:"3px solid",cursor:"pointer",
             borderColor:fb?(fb.ok?"#60B246":"#E23744"):"#E8E8E8",
             background:fb?(fb.ok?"#ECFDF5":"#FEF2F2"):"#fff",
-            fontFamily:"'Poppins',sans-serif",fontSize:20,fontWeight:800,color:nClr(n),
-            boxShadow:"0 1px 4px rgba(0,0,0,.06)",
-            transform:fb?.ok?"scale(1.15)":"scale(1)",transition:"all 0.15s"
+            fontFamily:"'Poppins',sans-serif",
+            fontSize:(aCfg?.max||20)<=10?28:(aCfg?.max||20)<=20?24:20,
+            fontWeight:800,color:nClr(n),
+            boxShadow:fb?.ok?"0 4px 16px rgba(96,178,70,.2)":"0 2px 8px rgba(0,0,0,.06)",
+            transform:fb?.ok?"scale(1.1)":"scale(1)",transition:"all 0.15s",
+            aspectRatio:(aCfg?.max||20)<=10?"1":"auto"
           }}>{n}</button>;
         })}
       </div></div>
@@ -1619,36 +1657,32 @@ export default function App(){
 
     {/* ═══ WRITE TAB: Split screen - top shows number, bottom is notepad ═══ */}
     {basicsTab==="write"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-      {/* ═══ TOP HALF: Reference number + how to write ═══ */}
-      <div style={{flex:"0 0 40%",display:"flex",flexDirection:"column",background:"#F8F9FB",borderBottom:"3px solid var(--pink)",overflow:"hidden"}}>
-        {/* Number + word */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"10px 12px",flex:1}}>
-          <span style={{fontSize:36}}>{NUM_EMOJI[writeNum]||"🔢"}</span>
-          <div style={{textAlign:"center"}}>
-            <div style={{fontFamily:"'Poppins',sans-serif",fontSize:52,color:"#FC8019",lineHeight:1,textShadow:"0 0 24px rgba(51,238,255,.5)"}}>{writeNum}</div>
-            <div style={{fontFamily:"'Poppins',sans-serif",fontWeight:900,fontSize:15,color:"#FC8019",textTransform:"capitalize"}}>{NW[writeNum]||""}</div>
-          </div>
-          <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||"Write it!"}`,{rate:0.5,pitch:1.0})} style={{padding:"8px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,var(--pink),var(--purple))",color:"#1C1C2B",fontSize:12,fontWeight:800,cursor:"pointer",boxShadow:"0 4px 12px rgba(204,85,255,.3)"}}>🔊 Say</button>
-            {writeOk&&<div style={{textAlign:"center",animation:"starPop 0.5s ease"}}><span style={{fontSize:20}}>✅</span></div>}
-          </div>
-        </div>
-        {/* Stroke guide */}
-        <div style={{padding:"6px 14px",background:"#FFF9F2",borderTop:"1px solid #EFEFEF"}}>
-          <p style={{fontSize:12,fontWeight:800,color:"#FC8019",textAlign:"center",margin:0}}>
-            ✏️ {NUM_STROKES[writeNum]||"Trace the number below!"}
-          </p>
-        </div>
-        {/* Score bar */}
-        {drawPts>0&&<div style={{padding:"4px 14px",background:"rgba(68,255,136,.06)"}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{flex:1,height:6,borderRadius:3,background:"rgba(255,255,255,.1)",overflow:"hidden"}}>
-              <div style={{height:"100%",borderRadius:3,background:writeOk?"var(--green)":"var(--cyan)",width:`${Math.min(100,drawPts*4)}%`,transition:"width 0.3s"}}/>
+      {/* ═══ TOP: Compact reference with ruled lines ═══ */}
+      <div style={{flexShrink:0,background:"#fff",borderBottom:"3px solid #FC8019",overflow:"hidden"}}>
+        <div style={{position:"relative",padding:"8px 14px",
+          backgroundImage:"repeating-linear-gradient(transparent,transparent 27px,#E8E8E8 27px,#E8E8E8 28px)",
+          backgroundSize:"100% 28px",backgroundPosition:"0 8px"
+        }}>
+          <div style={{position:"absolute",left:30,top:0,bottom:0,width:2,background:"#FECACA"}}/>
+          <div style={{display:"flex",alignItems:"center",gap:10,paddingLeft:36}}>
+            <span style={{fontFamily:"'Poppins',sans-serif",fontSize:52,fontWeight:900,color:"#FC8019",lineHeight:1}}>{writeNum}</span>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:800,fontSize:15,color:"#1C1C2B",textTransform:"capitalize"}}>{NW[writeNum]||""} {NUM_EMOJI[writeNum]||""}</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#93959F"}}>{NUM_STROKES[writeNum]||"Write it!"}</div>
             </div>
-            <span style={{fontSize:10,fontWeight:800,color:writeOk?"var(--green)":"rgba(255,255,255,.4)"}}>{writeOk?"Perfect!":drawPts<10?"Keep going...":drawPts<20?"Almost...":"Just a bit more!"}</span>
+            <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.5,pitch:1.0})} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FC8019",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
           </div>
+        </div>
+        {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#ECFDF5":writeScore>=60?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
+          <div style={{flex:1,height:8,borderRadius:4,background:"#E8E8E8",overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:4,transition:"width 0.5s",background:writeScore>=85?"#60B246":writeScore>=60?"#FC8019":"#E23744",width:`${writeScore}%`}}/>
+          </div>
+          <span style={{fontSize:12,fontWeight:800,color:writeScore>=85?"#60B246":writeScore>=60?"#FC8019":"#E23744"}}>{writeScore}%</span>
+          <span style={{fontSize:11,fontWeight:700,color:writeScore>=85?"#60B246":writeScore>=60?"#FC8019":"#E23744"}}>{writeScore>=85?"⭐ Perfect!":writeScore>=60?"✅ Pass!":"Keep tracing!"}</span>
+          {writeOk&&<span style={{fontSize:16}}>✅</span>}
         </div>}
       </div>
+
 
       {/* ═══ BOTTOM HALF: Big writing canvas ═══ */}
       <div style={{flex:1,position:"relative",touchAction:"none",overflow:"hidden",background:"#F1F3F7"}}>
@@ -1656,12 +1690,12 @@ export default function App(){
         <div style={{position:"absolute",left:36,top:0,bottom:0,width:2,background:"#FECACA",zIndex:1,pointerEvents:"none"}}/>
         {/* Blue ruled lines */}
         <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,
-          backgroundImage:"repeating-linear-gradient(transparent,transparent 35px,#EFEFEF 35px,#EFEFEF 36px)",
-          backgroundSize:"100% 36px",backgroundPosition:"0 18px"
+          backgroundImage:"repeating-linear-gradient(transparent,transparent 47px,#E8E8E8 47px,#E8E8E8 48px)",
+          backgroundSize:"100% 48px",backgroundPosition:"0 24px"
         }}/>
         {/* Ghost number */}
         <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:0}}>
-          <span style={{fontFamily:"'Poppins',sans-serif",fontSize:writeNum>9?130:170,fontWeight:800,color:"#F8F9FB",userSelect:"none",lineHeight:1}}>{writeNum}</span>
+          <span style={{fontFamily:"'Poppins',sans-serif",fontSize:writeNum>9?180:240,fontWeight:800,color:"rgba(0,0,0,.07)",userSelect:"none",lineHeight:1}}>{writeNum}</span>
         </div>
         {/* Canvas */}
         <canvas ref={cRef}
