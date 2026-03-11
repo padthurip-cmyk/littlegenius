@@ -1180,6 +1180,157 @@ const useRec=()=>{
 const useStore=()=>{const[d,setD]=useState(null);const[ok,setOk]=useState(false);useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4");if(r?.value)setD(JSON.parse(r.value));}catch(e){}setOk(true);})();},[]);const save=useCallback(async(nd)=>{setD(nd);try{await window.storage.set("lg4",JSON.stringify(nd));}catch(e){}},[]);return{data:d,save,loaded:ok};};
 
 // Small components
+
+// ═══ VIRTUAL TEACHER ═══
+const TEACHER_MSGS={
+  welcome:["Hi! I'm Bella 🐼! 🌟","Ready to learn something amazing?","Let's have fun together!"],
+  correct:["Wonderful job! ⭐","You're so smart! 🎉","That's perfect! Keep going!","Amazing work, superstar! 🌟","I'm so proud of you! 💪","Brilliant! You got it! ✨","Wow, you're a genius! 🧠"],
+  wrong:["Almost there! Try again! 💪","Don't worry, let's try once more!","You can do it! I believe in you! 🌈","So close! Give it another go! ⭐"],
+  encourage:["You're doing great! Keep it up!","I love how hard you're trying!","Every mistake helps you learn!","Practice makes perfect! 🎯"],
+  celebrate:["SUPERSTAR! 🌟🎉✨","You're absolutely amazing!","I knew you could do it!","What a champion! 🏆"],
+  start_numbers:["Let's learn numbers today!","Numbers are everywhere! 🔢"],
+  start_phonics:["Time for word magic! 🔤","Let's read new words together!"],
+  start_shapes:["Let's explore cool shapes! 🔷","Shapes are all around us!"],
+  start_colors:["Colors make the world beautiful! 🎨","Let's paint with words!"],
+  start_alphabet:["A-B-C time! Let's go! 🔠","Letters are the building blocks!"],
+  start_basics:["Practice makes perfect! ✏️","Let's sharpen those skills!"],
+  start_math:["Math is fun! Let's count! ➕","Numbers are your superpower!"],
+  listening:["I'm listening... speak clearly! 👂","Go ahead, say it loud! 🗣️"],
+  spelling:["Watch carefully! 👀","Let's spell it together!"],
+};
+const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return msgs[Math.floor(Math.random()*msgs.length)];};
+
+const BellaChar=({mood,size=70})=>{
+  const s=size;
+  const isWave=mood==="waving";
+  const isClap=mood==="clapping";
+  const isThink=mood==="thinking";
+  const isPoint=mood==="pointing";
+  const isStar=mood==="star";
+  const isExcited=mood==="excited";
+  const isProud=mood==="proud";
+  return<svg width={s} height={s} viewBox="0 0 100 100" style={{overflow:"visible"}}>
+    <defs>
+      <style>{`
+        @keyframes pandaBlink{0%,90%,100%{ry:4.5}95%{ry:0.5}}
+        @keyframes pandaWave{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-25deg)}50%{transform:rotate(20deg)}75%{transform:rotate(-20deg)}}
+        @keyframes pandaClapR{0%,100%{transform:translate(0,0)}50%{transform:translate(5px,-2px)}}
+        @keyframes pandaClapL{0%,100%{transform:translate(0,0)}50%{transform:translate(-5px,-2px)}}
+        @keyframes pandaThink{0%,100%{transform:translate(0,0)}50%{transform:translate(1px,-2px)}}
+        @keyframes pandaBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+        @keyframes pandaTail{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
+        @keyframes pandaStar{0%,100%{opacity:0;transform:scale(0) rotate(0deg)}50%{opacity:1;transform:scale(1.2) rotate(180deg)}}
+        @keyframes pandaEarWiggle{0%,100%{transform:rotate(0deg)}50%{transform:rotate(8deg)}}
+        @keyframes pandaBlush{0%,100%{opacity:0.4}50%{opacity:0.7}}
+        .panda-body{animation:pandaBounce 2.5s ease-in-out infinite}
+        .panda-eye{animation:pandaBlink 4s ease-in-out infinite}
+        .panda-tail{animation:pandaTail 1.5s ease-in-out infinite;transform-origin:50px 82px}
+      `}</style>
+      <radialGradient id="pg1" cx="40%" cy="35%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#F0F0F0"/></radialGradient>
+      <radialGradient id="pg2" cx="50%" cy="40%"><stop offset="0%" stopColor="#444"/><stop offset="100%" stopColor="#1a1a1a"/></radialGradient>
+    </defs>
+    <g className="panda-body">
+      {/* Tail */}
+      <g className="panda-tail">
+        <ellipse cx="60" cy="82" rx="6" ry="5" fill="#333" transform="rotate(-20,60,82)"/>
+      </g>
+      {/* Body - round belly */}
+      <ellipse cx="50" cy="68" rx="22" ry="24" fill="url(#pg1)" stroke="#E8E8E8" strokeWidth="0.5"/>
+      {/* Belly patch */}
+      <ellipse cx="50" cy="70" rx="14" ry="16" fill="#F8F8F8"/>
+      {/* Belly button */}
+      <ellipse cx="50" cy="74" rx="2" ry="1.5" fill="#E0E0E0"/>
+      {/* Left leg */}
+      <ellipse cx="38" cy="88" rx="9" ry="7" fill="#333"/>
+      <ellipse cx="38" cy="90" rx="6" ry="4" fill="#555"/>
+      {/* Right leg */}
+      <ellipse cx="62" cy="88" rx="9" ry="7" fill="#333"/>
+      <ellipse cx="62" cy="90" rx="6" ry="4" fill="#555"/>
+      {/* Paw pads on feet */}
+      <circle cx="35" cy="91" r="1.5" fill="#FFB4B4"/>
+      <circle cx="38" cy="92" r="1.5" fill="#FFB4B4"/>
+      <circle cx="41" cy="91" r="1.5" fill="#FFB4B4"/>
+      <circle cx="59" cy="91" r="1.5" fill="#FFB4B4"/>
+      <circle cx="62" cy="92" r="1.5" fill="#FFB4B4"/>
+      <circle cx="65" cy="91" r="1.5" fill="#FFB4B4"/>
+      {/* Left arm */}
+      <g style={{transformOrigin:"30px 60px",animation:isClap?"pandaClapL 0.35s ease-in-out infinite":isThink?"pandaThink 2s ease-in-out infinite":"none"}}>
+        <ellipse cx={isThink?34:26} cy={isThink?42:62} rx="9" ry="7" fill="#333" transform={isThink?"rotate(45,34,42)":"rotate(15,26,62)"}/>
+        {isThink&&<>
+          <circle cx="36" cy="38" r="3.5" fill="#333"/>
+          <circle cx="36" cy="38" r="2" fill="#555"/>
+        </>}
+      </g>
+      {/* Right arm */}
+      <g style={{transformOrigin:"70px 60px",animation:isWave?"pandaWave 0.5s ease-in-out infinite":isClap?"pandaClapR 0.35s ease-in-out infinite":isPoint?"none":"none"}}>
+        <ellipse cx={isWave||isPoint?72:74} cy={isWave||isPoint?44:62} rx="9" ry="7" fill="#333" transform={isWave?"rotate(-30,72,44)":isPoint?"rotate(-50,72,44)":"rotate(-15,74,62)"}/>
+        {isPoint&&<>
+          <line x1="76" y1="38" x2="82" y2="28" stroke="#333" strokeWidth="3" strokeLinecap="round"/>
+          <circle cx="82" cy="27" r="2" fill="#333"/>
+        </>}
+      </g>
+      {/* Head */}
+      <ellipse cx="50" cy="32" rx="22" ry="20" fill="url(#pg1)" stroke="#E8E8E8" strokeWidth="0.3"/>
+      {/* Ears */}
+      <g style={{transformOrigin:"30px 14px",animation:isExcited||isStar?"pandaEarWiggle 0.4s ease-in-out infinite":"none"}}>
+        <circle cx="30" cy="14" r="10" fill="#333"/>
+        <circle cx="30" cy="14" r="5.5" fill="#FFB4B4" opacity="0.6"/>
+      </g>
+      <g style={{transformOrigin:"70px 14px",animation:isExcited||isStar?"pandaEarWiggle 0.4s ease-in-out 0.1s infinite":"none"}}>
+        <circle cx="70" cy="14" r="10" fill="#333"/>
+        <circle cx="70" cy="14" r="5.5" fill="#FFB4B4" opacity="0.6"/>
+      </g>
+      {/* Eye patches */}
+      <ellipse cx="38" cy="30" rx="10" ry="8" fill="url(#pg2)" transform="rotate(-8,38,30)"/>
+      <ellipse cx="62" cy="30" rx="10" ry="8" fill="url(#pg2)" transform="rotate(8,62,30)"/>
+      {/* Eyes - white */}
+      <ellipse cx="38" cy="30" rx="5.5" ry="5" fill="#fff"/>
+      <ellipse cx="62" cy="30" rx="5.5" ry="5" fill="#fff"/>
+      {/* Pupils - animated blink */}
+      <ellipse className="panda-eye" cx={isThink?36:39} cy="30" rx="3.2" ry="4.5" fill="#222"/>
+      <ellipse className="panda-eye" cx={isThink?60:63} cy="30" rx="3.2" ry="4.5" fill="#222"/>
+      {/* Eye sparkle */}
+      <circle cx={isThink?37:40} cy="28" r="1.3" fill="#fff"/>
+      <circle cx={isThink?61:64} cy="28" r="1.3" fill="#fff"/>
+      <circle cx={isThink?35.5:38.5} cy="31" r="0.7" fill="#fff" opacity="0.6"/>
+      <circle cx={isThink?59.5:62.5} cy="31" r="0.7" fill="#fff" opacity="0.6"/>
+      {/* Nose */}
+      <ellipse cx="50" cy="38" rx="4" ry="2.8" fill="#333"/>
+      <ellipse cx="49" cy="37.5" rx="1.2" ry="0.8" fill="#555"/>
+      {/* Mouth */}
+      {isExcited||isStar?
+        <path d="M 43,42 Q 50,50 57,42" fill="#FF6B6B" stroke="#333" strokeWidth="0.8"/>:
+        isProud?
+        <path d="M 44,42 Q 50,47 56,42" fill="none" stroke="#333" strokeWidth="1.2" strokeLinecap="round"/>:
+        <><line x1="50" y1="40" x2="50" y2="42" stroke="#333" strokeWidth="0.8"/>
+        <path d="M 44,43 Q 47,46 50,42 Q 53,46 56,43" fill="none" stroke="#333" strokeWidth="1" strokeLinecap="round"/></>
+      }
+      {/* Blush */}
+      <ellipse cx="30" cy="37" rx="5" ry="3" fill="#FFB4B4" opacity="0.4" style={{animation:(isExcited||isProud||isStar)?"pandaBlush 1s ease-in-out infinite":"none"}}/>
+      <ellipse cx="70" cy="37" rx="5" ry="3" fill="#FFB4B4" opacity="0.4" style={{animation:(isExcited||isProud||isStar)?"pandaBlush 1s ease-in-out 0.2s infinite":"none"}}/>
+      {/* Teacher hat - small beret */}
+      <ellipse cx="50" cy="14" rx="16" ry="5" fill="#6366F1"/>
+      <ellipse cx="50" cy="12" rx="12" ry="7" fill="#6366F1"/>
+      <circle cx="50" cy="7" r="2.5" fill="#818CF8"/>
+      {/* Stars/sparkles for excited moods */}
+      {(isStar||isExcited)&&<>
+        <text x="2" y="10" fontSize="12" style={{animation:"pandaStar 0.8s ease-in-out infinite"}}>✨</text>
+        <text x="82" y="6" fontSize="12" style={{animation:"pandaStar 0.8s ease-in-out 0.3s infinite"}}>⭐</text>
+        <text x="86" y="50" fontSize="10" style={{animation:"pandaStar 0.8s ease-in-out 0.6s infinite"}}>🌟</text>
+        <text x="-4" y="50" fontSize="10" style={{animation:"pandaStar 0.8s ease-in-out 0.9s infinite"}}>💫</text>
+      </>}
+      {/* Hearts for proud */}
+      {isProud&&<>
+        <text x="6" y="16" fontSize="10" style={{animation:"pandaStar 1.2s ease-in-out infinite"}}>💕</text>
+        <text x="80" y="12" fontSize="10" style={{animation:"pandaStar 1.2s ease-in-out 0.4s infinite"}}>💖</text>
+      </>}
+      {/* Clap effect */}
+      {isClap&&<text x="44" y="56" fontSize="12" style={{animation:"pandaStar 0.3s ease-in-out infinite"}}>👏</text>}
+      {/* Wave sparkle */}
+      {isWave&&<text x="80" y="38" fontSize="10" style={{animation:"pandaStar 0.5s ease-in-out infinite"}}>✨</text>}
+    </g>
+  </svg>;
+};
 const Particles=({count=10,emojis=["⭐","✨","🌟","💫"]})=>{const items=useRef(Array.from({length:count},(_,i)=>({id:i,emoji:emojis[i%emojis.length],x:Math.random()*100,y:Math.random()*100,sz:12+Math.random()*14,dur:8+Math.random()*12,dl:-Math.random()*10,dr:20+Math.random()*40}))).current;return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>{items.map(p=><div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:`${p.y}%`,fontSize:p.sz,opacity:0.25,animation:`floatP ${p.dur}s ease-in-out ${p.dl}s infinite`,"--dr":`${p.dr}px`}}>{p.emoji}</div>)}</div>;};
 const Confetti=({active})=>{if(!active)return null;return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999}}>{Array.from({length:40},(_,i)=><div key={i} style={{position:"absolute",left:`${10+Math.random()*80}%`,top:"-5%",width:6+Math.random()*8,height:4+Math.random()*5,background:["#FC8019","#60B246","#E23744","#5D8CF4","#FF9933","#8B5CF6","#EC4899","#FBBF24"][i%8],borderRadius:2,animation:`confFall ${1+Math.random()*1.5}s ease-in ${Math.random()*0.5}s forwards`}}/>)}</div>;};
 const Stars=({count,size=26})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"8px 0"}}>{[1,2,3,4,5].map(i=><span key={i} style={{fontSize:size,opacity:i<=count?1:0.2,filter:i<=count?"drop-shadow(0 2px 8px rgba(251,191,36,0.5))":"none",animation:i<=count?`starPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.12}s both`:"none"}}>{i<=count?"⭐":"☆"}</span>)}</div>;
@@ -1280,7 +1431,14 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("happy");const[teacherVis,setTeacherVis]=useState(false);
+  const teacherTimer=useRef(null);
+  const showTeacher=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);setTeacherVis(true);clearTimeout(teacherTimer.current);teacherTimer.current=setTimeout(()=>setTeacherVis(false),5000);};
+  // Trigger teacher on screen change
+  useEffect(()=>{
+    const msgs={home:["waving","Hi! I'm Bella 🐼! Ready to learn? 🌟"],numbers:["excited","Let's explore numbers today! 🔢"],phonics:["happy","Time for word magic! Let's read! 🔤"],shapes:["excited","Shapes are everywhere! Let's find them! 🔷"],colors:["happy","Colors make everything beautiful! 🎨"],alphabet:["star","A-B-C time! Letters are super fun! 🔠"],basics:["pointing","Practice makes perfect! Let's go! ✏️"],rewards:["excited","Yay! Let's see your prizes! 🎁"],settings:["happy","Let's check your profile! ⚙️"]};
+    const m=msgs[scr];if(m)showTeacher(m[0],m[1]);
+  },[scr]);
   // Basics state
   const[basicsTab,setBasicsTab]=useState("explore"); // "explore", "find", "write"
   const[findTarget,setFindTarget]=useState(null);const[findScore,setFindScore]=useState(0);const[findStreak,setFindStreak]=useState(0);const[findFb,setFindFb]=useState(null);const[findUsed,setFindUsed]=useState([]);const[findLevel,setFindLevel]=useState(1);
@@ -1307,6 +1465,10 @@ export default function App(){
     return()=>clearTimeout(t);
   },[loaded]);
   const aCfg=prof?AGE_CFG[prof.age]||AGE_CFG[4]:AGE_CFG[4];
+
+  // Virtual Teacher
+  const teacher=(mood,cat)=>{setTeacherMood(mood);setTeacherMsg(tMsg(cat));};
+  const teacherSay=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);};
   const boom=()=>{setConfetti(true);setTimeout(()=>setConfetti(false),3000);};
   const flyPts=(n)=>{setPtAnim(`+${n}`);setTimeout(()=>setPtAnim(null),1500);};
   // CRITICAL: Combined save to prevent stale state overwrites
@@ -1328,7 +1490,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{setTeacherVis(false);stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -1542,7 +1704,7 @@ export default function App(){
     // Step 5: Speaking practice (if enabled)
     if(speakMode){
       await speak(`${kidName}, your turn. Say, ${w}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setNStep("listening");pRef.current=false;rec.start(handleNumResult);
+      stop();await wait(600);setNStep("listening");pRef.current=false;showTeacher("happy","I'm listening! Say it loud! 👂");rec.start(handleNumResult);
     }else{
       pRef.current=false;
       if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
@@ -1550,7 +1712,7 @@ export default function App(){
       setNStep("idle");
     }
   };
-  const retryNum=async()=>{
+  const retryNum=async()=>{showTeacher("happy","Try again! You can do it! 💪");
     setSpRes(null);setSpAcc(null);
     setNStep("countdown");
     await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);
@@ -1592,7 +1754,7 @@ export default function App(){
     // Step 5: Speaking (if enabled)
     if(speakMode){
       await speak(`${kidName}, your turn. Say, ${wd.word}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setPhStep("listening");pRef.current=false;rec.start(handlePhResult);
+      stop();await wait(600);setPhStep("listening");pRef.current=false;showTeacher("happy","Your turn! Say the word! 🗣️");rec.start(handlePhResult);
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
@@ -1600,7 +1762,7 @@ export default function App(){
       setPhStep("idle");
     }
   };
-  const retryPh=async()=>{
+  const retryPh=async()=>{showTeacher("happy","One more try! I believe in you! 🌈");
     setPhRes(null);setPhAcc(null);
     setPhStep("countdown");
     await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);
@@ -1728,14 +1890,14 @@ export default function App(){
     setMathAnswer(choice);
     setMathTotal(t=>t+1);
     if(choice===mathProblem.answer){
-      setMathFb("correct");
+      setMathFb("correct");showTeacher("clapping","That's right! You're so smart! 🧠");
       setMathScore(s=>s+1);
       awardPoints(3,"math",`${mathProblem.a}${mathProblem.op}${mathProblem.b}`);
       await speak(`${choice}! Correct! Well done!`,{rate:0.6,pitch:1.0});
       await wait(1000);
       genMath();
     } else {
-      setMathFb("wrong");
+      setMathFb("wrong");showTeacher("thinking","Almost! Let me show you the answer 🤔");
       await speak(`Not quite. ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.55,pitch:1.0});
       await wait(2000);
       genMath();
@@ -1818,7 +1980,7 @@ export default function App(){
       setMatchCorrect(tappedLetter);
       setMatchDone(p=>[...p,tappedLetter]);
       setMatchScore(s=>s+1);
-      boom(); // 🎆 CONFETTI on every correct match!
+      boom(); // 🎆 CONFETTI + teacher on every correct match!
       await speak(`${tappedLetter}! Correct! Well done!`,{rate:0.7,pitch:1.0});
       await wait(800);
       setMatchCorrect(null);
@@ -1878,6 +2040,7 @@ export default function App(){
       setFindFb({ok:true,n});setFindScore(s=>s+1);setFindStreak(s=>s+1);
       if(!isDone("basics",n)) awardPoints(3,"basics",n);
       if((findStreak+1)%5===0) boom();
+      showTeacher("clapping","You found it! Excellent! 🎯");
       // Show celebration overlay with spelling
       setFoundNum(n);
       (async()=>{
@@ -2019,58 +2182,169 @@ export default function App(){
 
     const buyR=(r)=>{if((prof?.points||0)<r.cost)return;save({...prof,points:prof.points-r.cost,rewards:[...(prof.rewards||[]),{...r,at:Date.now()}]});boom();setRwdMsg(`${r.emoji} Yay! You earned ${r.name}! Show your parents!`);setTimeout(()=>setRwdMsg(null),4000);};
 
+  // ═══ VIRTUAL TEACHER (renders on all screens) ═══
+  const TeacherBubble=teacherVis&&teacherMsg?<div style={{position:"fixed",bottom:10,left:8,right:8,zIndex:200,display:"flex",alignItems:"flex-end",gap:6,animation:"slideUp 0.4s ease-out",pointerEvents:"none",maxWidth:500,margin:"0 auto"}}>
+    {/* Animated cartoon character */}
+    <div style={{flexShrink:0,filter:"drop-shadow(0 4px 8px rgba(0,0,0,.15))"}}>
+      <BellaChar mood={teacherMood} size={66}/>
+    </div>
+    {/* Speech bubble */}
+    <div style={{flex:1,background:"#fff",borderRadius:"18px 18px 18px 6px",padding:"10px 14px",boxShadow:"0 6px 24px rgba(0,0,0,.1)",border:"2px solid #EEF2FF",position:"relative"}}>
+      {/* Bubble tail */}
+      <div style={{position:"absolute",left:-6,bottom:8,width:0,height:0,borderTop:"6px solid transparent",borderBottom:"6px solid transparent",borderRight:"8px solid #fff"}}/>
+      <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:3}}>
+        <div style={{width:6,height:6,borderRadius:"50%",background:"#60B246"}}/>
+        <span style={{fontSize:9,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1}}>Bella 🐼</span>
+      </div>
+      <div style={{fontSize:13,fontWeight:700,color:"#1C1C2B",lineHeight:1.4}}>{teacherMsg}</div>
+    </div>
+  </div>:null;
+
   // ═══ SCREENS ═══
 
-  if(scr==="splash")return<div style={{background:"#fff",position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}><Particles count={20} emojis={["⭐","✨","🌟","💫"]}/><div style={{textAlign:"center",zIndex:2,animation:"splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1)"}}><div style={{fontSize:90,animation:"mascotB 2s ease-in-out infinite"}}>🧒</div><h1 style={{fontFamily:"'Poppins',sans-serif",fontSize:48,color:"#FC8019",fontWeight:800}}>Little Genius</h1><p style={{color:"rgba(255,255,255,.7)",fontSize:14,fontWeight:600,fontFamily:"'Poppins',sans-serif",letterSpacing:3,textTransform:"uppercase"}}>Learn • Play • Grow</p><div style={{display:"flex",gap:12,justifyContent:"center",marginTop:36}}>{[0,1,2].map(i=><div key={i} style={{width:12,height:12,borderRadius:"50%",background:"#FFE66D",animation:`dotB 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}</div></div><style>{CSS}</style></div>;
+  if(scr==="splash")return<div style={{background:"linear-gradient(160deg,#FFF5EB,#fff,#EEF2FF)",position:"fixed",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",fontFamily:"'Poppins',sans-serif"}}>
+    <Particles count={15} emojis={["⭐","✨","🌟","💫"]}/>
+    <div style={{textAlign:"center",zIndex:2,animation:"splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1)"}}>
+      <div style={{fontSize:80,animation:"mascotB 2s ease-in-out infinite",marginBottom:8}}>🧒</div>
+      <h1 style={{fontSize:42,fontWeight:900,color:"#FC8019",margin:0,letterSpacing:-1}}>Little Genius</h1>
+      <p style={{color:"#93959F",fontSize:14,fontWeight:700,letterSpacing:3,textTransform:"uppercase",marginTop:6}}>Learn • Play • Grow</p>
+      <div style={{display:"flex",gap:10,justifyContent:"center",marginTop:32}}>
+        {[0,1,2].map(i=><div key={i} style={{width:10,height:10,borderRadius:"50%",background:"#FC8019",animation:`dotB 1.2s ease-in-out ${i*0.15}s infinite`}}/>)}
+      </div>
+    </div>
+    {TeacherBubble}<style>{CSS}</style>
+  </div>;
 
-  if(scr==="onboard")return<div style={{height:"100dvh",overflow:"auto",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",padding:16,position:"relative",overflow:"hidden"}}><Particles count={8} emojis={["🌸","🦋","⭐","🌈"]}/><div style={{background:"#F8F9FB",backdropFilter:"blur(20px)",borderRadius:32,padding:"28px 24px",maxWidth:400,width:"100%",boxShadow:"0 24px 80px rgba(99,102,241,0.12)",zIndex:2,animation:"slideUp 0.5s ease-out"}}>
-    {obSt===0?<><div style={{textAlign:"center",fontSize:56,animation:"mascotB 2s ease-in-out infinite"}}>👋</div><h2 style={{fontFamily:"'Poppins',sans-serif",fontSize:26,textAlign:"center",color:"#1C1C2B",margin:"8px 0"}}>Hello!</h2><label style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,display:"block",marginBottom:6,fontFamily:"'Poppins',sans-serif"}}>Your Name</label><input value={obN} onChange={e=>setObN(e.target.value)} placeholder="Type name..." style={{width:"100%",padding:"6px 10px",border:"3px solid rgba(255,255,255,0.1)",borderRadius:16,fontSize:16,fontWeight:700,fontFamily:"'Poppins',sans-serif",outline:"none",boxSizing:"border-box",background:"#F8F9FB"}}/><label style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,display:"block",margin:"16px 0 6px",fontFamily:"'Poppins',sans-serif"}}>Age</label><div style={{display:"flex",gap:8,flexWrap:"wrap"}}>{[3,4,5,6,7,8].map(a=><button key={a} onClick={()=>setObA(a)} style={{padding:"10px 18px",borderRadius:14,border:"3px solid",borderColor:obA===a?"#6366F1":"#e5e7eb",background:obA===a?"linear-gradient(135deg,#6366F1,#8B5CF6)":"#fff",color:obA===a?"#fff":"#333",fontSize:18,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",transition:"all 0.3s",transform:obA===a?"scale(1.1)":"scale(1)"}}>{a}</button>)}</div><button onClick={()=>setObSt(1)} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6366F1,#8B5CF6)",color:"#1C1C2B",fontSize:16,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:20}}>Next →</button></>:
-    <><h2 style={{fontFamily:"'Poppins',sans-serif",fontSize:24,textAlign:"center",color:"#1C1C2B"}}>Pick your look! ✨</h2><div style={{display:"flex",gap:12,justifyContent:"center",margin:"14px 0"}}>{[{g:"boy",e:"👦",c:"#6366F1"},{g:"girl",e:"👧",c:"#EC4899"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{flex:1,padding:18,borderRadius:20,border:"3px solid",borderColor:obG===x.g?x.c:"#e5e7eb",background:obG===x.g?"#EEF2FF":"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,transition:"all 0.3s"}}><span style={{fontSize:40}}>{x.e}</span><span style={{fontWeight:800,fontSize:13,fontFamily:"'Poppins',sans-serif"}}>{x.g.charAt(0).toUpperCase()+x.g.slice(1)}</span></button>)}</div><div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>{AVATARS[obG].map((av,i)=><button key={i} onClick={()=>setObAv(i)} style={{padding:12,borderRadius:16,border:"3px solid",borderColor:obAv===i?"#6366F1":"#e5e7eb",background:"#F1F3F7",fontSize:30,cursor:"pointer",transition:"all 0.3s",transform:obAv===i?"scale(1.15)":"scale(1)",display:"flex",alignItems:"center",justifyContent:"center"}}>{av}</button>)}</div><div style={{display:"flex",gap:10,marginTop:18}}><button onClick={()=>setObSt(0)} style={{flex:1,padding:12,borderRadius:16,border:"3px solid rgba(255,255,255,0.1)",background:"#F1F3F7",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer"}}>← Back</button><button onClick={()=>{rec.warmUp();save({name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()});setScr("home");}} style={{flex:2,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6366F1,#8B5CF6)",color:"#fff",fontSize:16,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer"}}>Let's Go! 🚀</button></div></>}
-  </div><style>{CSS}</style></div>;
 
-  if(scr==="home")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column",overflow:"hidden"}}><Particles/><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<div style={{background:"linear-gradient(135deg,#FC8019,#FF9933)",padding:"18px 18px 20px",borderRadius:"0 0 24px 24px",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"absolute",top:-40,right:-40,width:100,height:100,borderRadius:"50%",background:"rgba(255,255,255,.1)"}}/>
+  if(scr==="onboard")return<div style={{height:"100dvh",overflow:"auto",background:"linear-gradient(160deg,#FFF5EB,#fff,#EEF2FF)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",fontFamily:"'Poppins',sans-serif"}}>
+    <Particles count={6} emojis={["🌸","🦋","⭐","🌈"]}/>
+    <div style={{background:"#fff",borderRadius:28,padding:"32px 24px",maxWidth:420,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,.08)",zIndex:2,animation:"slideUp 0.5s ease-out"}}>
+    {obSt===0?<>
+      {/* Step 1: Name + Age */}
+      <div style={{textAlign:"center",marginBottom:20}}>
+        <div style={{fontSize:56,animation:"mascotB 2s ease-in-out infinite"}}>👋</div>
+        <h2 style={{fontSize:28,fontWeight:900,color:"#1C1C2B",margin:"8px 0 4px"}}>Hello there!</h2>
+        <p style={{fontSize:13,color:"#93959F",fontWeight:600}}>Let's set up your profile</p>
+      </div>
+      <label style={{fontSize:12,fontWeight:800,color:"#FC8019",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:8}}>What's your name?</label>
+      <input value={obN} onChange={e=>setObN(e.target.value)} placeholder="Type your name..." style={{width:"100%",padding:"14px 16px",border:"2px solid #E8E8E8",borderRadius:16,fontSize:17,fontWeight:700,fontFamily:"'Poppins',sans-serif",outline:"none",boxSizing:"border-box",background:"#F8F9FB",transition:"border-color 0.2s"}}/>
+      <label style={{fontSize:12,fontWeight:800,color:"#FC8019",textTransform:"uppercase",letterSpacing:1.5,display:"block",margin:"20px 0 10px"}}>How old are you?</label>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8}}>
+        {[3,4,5,6,7,8].map(a=><button key={a} onClick={()=>setObA(a)} style={{
+          padding:"14px 0",borderRadius:16,border:"3px solid",
+          borderColor:obA===a?"#FC8019":"#E8E8E8",
+          background:obA===a?"linear-gradient(135deg,#FC8019,#FF9933)":"#fff",
+          color:obA===a?"#fff":"#1C1C2B",fontSize:20,fontWeight:900,
+          fontFamily:"'Poppins',sans-serif",cursor:"pointer",
+          transition:"all 0.2s",transform:obA===a?"scale(1.08)":"scale(1)",
+          boxShadow:obA===a?"0 4px 12px rgba(252,128,25,.3)":"none"
+        }}>{a}</button>)}
+      </div>
+      <button onClick={()=>setObSt(1)} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:24,boxShadow:"0 6px 20px rgba(252,128,25,.3)",letterSpacing:0.5}}>Next →</button>
+    </>:
+    <>
+      {/* Step 2: Gender + Avatar */}
+      <div style={{textAlign:"center",marginBottom:16}}>
+        <h2 style={{fontSize:24,fontWeight:900,color:"#1C1C2B",margin:0}}>Pick your look! ✨</h2>
+        <p style={{fontSize:13,color:"#93959F",fontWeight:600,marginTop:4}}>Choose your character</p>
+      </div>
+      <label style={{fontSize:12,fontWeight:800,color:"#FC8019",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:10}}>I am a...</label>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,marginBottom:20}}>
+        {[{g:"boy",e:"👦",c:"#6366F1"},{g:"girl",e:"👧",c:"#EC4899"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{
+          padding:20,borderRadius:20,border:"3px solid",
+          borderColor:obG===x.g?x.c:"#E8E8E8",
+          background:obG===x.g?(x.g==="boy"?"#EEF2FF":"#FDF2F8"):"#fff",
+          cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:8,
+          transition:"all 0.2s",transform:obG===x.g?"scale(1.04)":"scale(1)",
+          boxShadow:obG===x.g?`0 4px 16px ${x.c}33`:"none"
+        }}>
+          <span style={{fontSize:44}}>{x.e}</span>
+          <span style={{fontWeight:800,fontSize:15,color:obG===x.g?x.c:"#93959F"}}>{x.g.charAt(0).toUpperCase()+x.g.slice(1)}</span>
+        </button>)}
+      </div>
+      <label style={{fontSize:12,fontWeight:800,color:"#FC8019",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:10}}>Pick an avatar</label>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+        {AVATARS[obG].map((av,i)=><button key={i} onClick={()=>setObAv(i)} style={{
+          padding:14,borderRadius:18,border:"3px solid",
+          borderColor:obAv===i?"#FC8019":"#E8E8E8",
+          background:obAv===i?"#FFF5EB":"#F8F9FB",
+          fontSize:34,cursor:"pointer",transition:"all 0.2s",
+          transform:obAv===i?"scale(1.12)":"scale(1)",
+          display:"flex",alignItems:"center",justifyContent:"center",
+          boxShadow:obAv===i?"0 4px 12px rgba(252,128,25,.2)":"none"
+        }}>{av}</button>)}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
+        <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:16,border:"2px solid #E8E8E8",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",color:"#93959F"}}>← Back</button>
+        <button onClick={()=>{rec.warmUp();save({name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()});setScr("home");}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",boxShadow:"0 6px 20px rgba(252,128,25,.3)"}}>Let's Go! 🚀</button>
+      </div>
+    </>}
+    </div>
+    {TeacherBubble}<style>{CSS}</style>
+  </div>;
+
+
+  if(scr==="home")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#F8F9FB",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
+    <Confetti active={confetti}/>
+    {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
+    {/* ═══ HEADER ═══ */}
+    <div style={{background:"linear-gradient(135deg,#FC8019,#FF9933)",padding:"20px 20px 24px",flexShrink:0,position:"relative",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:-50,right:-50,width:140,height:140,borderRadius:"50%",background:"rgba(255,255,255,.08)"}}/>
+      <div style={{position:"absolute",bottom:-30,left:-20,width:80,height:80,borderRadius:"50%",background:"rgba(255,255,255,.06)"}}/>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",position:"relative",zIndex:2}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{fontSize:34,animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:48,height:48,borderRadius:16,background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
           <div>
-            <div style={{color:"#fff",fontWeight:800,fontSize:17}}>{prof?.name||"Buddy"}</div>
-            <div style={{color:"rgba(255,255,255,.75)",fontSize:12,fontWeight:600}}>Age {prof?.age||4} • {aCfg.diff}</div>
+            <div style={{color:"#fff",fontWeight:800,fontSize:18}}>{prof?.name||"Buddy"}</div>
+            <div style={{color:"rgba(255,255,255,.8)",fontSize:12,fontWeight:600}}>Age {prof?.age||4} • {aCfg.diff}</div>
           </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:5,background:"rgba(255,255,255,.2)",padding:"6px 14px",borderRadius:20}}>
+        <div style={{background:"rgba(255,255,255,.2)",padding:"8px 16px",borderRadius:24,display:"flex",alignItems:"center",gap:6}}>
           <span style={{fontSize:16}}>💰</span>
-          <span style={{color:"#fff",fontWeight:900,fontSize:16,fontFamily:"'Poppins',sans-serif"}}>{prof?.points||0}</span>
+          <span style={{color:"#fff",fontWeight:900,fontSize:17}}>{prof?.points||0}</span>
         </div>
       </div>
-      <h2 style={{fontFamily:"'Poppins',sans-serif",color:"#fff",fontSize:20,marginTop:10,position:"relative",zIndex:2}}>What shall we learn? 🎯</h2>
+      <h2 style={{color:"#fff",fontSize:20,fontWeight:800,marginTop:14,position:"relative",zIndex:2}}>What shall we learn? 🎯</h2>
     </div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:16,padding:"16px 16px 12px",marginTop:0,position:"relative",zIndex:3}}>{[
-      {id:"numbers",icon:"🔢",title:"Numbers",sub:`Learn 1-${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#FF4757)",shadow:"rgba(255,71,87,.25)"},
-      {id:"alphabet",icon:"🔠",title:"ABC",sub:"A-Z Letters",grad:"linear-gradient(135deg,#6366F1,#818CF8)",shadow:"rgba(99,102,241,.25)"},{id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & Sounds",grad:"linear-gradient(135deg,#4ECDC4,#26D0CE)",shadow:"rgba(78,205,196,.25)"},
-      {id:"basics",icon:"🧩",title:"Basics",sub:"Find & Write",grad:"linear-gradient(135deg,#FC8019,#FF9F43)",shadow:"rgba(252,128,25,.25)"},
-      {id:"shapes",icon:"🔷",title:"Shapes",sub:"8 Shapes",grad:"linear-gradient(135deg,#A855F7,#8B5CF6)",shadow:"rgba(168,85,247,.25)"},
-      {id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow Fun",grad:"linear-gradient(135deg,#F472B6,#EC4899)",shadow:"rgba(244,114,182,.25)"},
-      {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points!",grad:"linear-gradient(135deg,#FBBF24,#F59E0B)",shadow:"rgba(251,191,36,.25)"},
-      {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748B)",shadow:"rgba(148,163,184,.25)"}
-    ].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();setScr(m.id);}} style={{
-      display:"flex",alignItems:"center",gap:14,
-      padding:"20px 16px",borderRadius:22,border:"none",cursor:"pointer",
-      fontFamily:"'Poppins',sans-serif",background:m.grad,
-      boxShadow:`0 8px 24px ${m.shadow}`,
-      animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,
-      position:"relative",overflow:"hidden",textAlign:"left"
-    }}>
-      <div style={{position:"absolute",top:-20,right:-20,width:70,height:70,borderRadius:"50%",background:"rgba(255,255,255,0.1)"}}/>
-      <div style={{position:"absolute",bottom:-12,right:24,width:36,height:36,borderRadius:"50%",background:"rgba(255,255,255,0.07)"}}/>
-      <span style={{fontSize:38,flexShrink:0,filter:"drop-shadow(0 2px 4px rgba(0,0,0,.15))"}}>{m.icon}</span>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{color:"#fff",fontWeight:800,fontSize:18,letterSpacing:0.3}}>{m.title}</div>
-        <div style={{color:"rgba(255,255,255,.8)",fontSize:13,fontWeight:600,marginTop:2}}>{m.sub}</div>
-        {(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"100%",height:5,background:"rgba(255,255,255,0.2)",borderRadius:4,marginTop:8,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:4,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}
+    {/* ═══ TILES GRID ═══ */}
+    <div style={{flex:1,overflow:"auto",padding:"16px"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14}}>
+        {[
+          {id:"numbers",icon:"🔢",title:"Numbers",sub:`Learn 1-${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#FF4757)",shadow:"rgba(255,71,87,.2)"},
+          {id:"alphabet",icon:"🔠",title:"ABC",sub:"A-Z Letters",grad:"linear-gradient(135deg,#6366F1,#818CF8)",shadow:"rgba(99,102,241,.2)"},
+          {id:"phonics",icon:"🔤",title:"Phonics",sub:"500+ Words",grad:"linear-gradient(135deg,#4ECDC4,#26D0CE)",shadow:"rgba(78,205,196,.2)"},
+          {id:"basics",icon:"🧩",title:"Basics",sub:"Find & Write",grad:"linear-gradient(135deg,#FC8019,#FF9F43)",shadow:"rgba(252,128,25,.2)"},
+          {id:"shapes",icon:"🔷",title:"Shapes",sub:"12 Shapes",grad:"linear-gradient(135deg,#A855F7,#8B5CF6)",shadow:"rgba(168,85,247,.2)"},
+          {id:"colors",icon:"🎨",title:"Colors",sub:"13 Colors",grad:"linear-gradient(135deg,#F472B6,#EC4899)",shadow:"rgba(244,114,182,.2)"},
+          {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",grad:"linear-gradient(135deg,#FBBF24,#F59E0B)",shadow:"rgba(251,191,36,.2)"},
+          {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748B)",shadow:"rgba(148,163,184,.2)"}
+        ].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();setScr(m.id);}} style={{
+          display:"flex",alignItems:"center",gap:12,
+          padding:"18px 16px",borderRadius:20,border:"none",cursor:"pointer",
+          fontFamily:"'Poppins',sans-serif",background:m.grad,
+          boxShadow:`0 4px 16px ${m.shadow}`,
+          animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.05}s both`,
+          position:"relative",overflow:"hidden",textAlign:"left",width:"100%"
+        }}>
+          <div style={{position:"absolute",top:-16,right:-16,width:56,height:56,borderRadius:"50%",background:"rgba(255,255,255,.1)"}}/>
+          <span style={{fontSize:34,flexShrink:0}}>{m.icon}</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{color:"#fff",fontWeight:800,fontSize:16}}>{m.title}</div>
+            <div style={{color:"rgba(255,255,255,.8)",fontSize:12,fontWeight:600,marginTop:1}}>{m.sub}</div>
+            {(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"100%",height:4,background:"rgba(255,255,255,.2)",borderRadius:3,marginTop:6,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:3,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}
+          </div>
+        </button>)}
       </div>
-    </button>)}</div>
-    <div style={{margin:"6px 16px 16px",padding:"14px 16px",background:"rgba(251,191,36,0.1)",borderRadius:18,border:"2px solid rgba(255,224,51,0.15)",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:26,animation:"tipW 2s ease-in-out infinite"}}>💡</span><p style={{fontSize:12,color:"#FC8019",fontWeight:700,flex:1}}>⭐⭐⭐⭐⭐ = 20 points per word!</p></div><style>{CSS}</style></div>;
+      {TeacherBubble}
+      {/* Tip */}
+      <div style={{margin:"14px 0 8px",padding:"12px 16px",background:"#fff",borderRadius:16,display:"flex",alignItems:"center",gap:10,boxShadow:"0 2px 8px rgba(0,0,0,.04)"}}>
+        <span style={{fontSize:22}}>💡</span>
+        <p style={{fontSize:12,color:"#93959F",fontWeight:700,flex:1}}>⭐⭐⭐⭐⭐ = 20 points per word!</p>
+      </div>
+    </div>
+    {TeacherBubble}<style>{CSS}</style>
+  </div>;
+
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
   if(scr==="numbers"&&selNum){const w=NW[selNum];const scene=getScene(selNum);const color=nClr(selNum);const phs=NPH[selNum];return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={`Number ${selNum}`} onBack={()=>{stop();pRef.current=false;setSelNum(null);setNStep("idle");}} points={prof?.points||0}/>
@@ -2176,7 +2450,7 @@ export default function App(){
         {nStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]}/>}
         {nStep==="result"&&spRes!==null&&<ResultBox acc={spAcc} result={spRes} expected={w} onRetry={retryNum} onDone={()=>{setSpRes(null);const next=selNum>=(aCfg?.max||20)?1:selNum+1;setSelNum(next);setNStep("idle");setTimeout(()=>playNum(next),200);}} color={color} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
-    </div><style>{CSS}</style></div>;}
+    </div>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ NUMBERS GRID ═══
   if(scr==="numbers"&&!selNum)return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"hidden",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Numbers" onBack={goHome} points={prof?.points||0}/>
@@ -2259,7 +2533,7 @@ export default function App(){
         <button onClick={genMath} style={{marginTop:16,padding:"14px 32px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer"}}>▶️ Start!</button>
       </div>}
     </div>}
-    <style>{CSS}</style></div>;
+    {TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ PHONICS DETAIL ═══
   if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
@@ -2368,10 +2642,10 @@ export default function App(){
         {phStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""}/>}
         {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhRes(null);const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),200);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
-    </div><style>{CSS}</style></div>;}
+    </div>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ PHONICS GRID ═══
-  if(scr==="phonics")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#F8F9FB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Poppins',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={()=>{rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Poppins',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both, cardFloat ${2.5+Math.random()*1.5}s ease-in-out ${0.5+i*0.06}s infinite`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#1C1C2B",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:`iconF 3s ease-in-out ${i*0.2}s infinite`}}>{w.img}</span><span style={{fontFamily:"'Poppins',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#F1F3F7",color:"#93959F",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><style>{CSS}</style></div>;
+  if(scr==="phonics")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#F8F9FB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Poppins',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={()=>{rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Poppins',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both, cardFloat ${2.5+Math.random()*1.5}s ease-in-out ${0.5+i*0.06}s infinite`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#1C1C2B",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:`iconF 3s ease-in-out ${i*0.2}s infinite`}}>{w.img}</span><span style={{fontFamily:"'Poppins',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#F1F3F7",color:"#93959F",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
@@ -2395,10 +2669,10 @@ export default function App(){
         {shStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleShResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
         {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShRes(null);const idx=SHAPES.findIndex(x=>x.name===sh.name);const next=SHAPES[(idx+1)%SHAPES.length];setSelShape(next);setShStep("idle");setTimeout(()=>playShape(next),200);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
-    </div><style>{CSS}</style></div>;}
+    </div>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ SHAPES GRID ═══
-  if(scr==="shapes")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={()=>{rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Poppins',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardFloat ${2.5+Math.random()*2}s ease-in-out ${0.6+i*0.1}s infinite`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#1C1C2B",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{s.emoji}</span><span style={{fontFamily:"'Poppins',sans-serif",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#93959F",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><style>{CSS}</style></div>;
+  if(scr==="shapes")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={()=>{rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Poppins',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardFloat ${2.5+Math.random()*2}s ease-in-out ${0.6+i*0.1}s infinite`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#1C1C2B",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:`iconF 3s ease-in-out ${i*0.3}s infinite`}}>{s.emoji}</span><span style={{fontFamily:"'Poppins',sans-serif",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#93959F",fontWeight:600}}>{s.desc}</span></button>;})}</div></div>{TeacherBubble}<style>{CSS}</style></div>;
 
 
   // ═══ COLORS ═══
@@ -2423,10 +2697,10 @@ export default function App(){
         {coStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleCoResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
         {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoRes(null);const idx=COLORSDATA.findIndex(x=>x.name===co.name);const next=COLORSDATA[(idx+1)%COLORSDATA.length];setSelColor(next);setCoStep("idle");setTimeout(()=>playColor(next),200);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
-    </div><style>{CSS}</style></div>;}
+    </div>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ COLORS GRID ═══
-  if(scr==="colors")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:22,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#E8E8E8"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Poppins',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardFloat ${2.5+Math.random()*2}s ease-in-out ${0.6+i*0.1}s infinite`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#1C1C2B",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Poppins',sans-serif",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div></div><style>{CSS}</style></div>;
+  if(scr==="colors")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:22,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#E8E8E8"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Poppins',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardFloat ${2.5+Math.random()*2}s ease-in-out ${0.6+i*0.1}s infinite`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#1C1C2B",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Poppins',sans-serif",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div></div>{TeacherBubble}<style>{CSS}</style></div>;
 
 
 
@@ -2535,7 +2809,7 @@ export default function App(){
         })}
       </div>}
     </div>}
-    <style>{CSS}</style>
+    {TeacherBubble}<style>{CSS}</style>
   </div>;
 
   // ═══ BASICS DASHBOARD ═══
@@ -2682,16 +2956,16 @@ export default function App(){
         <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.5,pitch:1.0})} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E8E8",background:"transparent",color:"#1C1C2B",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>🔊 How</button>
         <button onClick={nextWrite} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:"linear-gradient(135deg,var(--green),var(--cyan))",color:"#000",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>Next ➡️</button>
       </div>
-    </div>}<style>{CSS}</style>
+    </div>}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
     // ═══ REWARDS ═══
-  if(scr==="rewards")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#1C1C2B",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:22,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px #FBBF2444"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#1C1C2B",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#93959F",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#f3f4f6"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"'Poppins',sans-serif",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Poppins',sans-serif",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#93959F",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,color:"#1C1C2B",fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",color:"#fff"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Poppins',sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#F1F3F7",borderRadius:14,border:"1px solid #EFEFEF",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<style>{CSS}</style></div>;
+  if(scr==="rewards")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#1C1C2B",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:22,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px #FBBF2444"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#1C1C2B",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#93959F",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#f3f4f6"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"'Poppins',sans-serif",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Poppins',sans-serif",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#93959F",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,color:"#1C1C2B",fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",color:"#fff"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Poppins',sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#F1F3F7",borderRadius:14,border:"1px solid #EFEFEF",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"rgba(255,255,255,0.35)"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SETTINGS ═══
-  if(scr==="settings")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#F1F3F7",borderRadius:24,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"'Poppins',sans-serif",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#93959F",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#6366F1"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"#F1F3F7",borderRadius:18,padding:16,textAlign:"center",border:"1px solid #EFEFEF"}}><span style={{fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#93959F"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FFF5EB",color:"#FC8019",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button><button onClick={()=>{save(null);setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FEE2E2",color:"#DC2626",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:8}}>🗑️ Reset</button></div><style>{CSS}</style></div>;
+  if(scr==="settings")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#F1F3F7",borderRadius:24,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"'Poppins',sans-serif",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#93959F",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#6366F1"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"#F1F3F7",borderRadius:18,padding:16,textAlign:"center",border:"1px solid #EFEFEF"}}><span style={{fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#93959F"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FFF5EB",color:"#FC8019",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button><button onClick={()=>{save(null);setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FEE2E2",color:"#DC2626",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:8}}>🗑️ Reset</button></div>{TeacherBubble}<style>{CSS}</style></div>;
 
-  return<div><style>{CSS}</style></div>;
+  return<div>{TeacherBubble}<style>{CSS}</style></div>;
 }
 
 // ═══════════════════════════════════════════════════════════════
