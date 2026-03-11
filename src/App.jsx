@@ -1204,7 +1204,7 @@ const TEACHER_MSGS={
 };
 const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return msgs[Math.floor(Math.random()*msgs.length)];};
 
-const BellaChar=({mood,size=70})=>{
+const BellaChar=({mood,size=70,speaking=false})=>{
   const s=size;
   const isWave=mood==="waving";
   const isClap=mood==="clapping";
@@ -1228,6 +1228,7 @@ const BellaChar=({mood,size=70})=>{
         @keyframes pandaBlush{0%,100%{opacity:0.4}50%{opacity:0.7}}
         .panda-body{animation:pandaBounce 2.5s ease-in-out infinite}
         .panda-eye{animation:pandaBlink 4s ease-in-out infinite}
+        @keyframes pandaTalk{0%,100%{ry:2.5;rx:4}30%{ry:5;rx:5}60%{ry:3;rx:3.5}}
         .panda-tail{animation:pandaTail 1.5s ease-in-out infinite;transform-origin:50px 82px}
       `}</style>
       <radialGradient id="pg1" cx="40%" cy="35%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#F0F0F0"/></radialGradient>
@@ -1301,8 +1302,10 @@ const BellaChar=({mood,size=70})=>{
       {/* Nose */}
       <ellipse cx="50" cy="38" rx="4" ry="2.8" fill="#333"/>
       <ellipse cx="49" cy="37.5" rx="1.2" ry="0.8" fill="#555"/>
-      {/* Mouth */}
-      {isExcited||isStar?
+      {/* Mouth - lip synced */}
+      {speaking?
+        <ellipse cx="50" cy="44" rx="4" ry="3" fill="#FF6B6B" stroke="#333" strokeWidth="0.8" style={{animation:"pandaTalk 0.25s ease-in-out infinite"}}/>:
+        isExcited||isStar?
         <path d="M 43,42 Q 50,50 57,42" fill="#FF6B6B" stroke="#333" strokeWidth="0.8"/>:
         isProud?
         <path d="M 44,42 Q 50,47 56,42" fill="none" stroke="#333" strokeWidth="1.2" strokeLinecap="round"/>:
@@ -1435,17 +1438,36 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);
   const teacherIdleRef=useRef(null);
   const showTeacher=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);};
+  // Poll speechSynthesis.speaking for lip sync
+  useEffect(()=>{
+    const iv=setInterval(()=>{setIsSpeaking(speechSynthesis.speaking);},150);
+    return()=>clearInterval(iv);
+  },[]);
   const pandaEmojiTimer=useRef(null);
   const flyTo=(e,mood)=>{
     if(!e?.currentTarget)return;
     const rect=e.currentTarget.getBoundingClientRect();
-    const x=Math.min(Math.max(rect.left+rect.width/2-33,8),window.innerWidth-74);
-    const y=Math.max(rect.top-70,8);
+    // Fly to the RIGHT side of the tapped element, slightly above
+    const x=Math.min(rect.right+4,window.innerWidth-74);
+    const y=Math.max(rect.top+rect.height/2-33,8);
     setPandaPos({x,y});
     if(mood)setTeacherMood(mood);
+  };
+  // Move panda near content based on screen/step
+  const movePandaTo=(position)=>{
+    const positions={
+      topRight:{x:window.innerWidth-80,y:60},
+      midRight:{x:window.innerWidth-80,y:window.innerHeight/2-40},
+      bottomRight:{x:window.innerWidth-80,y:window.innerHeight-140},
+      topLeft:{x:8,y:60},
+      midLeft:{x:8,y:window.innerHeight/2-40},
+      center:{x:window.innerWidth/2-33,y:window.innerHeight/2-33},
+    };
+    const p=positions[position]||positions.midRight;
+    setPandaPos(p);
   };
   const showPandaEmoji=(emoji)=>{
     setPandaEmoji(emoji);
@@ -1475,6 +1497,9 @@ export default function App(){
   useEffect(()=>{
     const msgs={home:["waving","Hi! Ready to learn?"],numbers:["excited","Numbers time!"],phonics:["happy","Word magic!"],shapes:["excited","Shape hunt!"],colors:["happy","Color world!"],alphabet:["star","ABC time!"],basics:["pointing","Practice time!"],rewards:["excited","Your prizes!"],settings:["happy","Your profile!"]};
     const m=msgs[scr];if(m)showTeacher(m[0],m[1]);
+    // Position panda based on screen
+    const pos={home:"topRight",numbers:"midRight",phonics:"midRight",shapes:"midRight",colors:"midRight",alphabet:"midRight",basics:"midRight",rewards:"topRight",settings:"topRight",splash:"center",onboard:"topRight"};
+    setTimeout(()=>movePandaTo(pos[scr]||"midRight"),100);
   },[scr]);
   // Basics state
   const[basicsTab,setBasicsTab]=useState("explore"); // "explore", "find", "write"
@@ -1524,7 +1549,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setPandaPos({x:20,y:80});stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -1713,7 +1738,7 @@ export default function App(){
     await wait(500);if(!pRef.current)return;
 
     // Step 2: Interactive spelling
-    setNStep("spelling");
+    setNStep("spelling");movePandaTo("topRight");
     await spellWord(w.replace(/\s/g,''));
     await wait(400);if(!pRef.current)return;
     await speak(`Well done. That spells, ${w}.`,{rate:0.75,pitch:1.0});
@@ -1738,7 +1763,7 @@ export default function App(){
     // Step 5: Speaking practice (if enabled)
     if(speakMode){
       await speak(`${kidName}, your turn. Say, ${w}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setNStep("listening");pRef.current=false;showTeacher("happy","I'm listening! Say it loud! 👂");rec.start(handleNumResult);
+      stop();await wait(600);setNStep("listening");pRef.current=false;movePandaTo("bottomRight");showTeacher("happy","I'm listening!");rec.start(handleNumResult);
     }else{
       pRef.current=false;
       if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
@@ -1766,7 +1791,7 @@ export default function App(){
     await wait(500);if(!pRef.current)return;
 
     // Step 2: Interactive spelling
-    setPhStep("spelling");
+    setPhStep("spelling");movePandaTo("topRight");
     await spellWord(wd.word);
     await wait(400);if(!pRef.current)return;
     await speak(`Well done. That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
@@ -1788,7 +1813,7 @@ export default function App(){
     // Step 5: Speaking (if enabled)
     if(speakMode){
       await speak(`${kidName}, your turn. Say, ${wd.word}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setPhStep("listening");pRef.current=false;showTeacher("happy","Your turn! Say the word! 🗣️");rec.start(handlePhResult);
+      stop();await wait(600);setPhStep("listening");pRef.current=false;movePandaTo("bottomRight");showTeacher("happy","Your turn!");rec.start(handlePhResult);
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
@@ -2224,7 +2249,7 @@ export default function App(){
     {teacherMsg&&<div style={{position:"absolute",top:-8,right:-6,background:"#fff",borderRadius:12,padding:"3px 8px",boxShadow:"0 2px 8px rgba(0,0,0,.1)",maxWidth:120,animation:"fadeIn 0.3s ease",pointerEvents:"none"}}>
       <div style={{fontSize:8,fontWeight:800,color:"#1C1C2B",lineHeight:1.2,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{teacherMsg.length>20?teacherMsg.slice(0,18)+"..":teacherMsg}</div>
     </div>}
-    <BellaChar mood={teacherMood} size={66}/>
+    <BellaChar mood={teacherMood} size={66} speaking={isSpeaking}/>
   </div>;
 
   // ═══ SCREENS ═══
@@ -2345,7 +2370,7 @@ export default function App(){
           {id:"colors",icon:"🎨",title:"Colors",sub:"13 Colors",grad:"linear-gradient(135deg,#F472B6,#EC4899)",shadow:"rgba(244,114,182,.2)"},
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",grad:"linear-gradient(135deg,#FBBF24,#F59E0B)",shadow:"rgba(251,191,36,.2)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748B)",shadow:"rgba(148,163,184,.2)"}
-        ].map((m,i)=><button key={m.id} onClick={(e)=>{flyTo(e,"excited");rec.warmUp();setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:12,
           padding:"18px 16px",borderRadius:20,border:"none",cursor:"pointer",
           fontFamily:"'Poppins',sans-serif",background:m.grad,
