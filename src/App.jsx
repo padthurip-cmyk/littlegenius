@@ -1261,7 +1261,7 @@ export default function App(){
   </div><style>{CSS}</style></div>;
 
   if(scr==="home")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column",overflow:"hidden"}}><Particles/><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<div style={{background:"linear-gradient(135deg,#FC8019,#FF9933)",padding:"20px 20px 44px",borderRadius:"0 0 36px 36px",position:"relative",overflow:"hidden"}}><div style={{position:"absolute",top:-30,right:-30,width:120,height:120,borderRadius:"50%",background:"#F1F3F7"}}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",position:"relative",zIndex:2}}><div style={{display:"flex",alignItems:"center",gap:10}}><div style={{fontSize:36,animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div><div><div style={{color:"#fff",fontWeight:800,fontSize:16}}>{prof?.name||"Buddy"}</div><div style={{color:"rgba(255,255,255,.7)",fontSize:11,fontWeight:600}}>Age {prof?.age||4} • {aCfg.diff}</div></div></div><div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",padding:"8px 16px",borderRadius:24}}><span style={{fontSize:18,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><span style={{color:"#FC8019",fontWeight:900,fontSize:18,fontFamily:"'Poppins',sans-serif"}}>{prof?.points||0}</span></div></div><h2 style={{fontFamily:"'Poppins',sans-serif",color:"#FC8019",fontSize:22,marginTop:14,position:"relative",zIndex:2}}>What shall we learn? 🎯</h2></div>
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"16px 14px 10px",marginTop:-22,position:"relative",zIndex:3}}>{[
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:16,padding:"20px 16px 12px",marginTop:-22,position:"relative",zIndex:3}}>{[
       {id:"numbers",icon:"🔢",title:"Numbers",sub:`Learn 1-${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#FF4757)",shadow:"rgba(255,71,87,.25)"},
       {id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & Sounds",grad:"linear-gradient(135deg,#4ECDC4,#26D0CE)",shadow:"rgba(78,205,196,.25)"},
       {id:"basics",icon:"🧩",title:"Basics",sub:"Find & Write",grad:"linear-gradient(135deg,#FC8019,#FF9F43)",shadow:"rgba(252,128,25,.25)"},
@@ -1270,21 +1270,20 @@ export default function App(){
       {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points!",grad:"linear-gradient(135deg,#FBBF24,#F59E0B)",shadow:"rgba(251,191,36,.25)"},
       {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748B)",shadow:"rgba(148,163,184,.25)"}
     ].map((m,i)=><button key={m.id} onClick={()=>{rec.warmUp();setScr(m.id);}} style={{
-      display:"flex",alignItems:"center",gap:12,
-      padding:"16px 14px",borderRadius:20,border:"none",cursor:"pointer",
+      display:"flex",alignItems:"center",gap:14,
+      padding:"20px 16px",borderRadius:22,border:"none",cursor:"pointer",
       fontFamily:"'Poppins',sans-serif",background:m.grad,
-      boxShadow:`0 6px 20px ${m.shadow}`,
+      boxShadow:`0 8px 24px ${m.shadow}`,
       animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,
       position:"relative",overflow:"hidden",textAlign:"left"
     }}>
-      {/* Decorative circle */}
-      <div style={{position:"absolute",top:-15,right:-15,width:60,height:60,borderRadius:"50%",background:"rgba(255,255,255,0.12)"}}/>
-      <div style={{position:"absolute",bottom:-10,right:20,width:30,height:30,borderRadius:"50%",background:"rgba(255,255,255,0.08)"}}/>
-      <span style={{fontSize:32,flexShrink:0}}>{m.icon}</span>
+      <div style={{position:"absolute",top:-20,right:-20,width:70,height:70,borderRadius:"50%",background:"rgba(255,255,255,0.1)"}}/>
+      <div style={{position:"absolute",bottom:-12,right:24,width:36,height:36,borderRadius:"50%",background:"rgba(255,255,255,0.07)"}}/>
+      <span style={{fontSize:38,flexShrink:0,filter:"drop-shadow(0 2px 4px rgba(0,0,0,.15))"}}>{m.icon}</span>
       <div style={{flex:1,minWidth:0}}>
-        <div style={{color:"#fff",fontWeight:800,fontSize:15}}>{m.title}</div>
-        <div style={{color:"rgba(255,255,255,.75)",fontSize:11,fontWeight:600}}>{m.sub}</div>
-        {(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"100%",height:4,background:"rgba(255,255,255,0.2)",borderRadius:4,marginTop:6,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:4,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}
+        <div style={{color:"#fff",fontWeight:800,fontSize:18,letterSpacing:0.3}}>{m.title}</div>
+        <div style={{color:"rgba(255,255,255,.8)",fontSize:13,fontWeight:600,marginTop:2}}>{m.sub}</div>
+        {(m.id==="numbers"||m.id==="phonics"||m.id==="shapes"||m.id==="colors")&&<div style={{width:"100%",height:5,background:"rgba(255,255,255,0.2)",borderRadius:4,marginTop:8,overflow:"hidden"}}><div style={{height:"100%",background:"#fff",borderRadius:4,width:`${getProgress(m.id)}%`,transition:"width 0.8s"}}/></div>}
       </div>
     </button>)}</div>
     <div style={{margin:"6px 16px 16px",padding:"14px 16px",background:"rgba(251,191,36,0.1)",borderRadius:18,border:"2px solid rgba(255,224,51,0.15)",display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:26,animation:"tipW 2s ease-in-out infinite"}}>💡</span><p style={{fontSize:12,color:"#FC8019",fontWeight:700,flex:1}}>⭐⭐⭐⭐⭐ = 20 points per word!</p></div><style>{CSS}</style></div>;
