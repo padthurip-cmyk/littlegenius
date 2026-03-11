@@ -2870,8 +2870,8 @@ export default function App(){
 
     {/* ═══ FIND GAME ═══ */}
     {basicsTab==="find"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",position:"relative"}}>
-      {/* Header — NO number shown, just listen prompt */}<div data-panda="find-prompt">
-      <div style={{padding:"10px 14px",background:"linear-gradient(135deg,#FFF5EB,#FEF3C7)",display:"flex",alignItems:"center",gap:10}}>
+      {/* Header — NO number shown, just listen prompt */}
+      <div data-panda="find-prompt" style={{padding:"10px 14px",background:"linear-gradient(135deg,#FFF5EB,#FEF3C7)",display:"flex",alignItems:"center",gap:10}}>
         {findTarget?<>
           <button onClick={repeatFind} style={{padding:"10px 18px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'Poppins',sans-serif",boxShadow:"0 4px 12px rgba(252,128,25,.3)",display:"flex",alignItems:"center",gap:6}}>
             🔊 Hear Again
