@@ -937,6 +937,10 @@ Z:{ph:"zzz",examples:[{w:"Zebra",e:"🦓"},{w:"Zoo",e:"🦁"},{w:"Zigzag",e:"⚡
 const ALPHA_LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const ALPHA_COLORS=["#FF6B6B","#4ECDC4","#FC8019","#A855F7","#F472B6","#3B82F6","#22C55E","#EAB308","#EF4444","#0EA5E9","#8B5CF6","#14B8A6","#F97316"];
 
+// Math visual emojis for counting
+const MATH_EMOJI=["🍎","🍊","🍋","🍇","🍓","⭐","🌸","🐟","🦋","🎈","🍌","🍒","🌻","🐱","🐶"];
+const getMathEmoji=(i)=>MATH_EMOJI[i%MATH_EMOJI.length];
+
 // How to write each number - stroke descriptions for kids
 const NUM_STROKES={
   1:"Start at top. One straight line down ↓",
@@ -1270,7 +1274,8 @@ export default function App(){
   const{data:prof,save,loaded}=useStore();const{speak,stop}=useSpeech();const rec=useRec();
   const[scr,setScr]=useState("splash");
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
-  const[selNum,setSelNum]=useState(null);const[nStep,setNStep]=useState("idle");const[aPhI,setAPhI]=useState(-1);const[spRes,setSpRes]=useState(null);const[spAcc,setSpAcc]=useState(null);
+  const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn"); // "learn" or "math"
+  const[mathProblem,setMathProblem]=useState(null);const[mathAnswer,setMathAnswer]=useState(null);const[mathChoices,setMathChoices]=useState([]);const[mathFb,setMathFb]=useState(null);const[mathScore,setMathScore]=useState(0);const[mathTotal,setMathTotal]=useState(0);const[nStep,setNStep]=useState("idle");const[aPhI,setAPhI]=useState(-1);const[spRes,setSpRes]=useState(null);const[spAcc,setSpAcc]=useState(null);
   const[phCat,setPhCat]=useState("animals");const[phW,setPhW]=useState(null);const[phStep,setPhStep]=useState("idle");const[phAI,setPhAI]=useState(-1);const[phRes,setPhRes]=useState(null);const[phAcc,setPhAcc]=useState(null);
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
@@ -1285,7 +1290,7 @@ export default function App(){
   const[alphaTab,setAlphaTab]=useState("caps"); // "caps","small","match"
   const[selLetter,setSelLetter]=useState(null); // selected letter for detail
   const[matchPairs,setMatchPairs]=useState([]); // match game pairs
-  const[matchLeft,setMatchLeft]=useState(null); // dragging from
+  const[matchLeft,setMatchLeft]=useState(null);const[matchIdx,setMatchIdx]=useState(0);const[matchWrong,setMatchWrong]=useState(null);const[matchCorrect,setMatchCorrect]=useState(null);
   const[matchScore,setMatchScore]=useState(0);const[matchDone,setMatchDone]=useState([]);const[drawPts,setDrawPts]=useState(0);const[writeOk,setWriteOk]=useState(false);const[writeScore,setWriteScore]=useState(null);
   const cRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);const[rwdMsg,setRwdMsg]=useState(null);
   const[speakMode,setSpeakMode]=useState(true); // toggle for speech practice
@@ -1323,7 +1328,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -1678,57 +1683,150 @@ export default function App(){
 
 
 
+
+  // ═══ MATH FUNCTIONS ═══
+  const genMath=()=>{
+    const age=prof?.age||4;
+    let a,b,op,answer,maxN;
+    // Age-based difficulty
+    if(age<=4){maxN=5;op="+";}
+    else if(age<=5){maxN=10;op=Math.random()>0.3?"+":"-";}
+    else if(age<=6){maxN=12;const r=Math.random();op=r>0.6?"+":r>0.3?"-":"×";}
+    else{maxN=15;const r=Math.random();op=r>0.5?"+":r>0.25?"-":"×";}
+    
+    if(op==="+"){
+      a=Math.floor(Math.random()*maxN)+1;
+      b=Math.floor(Math.random()*(maxN-a))+1;
+      answer=a+b;
+    } else if(op==="-"){
+      a=Math.floor(Math.random()*maxN)+2;
+      b=Math.floor(Math.random()*(a-1))+1;
+      answer=a-b;
+    } else {
+      a=Math.floor(Math.random()*5)+1;
+      b=Math.floor(Math.random()*5)+1;
+      answer=a*b;
+    }
+    
+    // Generate 4 choices including correct answer
+    const choices=new Set([answer]);
+    while(choices.size<4){
+      const wrong=answer+Math.floor(Math.random()*7)-3;
+      if(wrong>=0&&wrong!==answer)choices.add(wrong);
+    }
+    const shuffled=shuffle([...choices]);
+    
+    setMathProblem({a,b,op,answer});
+    setMathChoices(shuffled);
+    setMathFb(null);setMathAnswer(null);
+    
+    const opWord=op==="+"?"plus":op==="-"?"minus":"times";
+    speak(`What is ${a} ${opWord} ${b}?`,{rate:0.55,pitch:1.0});
+  };
+  const onMathTap=async(choice)=>{
+    if(mathFb)return;
+    setMathAnswer(choice);
+    setMathTotal(t=>t+1);
+    if(choice===mathProblem.answer){
+      setMathFb("correct");
+      setMathScore(s=>s+1);
+      awardPoints(3,"math",`${mathProblem.a}${mathProblem.op}${mathProblem.b}`);
+      await speak(`${choice}! Correct! Well done!`,{rate:0.6,pitch:1.0});
+      await wait(1000);
+      genMath();
+    } else {
+      setMathFb("wrong");
+      await speak(`Not quite. ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.55,pitch:1.0});
+      await wait(2000);
+      genMath();
+    }
+  };
+
   // ═══ ALPHABET FUNCTIONS ═══
+  const alphaRef=useRef("");
   const playLetter=async(letter)=>{
+    // STOP everything from previous letter
+    stop(); // cancel all TTS
+    alphaRef.current=letter; // track which letter is active
     setSelLetter(letter);
     const d=ALPHA_DATA[letter];if(!d)return;
-    // Sing: "A says æ! A for Apple, A for Ant, A for Aeroplane!"
+    await wait(200); // let cancel settle
+    // Check if still on this letter after each step
+    const ok=()=>alphaRef.current===letter&&pRef.current;
     await speak(`${letter}!`,{rate:0.6,pitch:1.0});
-    await wait(300);
+    if(!ok())return;
+    await wait(200);
+    if(!ok())return;
     await speak(`${letter} says ${d.ph}!`,{rate:0.6,pitch:1.0});
-    await wait(400);
-    for(const ex of d.examples){
-      if(!pRef.current)return;
-      await speak(`${letter} for ${ex.w}!`,{rate:0.65,pitch:1.0,noCancel:true});
-      await wait(500);
-    }
+    if(!ok())return;
     await wait(300);
+    for(const ex of d.examples){
+      if(!ok())return;
+      await speak(`${letter} for ${ex.w}!`,{rate:0.65,pitch:1.0});
+      if(!ok())return;
+      await wait(400);
+    }
+    if(!ok())return;
+    await wait(200);
     await speak(`That is the letter ${letter}!`,{rate:0.65,pitch:1.0});
   };
-  const closeLetter=()=>{stop();pRef.current=false;setSelLetter(null);};
+  const closeLetter=()=>{stop();pRef.current=false;alphaRef.current="";setSelLetter(null);};
   const startMatch=()=>{
-    // Pick 5 random letters for matching
     const picked=shuffle(ALPHA_LETTERS.slice()).slice(0,5);
     const shuffledSmall=shuffle([...picked]);
-    setMatchPairs(picked.map((l,i)=>({cap:l,small:shuffledSmall[i],matched:false})));
-    setMatchLeft(null);setMatchScore(0);setMatchDone([]);
-    speak("Match the capital letter with the small letter!",{rate:0.6,pitch:1.0});
+    setMatchPairs(picked.map((l,i)=>({cap:l,small:shuffledSmall[i]})));
+    setMatchLeft(null);setMatchScore(0);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);
+    (async()=>{
+      await speak("Match the letters!",{rate:0.6,pitch:1.0});
+      await wait(500);
+      await speak(`Find small ${picked[0].toLowerCase()}.`,{rate:0.6,pitch:1.0});
+    })();
   };
-  const onMatchTap=(letter,side)=>{
-    if(matchLeft){
-      // Second tap — check if match
-      if(matchLeft.side!==side){
-        const capL=side==="cap"?letter:matchLeft.letter;
-        const smlL=side==="small"?letter:matchLeft.letter;
-        if(capL===smlL){
-          // CORRECT match!
-          setMatchDone(p=>[...p,capL]);
-          setMatchScore(s=>s+1);
-          setMatchLeft(null);
-          speak(`${capL}! Correct!`,{rate:0.7,pitch:1.0,noCancel:true});
-          if(matchDone.length+1>=5){
-            setTimeout(()=>speak("Perfect! All matched!",{rate:0.6,pitch:1.0}),600);
-          }
-        } else {
-          setMatchLeft(null);
-          speak("Try again!",{rate:0.7,pitch:1.0,noCancel:true});
-        }
+  const onMatchSmallTap=async(tappedLetter)=>{
+    if(matchWrong||matchCorrect)return; // still showing feedback
+    const currentCap=matchPairs[matchIdx]?.cap;
+    if(!currentCap)return;
+    if(matchDone.includes(tappedLetter))return; // already matched
+
+    if(tappedLetter===currentCap){
+      // ✅ CORRECT
+      setMatchCorrect(tappedLetter);
+      setMatchDone(p=>[...p,tappedLetter]);
+      setMatchScore(s=>s+1);
+      await speak(`${tappedLetter}! Correct!`,{rate:0.7,pitch:1.0});
+      await wait(600);
+      setMatchCorrect(null);
+      // Auto-advance to next
+      const nextIdx=matchIdx+1;
+      if(nextIdx>=matchPairs.length){
+        setMatchIdx(nextIdx);
+        await speak("Perfect! All matched!",{rate:0.6,pitch:1.0});
       } else {
-        setMatchLeft({letter,side});
+        setMatchIdx(nextIdx);
+        await wait(300);
+        await speak(`Now find small ${matchPairs[nextIdx].cap.toLowerCase()}.`,{rate:0.6,pitch:1.0});
       }
     } else {
-      setMatchLeft({letter,side});
-      speak(letter,{rate:0.7,pitch:1.0,noCancel:true});
+      // ❌ WRONG — freeze wrong, highlight correct
+      setMatchWrong(tappedLetter);
+      // Find which small letter is the correct one
+      const correctSmall=currentCap;
+      setMatchCorrect(correctSmall);
+      await speak(`No. That is ${tappedLetter.toLowerCase()}. The correct one is ${currentCap.toLowerCase()}.`,{rate:0.6,pitch:1.0});
+      await wait(1500);
+      // Clear wrong, auto-match the correct one, advance
+      setMatchWrong(null);setMatchCorrect(null);
+      setMatchDone(p=>[...p,currentCap]);
+      const nextIdx=matchIdx+1;
+      if(nextIdx>=matchPairs.length){
+        setMatchIdx(nextIdx);
+        await wait(300);
+        await speak("Good try! Let us play again!",{rate:0.6,pitch:1.0});
+      } else {
+        setMatchIdx(nextIdx);
+        await wait(300);
+        await speak(`Now find small ${matchPairs[nextIdx].cap.toLowerCase()}.`,{rate:0.6,pitch:1.0});
+      }
     }
   };
 
@@ -2076,7 +2174,17 @@ export default function App(){
     </div><style>{CSS}</style></div>;}
 
   // ═══ NUMBERS GRID ═══
-  if(scr==="numbers")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title={`Numbers 1-${aCfg.max}`} onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto",padding:"12px 14px"}}><div style={{display:"grid",gridTemplateColumns:`repeat(${aCfg.max<=10?3:aCfg.max<=20?4:5},1fr)`,gap:aCfg.max<=10?14:aCfg.max<=20?10:8}}>
+  if(scr==="numbers"&&!selNum)return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"hidden",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Numbers" onBack={goHome} points={prof?.points||0}/>
+    {/* Tab bar */}
+    <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#F8F9FB",borderBottom:"1px solid #EFEFEF",flexShrink:0}}>
+      {[{id:"learn",label:"🔢 Numbers"},{id:"math",label:"➕ Math"}].map(t=>
+        <button key={t.id} onClick={()=>{setNumTab(t.id);if(t.id==="math"&&!mathProblem)genMath();}}
+          style={{flex:1,padding:"10px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif",
+            background:numTab===t.id?"#FC8019":"#F1F3F7",color:numTab===t.id?"#fff":"#93959F",transition:"all 0.2s"
+          }}>{t.label}</button>
+      )}
+    </div>
+    {numTab==="learn"&&<div style={{flex:1,overflow:"auto",padding:"12px 14px"}}><div style={{display:"grid",gridTemplateColumns:`repeat(${aCfg.max<=10?3:aCfg.max<=20?4:5},1fr)`,gap:aCfg.max<=10?14:aCfg.max<=20?10:8}}>
       {Array.from({length:aCfg.max}).map((_,i)=>{const n=i+1;const done=isDone("numbers",n);return<button key={n} onClick={()=>{rec.warmUp();setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{
         position:"relative",
         padding:aCfg.max<=10?"20px 8px":aCfg.max<=20?"14px 6px":"10px 4px",
@@ -2091,7 +2199,62 @@ export default function App(){
       }}>{done&&<span style={{position:"absolute",top:4,right:5,fontSize:12,color:"#60B246",fontWeight:900}}>✓</span>}
         <span style={{fontFamily:"'Poppins',sans-serif",fontSize:aCfg.max<=10?32:aCfg.max<=20?24:18,fontWeight:800,color:nClr(n)}}>{n}</span>
         {aCfg.max<=20&&<span style={{fontSize:aCfg.max<=10?10:8,fontWeight:700,color:"#93959F",textTransform:"capitalize"}}>{NW[n]||""}</span>}
-      </button>;})}</div></div><style>{CSS}</style></div>;
+      </button>;})}</div></div>}
+    {/* ═══ MATH TAB ═══ */}
+    {numTab==="math"&&<div style={{flex:1,overflow:"auto",padding:"12px 14px"}}>
+      {mathProblem?<div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+          <span style={{fontSize:14,fontWeight:800,color:"#FC8019"}}>🏆 {mathScore}/{mathTotal}</span>
+          <button onClick={genMath} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#FC8019",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
+        </div>
+        {/* Visual problem with emojis */}
+        <div style={{background:"#F8F9FB",borderRadius:20,padding:14,textAlign:"center",marginBottom:12}}>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center",marginBottom:6}}>
+            {Array.from({length:Math.min(mathProblem.a,15)}).map((_,i)=>
+              <span key={"a"+i} style={{fontSize:26,animation:`gridPop 0.2s ease ${i*0.04}s both`}}>{getMathEmoji(0)}</span>
+            )}
+          </div>
+          <div style={{fontSize:32,fontWeight:900,color:mathProblem.op==="+"?"#60B246":mathProblem.op==="-"?"#E23744":"#6366F1",margin:"4px 0"}}>{mathProblem.op}</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center",marginBottom:6}}>
+            {Array.from({length:Math.min(mathProblem.b,15)}).map((_,i)=>
+              <span key={"b"+i} style={{fontSize:26,animation:`gridPop 0.2s ease ${(mathProblem.a+i)*0.04}s both`}}>{getMathEmoji(1)}</span>
+            )}
+          </div>
+          <div style={{fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:900,color:"#1C1C2B",marginTop:4}}>
+            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#FC8019"}}>?</span>
+          </div>
+        </div>
+        {/* 4 answer choices */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+          {mathChoices.map((c,i)=>{
+            const isRight=mathFb&&c===mathProblem.answer;
+            const isWrong=mathFb==="wrong"&&c===mathAnswer;
+            return<button key={i} onClick={()=>onMathTap(c)} style={{
+              padding:"16px 8px",borderRadius:16,border:"3px solid",cursor:"pointer",
+              borderColor:isRight?"#60B246":isWrong?"#E23744":"#E8E8E8",
+              background:isRight?"#ECFDF5":isWrong?"#FEF2F2":"#fff",
+              fontSize:26,fontWeight:900,fontFamily:"'Poppins',sans-serif",
+              color:isRight?"#60B246":isWrong?"#E23744":"#1C1C2B",
+              transform:isRight?"scale(1.05)":isWrong?"scale(0.95)":"scale(1)",
+              transition:"all 0.2s"
+            }}>{c}{isRight?" ✅":""}{isWrong?" ❌":""}</button>;
+          })}
+        </div>
+        {mathFb==="wrong"&&<div style={{marginTop:10,padding:10,background:"#FFF5EB",borderRadius:14,textAlign:"center"}}>
+          <span style={{fontSize:14,fontWeight:800,color:"#FC8019"}}>{mathProblem.a} {mathProblem.op} {mathProblem.b} = {mathProblem.answer}</span>
+          <div style={{display:"flex",flexWrap:"wrap",gap:3,justifyContent:"center",marginTop:4}}>
+            {Array.from({length:Math.min(mathProblem.answer,20)}).map((_,i)=>
+              <span key={"r"+i} style={{fontSize:18}}>{getMathEmoji(2)}</span>
+            )}
+          </div>
+        </div>}
+      </div>:<div style={{textAlign:"center",paddingTop:60}}>
+        <span style={{fontSize:56}}>➕</span>
+        <p style={{fontSize:18,fontWeight:800,color:"#1C1C2B",marginTop:10}}>Ready for Math?</p>
+        <button onClick={genMath} style={{marginTop:16,padding:"14px 32px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer"}}>▶️ Start!</button>
+      </div>}
+    </div>}
+    <style>{CSS}</style></div>;
 
   // ═══ PHONICS DETAIL ═══
   if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
@@ -2335,41 +2498,39 @@ export default function App(){
 
     {/* ═══ MATCH GAME TAB ═══ */}
     {alphaTab==="match"&&!selLetter&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",padding:"10px 14px"}}>
-      <div style={{textAlign:"center",marginBottom:8}}>
-        <span style={{fontSize:14,fontWeight:800,color:"#6366F1"}}>Match Capital → small | 🏆 {matchScore}/5</span>
-        {matchDone.length>=5&&<div style={{marginTop:6}}><button onClick={startMatch} style={{padding:"8px 20px",borderRadius:12,border:"none",background:"#6366F1",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer"}}>🔄 New Game</button></div>}
+      {/* Current letter being asked */}
+      <div style={{textAlign:"center",padding:"10px",background:"linear-gradient(135deg,#EEF2FF,#E0E7FF)",borderRadius:16,marginBottom:10}}>
+        {matchIdx<matchPairs.length?<>
+          <div style={{fontSize:12,fontWeight:700,color:"#93959F"}}>Find the small letter for:</div>
+          <div style={{fontSize:56,fontWeight:900,color:"#6366F1",fontFamily:"'Poppins',sans-serif",lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>{matchPairs[matchIdx]?.cap||""}</div>
+          <div style={{fontSize:14,fontWeight:800,color:"#6366F1"}}>🏆 {matchScore}/{matchPairs.length}</div>
+        </>:<>
+          <div style={{fontSize:36}}>🎉</div>
+          <div style={{fontSize:18,fontWeight:800,color:"#6366F1"}}>All Done! {matchScore}/{matchPairs.length} correct</div>
+          <button onClick={startMatch} style={{marginTop:8,padding:"10px 24px",borderRadius:14,border:"none",background:"#6366F1",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔄 Play Again</button>
+        </>}
       </div>
-      <div style={{display:"flex",gap:20,flex:1,justifyContent:"center"}}>
-        {/* Left column: Capitals */}
-        <div style={{display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
-          <span style={{fontSize:11,fontWeight:800,color:"#93959F"}}>CAPITAL</span>
-          {matchPairs.map(p=>
-            <button key={p.cap} onClick={()=>!matchDone.includes(p.cap)&&onMatchTap(p.cap,"cap")} style={{
-              width:56,height:56,borderRadius:14,border:"3px solid",cursor:"pointer",
-              borderColor:matchDone.includes(p.cap)?"#60B246":matchLeft?.letter===p.cap&&matchLeft?.side==="cap"?"#6366F1":"#E8E8E8",
-              background:matchDone.includes(p.cap)?"#ECFDF5":matchLeft?.letter===p.cap&&matchLeft?.side==="cap"?"#EEF2FF":"#fff",
-              fontSize:22,fontWeight:900,color:matchDone.includes(p.cap)?"#60B246":"#1C1C2B",
-              opacity:matchDone.includes(p.cap)?0.5:1,
-              fontFamily:"'Poppins',sans-serif"
-            }}>{p.cap}</button>
-          )}
-        </div>
-        {/* Right column: Smalls (shuffled) */}
-        <div style={{display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
-          <span style={{fontSize:11,fontWeight:800,color:"#93959F"}}>small</span>
-          {matchPairs.map(p=>{
-            const sLetter=p.small;
-            return<button key={"s"+sLetter} onClick={()=>!matchDone.includes(sLetter)&&onMatchTap(sLetter,"small")} style={{
-              width:56,height:56,borderRadius:14,border:"3px solid",cursor:"pointer",
-              borderColor:matchDone.includes(sLetter)?"#60B246":matchLeft?.letter===sLetter&&matchLeft?.side==="small"?"#6366F1":"#E8E8E8",
-              background:matchDone.includes(sLetter)?"#ECFDF5":matchLeft?.letter===sLetter&&matchLeft?.side==="small"?"#EEF2FF":"#fff",
-              fontSize:22,fontWeight:900,color:matchDone.includes(sLetter)?"#60B246":"#1C1C2B",
-              opacity:matchDone.includes(sLetter)?0.5:1,
-              fontFamily:"'Poppins',sans-serif"
-            }}>{sLetter.toLowerCase()}</button>;
-          })}
-        </div>
-      </div>
+      {/* Small letters to tap */}
+      {matchIdx<matchPairs.length&&<div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+        {matchPairs.map(p=>{
+          const l=p.small;
+          const done=matchDone.includes(l);
+          const isWrong=matchWrong===l;
+          const isCorrect=matchCorrect===l;
+          return<button key={"m"+l} onClick={()=>!done&&onMatchSmallTap(l)} disabled={done} style={{
+            padding:"14px 6px",borderRadius:16,border:"3px solid",cursor:done?"default":"pointer",
+            borderColor:isWrong?"#E23744":isCorrect?"#60B246":done?"#E8E8E8":"#6366F1",
+            background:isWrong?"#FEF2F2":isCorrect?"#ECFDF5":done?"#F8F9FB":"#fff",
+            fontSize:28,fontWeight:900,
+            color:isWrong?"#E23744":isCorrect?"#60B246":done?"#D4D5D9":"#1C1C2B",
+            opacity:done?0.4:1,
+            fontFamily:"'Poppins',sans-serif",
+            transform:isCorrect?"scale(1.15)":isWrong?"scale(0.95)":"scale(1)",
+            transition:"all 0.2s",
+            boxShadow:isCorrect?"0 4px 16px rgba(96,178,70,.3)":isWrong?"0 4px 16px rgba(226,55,68,.2)":"0 2px 8px rgba(0,0,0,.06)"
+          }}>{l.toLowerCase()}{done&&!isCorrect&&!isWrong?"✓":""}</button>;
+        })}
+      </div>}
     </div>}
     <style>{CSS}</style>
   </div>;
