@@ -1206,135 +1206,101 @@ const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return m
 
 const BellaChar=({mood,size=70,speaking=false})=>{
   const s=size;
-  const isWave=mood==="waving";
-  const isClap=mood==="clapping";
-  const isThink=mood==="thinking";
-  const isPoint=mood==="pointing";
-  const isStar=mood==="star";
-  const isExcited=mood==="excited";
-  const isProud=mood==="proud";
-  return<svg width={s} height={s} viewBox="0 0 100 100" style={{overflow:"visible"}}>
-    <defs>
-      <style>{`
-        @keyframes pandaBlink{0%,90%,100%{ry:4.5}95%{ry:0.5}}
-        @keyframes pandaWave{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-25deg)}50%{transform:rotate(20deg)}75%{transform:rotate(-20deg)}}
-        @keyframes pandaClapR{0%,100%{transform:translate(0,0)}50%{transform:translate(5px,-2px)}}
-        @keyframes pandaClapL{0%,100%{transform:translate(0,0)}50%{transform:translate(-5px,-2px)}}
-        @keyframes pandaThink{0%,100%{transform:translate(0,0)}50%{transform:translate(1px,-2px)}}
-        @keyframes pandaBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-        @keyframes pandaTail{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
-        @keyframes pandaStar{0%,100%{opacity:0;transform:scale(0) rotate(0deg)}50%{opacity:1;transform:scale(1.2) rotate(180deg)}}
-        @keyframes pandaEarWiggle{0%,100%{transform:rotate(0deg)}50%{transform:rotate(8deg)}}
-        @keyframes pandaBlush{0%,100%{opacity:0.4}50%{opacity:0.7}}
-        .panda-body{animation:pandaBounce 2.5s ease-in-out infinite}
-        .panda-eye{animation:pandaBlink 4s ease-in-out infinite}
-        @keyframes pandaTalk{0%,100%{ry:2.5;rx:4}30%{ry:5;rx:5}60%{ry:3;rx:3.5}}
-        .panda-tail{animation:pandaTail 1.5s ease-in-out infinite;transform-origin:50px 82px}
-      `}</style>
-      <radialGradient id="pg1" cx="40%" cy="35%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#F0F0F0"/></radialGradient>
-      <radialGradient id="pg2" cx="50%" cy="40%"><stop offset="0%" stopColor="#444"/><stop offset="100%" stopColor="#1a1a1a"/></radialGradient>
+  const W=mood==="waving",C=mood==="clapping",T=mood==="thinking",P=mood==="pointing",S=mood==="star",E=mood==="excited",PR=mood==="proud";
+  // Mouth shapes cycle: closed(0) -> half(1) -> open(2) -> half(1)
+  // For lip sync we use CSS animation on the mouth
+  return<svg width={s} height={s} viewBox="0 0 80 90" style={{overflow:"visible"}}>
+    <defs><style>{`
+      @keyframes flyBob{0%,100%{transform:translate(0,0) rotate(-2deg)}25%{transform:translate(3px,-5px) rotate(1deg)}50%{transform:translate(-2px,-3px) rotate(2deg)}75%{transform:translate(4px,-6px) rotate(-1deg)}}
+      @keyframes blink{0%,88%,100%{ry:3.5}94%{ry:0.4}}
+      @keyframes lipSync{0%{ry:1;rx:3}15%{ry:4;rx:4.5}35%{ry:2;rx:3}50%{ry:5;rx:5}70%{ry:2.5;rx:3.5}85%{ry:4.5;rx:4}100%{ry:1;rx:3}}
+      @keyframes armWave{0%,100%{transform:rotate(0deg)}20%{transform:rotate(-30deg)}40%{transform:rotate(25deg)}60%{transform:rotate(-20deg)}80%{transform:rotate(15deg)}}
+      @keyframes armClap{0%,100%{transform:translate(0,0)}50%{transform:translate(6px,-4px)}}
+      @keyframes armClapL{0%,100%{transform:translate(0,0)}50%{transform:translate(-6px,-4px)}}
+      @keyframes earBob{0%,100%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.1) rotate(6deg)}}
+      @keyframes sparkle{0%,100%{opacity:0;transform:scale(0)}50%{opacity:1;transform:scale(1.3)}}
+      @keyframes tailWag{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(12deg)}}
+      @keyframes blushPulse{0%,100%{opacity:0.3}50%{opacity:0.7}}
+      @keyframes headTilt{0%,100%{transform:rotate(0deg)}50%{transform:rotate(4deg)}}
+      .fly{animation:flyBob 2s ease-in-out infinite}
+      .eye{animation:blink 3s ease-in-out infinite}
+    `}</style>
+      <radialGradient id="bf" cx="40%" cy="30%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#ECECEC"/></radialGradient>
+      <radialGradient id="bp" cx="50%" cy="40%"><stop offset="0%" stopColor="#3a3a3a"/><stop offset="100%" stopColor="#111"/></radialGradient>
     </defs>
-    <g className="panda-body">
+    <g className="fly">
+      {/* Shadow on ground */}
+      <ellipse cx="40" cy="88" rx="16" ry="3" fill="rgba(0,0,0,.08)"/>
       {/* Tail */}
-      <g className="panda-tail">
-        <ellipse cx="60" cy="82" rx="6" ry="5" fill="#333" transform="rotate(-20,60,82)"/>
+      <g style={{transformOrigin:"52px 68px",animation:"tailWag 0.8s ease-in-out infinite"}}>
+        <ellipse cx="55" cy="67" rx="5" ry="4" fill="#333"/>
       </g>
-      {/* Body - round belly */}
-      <ellipse cx="50" cy="68" rx="22" ry="24" fill="url(#pg1)" stroke="#E8E8E8" strokeWidth="0.5"/>
-      {/* Belly patch */}
-      <ellipse cx="50" cy="70" rx="14" ry="16" fill="#F8F8F8"/>
-      {/* Belly button */}
-      <ellipse cx="50" cy="74" rx="2" ry="1.5" fill="#E0E0E0"/>
-      {/* Left leg */}
-      <ellipse cx="38" cy="88" rx="9" ry="7" fill="#333"/>
-      <ellipse cx="38" cy="90" rx="6" ry="4" fill="#555"/>
-      {/* Right leg */}
-      <ellipse cx="62" cy="88" rx="9" ry="7" fill="#333"/>
-      <ellipse cx="62" cy="90" rx="6" ry="4" fill="#555"/>
-      {/* Paw pads on feet */}
-      <circle cx="35" cy="91" r="1.5" fill="#FFB4B4"/>
-      <circle cx="38" cy="92" r="1.5" fill="#FFB4B4"/>
-      <circle cx="41" cy="91" r="1.5" fill="#FFB4B4"/>
-      <circle cx="59" cy="91" r="1.5" fill="#FFB4B4"/>
-      <circle cx="62" cy="92" r="1.5" fill="#FFB4B4"/>
-      <circle cx="65" cy="91" r="1.5" fill="#FFB4B4"/>
+      {/* Body */}
+      <ellipse cx="40" cy="58" rx="18" ry="18" fill="url(#bf)"/>
+      <ellipse cx="40" cy="60" rx="11" ry="12" fill="#F5F5F5"/>
+      {/* Legs - small since flying */}
+      <ellipse cx="32" cy="74" rx="6" ry="4.5" fill="#333"/>
+      <ellipse cx="48" cy="74" rx="6" ry="4.5" fill="#333"/>
+      <circle cx="30" cy="76" r="1.2" fill="#FFB4B4"/><circle cx="32" cy="77" r="1.2" fill="#FFB4B4"/><circle cx="34" cy="76" r="1.2" fill="#FFB4B4"/>
+      <circle cx="46" cy="76" r="1.2" fill="#FFB4B4"/><circle cx="48" cy="77" r="1.2" fill="#FFB4B4"/><circle cx="50" cy="76" r="1.2" fill="#FFB4B4"/>
       {/* Left arm */}
-      <g style={{transformOrigin:"30px 60px",animation:isClap?"pandaClapL 0.35s ease-in-out infinite":isThink?"pandaThink 2s ease-in-out infinite":"none"}}>
-        <ellipse cx={isThink?34:26} cy={isThink?42:62} rx="9" ry="7" fill="#333" transform={isThink?"rotate(45,34,42)":"rotate(15,26,62)"}/>
-        {isThink&&<>
-          <circle cx="36" cy="38" r="3.5" fill="#333"/>
-          <circle cx="36" cy="38" r="2" fill="#555"/>
-        </>}
+      <g style={{transformOrigin:"24px 52px",animation:C?"armClapL 0.3s ease-in-out infinite":T?"headTilt 2s ease-in-out infinite":"none"}}>
+        <ellipse cx={T?30:22} cy={T?38:54} rx="7" ry="5.5" fill="#333" transform={T?"rotate(50,30,38)":"rotate(20,22,54)"}/>
+        {T&&<circle cx="32" cy="34" r="2.5" fill="#333"/>}
       </g>
       {/* Right arm */}
-      <g style={{transformOrigin:"70px 60px",animation:isWave?"pandaWave 0.5s ease-in-out infinite":isClap?"pandaClapR 0.35s ease-in-out infinite":isPoint?"none":"none"}}>
-        <ellipse cx={isWave||isPoint?72:74} cy={isWave||isPoint?44:62} rx="9" ry="7" fill="#333" transform={isWave?"rotate(-30,72,44)":isPoint?"rotate(-50,72,44)":"rotate(-15,74,62)"}/>
-        {isPoint&&<>
-          <line x1="76" y1="38" x2="82" y2="28" stroke="#333" strokeWidth="3" strokeLinecap="round"/>
-          <circle cx="82" cy="27" r="2" fill="#333"/>
-        </>}
+      <g style={{transformOrigin:"56px 52px",animation:W?"armWave 0.5s ease-in-out infinite":C?"armClap 0.3s ease-in-out infinite":"none"}}>
+        <ellipse cx={W||P?58:58} cy={W||P?38:54} rx="7" ry="5.5" fill="#333" transform={W?"rotate(-35,58,38)":P?"rotate(-55,58,38)":"rotate(-20,58,54)"}/>
+        {P&&<><line x1="62" y1="34" x2="67" y2="24" stroke="#333" strokeWidth="2.5" strokeLinecap="round"/><circle cx="67" cy="23" r="1.8" fill="#333"/></>}
       </g>
       {/* Head */}
-      <ellipse cx="50" cy="32" rx="22" ry="20" fill="url(#pg1)" stroke="#E8E8E8" strokeWidth="0.3"/>
-      {/* Ears */}
-      <g style={{transformOrigin:"30px 14px",animation:isExcited||isStar?"pandaEarWiggle 0.4s ease-in-out infinite":"none"}}>
-        <circle cx="30" cy="14" r="10" fill="#333"/>
-        <circle cx="30" cy="14" r="5.5" fill="#FFB4B4" opacity="0.6"/>
+      <g style={{animation:T?"headTilt 3s ease-in-out infinite":"none",transformOrigin:"40px 28px"}}>
+        <ellipse cx="40" cy="28" rx="18" ry="16" fill="url(#bf)"/>
+        {/* Ears */}
+        <g style={{transformOrigin:"24px 14px",animation:(E||S)?"earBob 0.35s ease-in-out infinite":"none"}}>
+          <circle cx="24" cy="14" r="8" fill="#333"/><circle cx="24" cy="14" r="4.5" fill="#FFB4B4" opacity="0.5"/>
+        </g>
+        <g style={{transformOrigin:"56px 14px",animation:(E||S)?"earBob 0.35s ease-in-out 0.1s infinite":"none"}}>
+          <circle cx="56" cy="14" r="8" fill="#333"/><circle cx="56" cy="14" r="4.5" fill="#FFB4B4" opacity="0.5"/>
+        </g>
+        {/* Eye patches */}
+        <ellipse cx="32" cy="27" rx="8.5" ry="7" fill="url(#bp)" transform="rotate(-6,32,27)"/>
+        <ellipse cx="48" cy="27" rx="8.5" ry="7" fill="url(#bp)" transform="rotate(6,48,27)"/>
+        {/* Eyes */}
+        <ellipse cx="32" cy="27" rx="4.5" ry="4" fill="#fff"/>
+        <ellipse cx="48" cy="27" rx="4.5" ry="4" fill="#fff"/>
+        <ellipse className="eye" cx={T?31:33} cy="27" rx="2.8" ry="3.5" fill="#111"/>
+        <ellipse className="eye" cx={T?47:49} cy="27" rx="2.8" ry="3.5" fill="#111"/>
+        <circle cx={T?31.5:33.5} cy="25.5" r="1.1" fill="#fff"/>
+        <circle cx={T?47.5:49.5} cy="25.5" r="1.1" fill="#fff"/>
+        {/* Nose */}
+        <ellipse cx="40" cy="33" rx="3.5" ry="2.5" fill="#222"/><ellipse cx="39.5" cy="32.5" rx="1" ry="0.7" fill="#444"/>
+        {/* MOUTH — LIP SYNC */}
+        {speaking?
+          <ellipse cx="40" cy="38" rx="3.5" ry="2" fill="#E23744" stroke="#222" strokeWidth="0.6" style={{animation:"lipSync 0.3s linear infinite"}}/>:
+          (E||S)?
+          <path d="M 35,37 Q 40,44 45,37" fill="#E23744" stroke="#222" strokeWidth="0.7"/>:
+          PR?
+          <path d="M 36,37 Q 40,41 44,37" fill="none" stroke="#222" strokeWidth="1" strokeLinecap="round"/>:
+          <path d="M 36,38 Q 38,40 40,37 Q 42,40 44,38" fill="none" stroke="#222" strokeWidth="0.9" strokeLinecap="round"/>
+        }
+        {/* Blush */}
+        <ellipse cx="25" cy="33" rx="4" ry="2.5" fill="#FFB4B4" opacity="0.35" style={{animation:(E||PR||S||speaking)?"blushPulse 0.8s ease-in-out infinite":"none"}}/>
+        <ellipse cx="55" cy="33" rx="4" ry="2.5" fill="#FFB4B4" opacity="0.35" style={{animation:(E||PR||S||speaking)?"blushPulse 0.8s ease-in-out 0.2s infinite":"none"}}/>
+        {/* Hat */}
+        <ellipse cx="40" cy="14" rx="13" ry="4" fill="#6366F1"/>
+        <ellipse cx="40" cy="12" rx="10" ry="6" fill="#6366F1"/>
+        <circle cx="40" cy="7" r="2.2" fill="#818CF8"/>
       </g>
-      <g style={{transformOrigin:"70px 14px",animation:isExcited||isStar?"pandaEarWiggle 0.4s ease-in-out 0.1s infinite":"none"}}>
-        <circle cx="70" cy="14" r="10" fill="#333"/>
-        <circle cx="70" cy="14" r="5.5" fill="#FFB4B4" opacity="0.6"/>
-      </g>
-      {/* Eye patches */}
-      <ellipse cx="38" cy="30" rx="10" ry="8" fill="url(#pg2)" transform="rotate(-8,38,30)"/>
-      <ellipse cx="62" cy="30" rx="10" ry="8" fill="url(#pg2)" transform="rotate(8,62,30)"/>
-      {/* Eyes - white */}
-      <ellipse cx="38" cy="30" rx="5.5" ry="5" fill="#fff"/>
-      <ellipse cx="62" cy="30" rx="5.5" ry="5" fill="#fff"/>
-      {/* Pupils - animated blink */}
-      <ellipse className="panda-eye" cx={isThink?36:39} cy="30" rx="3.2" ry="4.5" fill="#222"/>
-      <ellipse className="panda-eye" cx={isThink?60:63} cy="30" rx="3.2" ry="4.5" fill="#222"/>
-      {/* Eye sparkle */}
-      <circle cx={isThink?37:40} cy="28" r="1.3" fill="#fff"/>
-      <circle cx={isThink?61:64} cy="28" r="1.3" fill="#fff"/>
-      <circle cx={isThink?35.5:38.5} cy="31" r="0.7" fill="#fff" opacity="0.6"/>
-      <circle cx={isThink?59.5:62.5} cy="31" r="0.7" fill="#fff" opacity="0.6"/>
-      {/* Nose */}
-      <ellipse cx="50" cy="38" rx="4" ry="2.8" fill="#333"/>
-      <ellipse cx="49" cy="37.5" rx="1.2" ry="0.8" fill="#555"/>
-      {/* Mouth - lip synced */}
-      {speaking?
-        <ellipse cx="50" cy="44" rx="4" ry="3" fill="#FF6B6B" stroke="#333" strokeWidth="0.8" style={{animation:"pandaTalk 0.25s ease-in-out infinite"}}/>:
-        isExcited||isStar?
-        <path d="M 43,42 Q 50,50 57,42" fill="#FF6B6B" stroke="#333" strokeWidth="0.8"/>:
-        isProud?
-        <path d="M 44,42 Q 50,47 56,42" fill="none" stroke="#333" strokeWidth="1.2" strokeLinecap="round"/>:
-        <><line x1="50" y1="40" x2="50" y2="42" stroke="#333" strokeWidth="0.8"/>
-        <path d="M 44,43 Q 47,46 50,42 Q 53,46 56,43" fill="none" stroke="#333" strokeWidth="1" strokeLinecap="round"/></>
-      }
-      {/* Blush */}
-      <ellipse cx="30" cy="37" rx="5" ry="3" fill="#FFB4B4" opacity="0.4" style={{animation:(isExcited||isProud||isStar)?"pandaBlush 1s ease-in-out infinite":"none"}}/>
-      <ellipse cx="70" cy="37" rx="5" ry="3" fill="#FFB4B4" opacity="0.4" style={{animation:(isExcited||isProud||isStar)?"pandaBlush 1s ease-in-out 0.2s infinite":"none"}}/>
-      {/* Teacher hat - small beret */}
-      <ellipse cx="50" cy="14" rx="16" ry="5" fill="#6366F1"/>
-      <ellipse cx="50" cy="12" rx="12" ry="7" fill="#6366F1"/>
-      <circle cx="50" cy="7" r="2.5" fill="#818CF8"/>
-      {/* Stars/sparkles for excited moods */}
-      {(isStar||isExcited)&&<>
-        <text x="2" y="10" fontSize="12" style={{animation:"pandaStar 0.8s ease-in-out infinite"}}>✨</text>
-        <text x="82" y="6" fontSize="12" style={{animation:"pandaStar 0.8s ease-in-out 0.3s infinite"}}>⭐</text>
-        <text x="86" y="50" fontSize="10" style={{animation:"pandaStar 0.8s ease-in-out 0.6s infinite"}}>🌟</text>
-        <text x="-4" y="50" fontSize="10" style={{animation:"pandaStar 0.8s ease-in-out 0.9s infinite"}}>💫</text>
-      </>}
-      {/* Hearts for proud */}
-      {isProud&&<>
-        <text x="6" y="16" fontSize="10" style={{animation:"pandaStar 1.2s ease-in-out infinite"}}>💕</text>
-        <text x="80" y="12" fontSize="10" style={{animation:"pandaStar 1.2s ease-in-out 0.4s infinite"}}>💖</text>
-      </>}
-      {/* Clap effect */}
-      {isClap&&<text x="44" y="56" fontSize="12" style={{animation:"pandaStar 0.3s ease-in-out infinite"}}>👏</text>}
-      {/* Wave sparkle */}
-      {isWave&&<text x="80" y="38" fontSize="10" style={{animation:"pandaStar 0.5s ease-in-out infinite"}}>✨</text>}
+      {/* Effects */}
+      {(S||E)&&<>{[{x:4,y:8,d:0},{x:68,y:4,d:.3},{x:72,y:44,d:.6},{x:0,y:42,d:.9}].map((p,i)=>
+        <text key={i} x={p.x} y={p.y} fontSize="9" style={{animation:`sparkle 0.7s ease-in-out ${p.d}s infinite`}}>{"✨⭐🌟💫"[i]}</text>
+      )}</>}
+      {PR&&<>{[{x:6,y:12,d:0},{x:64,y:8,d:.4}].map((p,i)=>
+        <text key={i} x={p.x} y={p.y} fontSize="9" style={{animation:`sparkle 1s ease-in-out ${p.d}s infinite`}}>{"💕💖"[i]}</text>
+      )}</>}
+      {C&&<text x="34" y="48" fontSize="10" style={{animation:"sparkle 0.3s ease-in-out infinite"}}>👏</text>}
+      {W&&<text x="66" y="32" fontSize="9" style={{animation:"sparkle 0.4s ease-in-out infinite"}}>✨</text>}
     </g>
   </svg>;
 };
@@ -1441,33 +1407,39 @@ export default function App(){
   const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);
   const teacherIdleRef=useRef(null);
   const showTeacher=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);};
-  // Poll speechSynthesis.speaking for lip sync
+  // Poll speechSynthesis.speaking for lip sync + random drift
+  const driftRef=useRef({baseX:window.innerWidth-80,baseY:60});
   useEffect(()=>{
-    const iv=setInterval(()=>{setIsSpeaking(speechSynthesis.speaking);},150);
+    const iv=setInterval(()=>{
+      setIsSpeaking(speechSynthesis.speaking);
+      // Random bee-like micro drift around base position
+      const d=driftRef.current;
+      const jx=d.baseX+(Math.sin(Date.now()/800)*12)+(Math.cos(Date.now()/1300)*6);
+      const jy=d.baseY+(Math.cos(Date.now()/600)*8)+(Math.sin(Date.now()/1100)*5);
+      setPandaPos({x:Math.max(4,Math.min(jx,window.innerWidth-68)),y:Math.max(4,Math.min(jy,window.innerHeight-80))});
+    },80);
     return()=>clearInterval(iv);
   },[]);
   const pandaEmojiTimer=useRef(null);
   const flyTo=(e,mood)=>{
     if(!e?.currentTarget)return;
     const rect=e.currentTarget.getBoundingClientRect();
-    // Fly to the RIGHT side of the tapped element, slightly above
-    const x=Math.min(rect.right+4,window.innerWidth-74);
-    const y=Math.max(rect.top+rect.height/2-33,8);
-    setPandaPos({x,y});
+    const x=Math.min(rect.right+6,window.innerWidth-68);
+    const y=Math.max(rect.top+rect.height/2-30,8);
+    driftRef.current={baseX:x,baseY:y};
     if(mood)setTeacherMood(mood);
   };
-  // Move panda near content based on screen/step
   const movePandaTo=(position)=>{
+    const w=window.innerWidth,h=window.innerHeight;
     const positions={
-      topRight:{x:window.innerWidth-80,y:60},
-      midRight:{x:window.innerWidth-80,y:window.innerHeight/2-40},
-      bottomRight:{x:window.innerWidth-80,y:window.innerHeight-140},
-      topLeft:{x:8,y:60},
-      midLeft:{x:8,y:window.innerHeight/2-40},
-      center:{x:window.innerWidth/2-33,y:window.innerHeight/2-33},
+      topRight:{baseX:w-80,baseY:55},
+      midRight:{baseX:w-80,baseY:h/2-35},
+      bottomRight:{baseX:w-80,baseY:h-130},
+      topLeft:{baseX:10,baseY:55},
+      midLeft:{baseX:10,baseY:h/2-35},
+      center:{baseX:w/2-30,baseY:h/2-30},
     };
-    const p=positions[position]||positions.midRight;
-    setPandaPos(p);
+    driftRef.current=positions[position]||positions.midRight;
   };
   const showPandaEmoji=(emoji)=>{
     setPandaEmoji(emoji);
@@ -1557,7 +1529,7 @@ export default function App(){
   const handleNumResult=(result)=>{
     const w=NW[selNum];
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(w,normalized);setSpRes(normalized);setSpAcc(acc);setNStep("result");
+    const acc=calcAcc(w,normalized);setSpRes(normalized);setSpAcc(acc);setNStep("result");movePandaTo("topRight");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0) awardPoints(p,"numbers",selNum);
     if(s>=3)boom();
@@ -1579,7 +1551,7 @@ export default function App(){
   };
   const handlePhResult=(result)=>{
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(phW.word,normalized);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
+    const acc=calcAcc(phW.word,normalized);setPhRes(normalized);setPhAcc(acc);setPhStep("result");movePandaTo("topRight");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0) awardPoints(p,"phonics",phW.word);
     if(s>=3)boom();
@@ -1773,7 +1745,7 @@ export default function App(){
   };
   const retryNum=async()=>{showTeacher("happy","Try again! You can do it! 💪");
     setSpRes(null);setSpAcc(null);
-    setNStep("countdown");
+    setNStep("countdown");movePandaTo("center");
     await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);
     stop();await wait(600);setNStep("listening");rec.start(handleNumResult);
   };
@@ -1823,7 +1795,7 @@ export default function App(){
   };
   const retryPh=async()=>{showTeacher("happy","One more try! I believe in you! 🌈");
     setPhRes(null);setPhAcc(null);
-    setPhStep("countdown");
+    setPhStep("countdown");movePandaTo("center");
     await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);
     stop();await wait(600);setPhStep("listening");rec.start(handlePhResult);
   };
@@ -1860,7 +1832,7 @@ export default function App(){
     }
     if(speakMode){
       await speak(`${kidName}, your turn. Say, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setShStep("listening");pRef.current=false;rec.start(handleShResult);
+      stop();await wait(600);setShStep("listening");movePandaTo("bottomRight");pRef.current=false;rec.start(handleShResult);
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
   const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setShStep("listening");rec.start(handleShResult);};
@@ -1897,7 +1869,7 @@ export default function App(){
     }
     if(speakMode){
       await speak(`${kidName}, your turn. Say, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setCoStep("listening");pRef.current=false;rec.start(handleCoResult);
+      stop();await wait(600);setCoStep("listening");movePandaTo("bottomRight");pRef.current=false;rec.start(handleCoResult);
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
   const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setCoStep("listening");rec.start(handleCoResult);};
@@ -1937,7 +1909,7 @@ export default function App(){
     }
     const shuffled=shuffle([...choices]);
     
-    setMathProblem({a,b,op,answer});
+    setMathProblem({a,b,op,answer});movePandaTo("midRight");
     setMathChoices(shuffled);
     setMathFb(null);setMathAnswer(null);
     
@@ -2086,7 +2058,7 @@ export default function App(){
     // Pick random from available pool
     const n=pool[Math.floor(Math.random()*pool.length)]||1;
     setFindUsed(prev=>[...prev,n]);
-    setFindTarget(n);setFindFb(null);setFoundNum(null);
+    setFindTarget(n);setFindFb(null);setFoundNum(null);movePandaTo("topRight");
     speak(`Find, number, ${NW[n]||n}.`,{rate:0.55,pitch:1.0});
   };
   const repeatFind=()=>{
@@ -2242,14 +2214,10 @@ export default function App(){
     const buyR=(r)=>{if((prof?.points||0)<r.cost)return;save({...prof,points:prof.points-r.cost,rewards:[...(prof.rewards||[]),{...r,at:Date.now()}]});boom();setRwdMsg(`${r.emoji} Yay! You earned ${r.name}! Show your parents!`);setTimeout(()=>setRwdMsg(null),4000);};
 
   // ═══ VIRTUAL TEACHER (renders on all screens) ═══
-  const TeacherBubble=<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:"none",transition:"all 0.6s cubic-bezier(0.34,1.56,0.64,1)",filter:"drop-shadow(0 6px 12px rgba(0,0,0,.15))"}}>
-    {/* Reaction emoji - pops above panda */}
-    {pandaEmoji&&<div style={{position:"absolute",top:-28,left:"50%",transform:"translateX(-50%)",fontSize:24,animation:"ptFly 1.5s ease-out forwards",pointerEvents:"none"}}>{pandaEmoji}</div>}
-    {/* Mini thought bubble when speaking */}
-    {teacherMsg&&<div style={{position:"absolute",top:-8,right:-6,background:"#fff",borderRadius:12,padding:"3px 8px",boxShadow:"0 2px 8px rgba(0,0,0,.1)",maxWidth:120,animation:"fadeIn 0.3s ease",pointerEvents:"none"}}>
-      <div style={{fontSize:8,fontWeight:800,color:"#1C1C2B",lineHeight:1.2,textAlign:"center",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{teacherMsg.length>20?teacherMsg.slice(0,18)+"..":teacherMsg}</div>
-    </div>}
-    <BellaChar mood={teacherMood} size={66} speaking={isSpeaking}/>
+  const TeacherBubble=<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:"none",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.12))"}}>
+    {/* Reaction emoji floats up */}
+    {pandaEmoji&&<div key={pandaEmoji+Date.now()} style={{position:"absolute",top:-24,left:"50%",transform:"translateX(-50%)",fontSize:22,animation:"ptFly 1.5s ease-out forwards"}}>{pandaEmoji}</div>}
+    <BellaChar mood={teacherMood} size={60} speaking={isSpeaking}/>
   </div>;
 
   // ═══ SCREENS ═══
