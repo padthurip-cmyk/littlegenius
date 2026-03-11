@@ -905,6 +905,38 @@ const COLORSDATA=[
 const NUM_FUN={1:"1 egg in an egg cup!",2:"2 eyes to see!",3:"3 little kittens!",4:"4 legs on a dog!",5:"5 fingers on a hand!",6:"6 legs on a bug!",7:"7 colors in a rainbow!",8:"8 legs on an octopus!",9:"9 planets long ago!",10:"10 toes on your feet!",11:"11 players in football!",12:"12 months in a year!",13:"13 is a baker\'s dozen!",14:"14 days in two weeks!",15:"15 minutes is a quarter hour!",16:"16 ounces in a pound!",17:"17 is a prime number!",18:"18 holes on a golf course!",19:"19 is almost twenty!",20:"20 fingers and toes!"};
 const NUM_EMOJI={1:"🥚",2:"👀",3:"🐱",4:"🐕",5:"🖐️",6:"🐛",7:"🌈",8:"🐙",9:"🪐",10:"🦶",11:"⚽",12:"📅",13:"🍩",14:"📆",15:"⏰",16:"⚖️",17:"🔢",18:"⛳",19:"🔟",20:"👣"};
 
+// Alphabet data — examples, phonics for each letter
+const ALPHA_DATA={
+A:{ph:"æ",examples:[{w:"Apple",e:"🍎"},{w:"Ant",e:"🐜"},{w:"Aeroplane",e:"✈️"},{w:"Alligator",e:"🐊"},{w:"Astronaut",e:"👨‍🚀"}]},
+B:{ph:"buh",examples:[{w:"Ball",e:"⚽"},{w:"Bear",e:"🐻"},{w:"Butterfly",e:"🦋"},{w:"Banana",e:"🍌"},{w:"Bus",e:"🚌"}]},
+C:{ph:"kuh",examples:[{w:"Cat",e:"🐱"},{w:"Car",e:"🚗"},{w:"Cake",e:"🎂"},{w:"Cow",e:"🐮"},{w:"Crown",e:"👑"}]},
+D:{ph:"duh",examples:[{w:"Dog",e:"🐶"},{w:"Duck",e:"🦆"},{w:"Drum",e:"🥁"},{w:"Diamond",e:"💎"},{w:"Dolphin",e:"🐬"}]},
+E:{ph:"eh",examples:[{w:"Elephant",e:"🐘"},{w:"Egg",e:"🥚"},{w:"Eagle",e:"🦅"},{w:"Earth",e:"🌍"},{w:"Eye",e:"👁️"}]},
+F:{ph:"fuh",examples:[{w:"Fish",e:"🐟"},{w:"Flower",e:"🌸"},{w:"Frog",e:"🐸"},{w:"Fire",e:"🔥"},{w:"Football",e:"⚽"}]},
+G:{ph:"guh",examples:[{w:"Grapes",e:"🍇"},{w:"Giraffe",e:"🦒"},{w:"Guitar",e:"🎸"},{w:"Gift",e:"🎁"},{w:"Globe",e:"🌍"}]},
+H:{ph:"huh",examples:[{w:"Horse",e:"🐴"},{w:"Hat",e:"🎩"},{w:"Heart",e:"❤️"},{w:"House",e:"🏠"},{w:"Honey",e:"🍯"}]},
+I:{ph:"ih",examples:[{w:"Ice cream",e:"🍦"},{w:"Igloo",e:"🏔️"},{w:"Island",e:"🏝️"},{w:"Ink",e:"🖊️"},{w:"Insect",e:"🐛"}]},
+J:{ph:"juh",examples:[{w:"Jelly",e:"🍮"},{w:"Juice",e:"🧃"},{w:"Jaguar",e:"🐆"},{w:"Jet",e:"✈️"},{w:"Jewel",e:"💎"}]},
+K:{ph:"kuh",examples:[{w:"Kite",e:"🪁"},{w:"King",e:"🤴"},{w:"Kangaroo",e:"🦘"},{w:"Key",e:"🔑"},{w:"Koala",e:"🐨"}]},
+L:{ph:"luh",examples:[{w:"Lion",e:"🦁"},{w:"Lamp",e:"💡"},{w:"Lemon",e:"🍋"},{w:"Leaf",e:"🍃"},{w:"Ladybug",e:"🐞"}]},
+M:{ph:"muh",examples:[{w:"Monkey",e:"🐒"},{w:"Moon",e:"🌙"},{w:"Mango",e:"🥭"},{w:"Music",e:"🎵"},{w:"Mountain",e:"⛰️"}]},
+N:{ph:"nuh",examples:[{w:"Nest",e:"🪹"},{w:"Nose",e:"👃"},{w:"Nut",e:"🥜"},{w:"Night",e:"🌙"},{w:"Notebook",e:"📓"}]},
+O:{ph:"oh",examples:[{w:"Orange",e:"🍊"},{w:"Owl",e:"🦉"},{w:"Octopus",e:"🐙"},{w:"Ocean",e:"🌊"},{w:"Onion",e:"🧅"}]},
+P:{ph:"puh",examples:[{w:"Penguin",e:"🐧"},{w:"Pizza",e:"🍕"},{w:"Parrot",e:"🦜"},{w:"Piano",e:"🎹"},{w:"Panda",e:"🐼"}]},
+Q:{ph:"kwuh",examples:[{w:"Queen",e:"👸"},{w:"Quilt",e:"🛏️"},{w:"Question",e:"❓"},{w:"Quail",e:"🐦"},{w:"Quiet",e:"🤫"}]},
+R:{ph:"ruh",examples:[{w:"Rabbit",e:"🐰"},{w:"Rainbow",e:"🌈"},{w:"Rocket",e:"🚀"},{w:"Rose",e:"🌹"},{w:"Robot",e:"🤖"}]},
+S:{ph:"sss",examples:[{w:"Sun",e:"☀️"},{w:"Star",e:"⭐"},{w:"Snake",e:"🐍"},{w:"Ship",e:"🚢"},{w:"Strawberry",e:"🍓"}]},
+T:{ph:"tuh",examples:[{w:"Tiger",e:"🐯"},{w:"Train",e:"🚂"},{w:"Tree",e:"🌳"},{w:"Turtle",e:"🐢"},{w:"Telescope",e:"🔭"}]},
+U:{ph:"uh",examples:[{w:"Umbrella",e:"☂️"},{w:"Unicorn",e:"🦄"},{w:"Uniform",e:"👔"},{w:"Universe",e:"🌌"},{w:"Uncle",e:"👨"}]},
+V:{ph:"vuh",examples:[{w:"Violin",e:"🎻"},{w:"Volcano",e:"🌋"},{w:"Van",e:"🚐"},{w:"Vase",e:"🏺"},{w:"Vulture",e:"🦅"}]},
+W:{ph:"wuh",examples:[{w:"Whale",e:"🐋"},{w:"Watch",e:"⌚"},{w:"Watermelon",e:"🍉"},{w:"Wolf",e:"🐺"},{w:"Window",e:"🪟"}]},
+X:{ph:"eks",examples:[{w:"Xylophone",e:"🎵"},{w:"X-ray",e:"🩻"},{w:"Fox",e:"🦊"},{w:"Box",e:"📦"},{w:"Taxi",e:"🚕"}]},
+Y:{ph:"yuh",examples:[{w:"Yak",e:"🦬"},{w:"Yacht",e:"⛵"},{w:"Yogurt",e:"🥛"},{w:"Yellow",e:"🟡"},{w:"Yarn",e:"🧶"}]},
+Z:{ph:"zzz",examples:[{w:"Zebra",e:"🦓"},{w:"Zoo",e:"🦁"},{w:"Zigzag",e:"⚡"},{w:"Zero",e:"0️⃣"},{w:"Zipper",e:"🤐"}]},
+};
+const ALPHA_LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const ALPHA_COLORS=["#FF6B6B","#4ECDC4","#FC8019","#A855F7","#F472B6","#3B82F6","#22C55E","#EAB308","#EF4444","#0EA5E9","#8B5CF6","#14B8A6","#F97316"];
+
 // How to write each number - stroke descriptions for kids
 const NUM_STROKES={
   1:"Start at top. One straight line down ↓",
@@ -1022,22 +1054,22 @@ const useRec=()=>{
     retryCountRef.current=0;
     setTxt("");setErr("");setOn(true);
 
-    // KILL all TTS before opening mic — prevents speaker-to-mic feedback
     try{speechSynthesis.cancel();}catch(e){}
 
     const doStart=()=>{
-      // If TTS is still playing, wait for it to stop
-      if(speechSynthesis.speaking){
-        setTimeout(doStart,400);
-        return;
-      }
+      if(speechSynthesis.speaking){setTimeout(doStart,400);return;}
 
       const r=new SR();
-      r.continuous=false;
+      r.continuous=true;        // KEEP listening — don't stop on first pause
       r.interimResults=true;
       r.lang="en-US";
       r.maxAlternatives=3;
       recRef.current=r;
+
+      const startTime=Date.now();
+      let bestFinal="";
+      let bestInterim=""; // Track what user sees as "Heard: ..."
+      let acceptTimer=null;
 
       r.onresult=(e)=>{
         let f="",interim="";
@@ -1047,63 +1079,67 @@ const useRec=()=>{
         }
         const t=(f||interim).toLowerCase().trim();
         setTxt(t);
+        // Always track best interim (what the user sees)
+        if(t) bestInterim=t;
         if(f && t){
-          gotResultRef.current=true;
-          clearTimeout(timeoutRef.current);
-          try{r.stop();}catch(e){}
-          setOn(false);
-          cbRef.current?.(t);
+          bestFinal=t;
+          clearTimeout(acceptTimer);
+          acceptTimer=setTimeout(()=>{
+            gotResultRef.current=true;
+            clearTimeout(timeoutRef.current);
+            try{r.stop();}catch(e){}
+            setOn(false);
+            cbRef.current?.(bestFinal);
+          },800);
         }
       };
       r.onerror=(e)=>{
-        if(e.error==="not-allowed"){
-          setErr("Mic blocked. Allow microphone in browser settings.");
-          setOn(false);
-          return;
+        if(e.error==="not-allowed"){setErr("Mic blocked.");setOn(false);return;}
+        // If we heard something (even interim), accept it
+        if(!gotResultRef.current && bestInterim){
+          gotResultRef.current=true;setOn(false);cbRef.current?.(bestInterim);return;
         }
-        // Silent retry — NO voice during error (prevents feedback)
-        if(!gotResultRef.current){
-          retryCountRef.current++;
-          setTxt("Listening...");
-          setTimeout(doStart,2500);
-        }
+        if(!gotResultRef.current){retryCountRef.current++;setTxt("Listening...");setTimeout(doStart,2000);}
       };
       r.onend=()=>{
+        clearTimeout(acceptTimer);
+        // Accept best final if we have it
+        if(bestFinal && !gotResultRef.current){
+          gotResultRef.current=true;setOn(false);cbRef.current?.(bestFinal);return;
+        }
+        // FALLBACK: accept interim result if we heard something but browser never marked it final
+        if(bestInterim && !gotResultRef.current){
+          gotResultRef.current=true;setOn(false);cbRef.current?.(bestInterim);return;
+        }
         if(!gotResultRef.current){
+          const elapsed=Date.now()-startTime;
+          if(elapsed<3000){setTxt("Listening...");setTimeout(doStart,200);return;}
           retryCountRef.current++;
-          // Every 3rd retry: say "try again" THEN wait for speaker to stop THEN restart
           if(retryCountRef.current%3===0){
-            setTxt("Try again...");
-            setOn(false);
+            setTxt("Try again...");setOn(false);
             const u=new SpeechSynthesisUtterance("Try again.");
             u.rate=0.7;u.pitch=1.0;u.lang="en-US";
             u.onend=()=>{setTimeout(()=>{setOn(true);doStart();},800);};
             u.onerror=()=>{setTimeout(()=>{setOn(true);doStart();},800);};
             speechSynthesis.speak(u);
-          } else {
-            setTxt("Listening...");
-            setTimeout(doStart,2000);
-          }
+          } else {setTxt("Listening...");setTimeout(doStart,1500);}
         }
       };
 
       try{r.start();}catch(e){
         if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
           navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
-            stream.getTracks().forEach(t=>t.stop());
-            permRef.current=true;
+            stream.getTracks().forEach(t=>t.stop());permRef.current=true;
             try{r.start();}catch(e2){setTimeout(doStart,2000);}
           }).catch(()=>{setErr("Mic access denied.");setOn(false);});
-        } else {
-          setTimeout(doStart,2000);
-        }
+        } else {setTimeout(doStart,2000);}
       }
       clearTimeout(timeoutRef.current);
     };
 
-    // 800ms cooldown — lets phone speaker fully stop vibrating
     setTimeout(doStart,800);
   },[]);
+
 
 
   const stopR=useCallback(()=>{
@@ -1242,9 +1278,15 @@ export default function App(){
   const[confetti,setConfetti]=useState(false);
   // Basics state
   const[basicsTab,setBasicsTab]=useState("explore"); // "explore", "find", "write"
-  const[findTarget,setFindTarget]=useState(null);const[findScore,setFindScore]=useState(0);const[findStreak,setFindStreak]=useState(0);const[findFb,setFindFb]=useState(null);
+  const[findTarget,setFindTarget]=useState(null);const[findScore,setFindScore]=useState(0);const[findStreak,setFindStreak]=useState(0);const[findFb,setFindFb]=useState(null);const[findUsed,setFindUsed]=useState([]);const[findLevel,setFindLevel]=useState(1);
   const[foundNum,setFoundNum]=useState(null); // shows celebration + spelling when correct
-  const[writeNum,setWriteNum]=useState(1);const[drawPts,setDrawPts]=useState(0);const[writeOk,setWriteOk]=useState(false);const[writeScore,setWriteScore]=useState(null);
+  const[writeNum,setWriteNum]=useState(1);
+  // Alphabet state
+  const[alphaTab,setAlphaTab]=useState("caps"); // "caps","small","match"
+  const[selLetter,setSelLetter]=useState(null); // selected letter for detail
+  const[matchPairs,setMatchPairs]=useState([]); // match game pairs
+  const[matchLeft,setMatchLeft]=useState(null); // dragging from
+  const[matchScore,setMatchScore]=useState(0);const[matchDone,setMatchDone]=useState([]);const[drawPts,setDrawPts]=useState(0);const[writeOk,setWriteOk]=useState(false);const[writeScore,setWriteScore]=useState(null);
   const cRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);const[rwdMsg,setRwdMsg]=useState(null);
   const[speakMode,setSpeakMode]=useState(true); // toggle for speech practice
   const[countdown,setCountdown]=useState(0); // 3,2,1 countdown
@@ -1281,7 +1323,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{stop();pRef.current=false;setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -1635,12 +1677,92 @@ export default function App(){
   const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setCoStep("listening");rec.start(handleCoResult);};
 
 
+
+  // ═══ ALPHABET FUNCTIONS ═══
+  const playLetter=async(letter)=>{
+    setSelLetter(letter);
+    const d=ALPHA_DATA[letter];if(!d)return;
+    // Sing: "A says æ! A for Apple, A for Ant, A for Aeroplane!"
+    await speak(`${letter}!`,{rate:0.6,pitch:1.0});
+    await wait(300);
+    await speak(`${letter} says ${d.ph}!`,{rate:0.6,pitch:1.0});
+    await wait(400);
+    for(const ex of d.examples){
+      if(!pRef.current)return;
+      await speak(`${letter} for ${ex.w}!`,{rate:0.65,pitch:1.0,noCancel:true});
+      await wait(500);
+    }
+    await wait(300);
+    await speak(`That is the letter ${letter}!`,{rate:0.65,pitch:1.0});
+  };
+  const closeLetter=()=>{stop();pRef.current=false;setSelLetter(null);};
+  const startMatch=()=>{
+    // Pick 5 random letters for matching
+    const picked=shuffle(ALPHA_LETTERS.slice()).slice(0,5);
+    const shuffledSmall=shuffle([...picked]);
+    setMatchPairs(picked.map((l,i)=>({cap:l,small:shuffledSmall[i],matched:false})));
+    setMatchLeft(null);setMatchScore(0);setMatchDone([]);
+    speak("Match the capital letter with the small letter!",{rate:0.6,pitch:1.0});
+  };
+  const onMatchTap=(letter,side)=>{
+    if(matchLeft){
+      // Second tap — check if match
+      if(matchLeft.side!==side){
+        const capL=side==="cap"?letter:matchLeft.letter;
+        const smlL=side==="small"?letter:matchLeft.letter;
+        if(capL===smlL){
+          // CORRECT match!
+          setMatchDone(p=>[...p,capL]);
+          setMatchScore(s=>s+1);
+          setMatchLeft(null);
+          speak(`${capL}! Correct!`,{rate:0.7,pitch:1.0,noCancel:true});
+          if(matchDone.length+1>=5){
+            setTimeout(()=>speak("Perfect! All matched!",{rate:0.6,pitch:1.0}),600);
+          }
+        } else {
+          setMatchLeft(null);
+          speak("Try again!",{rate:0.7,pitch:1.0,noCancel:true});
+        }
+      } else {
+        setMatchLeft({letter,side});
+      }
+    } else {
+      setMatchLeft({letter,side});
+      speak(letter,{rate:0.7,pitch:1.0,noCancel:true});
+    }
+  };
+
   // ═══ BASICS FUNCTIONS ═══
   const newFindTarget=()=>{
     const max=aCfg?.max||20;
-    const n=Math.floor(Math.random()*max)+1;
+    // Progressive difficulty: start with 1-5, then 1-10, then 1-15, etc.
+    const levelMax=Math.min(max, findLevel*5);
+    
+    // Build pool of unused numbers within current level
+    let pool=[];
+    for(let i=1;i<=levelMax;i++){
+      if(!findUsed.includes(i)) pool.push(i);
+    }
+    // If all used in this level, advance level and reset
+    if(pool.length===0){
+      const nextLevel=findLevel+1;
+      const nextMax=Math.min(max, nextLevel*5);
+      if(nextMax>levelMax){
+        setFindLevel(nextLevel);
+        pool=[];
+        for(let i=1;i<=nextMax;i++) pool.push(i);
+        setFindUsed([]);
+      } else {
+        // All numbers done! Reset everything
+        setFindLevel(1);setFindUsed([]);
+        pool=[];
+        for(let i=1;i<=Math.min(max,5);i++) pool.push(i);
+      }
+    }
+    // Pick random from available pool
+    const n=pool[Math.floor(Math.random()*pool.length)]||1;
+    setFindUsed(prev=>[...prev,n]);
     setFindTarget(n);setFindFb(null);setFoundNum(null);
-    // Only announce by voice — don't show the number
     speak(`Find, number, ${NW[n]||n}.`,{rate:0.55,pitch:1.0});
   };
   const repeatFind=()=>{
@@ -1770,7 +1892,7 @@ export default function App(){
         setWriteOk(true);
         speak(`Perfect! Great job writing ${NW[writeNum]||writeNum}! ${NUM_FUN[writeNum]||""}`,{rate:0.6,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(5,"basics_w",writeNum);
-      } else if(score>=60){
+      } else if(score>=50){
         setWriteOk(true);
         speak(`Good! ${NW[writeNum]||writeNum}! That's a pass!`,{rate:0.6,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(3,"basics_w",writeNum);
@@ -1822,7 +1944,7 @@ export default function App(){
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:16,padding:"16px 16px 12px",marginTop:0,position:"relative",zIndex:3}}>{[
       {id:"numbers",icon:"🔢",title:"Numbers",sub:`Learn 1-${aCfg.max}`,grad:"linear-gradient(135deg,#FF6B6B,#FF4757)",shadow:"rgba(255,71,87,.25)"},
-      {id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & Sounds",grad:"linear-gradient(135deg,#4ECDC4,#26D0CE)",shadow:"rgba(78,205,196,.25)"},
+      {id:"alphabet",icon:"🔠",title:"ABC",sub:"A-Z Letters",grad:"linear-gradient(135deg,#6366F1,#818CF8)",shadow:"rgba(99,102,241,.25)"},{id:"phonics",icon:"🔤",title:"Phonics",sub:"Words & Sounds",grad:"linear-gradient(135deg,#4ECDC4,#26D0CE)",shadow:"rgba(78,205,196,.25)"},
       {id:"basics",icon:"🧩",title:"Basics",sub:"Find & Write",grad:"linear-gradient(135deg,#FC8019,#FF9F43)",shadow:"rgba(252,128,25,.25)"},
       {id:"shapes",icon:"🔷",title:"Shapes",sub:"8 Shapes",grad:"linear-gradient(135deg,#A855F7,#8B5CF6)",shadow:"rgba(168,85,247,.25)"},
       {id:"colors",icon:"🎨",title:"Colors",sub:"Rainbow Fun",grad:"linear-gradient(135deg,#F472B6,#EC4899)",shadow:"rgba(244,114,182,.25)"},
@@ -1949,7 +2071,7 @@ export default function App(){
           </div>
         )}
         {nStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]}/>}
-        {nStep==="result"&&spRes!==null&&<ResultBox acc={spAcc} result={spRes} expected={w} onRetry={retryNum} onDone={()=>{setNStep("idle");setSpRes(null);}} color={color} kidName={kidName} currentPoints={prof?.points||0}/>}
+        {nStep==="result"&&spRes!==null&&<ResultBox acc={spAcc} result={spRes} expected={w} onRetry={retryNum} onDone={()=>{setSpRes(null);const next=selNum>=(aCfg?.max||20)?1:selNum+1;setSelNum(next);setNStep("idle");setTimeout(()=>playNum(next),200);}} color={color} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><style>{CSS}</style></div>;}
 
@@ -2076,7 +2198,7 @@ export default function App(){
           </div>
         )}
         {phStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""}/>}
-        {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhStep("idle");setPhRes(null);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
+        {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhRes(null);const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),200);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><style>{CSS}</style></div>;}
 
@@ -2103,7 +2225,7 @@ export default function App(){
         {shStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {shStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#F1F3F7",borderRadius:24,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:48,fontFamily:"'Poppins',sans-serif",fontWeight:800,color:countdown>0?shColor:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
         {shStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleShResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
-        {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShStep("idle");setShRes(null);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
+        {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShRes(null);const idx=SHAPES.findIndex(x=>x.name===sh.name);const next=SHAPES[(idx+1)%SHAPES.length];setSelShape(next);setShStep("idle");setTimeout(()=>playShape(next),200);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><style>{CSS}</style></div>;}
 
@@ -2131,7 +2253,7 @@ export default function App(){
         {coStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {coStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#F1F3F7",borderRadius:24}}><div style={{fontSize:48,fontFamily:"'Poppins',sans-serif",fontWeight:800,color:countdown>0?co.hex:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
         {coStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleCoResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
-        {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoStep("idle");setCoRes(null);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
+        {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoRes(null);const idx=COLORSDATA.findIndex(x=>x.name===co.name);const next=COLORSDATA[(idx+1)%COLORSDATA.length];setSelColor(next);setCoStep("idle");setTimeout(()=>playColor(next),200);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><style>{CSS}</style></div>;}
 
@@ -2139,6 +2261,118 @@ export default function App(){
   if(scr==="colors")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:22,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#E8E8E8"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Poppins',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both, cardFloat ${2.5+Math.random()*2}s ease-in-out ${0.6+i*0.1}s infinite`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#1C1C2B",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Poppins',sans-serif",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div></div><style>{CSS}</style></div>;
 
 
+
+
+  // ═══ ALPHABET ═══
+  if(scr==="alphabet")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"hidden",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <SubHead title="ABC 🔠" onBack={goHome} points={prof?.points||0}/>
+    {/* Tab bar */}
+    <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#F8F9FB",borderBottom:"1px solid #EFEFEF"}}>
+      {[{id:"caps",label:"🔤 CAPITAL"},{id:"small",label:"🔡 small"},{id:"match",label:"🎯 Match"}].map(t=>
+        <button key={t.id} onClick={()=>{setAlphaTab(t.id);setSelLetter(null);if(t.id==="match"&&matchPairs.length===0)startMatch();}}
+          style={{flex:1,padding:"10px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Poppins',sans-serif",
+            background:alphaTab===t.id?"#6366F1":"#F1F3F7",color:alphaTab===t.id?"#fff":"#93959F",transition:"all 0.2s"
+          }}>{t.label}</button>
+      )}
+    </div>
+
+    {/* ═══ LETTER DETAIL OVERLAY ═══ */}
+    {selLetter&&<div style={{position:"absolute",inset:0,background:"rgba(255,255,255,.97)",zIndex:30,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,animation:"fadeIn 0.3s",padding:20}}>
+      <button onClick={closeLetter} style={{position:"absolute",top:12,right:16,padding:"8px 14px",borderRadius:12,border:"2px solid #E8E8E8",background:"#fff",fontSize:13,fontWeight:800,cursor:"pointer"}}>✕ Close</button>
+      <div style={{fontSize:80,fontFamily:"'Poppins',sans-serif",fontWeight:900,color:ALPHA_COLORS[ALPHA_LETTERS.indexOf(selLetter)%13],lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>{selLetter}{selLetter.toLowerCase()}</div>
+      <div style={{fontSize:18,fontWeight:800,color:"#1C1C2B",marginTop:4}}>"{ALPHA_DATA[selLetter]?.ph}" sound</div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:10,justifyContent:"center",marginTop:8}}>
+        {ALPHA_DATA[selLetter]?.examples.map((ex,i)=>
+          <button key={i} onClick={()=>speak(`${selLetter} for ${ex.w}!`,{rate:0.65,pitch:1.0})} style={{
+            display:"flex",flexDirection:"column",alignItems:"center",padding:"12px 14px",borderRadius:16,
+            border:"2px solid #E8E8E8",background:"#F8F9FB",cursor:"pointer",minWidth:80,
+            animation:`gridPop 0.3s ease ${i*0.08}s both`
+          }}>
+            <span style={{fontSize:32}}>{ex.e}</span>
+            <span style={{fontSize:12,fontWeight:800,color:"#1C1C2B",marginTop:4}}>{selLetter} for {ex.w}</span>
+          </button>
+        )}
+      </div>
+      <div style={{display:"flex",gap:10,marginTop:12}}>
+        <button onClick={()=>playLetter(selLetter)} style={{flex:1,padding:"12px 20px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6366F1,#818CF8)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔊 Again</button>
+        <button onClick={()=>{const idx=ALPHA_LETTERS.indexOf(selLetter);const next=ALPHA_LETTERS[(idx+1)%26];pRef.current=true;setSelLetter(next);playLetter(next);}} style={{flex:1,padding:"12px 20px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>Next ➡️</button>
+      </div>
+    </div>}
+
+    {/* ═══ CAPITAL LETTERS TAB ═══ */}
+    {alphaTab==="caps"&&!selLetter&&<div style={{flex:1,overflow:"auto",padding:"10px 12px"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
+        {ALPHA_LETTERS.map((l,i)=>
+          <button key={l} onClick={()=>{pRef.current=true;playLetter(l);}} style={{
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+            padding:"10px 4px",borderRadius:14,border:"2px solid #E8E8E8",cursor:"pointer",
+            background:"#fff",boxShadow:"0 2px 8px rgba(0,0,0,.06)",
+            animation:`gridPop 0.2s ease ${i*0.02}s both`
+          }}>
+            <span style={{fontSize:24,fontWeight:900,color:ALPHA_COLORS[i%13]}}>{l}</span>
+            <span style={{fontSize:10,fontWeight:700,color:"#93959F"}}>{ALPHA_DATA[l]?.examples[0]?.e||""}</span>
+          </button>
+        )}
+      </div>
+    </div>}
+
+    {/* ═══ SMALL LETTERS TAB ═══ */}
+    {alphaTab==="small"&&!selLetter&&<div style={{flex:1,overflow:"auto",padding:"10px 12px"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
+        {ALPHA_LETTERS.map((l,i)=>
+          <button key={l} onClick={()=>{pRef.current=true;playLetter(l);}} style={{
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+            padding:"10px 4px",borderRadius:14,border:"2px solid #E8E8E8",cursor:"pointer",
+            background:"#fff",boxShadow:"0 2px 8px rgba(0,0,0,.06)",
+            animation:`gridPop 0.2s ease ${i*0.02}s both`
+          }}>
+            <span style={{fontSize:24,fontWeight:900,color:ALPHA_COLORS[i%13]}}>{l.toLowerCase()}</span>
+            <span style={{fontSize:10,fontWeight:700,color:"#93959F"}}>{ALPHA_DATA[l]?.examples[0]?.e||""}</span>
+          </button>
+        )}
+      </div>
+    </div>}
+
+    {/* ═══ MATCH GAME TAB ═══ */}
+    {alphaTab==="match"&&!selLetter&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",padding:"10px 14px"}}>
+      <div style={{textAlign:"center",marginBottom:8}}>
+        <span style={{fontSize:14,fontWeight:800,color:"#6366F1"}}>Match Capital → small | 🏆 {matchScore}/5</span>
+        {matchDone.length>=5&&<div style={{marginTop:6}}><button onClick={startMatch} style={{padding:"8px 20px",borderRadius:12,border:"none",background:"#6366F1",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer"}}>🔄 New Game</button></div>}
+      </div>
+      <div style={{display:"flex",gap:20,flex:1,justifyContent:"center"}}>
+        {/* Left column: Capitals */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#93959F"}}>CAPITAL</span>
+          {matchPairs.map(p=>
+            <button key={p.cap} onClick={()=>!matchDone.includes(p.cap)&&onMatchTap(p.cap,"cap")} style={{
+              width:56,height:56,borderRadius:14,border:"3px solid",cursor:"pointer",
+              borderColor:matchDone.includes(p.cap)?"#60B246":matchLeft?.letter===p.cap&&matchLeft?.side==="cap"?"#6366F1":"#E8E8E8",
+              background:matchDone.includes(p.cap)?"#ECFDF5":matchLeft?.letter===p.cap&&matchLeft?.side==="cap"?"#EEF2FF":"#fff",
+              fontSize:22,fontWeight:900,color:matchDone.includes(p.cap)?"#60B246":"#1C1C2B",
+              opacity:matchDone.includes(p.cap)?0.5:1,
+              fontFamily:"'Poppins',sans-serif"
+            }}>{p.cap}</button>
+          )}
+        </div>
+        {/* Right column: Smalls (shuffled) */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,alignItems:"center"}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#93959F"}}>small</span>
+          {matchPairs.map(p=>{
+            const sLetter=p.small;
+            return<button key={"s"+sLetter} onClick={()=>!matchDone.includes(sLetter)&&onMatchTap(sLetter,"small")} style={{
+              width:56,height:56,borderRadius:14,border:"3px solid",cursor:"pointer",
+              borderColor:matchDone.includes(sLetter)?"#60B246":matchLeft?.letter===sLetter&&matchLeft?.side==="small"?"#6366F1":"#E8E8E8",
+              background:matchDone.includes(sLetter)?"#ECFDF5":matchLeft?.letter===sLetter&&matchLeft?.side==="small"?"#EEF2FF":"#fff",
+              fontSize:22,fontWeight:900,color:matchDone.includes(sLetter)?"#60B246":"#1C1C2B",
+              opacity:matchDone.includes(sLetter)?0.5:1,
+              fontFamily:"'Poppins',sans-serif"
+            }}>{sLetter.toLowerCase()}</button>;
+          })}
+        </div>
+      </div>
+    </div>}
+    <style>{CSS}</style>
+  </div>;
 
   // ═══ BASICS DASHBOARD ═══
   if(scr==="basics")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"hidden",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
@@ -2148,7 +2382,7 @@ export default function App(){
       {[{id:"explore",label:"📖 Numbers"},{id:"find",label:"🔍 Find"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
           setBasicsTab(t.id);
-          if(t.id==="find"&&!findTarget)newFindTarget();
+          if(t.id==="find"){if(!findTarget)newFindTarget();}
           if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}
         }} style={{flex:1,padding:"12px 8px",borderRadius:14,border:"none",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"'Poppins',sans-serif",
           background:basicsTab===t.id?"#6366F1":"#f3f4f6",color:basicsTab===t.id?"#fff":"#888",transition:"all 0.2s"
@@ -2246,12 +2480,12 @@ export default function App(){
             <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.5,pitch:1.0})} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FC8019",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
           </div>
         </div>
-        {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#ECFDF5":writeScore>=60?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
+        {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#ECFDF5":writeScore>=50?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
           <div style={{flex:1,height:8,borderRadius:4,background:"#E8E8E8",overflow:"hidden"}}>
-            <div style={{height:"100%",borderRadius:4,transition:"width 0.5s",background:writeScore>=85?"#60B246":writeScore>=60?"#FC8019":"#E23744",width:`${writeScore}%`}}/>
+            <div style={{height:"100%",borderRadius:4,transition:"width 0.5s",background:writeScore>=85?"#60B246":writeScore>=50?"#FC8019":"#E23744",width:`${writeScore}%`}}/>
           </div>
-          <span style={{fontSize:12,fontWeight:800,color:writeScore>=85?"#60B246":writeScore>=60?"#FC8019":"#E23744"}}>{writeScore}%</span>
-          <span style={{fontSize:11,fontWeight:700,color:writeScore>=85?"#60B246":writeScore>=60?"#FC8019":"#E23744"}}>{writeScore>=85?"⭐ Perfect!":writeScore>=60?"✅ Pass!":"Keep tracing!"}</span>
+          <span style={{fontSize:12,fontWeight:800,color:writeScore>=85?"#60B246":writeScore>=50?"#FC8019":"#E23744"}}>{writeScore}%</span>
+          <span style={{fontSize:11,fontWeight:700,color:writeScore>=85?"#60B246":writeScore>=50?"#FC8019":"#E23744"}}>{writeScore>=85?"⭐ Perfect!":writeScore>=50?"✅ Pass!":"Keep tracing!"}</span>
           {writeOk&&<span style={{fontSize:16}}>✅</span>}
         </div>}
       </div>
