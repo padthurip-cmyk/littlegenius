@@ -795,7 +795,7 @@ const WCATS={
     {word:"light",ph:["l","igh","t"],img:"⚖️",sentence:"A feather is very light!"},
     {word:"more",ph:["m","or"],img:"➕",sentence:"I want more apples!"},
     {word:"less",ph:["l","e","s"],img:"➖",sentence:"Less sugar is healthier!"},
-  ]},,
+  ]},
 
   places:{emoji:"🏛️",color:"#0891B2",words:[
     {word:"home",ph:["h","oa","m"],img:"🏠",sentence:"Home is where the heart is!"},
