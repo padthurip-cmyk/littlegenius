@@ -1133,8 +1133,8 @@ const useRec=()=>{
           if(elapsed<3000){setTxt("Listening...");setTimeout(doStart,200);return;}
           retryCountRef.current++;
           if(retryCountRef.current%3===0){
-            setTxt("Try again...");setOn(false);
-            const u=new SpeechSynthesisUtterance("Try again.");
+            setTxt("One more time!..");setOn(false);
+            const u=new SpeechSynthesisUtterance("One more time!");
             u.rate=0.7;u.pitch=1.0;u.lang="en-US";
             u.onend=()=>{setTimeout(()=>{setOn(true);doStart();},800);};
             u.onerror=()=>{setTimeout(()=>{setOn(true);doStart();},800);};
@@ -1213,7 +1213,7 @@ const TEACHER_MSGS={
 };
 const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return msgs[Math.floor(Math.random()*msgs.length)];};
 
-const BellaChar=({mood,size=88,speaking=false,hiFive=false,joyMode=false,shake="",mouthOpen=0})=>{
+const BellaChar=({mood,size=110,speaking=false,hiFive=false,joyMode=false,shake="",mouthOpen=0})=>{
   const s=size;
   const W=mood==="waving",C=mood==="clapping",T=mood==="thinking",P=mood==="pointing",S=mood==="star",E=mood==="excited",PR=mood==="proud",H=mood==="happy";
   // mouthOpen: 0.0 (closed smile) to 1.0 (fully open) — driven by smooth sine wave externally
@@ -1428,7 +1428,7 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(88);const[highFive,setHighFive]=useState(false);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(110);const[highFive,setHighFive]=useState(false);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
   const[mouthOpen,setMouthOpen]=useState(0); // 0.0 to 1.0 smooth
   const teacherIdleRef=useRef(null);
   const guideTourRef=useRef(false);
@@ -1461,24 +1461,24 @@ export default function App(){
   const doHomeTour=async()=>{
     setGuideTour(true);
     guideTourRef.current=true;
-    setPandaSize(72); // smaller during tour to avoid overlap
+    setPandaSize(80); // smaller during tour to avoid overlap
     // col: "left" or "right" in the 2-column grid
     const tiles=[
-      {id:"numbers",col:"left",msg:"This is Numbers! You can learn counting and math here!"},
-      {id:"alphabet",col:"right",msg:"This is A B C! Learn all the letters of the alphabet!"},
-      {id:"phonics",col:"left",msg:"This is Phonics! Learn to read over 500 words!"},
-      {id:"basics",col:"right",msg:"This is Basics! Practice finding and writing numbers!"},
-      {id:"shapes",col:"left",msg:"This is Shapes! Learn circles, triangles and more!"},
-      {id:"colors",col:"right",msg:"This is Colors! Discover the rainbow!"},
-      {id:"rewards",col:"left",msg:"This is Rewards! Spend your points on cool prizes!"},
-      {id:"settings",col:"right",msg:"And this is Settings! Change your profile here!"},
+      {id:"numbers",col:"left",msg:"Ooh, Numbers! Count and do math here!"},
+      {id:"alphabet",col:"right",msg:"A B C! All the letters live here!"},
+      {id:"phonics",col:"left",msg:"Phonics! Learn to read over 500 words!"},
+      {id:"basics",col:"right",msg:"Basics! Find numbers and practice writing!"},
+      {id:"shapes",col:"left",msg:"Shapes! Circles, triangles, and more!"},
+      {id:"colors",col:"right",msg:"Colors! Discover the rainbow!"},
+      {id:"rewards",col:"left",msg:"Rewards! Spend your points on cool prizes!"},
+      {id:"settings",col:"right",msg:"And Settings! You can change your look here!"},
     ];
     for(const tile of tiles){
       if(!guideTourRef.current)break;
       const el=document.querySelector('[data-tile="'+tile.id+'"]');
       if(el){
         const r=el.getBoundingClientRect();
-        const ps=72; // tour size
+        const ps=80; // tour size
         const w=window.innerWidth,h=window.innerHeight;
         let x,y;
         y=Math.max(Math.min(r.top+r.height/2-ps/2,h-ps),0);
@@ -1497,10 +1497,10 @@ export default function App(){
     }
     setTeacherMood("star");
     movePandaTo("center");
-    await speak("So, what do you want to learn today? Tap anything to start!",{rate:0.85,pitch:1.0});
+    await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});
     await wait(500);
     movePandaTo("bottomRight");
-    setPandaSize(88); // restore normal size
+    setPandaSize(110); // restore normal size
     guideTourRef.current=false;
     setGuideTour(false);
   };
@@ -1508,18 +1508,18 @@ export default function App(){
   // High-five: panda zooms to center, gets big, shows hand
   const doHighFive=async()=>{
     setHighFive(true);
-    setPandaSize(130);
-    setPandaPos({x:window.innerWidth/2-65,y:window.innerHeight/2-65});
+    setPandaSize(150);
+    setPandaPos({x:window.innerWidth/2-75,y:window.innerHeight/2-75});
     setTeacherMood("clapping");
     await wait(1800);
     setHighFive(false);
-    setPandaSize(88);
+    setPandaSize(110);
     movePandaTo("bottomRight");
   };
   // Joy fly: panda does a quick loop around screen
   const doJoyFly=()=>{
     setJoyFly(true);setTeacherMood("star");
-    const w=window.innerWidth,h=window.innerHeight,ps=pandaSize||88;
+    const w=window.innerWidth,h=window.innerHeight,ps=pandaSize||110;
     const path=[{x:w/2-ps/2,y:20},{x:w-ps-10,y:h/3},{x:w/2-ps/2,y:h/2},{x:10,y:h/3},{x:w/2-ps/2,y:20}];
     let i=0;
     const step=()=>{
@@ -1532,7 +1532,7 @@ export default function App(){
   const flyTo=(e,mood)=>{
     if(!e?.currentTarget)return;
     const rect=e.currentTarget.getBoundingClientRect();
-    const ps=pandaSize||88;
+    const ps=pandaSize||110;
     const x=Math.min(rect.right+6,window.innerWidth-ps);
     const y=Math.max(Math.min(rect.top+rect.height/2-ps/2,window.innerHeight-ps),0);
     setPandaPos({x,y});
@@ -1540,7 +1540,7 @@ export default function App(){
   };
   const movePandaTo=(position)=>{
     const w=window.innerWidth,h=window.innerHeight;
-    const ps=pandaSize||88;
+    const ps=pandaSize||110;
     const positions={
       topRight:{x:w-ps-6,y:8},
       midRight:{x:w-ps-6,y:h/2-ps/2},
@@ -1557,7 +1557,7 @@ export default function App(){
       const el=document.querySelector(`[data-panda="${selector}"]`);
       if(!el){movePandaTo("bottomRight");return;}
       const r=el.getBoundingClientRect();
-      const ps=pandaSize||88;
+      const ps=pandaSize||110;
       const w=window.innerWidth,h=window.innerHeight;
       let x,y;
       if(side==="right"){
@@ -1590,21 +1590,22 @@ export default function App(){
       else if(lo.includes("find")||lo.includes("tap")||lo.includes("match"))mood="pointing";
       else if(lo.includes("spell")||lo.includes("watch")||lo.includes("let"))mood="excited";
       else if(lo.includes("great")||lo.includes("good")||lo.includes("earned")){mood="proud";showPandaEmoji("🎉");}
-      setTeacherMood(mood);setTeacherMsg(text.length>55?text.slice(0,52)+"...":text);
+      setTeacherMood(mood);
       clearTimeout(teacherIdleRef.current);
     };
     onDoneRef.current=()=>{
       clearTimeout(teacherIdleRef.current);
       teacherIdleRef.current=setTimeout(()=>{
-        const idle=["What shall we do next?","Tap something!","I'm here to help!","Keep learning!","You're doing great!"];
-        setTeacherMood("happy");setTeacherMsg(idle[Math.floor(Math.random()*idle.length)]);
+        // Cycle through idle moods naturally — no text
+        const idleMoods=["happy","waving","proud","happy","excited","happy"];
+        setTeacherMood(idleMoods[Math.floor(Math.random()*idleMoods.length)]);
       },4000);
     };
     return()=>{onSpeakRef.current=null;onDoneRef.current=null;clearTimeout(teacherIdleRef.current);};
   },[]);
   useEffect(()=>{
-    const msgs={home:["waving","Hi! Ready to learn?"],numbers:["excited","Numbers time!"],phonics:["happy","Word magic!"],shapes:["excited","Shape hunt!"],colors:["happy","Color world!"],alphabet:["star","ABC time!"],basics:["pointing","Practice time!"],rewards:["excited","Your prizes!"],settings:["happy","Your profile!"]};
-    const m=msgs[scr];if(m)showTeacher(m[0],m[1]);
+    const moods={home:"waving",numbers:"excited",phonics:"happy",shapes:"excited",colors:"happy",alphabet:"star",basics:"pointing",rewards:"excited",settings:"happy"};
+    const m=moods[scr];if(m)setTeacherMood(m);
     // Position panda based on screen
     const pos={home:"bottomRight",numbers:"bottomRight",phonics:"bottomRight",shapes:"bottomRight",colors:"bottomRight",alphabet:"bottomRight",basics:"bottomRight",rewards:"bottomRight",settings:"bottomRight",splash:"center",onboard:"bottomRight"};
     setTimeout(()=>movePandaTo(pos[scr]||"bottomRight"),100);
@@ -1633,7 +1634,7 @@ export default function App(){
   const doWelcome=useCallback(()=>{
     if(welcomeSpoken.current)return;
     welcomeSpoken.current=true;
-    speak("Welcome to Little Genius! I am Bella, your friendly panda! Let us have fun learning together!",{rate:0.85,pitch:1.0});
+    speak("Hey there! I'm Bella the panda! So happy to meet you! Let's learn and play together!",{rate:0.85,pitch:1.0});
     setTeacherMood("waving");
   },[speak]);
 
@@ -1641,11 +1642,11 @@ export default function App(){
     if(!loaded||initDone.current)return;
     initDone.current=true;
     setTeacherMood("waving");
-    setPandaSize(100);
+    setPandaSize(120);
     setTimeout(()=>{
       const w=window.innerWidth,h=window.innerHeight;
       // Position panda BELOW the button area, not on top of it
-      setPandaPos({x:w/2-50,y:h/2+120});
+      setPandaPos({x:w/2-60,y:h/2+120});
     },100);
   },[loaded]);
 
@@ -1672,7 +1673,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(88);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(110);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -1689,15 +1690,15 @@ export default function App(){
       const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
       const need=nextR?(nextR.cost-((prof?.points||0)+p)):0;
       if(s>=4){
-        speak(`${kidName}, that was perfect. You are a superstar.`,{rate:0.8,pitch:1.0});
-        if(nextR&&need<=30) setTimeout(()=>speak(`Just ${need} more points for a ${nextR.name}. Keep going.`,{rate:0.8,pitch:1.0}),2500);
+        speak(`${kidName}, wow! That was perfect!`,{rate:0.8,pitch:1.0});
+        if(nextR&&need<=30) setTimeout(()=>speak(`Only ${need} more for a ${nextR.name}!`,{rate:0.8,pitch:1.0}),2500);
       }
-      else if(s>=3) speak(`Great work ${kidName}. Keep going.`,{rate:0.8,pitch:1.0});
+      else if(s>=3) speak(`Awesome ${kidName}! You nailed it!`,{rate:0.8,pitch:1.0});
       else if(s>=1){
-        speak(`Good try ${kidName}. You can do better.`,{rate:0.8,pitch:1.0});
-        if(nextR) setTimeout(()=>speak(`Practice more to earn your ${nextR.name}.`,{rate:0.8,pitch:1.0}),2200);
+        speak(`Nice try ${kidName}! Almost got it!`,{rate:0.8,pitch:1.0});
+        if(nextR) setTimeout(()=>speak(`Keep going for your ${nextR.name}!`,{rate:0.8,pitch:1.0}),2200);
       }
-      else{headNo();setTeacherMood("thinking");speak(`No worries ${kidName}. Let us try again.`,{rate:0.8,pitch:1.0});}
+      else{headNo();setTeacherMood("thinking");speak(`That's okay ${kidName}! Let's try again!`,{rate:0.8,pitch:1.0});}
     },300);
   };
   const handlePhResult=(result)=>{
@@ -1710,15 +1711,15 @@ export default function App(){
       const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
       const need=nextR?(nextR.cost-((prof?.points||0)+p)):0;
       if(s>=4){
-        speak(`${kidName}, that was brilliant. You said it perfectly.`,{rate:0.8,pitch:1.0});
-        if(nextR&&need<=30) setTimeout(()=>speak(`Almost there. ${need} more points for a ${nextR.name}.`,{rate:0.8,pitch:1.0}),2500);
+        speak(`${kidName}, that was amazing! You got it!`,{rate:0.8,pitch:1.0});
+        if(nextR&&need<=30) setTimeout(()=>speak(`So close! ${need} more points for a ${nextR.name}.`,{rate:0.8,pitch:1.0}),2500);
       }
-      else if(s>=3) speak(`Well done ${kidName}. Keep it up.`,{rate:0.8,pitch:1.0});
+      else if(s>=3) speak(`Awesome ${kidName}! Keep going!`,{rate:0.8,pitch:1.0});
       else if(s>=1){
-        speak(`Good try ${kidName}. Almost there.`,{rate:0.8,pitch:1.0});
-        if(nextR) setTimeout(()=>speak(`Keep practicing for your ${nextR.name}.`,{rate:0.8,pitch:1.0}),2200);
+        speak(`Nice try ${kidName}! So close!`,{rate:0.8,pitch:1.0});
+        if(nextR) setTimeout(()=>speak(`Keep going for your ${nextR.name}.`,{rate:0.8,pitch:1.0}),2200);
       }
-      else speak(`Don't give up ${kidName}. You're learning.`,{rate:0.8,pitch:1.0});
+      else speak(`You got this ${kidName}! Try again!`,{rate:0.8,pitch:1.0});
     },300);
   };
 
@@ -1738,7 +1739,7 @@ export default function App(){
       await wait(500);
     }
     setCountdown(0);
-    await speak("Go.",{rate:0.75,pitch:1.0,noCancel:true});
+    await speak("Go!",{rate:0.75,pitch:1.0,noCancel:true});
     await wait(400);
     onStart();
   };
@@ -1815,7 +1816,7 @@ export default function App(){
     const scrambled=shuffle(letters.map((l,i)=>({letter:l.toUpperCase(),id:i,used:false})));
     setScrambledLetters(scrambled);
 
-    await speak("Now tap the letters in the right order.",{rate:0.75,pitch:1.0});
+    await speak("Your turn! Tap the letters!",{rate:0.75,pitch:1.0});
     await wait(400);
 
     // Wait for kid to finish tapping (resolved by handleLetterTap)
@@ -1830,10 +1831,10 @@ export default function App(){
     await wait(300);
 
     if(success){
-      await speak("Perfect spelling!",{rate:0.8,pitch:1.0});
+      await speak("You spelled it!",{rate:0.8,pitch:1.0});
     } else {
       // Show correct order
-      await speak("Let me show you.",{rate:0.75,pitch:1.0});
+      await speak("Watch me!",{rate:0.75,pitch:1.0});
       setSpellStatus(letters.map(()=>'waiting'));
       for(let i=0;i<letters.length;i++){
         if(!pRef.current) return;
@@ -1855,21 +1856,21 @@ export default function App(){
 
     // Step 1: Say the number with excitement (high pitch, warm)
     setNStep("saying_number");
-    await speak(`Hello ${kidName}!`,{rate:0.8,pitch:1.05});
+    await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});
     await wait(300);
-    await speak(`This number is, ${w}.`,{rate:0.7,pitch:1.0});
+    await speak(`This is the number, ${w}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
     // Step 2: Interactive spelling
     setNStep("spelling");hoverNear("spell-area","right","pointing");
     await spellWord(w.replace(/\s/g,''));
     await wait(400);if(!pRef.current)return;
-    await speak(`Well done. That spells, ${w}.`,{rate:0.75,pitch:1.0});
+    await speak(`Awesome! That spells, ${w}.`,{rate:0.75,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
     // Step 3: Sentence
     setNStep("saying_sentence");
-    await speak(`Now listen to this sentence.`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
+    await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
     await speak(scene.sentence,{rate:0.75,pitch:1.0});
     await wait(600);if(!pRef.current)return;
 
@@ -1877,27 +1878,27 @@ export default function App(){
     const phs=NPH[num];
     if(phs){
       setNStep("saying_phonics");
-      await speak(`Now, let's understand how to speak this word.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Now let's sound it out!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
       for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.8,pitch:1.0,noCancel:true});await wait(300);}
       setAPhI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`And the word is, ${w}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Put it together, ${w}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
 
     // Step 5: Speaking practice (if enabled)
     if(speakMode){
-      await speak(`${kidName}, your turn. Say, ${w}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+      await speak(`Your turn ${kidName}! Can you say, ${w}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
       stop();await wait(600);setNStep("listening");pRef.current=false;hoverNear("mic-area","left","happy");showTeacher("happy","I'm listening!");rec.start(handleNumResult);
     }else{
       pRef.current=false;
       if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
-      await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});
+      await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});
       setNStep("idle");
     }
   };
   const retryNum=async()=>{showTeacher("happy","Try again! You can do it! 💪");
     setSpRes(null);setSpAcc(null);
     setNStep("countdown");hoverNear("countdown","right","excited");
-    await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);
+    await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);
     stop();await wait(600);setNStep("listening");rec.start(handleNumResult);
   };
 
@@ -1908,46 +1909,46 @@ export default function App(){
 
     // Step 1: Say the word with excitement
     setPhStep("saying_word");
-    await speak(`Hello ${kidName}!`,{rate:0.8,pitch:1.05});
+    await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});
     await wait(300);
-    await speak(`This word is, ${wd.word}.`,{rate:0.7,pitch:1.0});
+    await speak(`This word is, ${wd.word}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
     // Step 2: Interactive spelling
     setPhStep("spelling");hoverNear("spell-area","right","pointing");
     await spellWord(wd.word);
     await wait(400);if(!pRef.current)return;
-    await speak(`Well done. That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
+    await speak(`Awesome! That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
     // Step 3: Sentence
     setPhStep("saying_sentence");
-    await speak(`Now listen to this sentence.`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
+    await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
     await speak(wd.sentence,{rate:0.75,pitch:1.0});
     await wait(600);if(!pRef.current)return;
 
     // Step 4: Phonics - "let's understand how to speak this word"
     setPhStep("saying_phonics");
-    await speak(`Now, let's understand how to speak this word.`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+    await speak(`Now let's sound it out!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
     for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.8,pitch:1.0,noCancel:true});await wait(300);}
     setPhAI(-1);await wait(400);if(!pRef.current)return;
-    await speak(`And the word is, ${wd.word}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+    await speak(`Put it together, ${wd.word}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
 
     // Step 5: Speaking (if enabled)
     if(speakMode){
-      await speak(`${kidName}, your turn. Say, ${wd.word}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+      await speak(`Your turn ${kidName}! Can you say, ${wd.word}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
       stop();await wait(600);setPhStep("listening");pRef.current=false;hoverNear("mic-area","left","happy");showTeacher("happy","Your turn!");rec.start(handlePhResult);
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
-      await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});
+      await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});
       setPhStep("idle");
     }
   };
   const retryPh=async()=>{showTeacher("happy","One more try! I believe in you! 🌈");
     setPhRes(null);setPhAcc(null);
     setPhStep("countdown");hoverNear("countdown","right","excited");
-    await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);
+    await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);
     stop();await wait(600);setPhStep("listening");rec.start(handlePhResult);
   };
 
@@ -1959,34 +1960,34 @@ export default function App(){
     if(p>0) awardPoints(p,"shapes",selShape.name);
     if(s>=3)boom();
     setTimeout(()=>{
-      if(s>=3) speak(`${kidName}, that was great.`,{rate:0.8,pitch:1.0});
-      else speak(`Good try ${kidName}.`,{rate:0.8,pitch:1.0});
+      if(s>=3) speak(`${kidName}, you got it!`,{rate:0.8,pitch:1.0});
+      else speak(`Nice try ${kidName}!`,{rate:0.8,pitch:1.0});
     },300);
   };
   const playShape=async(sh)=>{
     if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
     pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setShStep("saying_word");
-    await speak(`Hello ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
-    await speak(`This shape is, ${sh.name}.`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+    await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
+    await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setShStep("spelling");hoverNear("spell-area","right","pointing");
     await spellWord(sh.name);await wait(400);if(!pRef.current)return;
-    await speak(`Well done. That spells, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+    await speak(`Awesome! That spells, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
     setShStep("saying_sentence");
     await speak(sh.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
     if(sh.ph){
       setShStep("saying_phonics");
-      await speak("Now, let's understand how to speak this word.",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak("Now let's sound it out!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
       for(let i=0;i<sh.ph.length;i++){if(!pRef.current)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.8,pitch:1.0,noCancel:true});await wait(300);}
       setShAI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`And the word is, ${sh.name}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Put it together, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`${kidName}, your turn. Say, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+      await speak(`Your turn ${kidName}! Can you say, ${sh.name}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
       stop();await wait(600);setShStep("listening");hoverNear("mic-area","left","happy");pRef.current=false;rec.start(handleShResult);
-    }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});setShStep("idle");}
+    }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
-  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setShStep("listening");rec.start(handleShResult);};
+  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setShStep("listening");rec.start(handleShResult);};
 
   // ═══ COLOR PLAY FLOW ═══
   const handleCoResult=(result)=>{
@@ -1996,34 +1997,34 @@ export default function App(){
     if(p>0) awardPoints(p,"colors",selColor.name);
     if(s>=3)boom();
     setTimeout(()=>{
-      if(s>=3) speak(`${kidName}, that was great.`,{rate:0.8,pitch:1.0});
-      else speak(`Good try ${kidName}.`,{rate:0.8,pitch:1.0});
+      if(s>=3) speak(`${kidName}, you got it!`,{rate:0.8,pitch:1.0});
+      else speak(`Nice try ${kidName}!`,{rate:0.8,pitch:1.0});
     },300);
   };
   const playColor=async(co)=>{
     if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
     pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setCoStep("saying_word");
-    await speak(`Hello ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
-    await speak(`This color is, ${co.name}.`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+    await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
+    await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setCoStep("spelling");hoverNear("spell-area","right","pointing");
     await spellWord(co.name);await wait(400);if(!pRef.current)return;
-    await speak(`Well done. That spells, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+    await speak(`Awesome! That spells, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
     setCoStep("saying_sentence");
     await speak(co.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
     if(co.ph){
       setCoStep("saying_phonics");
-      await speak("Now, let's understand how to speak this word.",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak("Now let's sound it out!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
       for(let i=0;i<co.ph.length;i++){if(!pRef.current)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.8,pitch:1.0,noCancel:true});await wait(300);}
       setCoAI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`And the word is, ${co.name}.`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Put it together, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`${kidName}, your turn. Say, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+      await speak(`Your turn ${kidName}! Can you say, ${co.name}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
       stop();await wait(600);setCoStep("listening");hoverNear("mic-area","left","happy");pRef.current=false;rec.start(handleCoResult);
-    }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Well done ${kidName}.`,{rate:0.8,pitch:1.0});setCoStep("idle");}
+    }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
-  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`Try again.`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setCoStep("listening");rec.start(handleCoResult);};
+  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setCoStep("listening");rec.start(handleCoResult);};
 
 
 
@@ -2075,12 +2076,12 @@ export default function App(){
       setMathFb("correct");headYes();showTeacher("clapping","That's right! You're so smart! 🧠");
       setMathScore(s=>s+1);
       awardPoints(3,"math",`${mathProblem.a}${mathProblem.op}${mathProblem.b}`);
-      await speak(`${choice}! Correct! Well done!`,{rate:0.85,pitch:1.0});
+      await speak(`${choice}! Yes, that's right!`,{rate:0.85,pitch:1.0});
       await wait(1000);
       genMath();
     } else {
-      setMathFb("wrong");headNo();showTeacher("thinking","Almost! Let me show you the answer 🤔");
-      await speak(`Not quite. ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.8,pitch:1.0});
+      setMathFb("wrong");headNo();showTeacher("thinking","Hmm, not quite!");
+      await speak(`Oops! ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.8,pitch:1.0});
       await wait(2000);
       genMath();
     }
@@ -2113,7 +2114,7 @@ export default function App(){
     }
     if(!ok())return;
     await wait(200);
-    await speak(`That is the letter ${letter}!`,{rate:0.85,pitch:1.0});
+    await speak(`And that's the letter ${letter}!`,{rate:0.85,pitch:1.0});
   };
   const closeLetter=()=>{stop();pRef.current=false;alphaRef.current="";setSelLetter(null);};
   // Generate shuffled options: correct letter + 4 random wrong ones
@@ -2131,7 +2132,7 @@ export default function App(){
     setMatchLeft(null);setMatchScore(0);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);
     setMatchOpts(genOpts(picked[0]));
     (async()=>{
-      await speak("Match the letters!",{rate:0.85,pitch:1.0});
+      await speak("Let's match letters!",{rate:0.85,pitch:1.0});
       await wait(400);
       await speak(`Find small ${picked[0].toLowerCase()}.`,{rate:0.85,pitch:1.0});
     })();
@@ -2142,7 +2143,7 @@ export default function App(){
       boom(); // 🎉 big celebration for finishing all
       (async()=>{
         await wait(300);
-        await speak("Amazing! All matched! You are a star!",{rate:0.85,pitch:1.0});
+        await speak("Wow! You matched them all!",{rate:0.85,pitch:1.0});
       })();
     } else {
       setMatchIdx(nextIdx);
@@ -2164,7 +2165,7 @@ export default function App(){
       setMatchDone(p=>[...p,tappedLetter]);
       setMatchScore(s=>s+1);
       boom();headYes(); // 🎆 CONFETTI + teacher on every correct match!
-      await speak(`${tappedLetter}! Correct! Well done!`,{rate:0.7,pitch:1.0});
+      await speak(`${tappedLetter}! Yes! You got it!`,{rate:0.7,pitch:1.0});
       await wait(800);
       setMatchCorrect(null);
       advanceMatch(matchIdx+1,matchPairs);
@@ -2172,7 +2173,7 @@ export default function App(){
       // ❌ WRONG — freeze wrong, highlight correct
       setMatchWrong(tappedLetter);
       setMatchCorrect(currentCap);
-      await speak(`No. That is ${tappedLetter.toLowerCase()}. The correct one is ${currentCap.toLowerCase()}.`,{rate:0.8,pitch:1.0});
+      await speak(`Oops! That's ${tappedLetter.toLowerCase()}. We need ${currentCap.toLowerCase()}.`,{rate:0.8,pitch:1.0});
       await wait(2000);
       setMatchWrong(null);setMatchCorrect(null);
       setMatchDone(p=>[...p,currentCap]);
@@ -2228,12 +2229,12 @@ export default function App(){
       setFoundNum(n);
       (async()=>{
         await wait(500);
-        await speak(`Correct! This is ${NW[n]||n}.`,{rate:0.8,pitch:1.0});
+        await speak(`Yes! This is ${NW[n]||n}.`,{rate:0.8,pitch:1.0});
         await wait(400);
         // Spell the word
         const word=NW[n]||String(n);
         const letters=word.replace(/\s/g,'').split('');
-        await speak(`Let me spell it.`,{rate:0.85,pitch:1.0});
+        await speak(`I'll spell it for you!`,{rate:0.85,pitch:1.0});
         await wait(300);
         for(const letter of letters){
           await speak(letter.toUpperCase(),{rate:0.7,pitch:1.0,noCancel:true});
@@ -2250,7 +2251,7 @@ export default function App(){
       setFindFb({ok:false,n});setFindStreak(0);headNo();setTeacherMood("thinking");
       (async()=>{
         await wait(300);
-        await speak(`That is ${NW[n]||n}. Try again. Find ${NW[findTarget]||findTarget}.`,{rate:0.8,pitch:1.0});
+        await speak(`That's ${NW[n]||n}. One more time! Find ${NW[findTarget]||findTarget}.`,{rate:0.8,pitch:1.0});
         await wait(600);
         setFindFb(null);
       })();
@@ -2395,18 +2396,40 @@ export default function App(){
     };
   });
 
+  // Panda tap reactions — fun interactive responses when kid taps the panda
+  const pandaTapReactions=[
+    {mood:"excited",emoji:"😄",sound:"Hee hee!"},
+    {mood:"star",emoji:"⭐",sound:"Yay!"},
+    {mood:"waving",emoji:"👋",sound:"Hello!"},
+    {mood:"clapping",emoji:"👏",sound:"Woo hoo!"},
+    {mood:"proud",emoji:"💕",sound:"I love you!"},
+    {mood:"excited",emoji:"🎉",sound:"Let's play!"},
+    {mood:"star",emoji:"✨",sound:"You're amazing!"},
+    {mood:"waving",emoji:"🌟",sound:"Hi there!"},
+    {mood:"clapping",emoji:"🎊",sound:"Great job!"},
+    {mood:"happy",emoji:"🤗",sound:"Hug!"},
+  ];
+  const pandaTapRef=useRef(0);
+  const pandaTapTime=useRef(0);
+  const onPandaTap=()=>{
+    const reaction=pandaTapReactions[pandaTapRef.current%pandaTapReactions.length];
+    pandaTapRef.current++;
+    setTeacherMood(reaction.mood);
+    showPandaEmoji(reaction.emoji);
+    speak(reaction.sound,{rate:1.0,pitch:1.1});
+  };
+
   const TeacherBubble=<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:"none",transition:dragRef.current?"none":joyFly?"left 0.3s ease-out, top 0.3s ease-out":"left 1s cubic-bezier(0.4,0,0.2,1), top 1s cubic-bezier(0.4,0,0.2,1)",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.1))"}}>
-    {/* Speech bubble — shows above panda */}
-    {teacherMsg&&!highFive&&<div style={{position:"absolute",bottom:pandaSize-4,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",maxWidth:200,background:"#fff",color:"#1C1C2B",padding:"6px 12px",borderRadius:"14px 14px 14px 4px",fontSize:11,fontWeight:700,fontFamily:"'Poppins',sans-serif",boxShadow:"0 2px 12px rgba(0,0,0,.08)",animation:"bubPop 0.3s ease-out",lineHeight:1.3,textAlign:"center",pointerEvents:"none",border:"1.5px solid #FC801922"}}>
-      {teacherMsg}
-      <div style={{position:"absolute",bottom:-6,left:18,width:0,height:0,borderLeft:"6px solid transparent",borderRight:"6px solid transparent",borderTop:"6px solid #fff"}}/>
-    </div>}
-    {/* Reaction emoji */}
-    {pandaEmoji&&<div key={pandaEmoji+Date.now()} style={{position:"absolute",top:-20,left:"50%",transform:"translateX(-50%)",fontSize:22,animation:"ptFly 1.5s ease-out forwards",pointerEvents:"none"}}>{pandaEmoji}</div>}
-    {highFive&&<div style={{position:"absolute",top:-36,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",padding:"6px 14px",borderRadius:16,fontSize:15,fontWeight:900,animation:"slideUp 0.3s ease-out",boxShadow:"0 4px 16px rgba(252,128,25,.3)",pointerEvents:"none"}}>High Five! ✋</div>}
-    {/* Panda — draggable, only this part captures pointer events */}
-    <div onMouseDown={pandaDragStart} onTouchStart={pandaDragStart}
-      style={{cursor:"grab",pointerEvents:"auto",userSelect:"none",WebkitUserSelect:"none"}}>
+    {/* Reaction emoji floats up */}
+    {pandaEmoji&&<div key={pandaEmoji+Date.now()} style={{position:"absolute",top:-24,left:"50%",transform:"translateX(-50%)",fontSize:26,animation:"ptFly 1.5s ease-out forwards",pointerEvents:"none"}}>{pandaEmoji}</div>}
+    {highFive&&<div style={{position:"absolute",top:-40,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",padding:"8px 16px",borderRadius:18,fontSize:16,fontWeight:900,animation:"slideUp 0.3s ease-out",boxShadow:"0 6px 20px rgba(252,128,25,.3)",pointerEvents:"none"}}>High Five! ✋</div>}
+    {/* Panda — draggable + tappable */}
+    <div
+      onMouseDown={(e)=>{pandaTapTime.current=Date.now();pandaDragStart(e);}}
+      onMouseUp={()=>{if(Date.now()-pandaTapTime.current<250)onPandaTap();}}
+      onTouchStart={(e)=>{pandaTapTime.current=Date.now();pandaDragStart(e);}}
+      onTouchEnd={()=>{if(Date.now()-pandaTapTime.current<250)onPandaTap();}}
+      style={{cursor:"pointer",pointerEvents:"auto",userSelect:"none",WebkitUserSelect:"none"}}>
       <BellaChar mood={teacherMood} size={pandaSize} speaking={isSpeaking} hiFive={highFive} joyMode={joyFly} shake={headShake} mouthOpen={mouthOpen}/>
     </div>
   </div>;
@@ -2418,20 +2441,20 @@ export default function App(){
     doWelcome();
     // Wait for welcome speech to finish before transitioning
     await wait(3500);
-    setPandaSize(88);
+    setPandaSize(110);
     if(prof){
       setScr("home");
       await wait(400);
       movePandaTo("bottomRight");
       await wait(300);
-      await speak("Hi "+(prof?.name||"friend")+"! Let us have fun!",{rate:0.85,pitch:1.0});
+      await speak("Hi "+(prof?.name||"friend")+"! So good to see you!",{rate:0.85,pitch:1.0});
       setTimeout(()=>doHomeTour(),1500);
     } else {
       setScr("onboard");
       await wait(400);
       movePandaTo("bottomRight");
       await wait(300);
-      speak("Let us set up your profile! Type your name!",{rate:0.85,pitch:1.0});
+      speak("Ooh, you're new! What's your name?",{rate:0.85,pitch:1.0});
       setTeacherMood("pointing");
     }
   }} style={{background:"linear-gradient(160deg,#FFF5EB,#fff,#EEF2FF)",position:"fixed",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",fontFamily:"'Poppins',sans-serif",cursor:"pointer"}}>
@@ -2469,7 +2492,7 @@ export default function App(){
           boxShadow:obA===a?"0 4px 12px rgba(252,128,25,.3)":"none"
         }}>{a}</button>)}
       </div>
-      <button onClick={()=>{setObSt(1);speak("Awesome! Now pick if you are a boy or a girl, and choose your look!",{rate:0.8,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:24,boxShadow:"0 6px 20px rgba(252,128,25,.3)",letterSpacing:0.5}}>Next →</button>
+      <button onClick={()=>{setObSt(1);speak("Cool name! Now pick your style!",{rate:0.8,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:24,boxShadow:"0 6px 20px rgba(252,128,25,.3)",letterSpacing:0.5}}>Next →</button>
     </>:
     <>
       {/* Step 2: Gender + Avatar */}
@@ -2505,7 +2528,7 @@ export default function App(){
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
         <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:16,border:"2px solid #E8E8E8",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",color:"#93959F"}}>← Back</button>
-        <button onClick={()=>{rec.warmUp();save({name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()});speak("Right on! Let me show you around!",{rate:0.85,pitch:1.0});setTeacherMood("star");setScr("home");setTimeout(()=>doHomeTour(),2000);}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",boxShadow:"0 6px 20px rgba(252,128,25,.3)"}}>Let's Go! 🚀</button>
+        <button onClick={()=>{rec.warmUp();save({name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()});speak("Yay! Let's look around together!",{rate:0.85,pitch:1.0});setTeacherMood("star");setScr("home");setTimeout(()=>doHomeTour(),2000);}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",boxShadow:"0 6px 20px rgba(252,128,25,.3)"}}>Let's Go! 🚀</button>
       </div>
     </>}
     </div>
@@ -2547,7 +2570,7 @@ export default function App(){
           {id:"colors",icon:"🎨",title:"Colors",sub:"13 Colors",grad:"linear-gradient(135deg,#F472B6,#EC4899)",shadow:"rgba(244,114,182,.2)"},
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",grad:"linear-gradient(135deg,#FBBF24,#F59E0B)",shadow:"rgba(251,191,36,.2)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",grad:"linear-gradient(135deg,#94A3B8,#64748B)",shadow:"rgba(148,163,184,.2)"}
-        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);stop();}rec.warmUp();speak("Right on! I am excited! Let us go!",{rate:0.85,pitch:1.0});setTeacherMood("star");headYes();setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);stop();}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:12,
           padding:"18px 16px",borderRadius:20,border:"none",cursor:"pointer",
           fontFamily:"'Poppins',sans-serif",background:m.grad,
