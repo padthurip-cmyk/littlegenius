@@ -1461,25 +1461,34 @@ export default function App(){
   const doHomeTour=async()=>{
     setGuideTour(true);
     guideTourRef.current=true;
+    setPandaSize(72); // smaller during tour to avoid overlap
+    // col: "left" or "right" in the 2-column grid
     const tiles=[
-      {id:"numbers",msg:"This is Numbers! You can learn counting and math here!"},
-      {id:"alphabet",msg:"This is A B C! Learn all the letters of the alphabet!"},
-      {id:"phonics",msg:"This is Phonics! Learn to read over 500 words!"},
-      {id:"basics",msg:"This is Basics! Practice finding and writing numbers!"},
-      {id:"shapes",msg:"This is Shapes! Learn circles, triangles and more!"},
-      {id:"colors",msg:"This is Colors! Discover the rainbow!"},
-      {id:"rewards",msg:"This is Rewards! Spend your points on cool prizes!"},
-      {id:"settings",msg:"And this is Settings! Change your profile here!"},
+      {id:"numbers",col:"left",msg:"This is Numbers! You can learn counting and math here!"},
+      {id:"alphabet",col:"right",msg:"This is A B C! Learn all the letters of the alphabet!"},
+      {id:"phonics",col:"left",msg:"This is Phonics! Learn to read over 500 words!"},
+      {id:"basics",col:"right",msg:"This is Basics! Practice finding and writing numbers!"},
+      {id:"shapes",col:"left",msg:"This is Shapes! Learn circles, triangles and more!"},
+      {id:"colors",col:"right",msg:"This is Colors! Discover the rainbow!"},
+      {id:"rewards",col:"left",msg:"This is Rewards! Spend your points on cool prizes!"},
+      {id:"settings",col:"right",msg:"And this is Settings! Change your profile here!"},
     ];
     for(const tile of tiles){
       if(!guideTourRef.current)break;
       const el=document.querySelector('[data-tile="'+tile.id+'"]');
       if(el){
         const r=el.getBoundingClientRect();
-        const ps=pandaSize||88;
-        // Position panda to the right of the tile, vertically centered
-        const x=Math.min(r.right+4,window.innerWidth-ps);
-        const y=Math.max(Math.min(r.top+r.height/2-ps/2,window.innerHeight-ps),0);
+        const ps=72; // tour size
+        const w=window.innerWidth,h=window.innerHeight;
+        let x,y;
+        y=Math.max(Math.min(r.top+r.height/2-ps/2,h-ps),0);
+        if(tile.col==="left"){
+          // Place panda to the LEFT of the left-column tile
+          x=Math.max(r.left-ps-4,0);
+        } else {
+          // Place panda to the RIGHT of the right-column tile
+          x=Math.min(r.right+4,w-ps);
+        }
         setPandaPos({x,y});
         setTeacherMood("pointing");
       }
@@ -1491,6 +1500,7 @@ export default function App(){
     await speak("So, what do you want to learn today? Tap anything to start!",{rate:0.85,pitch:1.0});
     await wait(500);
     movePandaTo("bottomRight");
+    setPandaSize(88); // restore normal size
     guideTourRef.current=false;
     setGuideTour(false);
   };
