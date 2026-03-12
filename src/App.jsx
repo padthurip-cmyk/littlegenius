@@ -1213,154 +1213,116 @@ const TEACHER_MSGS={
 };
 const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return msgs[Math.floor(Math.random()*msgs.length)];};
 
-const BellaChar=({mood,size=100,speaking=false,hiFive=false,joyMode=false,shake="",mouthPhase=0})=>{
+const BellaChar=({mood,size=88,speaking=false,hiFive=false,joyMode=false,shake="",mouthOpen=0})=>{
   const s=size;
   const W=mood==="waving",C=mood==="clapping",T=mood==="thinking",P=mood==="pointing",S=mood==="star",E=mood==="excited",PR=mood==="proud",H=mood==="happy";
-  // Mouth shapes driven by mouthPhase (0-4) for realistic lip sync
-  const mouthShapes=[
-    <ellipse key="m" cx="40" cy="35.5" rx="3" ry="1.5" fill="#D93B4B" stroke="#222" strokeWidth=".5"/>, // closed
-    <ellipse key="m" cx="40" cy="35.5" rx="4" ry="3" fill="#D93B4B" stroke="#222" strokeWidth=".5"/>,   // small open
-    <ellipse key="m" cx="40" cy="35.5" rx="5" ry="4.5" fill="#D93B4B" stroke="#222" strokeWidth=".5"><animate attributeName="ry" values="4.5;3.5;4.5" dur="0.15s" repeatCount="indefinite"/></ellipse>, // wide open
-    <ellipse key="m" cx="40" cy="36" rx="3.5" ry="2.5" fill="#D93B4B" stroke="#222" strokeWidth=".5"/>, // medium
-    <ellipse key="m" cx="40" cy="35.5" rx="5.5" ry="5" fill="#D93B4B" stroke="#222" strokeWidth=".5"><animate attributeName="rx" values="5.5;4;5.5" dur="0.2s" repeatCount="indefinite"/></ellipse>, // very wide
-  ];
-  const speakingMouth=speaking?mouthShapes[mouthPhase%5]:null;
-  // Smile styles per mood
-  const smilePaths={
-    big:<path d="M 33,34 Q 40,43 47,34" fill="#D93B4B" stroke="#222" strokeWidth=".6"/>,
-    medium:<path d="M 35,35 Q 40,41 45,35" fill="none" stroke="#E23744" strokeWidth="1.2" strokeLinecap="round"/>,
-    small:<path d="M 36,35 Q 40,39 44,35" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>,
-    sad:<path d="M 36,38 Q 40,35 44,38" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>,
-  };
+  // mouthOpen: 0.0 (closed smile) to 1.0 (fully open) — driven by smooth sine wave externally
+  const mo=Math.max(0,Math.min(1,mouthOpen));
+  // Smooth mouth: interpolate between smile and open mouth
+  const mouthRy=1+mo*3.5; // 1 (smile line) → 4.5 (open)
+  const mouthRx=3+mo*2;   // 3 → 5
 
-  return<svg width={s} height={s} viewBox="0 0 80 90" style={{overflow:"visible",cursor:"grab"}}>
+  return<svg width={s} height={s} viewBox="0 0 80 88" style={{overflow:"visible"}}>
     <defs><style>{`
-      @keyframes pFloat{0%,100%{transform:translateY(0) translateX(0)}25%{transform:translateY(-6px) translateX(3px)}50%{transform:translateY(-10px) translateX(0)}75%{transform:translateY(-6px) translateX(-3px)}}
-      @keyframes pBlink{0%,88%,100%{ry:3.5}93%{ry:0.2}94%{ry:3.5}97%{ry:0.2}}
-      @keyframes pWave{0%,100%{transform:rotate(0deg)}10%{transform:rotate(-40deg)}25%{transform:rotate(35deg)}40%{transform:rotate(-35deg)}55%{transform:rotate(30deg)}70%{transform:rotate(-25deg)}85%{transform:rotate(20deg)}}
-      @keyframes pClapR{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(6px,-5px) rotate(-10deg)}}
-      @keyframes pClapL{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(-6px,-5px) rotate(10deg)}}
-      @keyframes pEar{0%,100%{transform:rotate(0deg)}25%{transform:rotate(10deg)}75%{transform:rotate(-5deg)}}
-      @keyframes pSpark{0%,100%{opacity:0;transform:scale(.3) rotate(-20deg)}50%{opacity:1;transform:scale(1.2) rotate(10deg)}}
-      @keyframes pTailWag{0%,100%{transform:rotate(-10deg)}30%{transform:rotate(18deg)}60%{transform:rotate(-8deg)}}
-      @keyframes pBlush{0%,100%{opacity:.3;rx:3.5}50%{opacity:.7;rx:4}}
-      @keyframes pNod{0%,100%{transform:rotate(0deg) translateY(0)}30%{transform:rotate(5deg) translateY(2px)}60%{transform:rotate(-3deg) translateY(-1px)}}
-      @keyframes pLookAround{0%,100%{transform:rotate(0deg) translateX(0)}12%{transform:rotate(-8deg) translateX(-3px)}30%{transform:rotate(10deg) translateX(4px)}50%{transform:rotate(-5deg) translateX(-2px)}70%{transform:rotate(8deg) translateX(3px)}85%{transform:rotate(-3deg) translateX(-1px)}}
-      @keyframes pHiFive{0%{transform:rotate(0deg) scale(1)}30%{transform:rotate(-20deg) scale(1.3)}60%{transform:rotate(15deg) scale(1.15)}100%{transform:rotate(0deg) scale(1)}}
-      @keyframes pJoySpin{0%{transform:rotate(0deg) scale(1)}25%{transform:rotate(12deg) scale(1.05)}50%{transform:rotate(-12deg) scale(1.08)}75%{transform:rotate(8deg) scale(1.03)}100%{transform:rotate(0deg) scale(1)}}
-      @keyframes pHandReach{0%,100%{transform:translate(0,0) rotate(0deg)}50%{transform:translate(12px,-18px) rotate(-35deg)}}
-      @keyframes pHeadYes{0%,100%{transform:rotate(0deg) translateY(0)}20%{transform:rotate(12deg) translateY(4px)}40%{transform:rotate(-5deg) translateY(-2px)}60%{transform:rotate(10deg) translateY(3px)}80%{transform:rotate(-3deg) translateY(-1px)}}
-      @keyframes pHeadNo{0%,100%{transform:rotate(0deg) translateX(0)}15%{transform:rotate(-15deg) translateX(-5px)}35%{transform:rotate(15deg) translateX(5px)}55%{transform:rotate(-12deg) translateX(-4px)}75%{transform:rotate(12deg) translateX(4px)}90%{transform:rotate(-6deg) translateX(-2px)}}
-      @keyframes pSadBody{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(4px) rotate(-2deg)}}
-      @keyframes pSpeakBounce{0%,100%{transform:translateY(0) scale(1)}25%{transform:translateY(-3px) scale(1.02)}50%{transform:translateY(0) scale(1)}75%{transform:translateY(-2px) scale(1.01)}}
-      @keyframes pArmGesture{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-20deg)}50%{transform:rotate(15deg)}75%{transform:rotate(-10deg)}}
-      @keyframes pEyeSparkle{0%,100%{r:1}50%{r:1.6}}
-      @keyframes pBreath{0%,100%{ry:17}50%{ry:17.8}}
-      @keyframes pFootTap{0%,50%,100%{transform:translateY(0)}25%{transform:translateY(-2px)}75%{transform:translateY(-1px)}}
+      @keyframes pFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+      @keyframes pBlink{0%,90%,94%,100%{ry:3.5}92%{ry:0.3}}
+      @keyframes pWave{0%,100%{transform:rotate(0deg)}20%{transform:rotate(-25deg)}40%{transform:rotate(20deg)}60%{transform:rotate(-18deg)}80%{transform:rotate(12deg)}}
+      @keyframes pClapR{0%,100%{transform:translate(0,0)}50%{transform:translate(4px,-3px)}}
+      @keyframes pClapL{0%,100%{transform:translate(0,0)}50%{transform:translate(-4px,-3px)}}
+      @keyframes pEar{0%,100%{transform:rotate(0deg)}50%{transform:rotate(5deg)}}
+      @keyframes pSpark{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1.1)}}
+      @keyframes pTailWag{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(8deg)}}
+      @keyframes pBlush{0%,100%{opacity:.35}50%{opacity:.6}}
+      @keyframes pGentleNod{0%,100%{transform:rotate(0deg)}50%{transform:rotate(2deg)}}
+      @keyframes pLookAround{0%,100%{transform:rotate(0deg) translateX(0)}25%{transform:rotate(-3deg) translateX(-1px)}50%{transform:rotate(2deg) translateX(1px)}75%{transform:rotate(-2deg) translateX(-1px)}}
+      @keyframes pHiFive{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
+      @keyframes pJoySpin{0%{transform:rotate(0deg)}25%{transform:rotate(5deg)}50%{transform:rotate(-5deg)}75%{transform:rotate(3deg)}100%{transform:rotate(0deg)}}
+      @keyframes pHeadYes{0%,100%{transform:rotate(0deg) translateY(0)}25%{transform:rotate(6deg) translateY(2px)}50%{transform:rotate(-3deg) translateY(-1px)}75%{transform:rotate(4deg) translateY(1px)}}
+      @keyframes pHeadNo{0%,100%{transform:rotate(0deg) translateX(0)}20%{transform:rotate(-8deg) translateX(-3px)}40%{transform:rotate(8deg) translateX(3px)}60%{transform:rotate(-6deg) translateX(-2px)}80%{transform:rotate(6deg) translateX(2px)}}
+      @keyframes pSadBody{0%,100%{transform:translateY(0)}50%{transform:translateY(2px)}}
+      @keyframes pGentleArm{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-8deg)}}
     `}</style>
       <radialGradient id="pf" cx="40%" cy="30%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#EDEDED"/></radialGradient>
       <radialGradient id="pp" cx="50%" cy="40%"><stop offset="0%" stopColor="#3a3a3a"/><stop offset="100%" stopColor="#111"/></radialGradient>
     </defs>
-    <g style={{animation:shake==="no"?"pSadBody 1s ease-in-out infinite":joyMode?"pJoySpin 0.4s ease-in-out infinite":speaking?"pSpeakBounce 0.6s ease-in-out infinite":"pFloat 3s ease-in-out infinite"}}>
+    <g style={{animation:shake==="no"?"pSadBody 1.5s ease-in-out infinite":joyMode?"pJoySpin 0.8s ease-in-out infinite":"pFloat 4s ease-in-out infinite"}}>
       {/* Shadow */}
-      <ellipse cx="40" cy="86" rx="16" ry="3" fill="rgba(0,0,0,.08)">
-        <animate attributeName="rx" values="16;14;16" dur="3s" repeatCount="indefinite"/>
-      </ellipse>
-      {/* Tail — always wagging */}
-      <g style={{transformOrigin:"54px 65px",animation:`pTailWag ${speaking?"0.5":"1.2"}s ease-in-out infinite`}}>
-        <ellipse cx="57" cy="64" rx="6" ry="5" fill="#333"/>
-        <ellipse cx="58" cy="63" rx="2.5" ry="2" fill="#555"/>
+      <ellipse cx="40" cy="84" rx="15" ry="2.5" fill="rgba(0,0,0,.06)"/>
+      {/* Tail */}
+      <g style={{transformOrigin:"54px 65px",animation:`pTailWag ${speaking?"0.8":"1.5"}s ease-in-out infinite`}}>
+        <ellipse cx="56" cy="64" rx="5" ry="4" fill="#333"/>
       </g>
-      {/* Body with breathing */}
-      <ellipse cx="40" cy="56" rx="17" fill="url(#pf)" style={{animation:"pBreath 3s ease-in-out infinite"}} ry="17"/>
+      {/* Body */}
+      <ellipse cx="40" cy="56" rx="17" ry="17" fill="url(#pf)"/>
       <ellipse cx="40" cy="58" rx="10" ry="11" fill="#F6F6F6"/>
-      {/* Belly button */}
-      <ellipse cx="40" cy="62" rx="2" ry="1.5" fill="#E8E8E8"/>
-      {/* Legs — foot tap when excited */}
-      <g style={{animation:(E||S||C)?"pFootTap 0.4s ease-in-out infinite":"none"}}>
-        <ellipse cx="32" cy="71" rx="6.5" ry="5" fill="#333"/>
-        <ellipse cx="48" cy="71" rx="6.5" ry="5" fill="#333"/>
-        {/* Toe beans! */}
-        <circle cx="29" cy="74" r="1.2" fill="#FFB4B4"/><circle cx="31.5" cy="75" r="1.2" fill="#FFB4B4"/><circle cx="34" cy="74" r="1.2" fill="#FFB4B4"/>
-        <circle cx="45.5" cy="74" r="1.2" fill="#FFB4B4"/><circle cx="48" cy="75" r="1.2" fill="#FFB4B4"/><circle cx="50.5" cy="74" r="1.2" fill="#FFB4B4"/>
+      {/* Belly dot */}
+      <ellipse cx="40" cy="62" rx="1.5" ry="1" fill="#E8E8E8"/>
+      {/* Legs */}
+      <ellipse cx="32" cy="71" rx="6" ry="4.5" fill="#333"/>
+      <ellipse cx="48" cy="71" rx="6" ry="4.5" fill="#333"/>
+      <circle cx="30" cy="73" r="1" fill="#FFB4B4"/><circle cx="32" cy="74" r="1" fill="#FFB4B4"/><circle cx="34" cy="73" r="1" fill="#FFB4B4"/>
+      <circle cx="46" cy="73" r="1" fill="#FFB4B4"/><circle cx="48" cy="74" r="1" fill="#FFB4B4"/><circle cx="50" cy="73" r="1" fill="#FFB4B4"/>
+      {/* Left arm */}
+      <g style={{transformOrigin:"24px 50px",animation:C?"pClapL .5s ease-in-out infinite":speaking?"pGentleArm 2.5s ease-in-out infinite":"none"}}>
+        <ellipse cx={T?30:speaking?24:22} cy={T?37:speaking?44:52} rx="6.5" ry="5" fill="#333" transform={T?"rotate(50,30,37)":speaking?"rotate(20,24,44)":"rotate(15,22,52)"}/>
+        {T&&<circle cx="31" cy="33" r="2.5" fill="#333"/>}
       </g>
-      {/* Left arm — gestures when speaking */}
-      <g style={{transformOrigin:"24px 50px",animation:C?"pClapL .35s ease-in-out infinite":speaking?"pArmGesture 1.5s ease-in-out infinite":"none"}}>
-        <ellipse cx={T?30:speaking?22:22} cy={T?37:speaking?42:52} rx="7" ry="5.5" fill="#333" transform={T?"rotate(50,30,37)":speaking?"rotate(30,22,42)":"rotate(15,22,52)"}/>
-        {T&&<circle cx="31" cy="33" r="3" fill="#333"/>}
-        {speaking&&!T&&<circle cx="20" cy="38" r="2" fill="#333"/>}
-      </g>
-      {/* Right arm — BIG wave when waving */}
-      <g style={{transformOrigin:"56px 50px",animation:W?"pWave .8s ease-in-out infinite":C?"pClapR .35s ease-in-out infinite":speaking?"pArmGesture 1.8s ease-in-out 0.3s infinite":"none"}}>
-        <ellipse cx={W||P?60:speaking?58:58} cy={W||P?32:speaking?40:52} rx="7" ry="5.5" fill="#333" transform={W?"rotate(-35,60,32)":P?"rotate(-55,60,32)":speaking?"rotate(-30,58,40)":"rotate(-15,58,52)"}/>
-        {P&&<><line x1="64" y1="28" x2="69" y2="18" stroke="#333" strokeWidth="3" strokeLinecap="round"/><circle cx="69" cy="17" r="2.2" fill="#FC8019"/></>}
-        {W&&<circle cx="64" cy="28" r="2" fill="#333"/>}
-        {speaking&&!W&&!P&&!C&&<circle cx="62" cy="36" r="2" fill="#333"/>}
+      {/* Right arm */}
+      <g style={{transformOrigin:"56px 50px",animation:W?"pWave 1.2s ease-in-out infinite":C?"pClapR .5s ease-in-out infinite":"none"}}>
+        <ellipse cx={W||P?58:58} cy={W||P?36:52} rx="6.5" ry="5" fill="#333" transform={W?"rotate(-30,58,36)":P?"rotate(-50,58,36)":"rotate(-15,58,52)"}/>
+        {P&&<><line x1="62" y1="32" x2="66" y2="23" stroke="#333" strokeWidth="2.5" strokeLinecap="round"/><circle cx="66" cy="22" r="1.8" fill="#FC8019"/></>}
       </g>
       {/* Head */}
-      <g style={{transformOrigin:"40px 26px",animation:shake==="yes"?"pHeadYes 0.4s ease-in-out infinite":shake==="no"?"pHeadNo 0.3s ease-in-out infinite":joyMode?"pJoySpin 0.5s ease-in-out infinite":speaking?"pNod 1s ease-in-out infinite":"pLookAround 6s ease-in-out infinite"}}>
-        <ellipse cx="40" cy="26" rx="18" ry="16" fill="url(#pf)"/>
-        {/* Ears — wiggle when excited/star */}
-        <g style={{transformOrigin:"23px 12px",animation:(E||S||W||speaking)?"pEar .4s ease-in-out infinite":"none"}}>
-          <circle cx="23" cy="12" r="8" fill="#333"/><circle cx="23" cy="12" r="4.5" fill="#FFB4B4" opacity=".5"/>
+      <g style={{transformOrigin:"40px 26px",animation:shake==="yes"?"pHeadYes 0.6s ease-in-out infinite":shake==="no"?"pHeadNo 0.5s ease-in-out infinite":joyMode?"pJoySpin 0.8s ease-in-out infinite":speaking?"pGentleNod 2s ease-in-out infinite":"pLookAround 8s ease-in-out infinite"}}>
+        <ellipse cx="40" cy="26" rx="17" ry="15" fill="url(#pf)"/>
+        {/* Ears */}
+        <g style={{transformOrigin:"24px 13px",animation:(E||S||W)?"pEar .6s ease-in-out infinite":"none"}}>
+          <circle cx="24" cy="13" r="7.5" fill="#333"/><circle cx="24" cy="13" r="4" fill="#FFB4B4" opacity=".45"/>
         </g>
-        <g style={{transformOrigin:"57px 12px",animation:(E||S||W||speaking)?"pEar .4s ease-in-out .12s infinite":"none"}}>
-          <circle cx="57" cy="12" r="8" fill="#333"/><circle cx="57" cy="12" r="4.5" fill="#FFB4B4" opacity=".5"/>
+        <g style={{transformOrigin:"56px 13px",animation:(E||S||W)?"pEar .6s ease-in-out .15s infinite":"none"}}>
+          <circle cx="56" cy="13" r="7.5" fill="#333"/><circle cx="56" cy="13" r="4" fill="#FFB4B4" opacity=".45"/>
         </g>
-        {/* Eye patches — slightly larger */}
-        <ellipse cx="32" cy="25" rx="9" ry="7" fill="url(#pp)" transform="rotate(-5,32,25)"/>
-        <ellipse cx="48" cy="25" rx="9" ry="7" fill="url(#pp)" transform="rotate(5,48,25)"/>
-        {/* Eyes — bigger, more expressive */}
-        <ellipse cx="32" cy="25" rx="5" ry="4.5" fill="#fff"/>
-        <ellipse cx="48" cy="25" rx="5" ry="4.5" fill="#fff"/>
-        {/* Pupils with blink */}
-        <ellipse style={{animation:"pBlink 3s ease-in-out infinite"}} cx={T?30.5:(E||S)?33:33} cy={E||S?24:25} rx="3" ry="3.5" fill="#111"/>
-        <ellipse style={{animation:"pBlink 3s ease-in-out infinite"}} cx={T?46.5:(E||S)?49:49} cy={E||S?24:25} rx="3" ry="3.5" fill="#111"/>
-        {/* Eye sparkles — bigger when happy */}
-        <circle cx={T?31:33.5} cy="23" fill="#fff" style={{animation:(E||S||speaking)?"pEyeSparkle 0.8s ease-in-out infinite":"none"}} r={(E||S)?"1.5":"1.2"}/>
-        <circle cx={T?47:49.5} cy="23" fill="#fff" style={{animation:(E||S||speaking)?"pEyeSparkle 0.8s ease-in-out 0.2s infinite":"none"}} r={(E||S)?"1.5":"1.2"}/>
-        {/* Star eyes when star mood */}
-        {S&&<><text x="28" y="28" fontSize="7" style={{animation:"pSpark .6s ease-in-out infinite"}}>⭐</text><text x="44" y="28" fontSize="7" style={{animation:"pSpark .6s ease-in-out .3s infinite"}}>⭐</text></>}
-        {/* Nose — cute with highlight */}
-        <ellipse cx="40" cy="31" rx="3.5" ry="2.5" fill="#222"/>
-        <ellipse cx="39.2" cy="30.2" rx="1.2" ry=".8" fill="#444"/>
-        {/* Mouth — driven by lip sync when speaking */}
-        {speaking?speakingMouth:
-          (E||S)?smilePaths.big:
-          (PR||H)?smilePaths.medium:
-          shake==="no"?smilePaths.sad:
-          smilePaths.medium
+        {/* Eye patches */}
+        <ellipse cx="32" cy="25" rx="8" ry="6.5" fill="url(#pp)" transform="rotate(-5,32,25)"/>
+        <ellipse cx="48" cy="25" rx="8" ry="6.5" fill="url(#pp)" transform="rotate(5,48,25)"/>
+        {/* Eyes */}
+        <ellipse cx="32" cy="25" rx="4" ry="3.8" fill="#fff"/>
+        <ellipse cx="48" cy="25" rx="4" ry="3.8" fill="#fff"/>
+        <ellipse style={{animation:"pBlink 4s ease-in-out infinite"}} cx={T?31:33} cy="25" rx="2.5" ry="3.5" fill="#111"/>
+        <ellipse style={{animation:"pBlink 4s ease-in-out infinite"}} cx={T?47:49} cy="25" rx="2.5" ry="3.5" fill="#111"/>
+        {/* Eye sparkle */}
+        <circle cx={T?31.5:33.5} cy="23.5" r="1" fill="#fff"/><circle cx={T?47.5:49.5} cy="23.5" r="1" fill="#fff"/>
+        {(E||S)&&<><circle cx="34" cy="22.5" r=".6" fill="#fff"/><circle cx="50" cy="22.5" r=".6" fill="#fff"/></>}
+        {/* Nose */}
+        <ellipse cx="40" cy="31" rx="3" ry="2.2" fill="#222"/><ellipse cx="39.5" cy="30.5" rx=".9" ry=".6" fill="#444"/>
+        {/* Mouth — smooth lip sync: always smiling, opens gently when speaking */}
+        {speaking?
+          <ellipse cx="40" cy={35.5+mo*0.5} rx={mouthRx} ry={mouthRy} fill={mo>0.3?"#D93B4B":"none"} stroke="#D93B4B" strokeWidth={mo>0.3?".5":"1"} strokeLinecap="round" style={{transition:"rx 0.12s ease, ry 0.12s ease, cy 0.12s ease"}}/>:
+          (E||S)?<path d="M 34,34 Q 40,42 46,34" fill="#D93B4B" stroke="#222" strokeWidth=".5"/>:
+          shake==="no"?<path d="M 36,37 Q 40,34 44,37" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>:
+          <path d="M 35,35 Q 40,40 45,35" fill="none" stroke="#E23744" strokeWidth="1" strokeLinecap="round"/>
         }
-        {/* Tongue when excited */}
-        {(E||S)&&!speaking&&<ellipse cx="40" cy="39" rx="2.5" ry="2" fill="#FF8B8B" stroke="#E66" strokeWidth=".3">
-          <animate attributeName="ry" values="2;2.5;2" dur="0.8s" repeatCount="indefinite"/>
-        </ellipse>}
-        {/* Blush — stronger when happy */}
-        <ellipse cx="24" cy="31" ry="2.2" fill="#FFB4B4" style={{animation:"pBlush 2s ease-in-out infinite"}} rx="4"/>
-        <ellipse cx="56" cy="31" ry="2.2" fill="#FFB4B4" style={{animation:"pBlush 2s ease-in-out .3s infinite"}} rx="4"/>
-        {/* Hat with bobble */}
-        <ellipse cx="40" cy="12" rx="13" ry="4" fill="#6366F1"/>
-        <ellipse cx="40" cy="10" rx="10" ry="6" fill="#6366F1"/>
-        <circle cx="40" cy="5" r="2.5" fill="#818CF8">
-          <animate attributeName="r" values="2.5;3;2.5" dur="1s" repeatCount="indefinite"/>
-        </circle>
+        {/* Tongue peeks out when excited and not speaking */}
+        {(E||S)&&!speaking&&<ellipse cx="40" cy="39" rx="2" ry="1.5" fill="#FF8B8B"/>}
+        {/* Blush */}
+        <ellipse cx="25" cy="31" rx="3.5" ry="2" fill="#FFB4B4" opacity=".4" style={{animation:"pBlush 3s ease-in-out infinite"}}/>
+        <ellipse cx="55" cy="31" rx="3.5" ry="2" fill="#FFB4B4" opacity=".4" style={{animation:"pBlush 3s ease-in-out .5s infinite"}}/>
+        {/* Hat */}
+        <ellipse cx="40" cy="13" rx="12" ry="3.5" fill="#6366F1"/><ellipse cx="40" cy="11" rx="9" ry="5.5" fill="#6366F1"/><circle cx="40" cy="6.5" r="2" fill="#818CF8"/>
       </g>
-      {/* Sparkle effects — more particles */}
-      {(S||E)&&[{x:1,y:5,e:"✨",d:0,sz:9},{x:70,y:2,e:"⭐",d:.3,sz:8},{x:72,y:42,e:"🌟",d:.6,sz:9},{x:5,y:40,e:"💫",d:.9,sz:7},{x:40,y:-2,e:"✨",d:1.2,sz:8}].map((p,i)=>
-        <text key={i} x={p.x} y={p.y} fontSize={p.sz} style={{animation:`pSpark 1s ease-in-out ${p.d}s infinite`}}>{p.e}</text>
+      {/* Sparkle effects — subtle */}
+      {(S||E)&&[{x:5,y:8,e:"✨",d:0},{x:67,y:5,e:"⭐",d:.5},{x:68,y:42,e:"🌟",d:1}].map((p,i)=>
+        <text key={i} x={p.x} y={p.y} fontSize="7" style={{animation:`pSpark 1.2s ease-in-out ${p.d}s infinite`}}>{p.e}</text>
       )}
-      {PR&&[{x:4,y:9,e:"💕",d:0},{x:66,y:5,e:"💖",d:.4},{x:35,y:-3,e:"💗",d:.8}].map((p,i)=>
-        <text key={i} x={p.x} y={p.y} fontSize="9" style={{animation:`pSpark 1.5s ease-in-out ${p.d}s infinite`}}>{p.e}</text>
+      {PR&&[{x:6,y:11,e:"💕",d:0},{x:64,y:7,e:"💖",d:.5}].map((p,i)=>
+        <text key={i} x={p.x} y={p.y} fontSize="7" style={{animation:`pSpark 1.8s ease-in-out ${p.d}s infinite`}}>{p.e}</text>
       )}
-      {C&&<><text x="32" y="44" fontSize="11" style={{animation:"pSpark .35s ease-in-out infinite"}}>👏</text><text x="15" y="30" fontSize="7" style={{animation:"pSpark .5s ease-in-out .2s infinite"}}>✨</text></>}
-      {W&&<><text x="67" y="28" fontSize="9" style={{animation:"pSpark .5s ease-in-out infinite"}}>✨</text><text x="60" y="15" fontSize="7" style={{animation:"pSpark .7s ease-in-out .3s infinite"}}>⭐</text></>}
-      {speaking&&<><text x="2" y="45" fontSize="7" style={{animation:"pSpark 1.2s ease-in-out infinite"}}>🎵</text><text x="68" y="48" fontSize="7" style={{animation:"pSpark 1.2s ease-in-out .6s infinite"}}>🎶</text></>}
+      {C&&<text x="34" y="46" fontSize="8" style={{animation:"pSpark .5s ease-in-out infinite"}}>👏</text>}
+      {W&&<text x="64" y="30" fontSize="7" style={{animation:"pSpark .8s ease-in-out infinite"}}>✨</text>}
       {/* High-five hand */}
-      {hiFive&&<g style={{animation:"pHiFive 0.8s ease-in-out infinite",transformOrigin:"60px 30px"}}>
-        <text x="48" y="18" fontSize="26" style={{animation:"pHandReach 0.6s ease-in-out infinite"}}>✋</text>
-        <text x="8" y="8" fontSize="11" style={{animation:"pSpark .4s ease-in-out infinite"}}>⭐</text>
-        <text x="62" y="3" fontSize="11" style={{animation:"pSpark .4s ease-in-out .15s infinite"}}>✨</text>
-        <text x="3" y="48" fontSize="9" style={{animation:"pSpark .4s ease-in-out .3s infinite"}}>🌟</text>
+      {hiFive&&<g style={{animation:"pHiFive 1s ease-in-out infinite",transformOrigin:"50px 25px"}}>
+        <text x="48" y="18" fontSize="22">✋</text>
+        <text x="10" y="8" fontSize="8" style={{animation:"pSpark .6s ease-in-out infinite"}}>⭐</text>
       </g>}
     </g>
   </svg>;
@@ -1466,25 +1428,28 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(100);const[highFive,setHighFive]=useState(false);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
-  const[mouthPhase,setMouthPhase]=useState(0);
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(88);const[highFive,setHighFive]=useState(false);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
+  const[mouthOpen,setMouthOpen]=useState(0); // 0.0 to 1.0 smooth
   const teacherIdleRef=useRef(null);
   const guideTourRef=useRef(false);
   const showTeacher=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);};
-  // Lip sync: fast poll speechSynthesis.speaking + cycle mouth shapes for natural movement
+  // Smooth lip sync: sine wave mouth openness, polls at 180ms
   useEffect(()=>{
-    let phase=0;
+    let tick=0;
     const iv=setInterval(()=>{
       const s=speechSynthesis.speaking;
       setIsSpeaking(s);
       if(s){
-        // Cycle through mouth shapes rapidly for natural lip movement
-        phase=(phase+1+Math.floor(Math.random()*2))%5;
-        setMouthPhase(phase);
+        tick++;
+        // Smooth sine wave with slight variation for natural feel
+        const base=Math.abs(Math.sin(tick*0.7));
+        const variation=Math.abs(Math.sin(tick*1.3))*0.3;
+        setMouthOpen(Math.min(1,base*0.7+variation));
       } else {
-        setMouthPhase(0);
+        tick=0;
+        setMouthOpen(0);
       }
-    },100);
+    },180);
     return()=>clearInterval(iv);
   },[]);
   const pandaEmojiTimer=useRef(null);
@@ -1511,18 +1476,21 @@ export default function App(){
       const el=document.querySelector('[data-tile="'+tile.id+'"]');
       if(el){
         const r=el.getBoundingClientRect();
-        const ps=pandaSize||100;
-        setPandaPos({x:Math.min(r.left-ps/2,window.innerWidth-ps),y:Math.max(r.top-ps/2,10)});
+        const ps=pandaSize||88;
+        // Position panda to the right of the tile, vertically centered
+        const x=Math.min(r.right+4,window.innerWidth-ps);
+        const y=Math.max(Math.min(r.top+r.height/2-ps/2,window.innerHeight-ps),0);
+        setPandaPos({x,y});
         setTeacherMood("pointing");
       }
       await speak(tile.msg,{rate:0.85,pitch:1.0});
       await wait(400);
     }
     setTeacherMood("star");
-    setPandaPos({x:window.innerWidth/2-50,y:window.innerHeight/2-50});
+    movePandaTo("center");
     await speak("So, what do you want to learn today? Tap anything to start!",{rate:0.85,pitch:1.0});
     await wait(500);
-    movePandaTo("topRight");
+    movePandaTo("bottomRight");
     guideTourRef.current=false;
     setGuideTour(false);
   };
@@ -1530,22 +1498,22 @@ export default function App(){
   // High-five: panda zooms to center, gets big, shows hand
   const doHighFive=async()=>{
     setHighFive(true);
-    setPandaSize(160);
-    setPandaPos({x:window.innerWidth/2-80,y:window.innerHeight/2-80});
+    setPandaSize(130);
+    setPandaPos({x:window.innerWidth/2-65,y:window.innerHeight/2-65});
     setTeacherMood("clapping");
     await wait(1800);
     setHighFive(false);
-    setPandaSize(100);
-    movePandaTo("midRight");
+    setPandaSize(88);
+    movePandaTo("bottomRight");
   };
   // Joy fly: panda does a quick loop around screen
   const doJoyFly=()=>{
     setJoyFly(true);setTeacherMood("star");
-    const w=window.innerWidth,h=window.innerHeight,ps=pandaSize||100;
+    const w=window.innerWidth,h=window.innerHeight,ps=pandaSize||88;
     const path=[{x:w/2-ps/2,y:20},{x:w-ps-10,y:h/3},{x:w/2-ps/2,y:h/2},{x:10,y:h/3},{x:w/2-ps/2,y:20}];
     let i=0;
     const step=()=>{
-      if(i>=path.length){setJoyFly(false);movePandaTo("midRight");return;}
+      if(i>=path.length){setJoyFly(false);movePandaTo("bottomRight");return;}
       setPandaPos(path[i]);i++;
       setTimeout(step,350);
     };
@@ -1554,41 +1522,50 @@ export default function App(){
   const flyTo=(e,mood)=>{
     if(!e?.currentTarget)return;
     const rect=e.currentTarget.getBoundingClientRect();
-    const ps=pandaSize||100;
-    const x=Math.min(rect.right+10,window.innerWidth-ps);
-    const y=Math.max(rect.top+rect.height/2-ps/2,10);
+    const ps=pandaSize||88;
+    const x=Math.min(rect.right+6,window.innerWidth-ps);
+    const y=Math.max(Math.min(rect.top+rect.height/2-ps/2,window.innerHeight-ps),0);
     setPandaPos({x,y});
     if(mood)setTeacherMood(mood);
   };
   const movePandaTo=(position)=>{
     const w=window.innerWidth,h=window.innerHeight;
-    const ps=pandaSize||100;
+    const ps=pandaSize||88;
     const positions={
-      topRight:{x:w-ps-8,y:10},
-      midRight:{x:w-ps-8,y:h/2-ps/2},
-      bottomRight:{x:w-ps-8,y:h-ps-20},
-      topLeft:{x:8,y:58},
-      midLeft:{x:8,y:h/2-ps/2},
+      topRight:{x:w-ps-6,y:8},
+      midRight:{x:w-ps-6,y:h/2-ps/2},
+      bottomRight:{x:w-ps-6,y:h-ps-12},
+      topLeft:{x:6,y:56},
+      midLeft:{x:6,y:h/2-ps/2},
       center:{x:w/2-ps/2,y:h/2-ps/2},
     };
-    setPandaPos(positions[position]||positions.midRight);
+    setPandaPos(positions[position]||positions.bottomRight);
   };
   // Hover near a specific content element
   const hoverNear=(selector,side="right",mood)=>{
     setTimeout(()=>{
       const el=document.querySelector(`[data-panda="${selector}"]`);
-      if(!el)return;
+      if(!el){movePandaTo("bottomRight");return;}
       const r=el.getBoundingClientRect();
-      const ps=pandaSize||100;
+      const ps=pandaSize||88;
+      const w=window.innerWidth,h=window.innerHeight;
       let x,y;
-      if(side==="right"){x=Math.min(r.right+8,window.innerWidth-ps);y=r.top+r.height/2-ps/2;}
-      else if(side==="left"){x=Math.max(r.left-ps-8,4);y=r.top+r.height/2-ps/2;}
-      else if(side==="above"){x=r.left+r.width/2-ps/2;y=Math.max(r.top-ps-8,4);}
-      else if(side==="below"){x=r.left+r.width/2-ps/2;y=Math.min(r.bottom+8,window.innerHeight-ps);}
-      else{x=r.left+r.width/2-ps/2;y=r.top+r.height/2-ps/2;}
-      setPandaPos({x:Math.max(4,Math.min(x,window.innerWidth-ps)),y:Math.max(4,Math.min(y,window.innerHeight-ps))});
+      if(side==="right"){
+        x=Math.min(r.right+4,w-ps);
+        y=Math.max(Math.min(r.top+r.height/2-ps/2,h-ps),0);
+      } else if(side==="left"){
+        x=Math.max(r.left-ps-4,0);
+        y=Math.max(Math.min(r.top+r.height/2-ps/2,h-ps),0);
+      } else if(side==="above"){
+        x=Math.max(Math.min(r.left+r.width/2-ps/2,w-ps),0);
+        y=Math.max(r.top-ps-4,0);
+      } else if(side==="below"){
+        x=Math.max(Math.min(r.left+r.width/2-ps/2,w-ps),0);
+        y=Math.min(r.bottom+4,h-ps);
+      }
+      setPandaPos({x,y});
       if(mood)setTeacherMood(mood);
-    },150);
+    },200);
   };
   const showPandaEmoji=(emoji)=>{
     setPandaEmoji(emoji);
@@ -1619,8 +1596,8 @@ export default function App(){
     const msgs={home:["waving","Hi! Ready to learn?"],numbers:["excited","Numbers time!"],phonics:["happy","Word magic!"],shapes:["excited","Shape hunt!"],colors:["happy","Color world!"],alphabet:["star","ABC time!"],basics:["pointing","Practice time!"],rewards:["excited","Your prizes!"],settings:["happy","Your profile!"]};
     const m=msgs[scr];if(m)showTeacher(m[0],m[1]);
     // Position panda based on screen
-    const pos={home:"topRight",numbers:"midRight",phonics:"midRight",shapes:"midRight",colors:"midRight",alphabet:"midRight",basics:"midRight",rewards:"topRight",settings:"topRight",splash:"center",onboard:"midRight"};
-    setTimeout(()=>movePandaTo(pos[scr]||"midRight"),100);
+    const pos={home:"bottomRight",numbers:"bottomRight",phonics:"bottomRight",shapes:"bottomRight",colors:"bottomRight",alphabet:"bottomRight",basics:"bottomRight",rewards:"bottomRight",settings:"bottomRight",splash:"center",onboard:"bottomRight"};
+    setTimeout(()=>movePandaTo(pos[scr]||"bottomRight"),100);
   },[scr]);
   // Basics state
   const[basicsTab,setBasicsTab]=useState("explore"); // "explore", "find", "write"
@@ -1654,11 +1631,10 @@ export default function App(){
     if(!loaded||initDone.current)return;
     initDone.current=true;
     setTeacherMood("waving");
-    setPandaSize(120);
-    // Position panda centered on splash
+    setPandaSize(100);
     setTimeout(()=>{
       const w=window.innerWidth,h=window.innerHeight;
-      setPandaPos({x:w/2-60,y:h/2+40});
+      setPandaPos({x:w/2-50,y:h/2+30});
     },100);
   },[loaded]);
 
@@ -1685,7 +1661,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(100);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(88);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2408,19 +2384,19 @@ export default function App(){
     };
   });
 
-  const TeacherBubble=<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,transition:dragRef.current?"none":joyFly?"left 0.3s ease-out, top 0.3s ease-out":"left 1.2s ease-in-out, top 1.2s ease-in-out",filter:"drop-shadow(0 6px 16px rgba(0,0,0,.15))"}}>
-    {/* Speech bubble — shows above panda when there's a message */}
-    {teacherMsg&&!highFive&&<div style={{position:"absolute",bottom:pandaSize+4,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",maxWidth:220,background:"#fff",color:"#1C1C2B",padding:"8px 14px",borderRadius:"18px 18px 18px 6px",fontSize:12,fontWeight:700,fontFamily:"'Poppins',sans-serif",boxShadow:"0 4px 16px rgba(0,0,0,.12)",animation:"bubPop 0.3s cubic-bezier(0.34,1.56,0.64,1)",lineHeight:1.4,textAlign:"center",pointerEvents:"none",border:"2px solid #FC801933"}}>
+  const TeacherBubble=<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,transition:dragRef.current?"none":joyFly?"left 0.3s ease-out, top 0.3s ease-out":"left 1s cubic-bezier(0.4,0,0.2,1), top 1s cubic-bezier(0.4,0,0.2,1)",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.1))"}}>
+    {/* Speech bubble — shows above panda */}
+    {teacherMsg&&!highFive&&<div style={{position:"absolute",bottom:pandaSize-4,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",maxWidth:200,background:"#fff",color:"#1C1C2B",padding:"6px 12px",borderRadius:"14px 14px 14px 4px",fontSize:11,fontWeight:700,fontFamily:"'Poppins',sans-serif",boxShadow:"0 2px 12px rgba(0,0,0,.08)",animation:"bubPop 0.3s ease-out",lineHeight:1.3,textAlign:"center",pointerEvents:"none",border:"1.5px solid #FC801922"}}>
       {teacherMsg}
-      <div style={{position:"absolute",bottom:-8,left:20,width:0,height:0,borderLeft:"8px solid transparent",borderRight:"8px solid transparent",borderTop:"8px solid #fff"}}/>
+      <div style={{position:"absolute",bottom:-6,left:18,width:0,height:0,borderLeft:"6px solid transparent",borderRight:"6px solid transparent",borderTop:"6px solid #fff"}}/>
     </div>}
-    {/* Reaction emoji floats up */}
-    {pandaEmoji&&<div key={pandaEmoji+Date.now()} style={{position:"absolute",top:-28,left:"50%",transform:"translateX(-50%)",fontSize:26,animation:"ptFly 1.5s ease-out forwards",pointerEvents:"none"}}>{pandaEmoji}</div>}
-    {highFive&&<div style={{position:"absolute",top:-44,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",padding:"8px 18px",borderRadius:20,fontSize:18,fontWeight:900,animation:"slideUp 0.3s ease-out",boxShadow:"0 6px 20px rgba(252,128,25,.3)",pointerEvents:"none"}}>High Five! ✋</div>}
+    {/* Reaction emoji */}
+    {pandaEmoji&&<div key={pandaEmoji+Date.now()} style={{position:"absolute",top:-20,left:"50%",transform:"translateX(-50%)",fontSize:22,animation:"ptFly 1.5s ease-out forwards",pointerEvents:"none"}}>{pandaEmoji}</div>}
+    {highFive&&<div style={{position:"absolute",top:-36,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",background:"linear-gradient(135deg,#FC8019,#FF9933)",color:"#fff",padding:"6px 14px",borderRadius:16,fontSize:15,fontWeight:900,animation:"slideUp 0.3s ease-out",boxShadow:"0 4px 16px rgba(252,128,25,.3)",pointerEvents:"none"}}>High Five! ✋</div>}
     {/* Panda — draggable */}
     <div onMouseDown={pandaDragStart} onTouchStart={pandaDragStart}
       style={{cursor:"grab",pointerEvents:"auto",userSelect:"none",WebkitUserSelect:"none"}}>
-      <BellaChar mood={teacherMood} size={pandaSize} speaking={isSpeaking} hiFive={highFive} joyMode={joyFly} shake={headShake} mouthPhase={mouthPhase}/>
+      <BellaChar mood={teacherMood} size={pandaSize} speaking={isSpeaking} hiFive={highFive} joyMode={joyFly} shake={headShake} mouthOpen={mouthOpen}/>
     </div>
   </div>;
 
@@ -2431,18 +2407,18 @@ export default function App(){
     doWelcome();
     // Wait for welcome speech to finish before transitioning
     await wait(3500);
-    setPandaSize(100);
+    setPandaSize(88);
     if(prof){
       setScr("home");
       await wait(400);
-      movePandaTo("topRight");
+      movePandaTo("bottomRight");
       await wait(300);
       await speak("Hi "+(prof?.name||"friend")+"! Let us have fun!",{rate:0.85,pitch:1.0});
       setTimeout(()=>doHomeTour(),1500);
     } else {
       setScr("onboard");
       await wait(400);
-      movePandaTo("midRight");
+      movePandaTo("bottomRight");
       await wait(300);
       speak("Let us set up your profile! Type your name!",{rate:0.85,pitch:1.0});
       setTeacherMood("pointing");
