@@ -2089,6 +2089,8 @@ export default function App(){
   const[findTarget,setFindTarget]=useState(null);const[findScore,setFindScore]=useState(0);const[findStreak,setFindStreak]=useState(0);const[findFb,setFindFb]=useState(null);const[findUsed,setFindUsed]=useState([]);const[findLevel,setFindLevel]=useState(1);
   const[foundNum,setFoundNum]=useState(null); // shows celebration + spelling when correct
   const[writeNum,setWriteNum]=useState(1);
+  // Number Quiz state
+  const[quizNum,setQuizNum]=useState(null);const[quizOpts,setQuizOpts]=useState([]);const[quizFb,setQuizFb]=useState(null);const[quizScore,setQuizScore]=useState(0);const[quizStreak,setQuizStreak]=useState(0);const[quizTotal,setQuizTotal]=useState(0);
   // Alphabet state
   const[alphaTab,setAlphaTab]=useState("caps"); // "caps","small","match"
   const[selLetter,setSelLetter]=useState(null); // selected letter for detail
@@ -2153,7 +2155,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(110);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);};
+  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(110);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2738,7 +2740,43 @@ export default function App(){
     }
   };
   const sayNum=(n)=>{
-    speak(`${NW[n]||n}. ${NUM_FUN[n]||""}`,{rate:0.8,pitch:1.0});
+    speak(`${NW[n]||n}.`,{rate:0.8,pitch:1.0});
+  };
+  // ═══ NUMBER QUIZ ═══
+  const newQuiz=()=>{
+    const max=aCfg?.max||20;
+    const n=Math.floor(Math.random()*max)+1;
+    // Generate 6 options including the correct answer
+    const opts=new Set([n]);
+    while(opts.size<Math.min(6,max)){
+      const wrong=Math.floor(Math.random()*max)+1;
+      if(wrong!==n)opts.add(wrong);
+    }
+    const shuffled=[...opts].sort(()=>Math.random()-0.5);
+    setQuizNum(n);setQuizOpts(shuffled);setQuizFb(null);
+    setTimeout(()=>speak(`${NW[n]||n}`,{rate:0.75,pitch:1.0}),300);
+  };
+  const repeatQuiz=()=>{if(quizNum)speak(`${NW[quizNum]||quizNum}`,{rate:0.75,pitch:1.0});};
+  const onQuizTap=async(tapped)=>{
+    if(quizFb)return;
+    setQuizTotal(t=>t+1);
+    if(tapped===quizNum){
+      setQuizFb({ok:true,n:tapped});setQuizScore(s=>s+1);setQuizStreak(s=>s+1);
+      headYes();
+      if(!isDone("quiz",quizNum))awardPoints(3,"quiz",quizNum);
+      const cheers=["Yes!","Awesome!","Yay!","Right!","Super!"];
+      speak(cheers[Math.floor(Math.random()*cheers.length)],{rate:1.0,pitch:1.1});
+      if((quizStreak+1)%5===0)boom();
+      await wait(1200);
+      newQuiz();
+    } else {
+      setQuizFb({ok:false,n:tapped});setQuizStreak(0);
+      headNo();
+      speak("Oops! Try again!",{rate:0.9,pitch:1.0});
+      await wait(1000);
+      setQuizFb(null);
+      speak(`${NW[quizNum]||quizNum}`,{rate:0.75,pitch:1.0});
+    }
   };
   // Drawing pad
   const initCanvas=()=>{
@@ -3546,37 +3584,77 @@ export default function App(){
   // ═══ BASICS DASHBOARD ═══
   if(scr==="basics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <SubHead title="Basics 🧩" onBack={goHome} points={prof?.points||0}/>
-    {/* 3 Tab bar */}
-    <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
-      {[{id:"explore",label:"📖 Numbers"},{id:"find",label:"🔍 Find"},{id:"write",label:"✏️ Write"}].map(t=>
+    {/* 4 Tab bar */}
+    <div style={{display:"flex",gap:5,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
+      {[{id:"explore",label:"🔢 Numbers"},{id:"quiz",label:"🎯 Quiz"},{id:"find",label:"🔍 Find"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
           stop();setBasicsTab(t.id);
-          if(t.id==="find"){if(!findTarget)newFindTarget();}if(t.id==="write")hoverNear("write-canvas","left","pointing");if(t.id==="explore")hoverNear("explore-grid","right","happy");
+          if(t.id==="find"){if(!findTarget)newFindTarget();}
+          if(t.id==="quiz"){if(!quizNum)newQuiz();}
+          if(t.id==="write")hoverNear("write-canvas","left","pointing");
+          if(t.id==="explore")hoverNear("explore-grid","right","happy");
           if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}
-        }} style={{flex:1,padding:"12px 8px",borderRadius:14,border:"none",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
+        }} style={{flex:1,padding:"11px 6px",borderRadius:14,border:"none",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
           background:basicsTab===t.id?"#6366F1":"#f3f4f6",color:basicsTab===t.id?"#fff":"#888",transition:"all 0.2s"
         }}>{t.label}</button>
       )}
     </div>
 
-    {/* ═══ EXPLORE: Grid of all numbers ═══ */}
+    {/* ═══ EXPLORE: Simple number grid — tap to hear ═══ */}
     {basicsTab==="explore"&&<div data-panda="explore-grid" style={{flex:1,overflow:"auto",padding:"10px 12px",display:"flex",alignItems:"flex-start"}}>
       <div style={{display:"grid",gridTemplateColumns:`repeat(${(aCfg?.max||20)<=10?3:(aCfg?.max||20)<=20?4:5},1fr)`,gap:10,width:"100%"}}>
-        {Array.from({length:aCfg?.max||20}).map((_,i)=>{const n=i+1;const em=NUM_EMOJI[n]||"";
-          return<button key={n} onClick={()=>sayNum(n)} style={{
-            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-            padding:(aCfg?.max||20)<=10?"16px 8px":"10px 4px",
-            borderRadius:16,border:"2px solid #F1F3F7",cursor:"pointer",
-            background:"#FFFBF5",boxShadow:"0 2px 8px rgba(0,0,0,.06)",fontFamily:"'Fredoka',sans-serif",
-            animation:`gridPop 0.3s ease ${i*0.03}s both`,transition:"all 0.15s",
-            aspectRatio:(aCfg?.max||20)<=10?"1":"auto"
+        {Array.from({length:aCfg?.max||20}).map((_,i)=>{const n=i+1;
+          return<button key={n} onClick={()=>{stop();sayNum(n);}} style={{
+            display:"flex",alignItems:"center",justifyContent:"center",
+            padding:"14px 8px",
+            borderRadius:16,border:"2px solid #E8E0D8",cursor:"pointer",
+            background:"#FFFBF5",boxShadow:"0 2px 8px rgba(0,0,0,.04)",fontFamily:"'Fredoka',sans-serif",
+            animation:`gridPop 0.3s ease ${i*0.03}s both`,transition:"all 0.15s"
           }}>
-            <span style={{fontSize:(aCfg?.max||20)<=10?28:(aCfg?.max||20)<=20?22:18,fontWeight:800,color:nClr(n),lineHeight:1}}>{n}</span>
-            {em&&<span style={{fontSize:(aCfg?.max||20)<=10?20:14,lineHeight:1,marginTop:4}}>{em}</span>}
-            <span style={{fontSize:(aCfg?.max||20)<=10?10:8,fontWeight:700,color:"#8E8CA3",marginTop:2,textTransform:"capitalize"}}>{NW[n]||""}</span>
+            <span style={{fontSize:26,fontWeight:800,color:nClr(n),lineHeight:1}}>{n}</span>
           </button>;
         })}
       </div>
+    </div>}
+
+    {/* ═══ NUMBER QUIZ: Listen & tap the right number ═══ */}
+    {basicsTab==="quiz"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      {/* Quiz header */}
+      <div style={{padding:"12px 16px",background:"linear-gradient(135deg,#EDE9FE,#F5F3FF)",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #DDD6FE"}}>
+        {quizNum?<>
+          <button onClick={repeatQuiz} style={{padding:"10px 18px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#8B5CF6,#A78BFA)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"0 4px 12px rgba(139,92,246,.3)",display:"flex",alignItems:"center",gap:6}}>
+            🔊 Hear Again
+          </button>
+          <div style={{flex:1,textAlign:"center"}}>
+            <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,color:"#7C3AED"}}>Which number is it? 👂</div>
+          </div>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,color:"#7C3AED"}}>🏆 {quizScore}</div>
+            {quizStreak>=3&&<span style={{fontSize:10,fontWeight:700,color:"#EF4444"}}>🔥{quizStreak}</span>}
+          </div>
+        </>:<button onClick={newQuiz} style={{width:"100%",padding:"16px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#8B5CF6,#A78BFA)",color:"#fff",fontSize:18,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"0 6px 20px rgba(139,92,246,.3)"}}>▶️ Start Quiz!</button>}
+      </div>
+      {/* Quiz options grid */}
+      {quizNum&&<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,width:"100%",maxWidth:360}}>
+          {quizOpts.map((n,i)=>{
+            const isCorrect=quizFb?.ok&&quizFb?.n===n;
+            const isWrong=quizFb&&!quizFb.ok&&quizFb.n===n;
+            return<button key={n} onClick={()=>onQuizTap(n)} style={{
+              padding:"28px 10px",borderRadius:22,
+              border:"3px solid",cursor:quizFb?"default":"pointer",
+              borderColor:isCorrect?"#4ADE80":isWrong?"#F87171":"#E8E0D8",
+              background:isCorrect?"#DCFCE7":isWrong?"#FEE2E2":"#FFFBF5",
+              fontFamily:"'Fredoka',sans-serif",
+              fontSize:36,fontWeight:800,color:isCorrect?"#16A34A":isWrong?"#DC2626":nClr(n),
+              boxShadow:isCorrect?"0 6px 24px rgba(74,222,128,.3)":isWrong?"0 4px 16px rgba(248,113,113,.2)":"0 3px 12px rgba(0,0,0,.06)",
+              transform:isCorrect?"scale(1.15)":isWrong?"scale(0.92)":"scale(1)",
+              transition:"all 0.2s",
+              animation:isCorrect?"numPulse 0.5s ease-in-out":"none"
+            }}>{n}</button>;
+          })}
+        </div>
+      </div>}
     </div>}
 
 
@@ -3616,17 +3694,11 @@ export default function App(){
         })}
       </div></div>
 
-      {/* ═══ CELEBRATION OVERLAY when correct ═══ */}
-      {foundNum&&<div style={{position:"absolute",inset:0,background:"rgba(255,255,255,.97)",zIndex:20,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,animation:"fadeIn 0.3s ease"}}>
-        <span style={{fontSize:48}}>{NUM_EMOJI[foundNum]||"🎉"}</span>
-        <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:72,fontWeight:900,color:"#FF8C42",lineHeight:1,animation:"numPulse 1s ease-in-out infinite"}}>{foundNum}</div>
-        <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:22,fontWeight:800,color:"#2D2B3D",textTransform:"capitalize"}}>{NW[foundNum]||""}</div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"center"}}>
-          {(NW[foundNum]||"").replace(/\s/g,"").split("").map((l,i)=>
-            <span key={i} style={{fontSize:24,fontFamily:"'Fredoka',sans-serif",fontWeight:800,padding:"6px 10px",borderRadius:10,background:"#FFF5EB",color:"#FF8C42",border:"2px solid #FF8C4233",animation:`gridPop 0.3s ease ${i*0.08}s both`}}>{l.toUpperCase()}</span>
-          )}
-        </div>
-        {NUM_FUN[foundNum]&&<p style={{fontSize:14,fontWeight:700,color:"#8E8CA3",marginTop:4}}>{NUM_FUN[foundNum]}</p>}
+      {/* ═══ CELEBRATION — simple green flash ═══ */}
+      {foundNum&&<div style={{position:"absolute",inset:0,background:"rgba(255,255,255,.97)",zIndex:20,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,animation:"fadeIn 0.3s ease"}}>
+        <span style={{fontSize:56}}>🎉</span>
+        <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:80,fontWeight:900,color:"#4ADE80",lineHeight:1,animation:"numPulse 0.6s ease-in-out infinite"}}>{foundNum}</div>
+        <span style={{fontSize:18,fontWeight:700,color:"#8E8CA3"}}>Great job!</span>
       </div>}
     </div>}
 
