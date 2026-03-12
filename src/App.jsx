@@ -273,8 +273,8 @@ const AnimatedScene = ({num, active}) => {
 // ═══════════════════════════════════════════════════════════════
 // REST OF APP DATA
 // ═══════════════════════════════════════════════════════════════
-const PM={b:{s:"buhhh",d:"/b/"},c:{s:"kuhhh",d:"/k/"},d:{s:"duhhh",d:"/d/"},f:{s:"fffff",d:"/f/"},g:{s:"guhhh",d:"/g/"},h:{s:"huhhh",d:"/h/"},j:{s:"juhhh",d:"/dʒ/"},k:{s:"kuhhh",d:"/k/"},l:{s:"llllll",d:"/l/"},m:{s:"mmmmmm",d:"/m/"},n:{s:"nnnnnn",d:"/n/"},p:{s:"puhhh",d:"/p/"},r:{s:"rrrrrr",d:"/r/"},s:{s:"ssssss",d:"/s/"},t:{s:"tuhhh",d:"/t/"},v:{s:"vvvvvv",d:"/v/"},w:{s:"wuhhh",d:"/w/"},x:{s:"ks ks",d:"/ks/"},y:{s:"yuhhh",d:"/j/"},z:{s:"zzzzzz",d:"/z/"},a:{s:"aaaaah",d:"/æ/"},e:{s:"ehhhhh",d:"/ɛ/"},i:{s:"ihhhhh",d:"/ɪ/"},o:{s:"awwwww",d:"/ɒ/"},u:{s:"uhhhhh",d:"/ʌ/"}};
-const DM={sh:{s:"shhhhhh",d:"/ʃ/"},ch:{s:"chuhhh",d:"/tʃ/"},th:{s:"thhhhhh",d:"/θ/"},ck:{s:"kuhhh",d:"/k/"},ng:{s:"nnnnggg",d:"/ŋ/"},ee:{s:"eeeeee",d:"/iː/"},oo:{s:"oooooo",d:"/uː/"},ai:{s:"ayyyyy",d:"/eɪ/"},ow:{s:"owwwww",d:"/aʊ/"},ar:{s:"ahhhhr",d:"/ɑːr/"},er:{s:"errrrrr",d:"/ɜːr/"},ir:{s:"errrrrr",d:"/ɜːr/"},or:{s:"orrrrr",d:"/ɔːr/"},ea:{s:"eeeeee",d:"/iː/"},igh:{s:"eyeeee",d:"/aɪ/"}};
+const PM={b:{s:"buh",d:"/b/"},c:{s:"kuh",d:"/k/"},d:{s:"duh",d:"/d/"},f:{s:"fuh",d:"/f/"},g:{s:"guh",d:"/g/"},h:{s:"huh",d:"/h/"},j:{s:"juh",d:"/dʒ/"},k:{s:"kuh",d:"/k/"},l:{s:"luh",d:"/l/"},m:{s:"muh",d:"/m/"},n:{s:"nuh",d:"/n/"},p:{s:"puh",d:"/p/"},r:{s:"ruh",d:"/r/"},s:{s:"suh",d:"/s/"},t:{s:"tuh",d:"/t/"},v:{s:"vuh",d:"/v/"},w:{s:"wuh",d:"/w/"},x:{s:"ex",d:"/ks/"},y:{s:"yuh",d:"/j/"},z:{s:"zuh",d:"/z/"},a:{s:"aah",d:"/æ/"},e:{s:"eh",d:"/ɛ/"},i:{s:"ih",d:"/ɪ/"},o:{s:"oh",d:"/ɒ/"},u:{s:"uh",d:"/ʌ/"}};
+const DM={sh:{s:"shh",d:"/ʃ/"},ch:{s:"chuh",d:"/tʃ/"},th:{s:"thuh",d:"/θ/"},ck:{s:"kuh",d:"/k/"},ng:{s:"ing",d:"/ŋ/"},ee:{s:"eee",d:"/iː/"},oo:{s:"ooo",d:"/uː/"},ai:{s:"ay",d:"/eɪ/"},ow:{s:"ow",d:"/aʊ/"},ar:{s:"are",d:"/ɑːr/"},er:{s:"err",d:"/ɜːr/"},ir:{s:"err",d:"/ɜːr/"},or:{s:"ore",d:"/ɔːr/"},ea:{s:"eee",d:"/iː/"},igh:{s:"eye",d:"/aɪ/"},air:{s:"air",d:"/ɛər/"},ear:{s:"eer",d:"/ɪər/"},oa:{s:"oh",d:"/əʊ/"},oi:{s:"oy",d:"/ɔɪ/"},ur:{s:"err",d:"/ɜːr/"},wh:{s:"wuh",d:"/w/"},q:{s:"kwuh",d:"/kw/"}};
 const gPh=(ph)=>{const l=ph.toLowerCase();return DM[l]||PM[l]||{s:l,d:l};};
 
 const WCATS={
@@ -333,11 +333,11 @@ const WCATS={
   
     {word:"hamster",ph:["h","a","m","s","t","er"],img:"🐹",sentence:"The hamster runs on a wheel!"},
     {word:"jellyfish",ph:["j","e","l","ee","f","i","sh"],img:"🪼",sentence:"A jellyfish floats in the ocean!"},
-    {word:"flamingo",ph:["f","l","a","m","i","ng","g","o"],img:"🦩",sentence:"Flamingos are pink birds!"},
+    {word:"flamingo",ph:["f","l","a","m","i","ng","o"],img:"🦩",sentence:"Flamingos are pink birds!"},
   ]},
   food:{emoji:"🍎",color:"#4ECDC4",words:[
     {word:"jam",ph:["j","a","m"],img:"🍯",sentence:"I love jam on toast!"},
-    {word:"egg",ph:["e","g","g"],img:"🥚",sentence:"I eat an egg for breakfast!"},
+    {word:"egg",ph:["e","g"],img:"🥚",sentence:"I eat an egg for breakfast!"},
     {word:"nut",ph:["n","u","t"],img:"🥜",sentence:"A nut grows on a tree!"},
     {word:"pea",ph:["p","ea"],img:"🫛",sentence:"The pea is small and green!"},
     {word:"ham",ph:["h","a","m"],img:"🍖",sentence:"Ham goes in a sandwich!"},
@@ -402,7 +402,7 @@ const WCATS={
     {word:"date",ph:["d","ai","t"],img:"🌴",sentence:"Dates are sweet brown fruits!"},
     {word:"papaya",ph:["p","a","p","igh","a"],img:"🥭",sentence:"Papaya is orange inside!"},
     {word:"apricot",ph:["ai","p","r","i","c","o","t"],img:"🍑",sentence:"Apricots are small and orange!"},
-    {word:"avocado",ph:["a","v","o","c","ar","d","o"],img:"🥑",sentence:"Avocado is green and creamy!"},
+    {word:"avocado",ph:["a","v","o","c","a","d","o"],img:"🥑",sentence:"Avocado is green and creamy!"},
     {word:"blueberry",ph:["b","l","oo","b","e","r","ee"],img:"🫐",sentence:"Blueberries are tiny and sweet!"},
     {word:"raspberry",ph:["r","a","z","b","e","r","ee"],img:"🫐",sentence:"Raspberries are red and tangy!"},
     {word:"jackfruit",ph:["j","a","ck","f","r","oo","t"],img:"🍈",sentence:"Jackfruit is the biggest fruit!"},
@@ -713,13 +713,13 @@ const WCATS={
   feelings:{emoji:"😊",color:"#A855F7",words:[
     {word:"happy",ph:["h","a","p","ee"],img:"😊",sentence:"I feel happy today!"},
     {word:"sad",ph:["s","a","d"],img:"😢",sentence:"Sometimes I feel sad."},
-    {word:"angry",ph:["a","ng","g","r","ee"],img:"😠",sentence:"Take a deep breath when angry!"},
+    {word:"angry",ph:["a","ng","r","ee"],img:"😠",sentence:"Take a deep breath when angry!"},
     {word:"scared",ph:["s","c","air","d"],img:"😨",sentence:"The dark can be scary!"},
     {word:"brave",ph:["b","r","ai","v"],img:"💪",sentence:"Be brave and try new things!"},
     {word:"kind",ph:["k","igh","n","d"],img:"🤗",sentence:"Always be kind to others!"},
     {word:"tired",ph:["t","igh","er","d"],img:"😴",sentence:"I am tired after playing!"},
-    {word:"hungry",ph:["h","u","ng","g","r","ee"],img:"🤤",sentence:"I am hungry for lunch!"},
-    {word:"excited",ph:["e","x","s","igh","t","i","d"],img:"🤩",sentence:"I am excited for my birthday!"},
+    {word:"hungry",ph:["h","u","ng","r","ee"],img:"🤤",sentence:"I am hungry for lunch!"},
+    {word:"excited",ph:["e","x","igh","t","i","d"],img:"🤩",sentence:"I am excited for my birthday!"},
     {word:"proud",ph:["p","r","ow","d"],img:"🏆",sentence:"I am proud of my work!"},
     {word:"shy",ph:["sh","igh"],img:"😳",sentence:"It is okay to be shy!"},
     {word:"calm",ph:["c","ar","m"],img:"😌",sentence:"Take a deep breath to be calm!"},
@@ -769,7 +769,7 @@ const WCATS={
   math:{emoji:"➕",color:"#3B82F6",words:[
     {word:"add",ph:["a","d"],img:"➕",sentence:"Add means to put together!"},
     {word:"minus",ph:["m","igh","n","u","s"],img:"➖",sentence:"Minus means take away!"},
-    {word:"equal",ph:["ee","q","w","a","l"],img:"🟰",sentence:"Equal means the same!"},
+    {word:"equal",ph:["ee","q","a","l"],img:"🟰",sentence:"Equal means the same!"},
     {word:"plus",ph:["p","l","u","s"],img:"➕",sentence:"Two plus two is four!"},
     {word:"zero",ph:["z","ear","o"],img:"0️⃣",sentence:"Zero means nothing!"},
     {word:"half",ph:["h","ar","f"],img:"½",sentence:"Half means two equal parts!"},
@@ -783,7 +783,7 @@ const WCATS={
     {word:"ten",ph:["t","e","n"],img:"🔟",sentence:"I have ten fingers!"},
     {word:"hundred",ph:["h","u","n","d","r","e","d"],img:"💯",sentence:"A hundred is a big number!"},
   
-    {word:"square",ph:["s","q","w","air"],img:"⬜",sentence:"A square has four equal sides!"},
+    {word:"square",ph:["s","q","air"],img:"⬜",sentence:"A square has four equal sides!"},
     {word:"circle",ph:["s","ir","c","l"],img:"⭕",sentence:"A circle is round!"},
     {word:"triangle",ph:["t","r","igh","a","ng","l"],img:"🔺",sentence:"A triangle has three sides!"},
     {word:"bigger",ph:["b","i","g","er"],img:"📏",sentence:"An elephant is bigger than a cat!"},
@@ -834,7 +834,7 @@ const WCATS={
     {word:"bell",ph:["b","e","l"],img:"🔔",sentence:"Ring the bell for music class!"},
     {word:"harp",ph:["h","ar","p"],img:"🎵",sentence:"The harp has many strings!"},
     {word:"band",ph:["b","a","n","d"],img:"🎷",sentence:"The band plays at the parade!"},
-    {word:"choir",ph:["q","w","igh","er"],img:"🎵",sentence:"The choir sings beautifully!"},
+    {word:"choir",ph:["q","igh","er"],img:"🎵",sentence:"The choir sings beautifully!"},
     {word:"rhythm",ph:["r","i","th","m"],img:"🎶",sentence:"Feel the rhythm in your feet!"},
     {word:"melody",ph:["m","e","l","o","d","ee"],img:"🎵",sentence:"A melody is a nice tune!"},
     {word:"concert",ph:["c","o","n","s","er","t"],img:"🎤",sentence:"We went to a concert!"},
@@ -847,7 +847,7 @@ const REWARDS=[{id:1,name:"Sticker Pack",emoji:"🌟",cost:50,desc:"5 shiny stic
 const SHAPES=[
   {name:"circle",emoji:"🔵",desc:"Round like a ball!",sides:0,ph:["s","ir","c","l"],sentence:"A circle is round like a ball!",
     scene:{bg:"linear-gradient(180deg,#87CEEB,#B0E0E6,#98FB98)",elements:[{emoji:"🔵",size:70,x:50,y:35,anim:"floatBob",dur:2},{emoji:"⚽",size:30,x:25,y:55,anim:"ballBounce",dur:1.5},{emoji:"🍩",size:28,x:75,y:55,anim:"eggWobble",dur:2},{emoji:"🌕",size:32,x:50,y:15,anim:"moonGlow",dur:3}]}},
-  {name:"square",emoji:"🟧",desc:"Four equal sides!",sides:4,ph:["s","qu","air"],sentence:"A square has four equal sides!",
+  {name:"square",emoji:"🟧",desc:"Four equal sides!",sides:4,ph:["s","q","air"],sentence:"A square has four equal sides!",
     scene:{bg:"linear-gradient(180deg,#FFECD2,#FCB69F,#FF9A9E)",elements:[{emoji:"🟧",size:70,x:50,y:35,anim:"eggWobble",dur:2},{emoji:"📦",size:30,x:25,y:60,anim:"floatBob",dur:2},{emoji:"🧱",size:28,x:75,y:60,anim:"floatBob",dur:2.5,delay:0.3}]}},
   {name:"triangle",emoji:"🔺",desc:"Three corners!",sides:3,ph:["t","r","igh","a","ng","l"],sentence:"A triangle has three corners!",
     scene:{bg:"linear-gradient(180deg,#A8E6CF,#DCEDC1,#FFD3B6)",elements:[{emoji:"🔺",size:70,x:50,y:35,anim:"floatBob",dur:2},{emoji:"⛰️",size:40,x:25,y:55,anim:"sway",dur:3},{emoji:"🏔️",size:44,x:75,y:50,anim:"sway",dur:3.5,delay:0.3}]}},
