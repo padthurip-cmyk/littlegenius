@@ -273,8 +273,8 @@ const AnimatedScene = ({num, active}) => {
 // ═══════════════════════════════════════════════════════════════
 // REST OF APP DATA
 // ═══════════════════════════════════════════════════════════════
-const PM={b:{s:"buh",d:"/b/"},c:{s:"kuh",d:"/k/"},d:{s:"duh",d:"/d/"},f:{s:"fff",d:"/f/"},g:{s:"guh",d:"/g/"},h:{s:"huh",d:"/h/"},j:{s:"juh",d:"/dʒ/"},k:{s:"kuh",d:"/k/"},l:{s:"lll",d:"/l/"},m:{s:"mmm",d:"/m/"},n:{s:"nnn",d:"/n/"},p:{s:"puh",d:"/p/"},r:{s:"rrr",d:"/r/"},s:{s:"sss",d:"/s/"},t:{s:"tuh",d:"/t/"},v:{s:"vvv",d:"/v/"},w:{s:"wuh",d:"/w/"},x:{s:"ks",d:"/ks/"},y:{s:"yuh",d:"/j/"},z:{s:"zzz",d:"/z/"},a:{s:"aah",d:"/æ/"},e:{s:"eh",d:"/ɛ/"},i:{s:"ih",d:"/ɪ/"},o:{s:"aww",d:"/ɒ/"},u:{s:"uh",d:"/ʌ/"}};
-const DM={sh:{s:"shh",d:"/ʃ/"},ch:{s:"chuh",d:"/tʃ/"},th:{s:"thh",d:"/θ/"},ck:{s:"kuh",d:"/k/"},ng:{s:"nng",d:"/ŋ/"},ee:{s:"eee",d:"/iː/"},oo:{s:"ooo",d:"/uː/"},ai:{s:"ay",d:"/eɪ/"},ow:{s:"ow",d:"/aʊ/"},ar:{s:"are",d:"/ɑːr/"},er:{s:"err",d:"/ɜːr/"},ir:{s:"err",d:"/ɜːr/"},or:{s:"ore",d:"/ɔːr/"},ea:{s:"eee",d:"/iː/"},igh:{s:"eye",d:"/aɪ/"}};
+const PM={b:{s:"buhhh",d:"/b/"},c:{s:"kuhhh",d:"/k/"},d:{s:"duhhh",d:"/d/"},f:{s:"fffff",d:"/f/"},g:{s:"guhhh",d:"/g/"},h:{s:"huhhh",d:"/h/"},j:{s:"juhhh",d:"/dʒ/"},k:{s:"kuhhh",d:"/k/"},l:{s:"llllll",d:"/l/"},m:{s:"mmmmmm",d:"/m/"},n:{s:"nnnnnn",d:"/n/"},p:{s:"puhhh",d:"/p/"},r:{s:"rrrrrr",d:"/r/"},s:{s:"ssssss",d:"/s/"},t:{s:"tuhhh",d:"/t/"},v:{s:"vvvvvv",d:"/v/"},w:{s:"wuhhh",d:"/w/"},x:{s:"ks ks",d:"/ks/"},y:{s:"yuhhh",d:"/j/"},z:{s:"zzzzzz",d:"/z/"},a:{s:"aaaaah",d:"/æ/"},e:{s:"ehhhhh",d:"/ɛ/"},i:{s:"ihhhhh",d:"/ɪ/"},o:{s:"awwwww",d:"/ɒ/"},u:{s:"uhhhhh",d:"/ʌ/"}};
+const DM={sh:{s:"shhhhhh",d:"/ʃ/"},ch:{s:"chuhhh",d:"/tʃ/"},th:{s:"thhhhhh",d:"/θ/"},ck:{s:"kuhhh",d:"/k/"},ng:{s:"nnnnggg",d:"/ŋ/"},ee:{s:"eeeeee",d:"/iː/"},oo:{s:"oooooo",d:"/uː/"},ai:{s:"ayyyyy",d:"/eɪ/"},ow:{s:"owwwww",d:"/aʊ/"},ar:{s:"ahhhhr",d:"/ɑːr/"},er:{s:"errrrrr",d:"/ɜːr/"},ir:{s:"errrrrr",d:"/ɜːr/"},or:{s:"orrrrr",d:"/ɔːr/"},ea:{s:"eeeeee",d:"/iː/"},igh:{s:"eyeeee",d:"/aɪ/"}};
 const gPh=(ph)=>{const l=ph.toLowerCase();return DM[l]||PM[l]||{s:l,d:l};};
 
 const WCATS={
@@ -1009,22 +1009,26 @@ const getStarPts=(s)=>[0,2,5,10,15,20][s]||0;
 const useSpeech=()=>{const[v,setV]=useState([]);
   const onSpeakRef=useRef(null);
   const onDoneRef=useRef(null);
+  const cloudAudioRef=useRef(null); // current cloud Audio element
+  const cloudPlayingRef=useRef(false); // for lip sync polling
+  const[ttsKey,setTtsKey]=useState("");
+
+  // Load API key from storage on mount
+  useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4_tts_key");if(r?.value)setTtsKey(r.value);}catch(e){}})();},[]);
+  const saveTtsKey=useCallback(async(key)=>{setTtsKey(key);try{await window.storage.set("lg4_tts_key",key);}catch(e){}},[]);
+
+  // Browser voices setup
   useEffect(()=>{const l=()=>{const x=speechSynthesis.getVoices();if(x.length)setV(x);};l();speechSynthesis.onvoiceschanged=l;return()=>{speechSynthesis.onvoiceschanged=null;};},[]);
   const getV=useCallback(()=>{
-    // Sweet female voices first — warm, friendly, child-appropriate
-    const prefs=[
-      "Microsoft Jenny","Samantha","Google UK English Female","Karen",
-      "Microsoft Zira","Moira","Tessa","Victoria",
-      "Google US English Female","Google US English"
-    ];
+    const prefs=["Microsoft Jenny","Samantha","Google UK English Female","Karen","Microsoft Zira","Moira","Tessa","Victoria","Google US English Female","Google US English"];
     for(const n of prefs){const x=v.find(y=>y.name.includes(n)&&y.lang.startsWith("en"));if(x)return x;}
-    // Fallback: any female-sounding English voice
     const female=v.find(x=>x.lang.startsWith("en")&&(x.name.toLowerCase().includes("female")||x.name.includes("Samantha")||x.name.includes("Jenny")||x.name.includes("Zira")));
     if(female)return female;
     return v.find(x=>x.lang.startsWith("en"))||v[0];
   },[v]);
-  const speak=useCallback((t,o={})=>new Promise(r=>{
-    if(onSpeakRef.current)onSpeakRef.current(t);
+
+  // Browser TTS (fallback)
+  const speakBrowser=useCallback((t,o={})=>new Promise(r=>{
     const u=new SpeechSynthesisUtterance(t);
     let voice=getV();
     if(!voice){
@@ -1036,12 +1040,84 @@ const useSpeech=()=>{const[v,setV]=useState([]);
     if(voice)u.voice=voice;
     u.rate=o.rate||0.92;u.pitch=o.pitch||1.05;u.lang="en-US";u.volume=1;
     u.onend=()=>{if(onDoneRef.current)onDoneRef.current();r();};
-    u.onerror=(e)=>{console.log("TTS error",e);r();};
+    u.onerror=()=>{r();};
     if(!o.noCancel) speechSynthesis.cancel();
-    // Longer delay after cancel prevents voice clipping/breaking
     setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){r();}},o.noCancel?30:150);
   }),[getV]);
-  return{speak,stop:useCallback(()=>speechSynthesis.cancel(),[]),onSpeakRef,onDoneRef};
+
+  // Google Cloud TTS — sweet female voice, consistent across all devices
+  const speakCloud=useCallback((t,o={})=>new Promise(async(r)=>{
+    try{
+      // Cancel previous cloud audio
+      if(!o.noCancel && cloudAudioRef.current){
+        cloudAudioRef.current.pause();
+        cloudAudioRef.current.currentTime=0;
+        cloudAudioRef.current=null;
+        cloudPlayingRef.current=false;
+      }
+      // Also cancel any browser TTS that might be lingering
+      if(!o.noCancel) speechSynthesis.cancel();
+
+      const resp=await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${ttsKey}`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+          input:{text:t},
+          voice:{languageCode:"en-US",name:"en-US-Neural2-F"},
+          audioConfig:{
+            audioEncoding:"MP3",
+            speakingRate:o.rate||0.92,
+            pitch:(o.pitch?((o.pitch-1)*8):0.4), // map 1.05 → 0.4 semitones (slightly higher, sweet)
+            volumeGainDb:1.0,
+          }
+        })
+      });
+      if(!resp.ok) throw new Error("Cloud TTS failed: "+resp.status);
+      const data=await resp.json();
+      if(!data.audioContent) throw new Error("No audio content");
+
+      const audio=new Audio("data:audio/mp3;base64,"+data.audioContent);
+      cloudAudioRef.current=audio;
+      cloudPlayingRef.current=true;
+
+      audio.onended=()=>{
+        cloudPlayingRef.current=false;
+        cloudAudioRef.current=null;
+        if(onDoneRef.current)onDoneRef.current();
+        r();
+      };
+      audio.onerror=()=>{
+        cloudPlayingRef.current=false;
+        cloudAudioRef.current=null;
+        r();
+      };
+      await audio.play();
+    }catch(e){
+      console.log("Cloud TTS error, falling back to browser:",e.message);
+      // Fallback to browser TTS
+      speakBrowser(t,o).then(r);
+    }
+  }),[ttsKey,speakBrowser]);
+
+  // Main speak function: cloud if key available, else browser
+  const speak=useCallback((t,o={})=>{
+    if(onSpeakRef.current)onSpeakRef.current(t);
+    if(ttsKey) return speakCloud(t,o);
+    return speakBrowser(t,o);
+  },[ttsKey,speakCloud,speakBrowser]);
+
+  // Stop both cloud and browser
+  const stopAll=useCallback(()=>{
+    speechSynthesis.cancel();
+    if(cloudAudioRef.current){
+      cloudAudioRef.current.pause();
+      cloudAudioRef.current.currentTime=0;
+      cloudAudioRef.current=null;
+    }
+    cloudPlayingRef.current=false;
+  },[]);
+
+  return{speak,stop:stopAll,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey};
 };
 const useRec=()=>{
   const[on,setOn]=useState(false);
@@ -1427,7 +1503,7 @@ const PH_STEPS=[{id:"saying_word",icon:"🔊",label:"Word"},{id:"spelling",icon:
 // 🎮 MAIN APP
 // ═══════════════════════════════════════════════════════════════
 export default function App(){
-  const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef}=useSpeech();const rec=useRec();
+  const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey}=useSpeech();const rec=useRec();
   const[scr,setScr]=useState("splash");
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
   const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn"); // "learn" or "math"
@@ -1441,15 +1517,14 @@ export default function App(){
   const teacherIdleRef=useRef(null);
   const guideTourRef=useRef(false);
   const showTeacher=(mood,msg)=>{setTeacherMood(mood);setTeacherMsg(msg);};
-  // Smooth lip sync: sine wave mouth openness, polls at 180ms
+  // Smooth lip sync: checks both browser TTS and cloud audio
   useEffect(()=>{
     let tick=0;
     const iv=setInterval(()=>{
-      const s=speechSynthesis.speaking;
+      const s=speechSynthesis.speaking || cloudPlayingRef.current;
       setIsSpeaking(s);
       if(s){
         tick++;
-        // Smooth sine wave with slight variation for natural feel
         const base=Math.abs(Math.sin(tick*0.7));
         const variation=Math.abs(Math.sin(tick*1.3))*0.3;
         setMouthOpen(Math.min(1,base*0.7+variation));
@@ -1886,10 +1961,10 @@ export default function App(){
     const phs=NPH[num];
     if(phs){
       setNStep("saying_phonics");
-      await speak(`Now let's sound it out!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.8,pitch:1.0,noCancel:true});await wait(300);}
+      await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.6,pitch:1.0,noCancel:true});await wait(500);}
       setAPhI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`Put it together, ${w}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Now say it with me, ${w}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
 
     // Step 5: Speaking practice (if enabled)
@@ -1937,10 +2012,10 @@ export default function App(){
 
     // Step 4: Phonics - "let's understand how to speak this word"
     setPhStep("saying_phonics");
-    await speak(`Now let's sound it out!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-    for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.8,pitch:1.0,noCancel:true});await wait(300);}
+    await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+    for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.6,pitch:1.0,noCancel:true});await wait(500);}
     setPhAI(-1);await wait(400);if(!pRef.current)return;
-    await speak(`Put it together, ${wd.word}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+    await speak(`Now say it with me, ${wd.word}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
 
     // Step 5: Speaking (if enabled)
     if(speakMode){
@@ -1985,10 +2060,10 @@ export default function App(){
     await speak(sh.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
     if(sh.ph){
       setShStep("saying_phonics");
-      await speak("Now let's sound it out!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<sh.ph.length;i++){if(!pRef.current)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.8,pitch:1.0,noCancel:true});await wait(300);}
+      await speak("Repeat after me!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      for(let i=0;i<sh.ph.length;i++){if(!pRef.current)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.6,pitch:1.0,noCancel:true});await wait(500);}
       setShAI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`Put it together, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Now say it with me, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
       await speak(`Your turn ${kidName}! Can you say, ${sh.name}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
@@ -2022,10 +2097,10 @@ export default function App(){
     await speak(co.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
     if(co.ph){
       setCoStep("saying_phonics");
-      await speak("Now let's sound it out!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<co.ph.length;i++){if(!pRef.current)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.8,pitch:1.0,noCancel:true});await wait(300);}
+      await speak("Repeat after me!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      for(let i=0;i<co.ph.length;i++){if(!pRef.current)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.6,pitch:1.0,noCancel:true});await wait(500);}
       setCoAI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`Put it together, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Now say it with me, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
       await speak(`Your turn ${kidName}! Can you say, ${co.name}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
@@ -2619,7 +2694,7 @@ export default function App(){
       </div>
 
       {/* Phonemes */}
-      {phs&&(nStep==="saying_phonics"||nStep==="idle")&&<div style={{marginTop:6,background:"#F1F3F7",borderRadius:14,padding:8,animation:"slideUp 0.4s ease-out"}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🔊 Phonics</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{phs.map((ph,i)=>{const d=gPh(ph);const act=aPhI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.8,pitch:1.1});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Poppins',sans-serif",minWidth:44,background:act?color:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${color}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Poppins',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      {phs&&(nStep==="saying_phonics"||nStep==="idle")&&<div style={{marginTop:6,background:"#F1F3F7",borderRadius:14,padding:8,animation:"slideUp 0.4s ease-out"}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{phs.map((ph,i)=>{const d=gPh(ph);const act=aPhI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.6,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Poppins',sans-serif",minWidth:44,background:act?color:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${color}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Poppins',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
 
       {/* Play controls */}
       <div style={{marginTop:12}}>
@@ -2696,7 +2771,7 @@ export default function App(){
           </div>
         )}
         {nStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen to this sentence! 🎬"/>}
-        {nStep==="saying_phonics"&&<Mascot mood="thinking" msg="Let's understand how to speak this word... 🔡"/>}
+        {nStep==="saying_phonics"&&<Mascot mood="thinking" msg="Repeat after me! 🗣️"/>}
         {/* COUNTDOWN */}
         {nStep==="countdown"&&(
           <div style={{textAlign:"center",padding:24,background:"#F1F3F7",borderRadius:24,animation:"slideUp 0.3s ease-out"}}>
@@ -2818,7 +2893,7 @@ export default function App(){
         </div>;
       })()}
       {/* Phoneme chips */}
-      <div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{phW.ph.map((ph,i)=>{const d=gPh(ph);const act=phAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.75,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Poppins',sans-serif",minWidth:46,background:act?cc:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${cc}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Poppins',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div>
+      <div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{phW.ph.map((ph,i)=>{const d=gPh(ph);const act=phAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.6,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Poppins',sans-serif",minWidth:46,background:act?cc:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${cc}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Poppins',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div>
       <div style={{marginTop:14}}>
         {phStep==="idle"&&<>
           <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:8}}>
@@ -2889,7 +2964,7 @@ export default function App(){
           </div>
         )}
         {phStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen to this sentence! 💬"/>}
-        {phStep==="saying_phonics"&&<Mascot mood="thinking" msg="Let's understand how to speak this word... 🔡"/>}
+        {phStep==="saying_phonics"&&<Mascot mood="thinking" msg="Repeat after me! 🗣️"/>}
         {phStep==="countdown"&&(
           <div style={{textAlign:"center",padding:24,background:"#F1F3F7",borderRadius:24,animation:"slideUp 0.3s ease-out"}}>
             <Mascot mood="listening" msg={`Say "${phW.word.toUpperCase()}" when I say Start!`}/>
@@ -2917,7 +2992,7 @@ export default function App(){
         {shStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10}}><p style={{color:"#1C1C2B",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {sh.sentence}</p></div>}
       </div>}
       <div style={{textAlign:"center",marginTop:4}}><span style={{fontSize:30}}>{sh.emoji}</span><div style={{fontFamily:"'Poppins',sans-serif",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{sh.name}</div>{sh.sides>0&&<span style={{fontSize:12,fontWeight:700,background:"#FFF5EB",color:"#FC8019",padding:"4px 12px",borderRadius:10}}>{sh.sides} sides</span>}</div>
-      {sh.ph&&(shStep==="saying_phonics"||shStep==="idle")&&<div style={{marginTop:6,background:"#F1F3F7",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🔊 Phonics</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{sh.ph.map((ph,i)=>{const d=gPh(ph);const act=shAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.75,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Poppins',sans-serif",minWidth:44,background:act?shColor:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Poppins',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      {sh.ph&&(shStep==="saying_phonics"||shStep==="idle")&&<div style={{marginTop:6,background:"#F1F3F7",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{sh.ph.map((ph,i)=>{const d=gPh(ph);const act=shAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.6,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Poppins',sans-serif",minWidth:44,background:act?shColor:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Poppins',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
       <div style={{marginTop:12}}>
         {shStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#F1F3F7",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#F1F3F7",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#93959F",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playShape(sh)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#1C1C2B",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${shColor},${shColor}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
         {shStep==="saying_word"&&<Mascot mood="speaking" msg={`This is a ${sh.name}! 🔊`}/>}
@@ -2945,7 +3020,7 @@ export default function App(){
         {coStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10}}><p style={{color:"#1C1C2B",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {co.sentence}</p></div>}
       </div>}
       <div style={{textAlign:"center",marginTop:4}}><div style={{width:50,height:50,borderRadius:16,background:co.hex,margin:"0 auto 8px",boxShadow:`0 8px 24px ${co.hex}44`}}/><div style={{fontFamily:"'Poppins',sans-serif",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{co.name}</div><div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>{co.things.map((t,j)=><span key={j} style={{fontSize:11,fontWeight:700,background:"#F1F3F7",color:"rgba(255,255,255,0.5)",padding:"4px 10px",borderRadius:8}}>{t}</span>)}</div></div>
-      {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:6,background:"#F1F3F7",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🔊 Phonics</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.75,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Poppins',sans-serif",minWidth:44,background:act?co.hex:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Poppins',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:6,background:"#F1F3F7",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.6,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Poppins',sans-serif",minWidth:44,background:act?co.hex:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Poppins',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
       <div style={{marginTop:12}}>
         {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#F1F3F7",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#F1F3F7",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#93959F",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#1C1C2B",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
         {coStep==="saying_word"&&<Mascot mood="speaking" msg={`This color is ${co.name}! 🔊`}/>}
@@ -3222,7 +3297,19 @@ export default function App(){
   if(scr==="rewards")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#1C1C2B",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:22,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px #FBBF2444"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#1C1C2B",fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#93959F",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#f3f4f6"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"'Poppins',sans-serif",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Poppins',sans-serif",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#93959F",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Poppins',sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#F1F3F7",borderRadius:14,border:"1px solid #EFEFEF",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#93959F"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SETTINGS ═══
-  if(scr==="settings")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#F1F3F7",borderRadius:24,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"'Poppins',sans-serif",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#93959F",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#6366F1"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"#F1F3F7",borderRadius:18,padding:16,textAlign:"center",border:"1px solid #EFEFEF"}}><span style={{fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#93959F"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FFF5EB",color:"#FC8019",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button><button onClick={()=>{if(window.confirm("Are you sure? This will delete all your progress and points!")){save(null);setScr("onboard");setObSt(0);}}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FEE2E2",color:"#DC2626",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:8}}>🗑️ Reset</button></div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="settings")return<div style={{fontFamily:"'Poppins',sans-serif",height:"100dvh",overflow:"auto",background:"#fff",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#F1F3F7",borderRadius:24,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"'Poppins',sans-serif",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#93959F",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#6366F1"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"#F1F3F7",borderRadius:18,padding:16,textAlign:"center",border:"1px solid #EFEFEF"}}><span style={{fontFamily:"'Poppins',sans-serif",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#93959F"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FFF5EB",color:"#FC8019",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button>
+{/* Voice Settings */}
+<div style={{marginTop:16,padding:16,background:"#F1F3F7",borderRadius:20,border:"1px solid #EFEFEF"}}>
+<div style={{fontSize:13,fontWeight:800,color:"#6366F1",marginBottom:8}}>🔊 Voice Settings</div>
+<p style={{fontSize:11,color:"#93959F",fontWeight:600,marginBottom:10}}>{ttsKey?"Using Google Cloud voice (same sweet voice on all devices!)":"Using your device's built-in voice. Add a Google Cloud API key for a consistent sweet voice everywhere."}</p>
+<input value={ttsKey} onChange={e=>saveTtsKey(e.target.value.trim())} placeholder="Paste Google Cloud API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E8E8",borderRadius:12,fontSize:12,fontWeight:600,fontFamily:"'Poppins',sans-serif",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
+<div style={{display:"flex",gap:8,marginTop:8}}>
+<button onClick={()=>{speak("Hi! I'm Bella! This is how I sound!",{rate:0.92,pitch:1.05});}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:ttsKey?"linear-gradient(135deg,#6366F1,#818CF8)":"#E8E8E8",color:ttsKey?"#fff":"#666",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>🔊 Test Voice</button>
+{ttsKey&&<button onClick={()=>saveTtsKey("")} style={{padding:"10px 14px",borderRadius:12,border:"2px solid #E8E8E8",background:"#fff",color:"#E23744",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Poppins',sans-serif"}}>Remove</button>}
+</div>
+{ttsKey&&<p style={{fontSize:10,color:"#22C55E",fontWeight:700,marginTop:6}}>✅ Cloud voice active</p>}
+</div>
+<button onClick={()=>{if(window.confirm("Are you sure? This will delete all your progress and points!")){save(null);setScr("onboard");setObSt(0);}}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FEE2E2",color:"#DC2626",fontSize:14,fontWeight:800,fontFamily:"'Poppins',sans-serif",cursor:"pointer",marginTop:8}}>🗑️ Reset</button></div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   return<div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 }
