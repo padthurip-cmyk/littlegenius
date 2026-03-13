@@ -1945,30 +1945,55 @@ export default function App(){
     guideTourRef.current=true;
     movePandaTo("bottomRight");
     const tiles=[
-      {id:"numbers",msg:"Ooh, Numbers! Count and do math here!"},
-      {id:"alphabet",msg:"A B C! All the letters live here!"},
-      {id:"phonics",msg:"Phonics! Learn to read over 500 words!"},
-      {id:"basics",msg:"Basics! Find numbers and practice writing!"},
-      {id:"shapes",msg:"Shapes! Circles, triangles, and more!"},
-      {id:"colors",msg:"Colors! Discover the rainbow!"},
-      {id:"rewards",msg:"Rewards! Spend your points on cool prizes!"},
-      {id:"stories",msg:"Stories! Read fun tales and answer questions!"},
-      {id:"settings",msg:"And Settings! You can change your look here!"},
+      {id:"numbers",color:"#FF6B6B",msg:"Ooh, Numbers! Count and do math here!"},
+      {id:"alphabet",color:"#8B5CF6",msg:"A B C! All the letters live here!"},
+      {id:"phonics",color:"#34D399",msg:"Phonics! Learn to read over 500 words!"},
+      {id:"basics",color:"#FF8C42",msg:"Basics! Practice numbers and quiz yourself!"},
+      {id:"shapes",color:"#6366F1",msg:"Shapes! Circles, triangles, and more!"},
+      {id:"colors",color:"#EC4899",msg:"Colors! Discover the rainbow!"},
+      {id:"rewards",color:"#F59E0B",msg:"Rewards! Spend your points on cool prizes!"},
+      {id:"stories",color:"#3B82F6",msg:"Stories! Read fun tales and answer questions!"},
+      {id:"settings",color:"#64748B",msg:"And Settings! You can change your look here!"},
     ];
+    // Dim all tiles first
+    const allTiles=document.querySelectorAll('[data-tile]');
     for(const tile of tiles){
       if(!guideTourRef.current)break;
       const el=document.querySelector('[data-tile="'+tile.id+'"]');
       if(el){
-        el.style.transform="scale(1.08)";
-        el.style.boxShadow="0 0 20px rgba(99,102,241,.4)";
-        el.style.transition="all 0.3s";
+        // Scroll tile into view
+        el.scrollIntoView({behavior:"smooth",block:"center"});
+        await wait(200);
+        // Dim all others
+        allTiles.forEach(t=>{
+          if(t!==el){t.style.opacity="0.3";t.style.filter="grayscale(0.8)";t.style.transition="all 0.4s";}
+        });
+        // Highlight this tile BIG
+        el.style.transform="scale(1.25)";
+        el.style.zIndex="100";
+        el.style.position="relative";
+        el.style.setProperty("--gc",tile.color);
+        el.style.animation="tileGlow 1s ease-in-out infinite";
+        el.style.boxShadow=`0 0 0 4px ${tile.color}, 0 0 30px ${tile.color}88, 0 8px 32px rgba(0,0,0,.15)`;
+        el.style.border=`3px solid ${tile.color}`;
+        el.style.transition="transform 0.3s cubic-bezier(0.34,1.56,0.64,1)";
+        el.style.opacity="1";
+        el.style.filter="none";
       }
-      setTeacherMood("happy");
+      setTeacherMood("excited");
       await speak(tile.msg,{rate:0.85,pitch:1.0});
-      if(el){el.style.transform="";el.style.boxShadow="";}
-      await wait(300);
+      // Reset this tile
+      if(el){
+        el.style.transform="";el.style.boxShadow="";el.style.border="";
+        el.style.zIndex="";el.style.position="";el.style.animation="";
+      }
+      // Restore all tiles briefly
+      allTiles.forEach(t=>{t.style.opacity="";t.style.filter="";t.style.transition="all 0.3s";});
+      await wait(250);
     }
     setTeacherMood("star");
+    // Restore all tiles fully
+    allTiles.forEach(t=>{t.style.opacity="";t.style.filter="";t.style.transform="";t.style.boxShadow="";t.style.border="";t.style.zIndex="";t.style.position="";t.style.animation="";t.style.transition="";});
     await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});
     await wait(300);
     guideTourRef.current=false;
@@ -3029,7 +3054,7 @@ export default function App(){
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",bg:"#FEF3C7",accent:"#F59E0B",shadow:"rgba(245,158,11,.15)"},
           {id:"stories",icon:"📖",title:"Stories",sub:"Read & Learn",bg:"#DBEAFE",accent:"#3B82F6",shadow:"rgba(59,130,246,.15)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",bg:"#F1F5F9",accent:"#64748B",shadow:"rgba(100,116,139,.1)"}
-        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);document.querySelectorAll('[data-tile]').forEach(t=>{t.style.opacity="";t.style.filter="";t.style.transform="";t.style.boxShadow="";t.style.border="";t.style.zIndex="";t.style.position="";t.style.animation="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"22px 18px",borderRadius:24,border:`2.5px solid ${m.accent}22`,cursor:"pointer",
           fontFamily:"'Fredoka',sans-serif",background:m.bg,
@@ -3793,6 +3818,7 @@ button:active{transform:scale(0.97)!important;}
 @keyframes floatP{0%,100%{transform:translateY(0) translateX(0)}25%{transform:translateY(calc(-1*var(--dr,15px))) translateX(10px)}75%{transform:translateY(5px) translateX(-10px)}}
 @keyframes confFall{0%{opacity:1;transform:translateY(0) rotate(0) scale(1)}100%{opacity:0;transform:translateY(350px) rotate(720deg) scale(.2)}}
 @keyframes balloonRise{0%{opacity:0;transform:translateY(0) scale(0.5)}20%{opacity:1;transform:translateY(-80px) scale(1)}100%{opacity:0;transform:translateY(-500px) scale(0.8) rotate(10deg)}}
+@keyframes tileGlow{0%,100%{box-shadow:0 0 0 4px var(--gc), 0 0 20px var(--gc)}50%{box-shadow:0 0 0 6px var(--gc), 0 0 40px var(--gc), 0 0 60px var(--gc)}}
 @keyframes firecracker{0%{opacity:0;transform:scale(0)}30%{opacity:1;transform:scale(1.5)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(2)}}
 @keyframes coinSp{0%,100%{transform:rotateY(0)}50%{transform:rotateY(180deg)}}
 @keyframes numPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
