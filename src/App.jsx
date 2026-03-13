@@ -1432,22 +1432,22 @@ const useSpeech=()=>{const[v,setV]=useState([]);
     u.rate=o.rate||0.92;u.pitch=o.pitch||1.05;u.lang="en-US";u.volume=1;
     u.onend=()=>{if(onDoneRef.current)onDoneRef.current();r();};
     u.onerror=()=>{r();};
-    if(!o.noCancel) speechSynthesis.cancel();
-    setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){r();}},o.noCancel?30:150);
+    // ALWAYS cancel previous speech — no exceptions
+    speechSynthesis.cancel();
+    setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){r();}},180);
   }),[getV]);
 
   // Google Cloud TTS — sweet female voice, consistent across all devices
   const speakCloud=useCallback((t,o={})=>new Promise(async(r)=>{
     try{
-      // Cancel previous cloud audio
-      if(!o.noCancel && cloudAudioRef.current){
+      // ALWAYS cancel previous — cloud audio + browser TTS
+      if(cloudAudioRef.current){
         cloudAudioRef.current.pause();
         cloudAudioRef.current.currentTime=0;
         cloudAudioRef.current=null;
         cloudPlayingRef.current=false;
       }
-      // Also cancel any browser TTS that might be lingering
-      if(!o.noCancel) speechSynthesis.cancel();
+      speechSynthesis.cancel();
 
       const resp=await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${ttsKey}`,{
         method:"POST",
@@ -1690,7 +1690,7 @@ const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return m
 
 const BellaChar=({mood,size=110,speaking=false,hiFive=false,joyMode=false,shake="",mouthOpen=0})=>{
   const s=size;
-  const W=mood==="waving",C=mood==="clapping",T=mood==="thinking",P=mood==="pointing",S=mood==="star",E=mood==="excited",PR=mood==="proud",H=mood==="happy";
+  const W=mood==="waving",C=mood==="clapping",T=mood==="thinking",P=mood==="pointing",S=mood==="star",E=mood==="excited",PR=mood==="proud",H=mood==="happy",SAD=mood==="sad";
   // mouthOpen: 0.0 (closed smile) to 1.0 (fully open) — driven by smooth sine wave externally
   const mo=Math.max(0,Math.min(1,mouthOpen));
   // Smooth mouth: interpolate between smile and open mouth
@@ -1720,7 +1720,7 @@ const BellaChar=({mood,size=110,speaking=false,hiFive=false,joyMode=false,shake=
       <radialGradient id="pf" cx="40%" cy="30%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#EDEDED"/></radialGradient>
       <radialGradient id="pp" cx="50%" cy="40%"><stop offset="0%" stopColor="#3a3a3a"/><stop offset="100%" stopColor="#111"/></radialGradient>
     </defs>
-    <g style={{animation:shake==="no"?"pSadBody 1.5s ease-in-out infinite":joyMode?"pJoySpin 0.8s ease-in-out infinite":"pFloat 4s ease-in-out infinite"}}>
+    <g style={{animation:SAD?"pSadBody 1.5s ease-in-out infinite":shake==="no"?"pSadBody 1.5s ease-in-out infinite":joyMode?"pJoySpin 0.8s ease-in-out infinite":"pFloat 4s ease-in-out infinite"}}>
       {/* Shadow */}
       <ellipse cx="40" cy="84" rx="15" ry="2.5" fill="rgba(0,0,0,.06)"/>
       {/* Tail */}
@@ -1763,17 +1763,20 @@ const BellaChar=({mood,size=110,speaking=false,hiFive=false,joyMode=false,shake=
         {/* Eyes */}
         <ellipse cx="32" cy="25" rx="4" ry="3.8" fill="#fff"/>
         <ellipse cx="48" cy="25" rx="4" ry="3.8" fill="#fff"/>
-        <ellipse style={{animation:"pBlink 4s ease-in-out infinite"}} cx={T?31:33} cy="25" rx="2.5" ry="3.5" fill="#111"/>
-        <ellipse style={{animation:"pBlink 4s ease-in-out infinite"}} cx={T?47:49} cy="25" rx="2.5" ry="3.5" fill="#111"/>
+        <ellipse style={{animation:"pBlink 4s ease-in-out infinite"}} cx={T?31:SAD?32:33} cy={SAD?26:25} rx="2.5" ry={SAD?3:3.5} fill="#111"/>
+        <ellipse style={{animation:"pBlink 4s ease-in-out infinite"}} cx={T?47:SAD?48:49} cy={SAD?26:25} rx="2.5" ry={SAD?3:3.5} fill="#111"/>
         {/* Eye sparkle */}
-        <circle cx={T?31.5:33.5} cy="23.5" r="1" fill="#fff"/><circle cx={T?47.5:49.5} cy="23.5" r="1" fill="#fff"/>
+        <circle cx={T?31.5:SAD?32.5:33.5} cy="23.5" r="1" fill="#fff"/><circle cx={T?47.5:SAD?48.5:49.5} cy="23.5" r="1" fill="#fff"/>
         {(E||S)&&<><circle cx="34" cy="22.5" r=".6" fill="#fff"/><circle cx="50" cy="22.5" r=".6" fill="#fff"/></>}
+        {/* Sad tear */}
+        {SAD&&<ellipse cx="26" cy="29" rx="1.2" ry="2" fill="#60A5FA" opacity=".7" style={{animation:"pSpark 1.5s ease-in-out infinite"}}/>}
         {/* Nose */}
         <ellipse cx="40" cy="31" rx="3" ry="2.2" fill="#222"/><ellipse cx="39.5" cy="30.5" rx=".9" ry=".6" fill="#444"/>
         {/* Mouth — smooth lip sync: always smiling, opens gently when speaking */}
         {speaking?
           <ellipse cx="40" cy={35.5+mo*0.5} rx={mouthRx} ry={mouthRy} fill={mo>0.3?"#D93B4B":"none"} stroke="#D93B4B" strokeWidth={mo>0.3?".5":"1"} strokeLinecap="round" style={{transition:"rx 0.12s ease, ry 0.12s ease, cy 0.12s ease"}}/>:
           (E||S)?<path d="M 34,34 Q 40,42 46,34" fill="#D93B4B" stroke="#222" strokeWidth=".5"/>:
+          SAD?<path d="M 35,38 Q 40,33 45,38" fill="none" stroke="#888" strokeWidth="1.2" strokeLinecap="round"/>:
           shake==="no"?<path d="M 36,37 Q 40,34 44,37" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>:
           <path d="M 35,35 Q 40,40 45,35" fill="none" stroke="#E23744" strokeWidth="1" strokeLinecap="round"/>
         }
@@ -1928,53 +1931,41 @@ export default function App(){
   },[]);
   const pandaEmojiTimer=useRef(null);
   // Head reactions
-  const headYes=()=>{setHeadShake("yes");setTimeout(()=>setHeadShake(""),1500);};
-  const headNo=()=>{setHeadShake("no");setTimeout(()=>setHeadShake(""),1500);};
+  const headYes=()=>{setHeadShake("yes");setTeacherMood("star");setTimeout(()=>{setHeadShake("");setTeacherMood("happy");},1500);};
+  const headNo=()=>{setHeadShake("no");setTeacherMood("sad");setTimeout(()=>{setHeadShake("");setTeacherMood("happy");},2000);};
 
   // Guided tour of home tiles
   const doHomeTour=async()=>{
     setGuideTour(true);
     guideTourRef.current=true;
-    setPandaSize(80); // smaller during tour to avoid overlap
-    // col: "left" or "right" in the 2-column grid
+    movePandaTo("bottomRight");
     const tiles=[
-      {id:"numbers",col:"left",msg:"Ooh, Numbers! Count and do math here!"},
-      {id:"alphabet",col:"right",msg:"A B C! All the letters live here!"},
-      {id:"phonics",col:"left",msg:"Phonics! Learn to read over 500 words!"},
-      {id:"basics",col:"right",msg:"Basics! Find numbers and practice writing!"},
-      {id:"shapes",col:"left",msg:"Shapes! Circles, triangles, and more!"},
-      {id:"colors",col:"right",msg:"Colors! Discover the rainbow!"},
-      {id:"rewards",col:"left",msg:"Rewards! Spend your points on cool prizes!"},
-      {id:"settings",col:"right",msg:"And Settings! You can change your look here!"},
+      {id:"numbers",msg:"Ooh, Numbers! Count and do math here!"},
+      {id:"alphabet",msg:"A B C! All the letters live here!"},
+      {id:"phonics",msg:"Phonics! Learn to read over 500 words!"},
+      {id:"basics",msg:"Basics! Find numbers and practice writing!"},
+      {id:"shapes",msg:"Shapes! Circles, triangles, and more!"},
+      {id:"colors",msg:"Colors! Discover the rainbow!"},
+      {id:"rewards",msg:"Rewards! Spend your points on cool prizes!"},
+      {id:"stories",msg:"Stories! Read fun tales and answer questions!"},
+      {id:"settings",msg:"And Settings! You can change your look here!"},
     ];
     for(const tile of tiles){
       if(!guideTourRef.current)break;
       const el=document.querySelector('[data-tile="'+tile.id+'"]');
       if(el){
-        const r=el.getBoundingClientRect();
-        const ps=80; // tour size
-        const w=window.innerWidth,h=window.innerHeight;
-        let x,y;
-        y=Math.max(Math.min(r.top+r.height/2-ps/2,h-ps),0);
-        if(tile.col==="left"){
-          // Place panda to the LEFT of the left-column tile
-          x=Math.max(r.left-ps-4,0);
-        } else {
-          // Place panda to the RIGHT of the right-column tile
-          x=Math.min(r.right+4,w-ps);
-        }
-        setPandaPos({x,y});
-        setTeacherMood("pointing");
+        el.style.transform="scale(1.08)";
+        el.style.boxShadow="0 0 20px rgba(99,102,241,.4)";
+        el.style.transition="all 0.3s";
       }
+      setTeacherMood("pointing");
       await speak(tile.msg,{rate:0.85,pitch:1.0});
-      await wait(400);
+      if(el){el.style.transform="";el.style.boxShadow="";}
+      await wait(300);
     }
     setTeacherMood("star");
-    movePandaTo("center");
     await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});
-    await wait(500);
-    movePandaTo("bottomRight");
-    setPandaSize(110); // restore normal size
+    await wait(300);
     guideTourRef.current=false;
     setGuideTour(false);
   };
@@ -2164,7 +2155,7 @@ export default function App(){
   const handleNumResult=(result)=>{
     const w=NW[selNum];
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(w,normalized);setSpRes(normalized);setSpAcc(acc);setNStep("result");hoverNear("result-box","right","star");
+    const acc=calcAcc(w,normalized);setSpRes(normalized);setSpAcc(acc);setNStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0) awardPoints(p,"numbers",selNum);
     if(s>=3)boom();
@@ -2186,7 +2177,7 @@ export default function App(){
   };
   const handlePhResult=(result)=>{
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(phW.word,normalized);setPhRes(normalized);setPhAcc(acc);setPhStep("result");hoverNear("result-box","right","star");
+    const acc=calcAcc(phW.word,normalized);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0) awardPoints(p,"phonics",phW.word);
     if(s>=3)boom();
@@ -2218,11 +2209,11 @@ export default function App(){
     const pitches=[1.0,1.0,1.0];
     for(let i=0;i<3;i++){
       setCountdown(3-i);
-      await speak(nums[i],{rate:0.7,pitch:1.0,noCancel:true});
+      await speak(nums[i],{rate:0.7,pitch:1.0});
       await wait(500);
     }
     setCountdown(0);
-    await speak("Go!",{rate:0.75,pitch:1.0,noCancel:true});
+    await speak("Go!",{rate:0.75,pitch:1.0});
     await wait(400);
     onStart();
   };
@@ -2249,7 +2240,7 @@ export default function App(){
     const expectedLetter=letters[tapIndex];
     
     // ALWAYS speak the tapped letter
-    speak(tappedLetter,{rate:0.8,pitch:1.0,noCancel:true});
+    speak(tappedLetter,{rate:0.8,pitch:1.0});
     
     if(tappedLetter.toLowerCase()===expectedLetter){
       setSpellStatus(prev=>{const n=[...prev];n[tapIndex]='correct';return n;});
@@ -2278,7 +2269,7 @@ export default function App(){
       setActiveSpellIdx(i);
       setSpellStatus(prev=>{const n=[...prev];n[i]='listening';return n;});
       
-      await speak(LN[letters[i]]||letters[i],{rate:0.7,pitch:1.0,noCancel:true});
+      await speak(LN[letters[i]]||letters[i],{rate:0.7,pitch:1.0});
       await wait(500);
       
       setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
@@ -2323,7 +2314,7 @@ export default function App(){
         if(!pRef.current) return;
         setActiveSpellIdx(i);
         setSpellStatus(prev=>{const n=[...prev];n[i]='correct';return n;});
-        await speak(LN[letters[i]],{rate:0.8,pitch:1.0,noCancel:true});
+        await speak(LN[letters[i]],{rate:0.8,pitch:1.0});
         await wait(1000);
       }
       setActiveSpellIdx(-1);
@@ -2345,7 +2336,7 @@ export default function App(){
     await wait(500);if(!pRef.current)return;
 
     // Step 2: Interactive spelling
-    setNStep("spelling");hoverNear("spell-area","right","pointing");
+    setNStep("spelling");
     await spellWord(w.replace(/\s/g,''));
     await wait(400);if(!pRef.current)return;
     await speak(`Awesome! That spells, ${w}.`,{rate:0.75,pitch:1.0});
@@ -2362,7 +2353,7 @@ export default function App(){
     if(phs){
       setNStep("saying_phonics");
       await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.6,pitch:1.0,noCancel:true});await wait(500);}
+      for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.6,pitch:1.0});await wait(500);}
       setAPhI(-1);await wait(400);if(!pRef.current)return;
       await speak(`Now say it with me, ${w}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
@@ -2370,7 +2361,7 @@ export default function App(){
     // Step 5: Speaking practice (if enabled)
     if(speakMode){
       await speak(`Your turn ${kidName}! Can you say, ${w}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setNStep("listening");pRef.current=false;hoverNear("mic-area","left","happy");showTeacher("happy","I'm listening!");rec.start(handleNumResult);
+      stop();await wait(600);setNStep("listening");pRef.current=false;showTeacher("happy","I'm listening!");rec.start(handleNumResult);
     }else{
       pRef.current=false;
       if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
@@ -2380,7 +2371,7 @@ export default function App(){
   };
   const retryNum=async()=>{showTeacher("happy","Try again! You can do it! 💪");
     setSpRes(null);setSpAcc(null);
-    setNStep("countdown");hoverNear("countdown","right","excited");
+    setNStep("countdown");
     await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);
     stop();await wait(600);setNStep("listening");rec.start(handleNumResult);
   };
@@ -2398,7 +2389,7 @@ export default function App(){
     await wait(500);if(!pRef.current)return;
 
     // Step 2: Interactive spelling
-    setPhStep("spelling");hoverNear("spell-area","right","pointing");
+    setPhStep("spelling");
     await spellWord(wd.word);
     await wait(400);if(!pRef.current)return;
     await speak(`Awesome! That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
@@ -2413,14 +2404,14 @@ export default function App(){
     // Step 4: Phonics - "let's understand how to speak this word"
     setPhStep("saying_phonics");
     await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-    for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.6,pitch:1.0,noCancel:true});await wait(500);}
+    for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.6,pitch:1.0});await wait(500);}
     setPhAI(-1);await wait(400);if(!pRef.current)return;
     await speak(`Now say it with me, ${wd.word}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
 
     // Step 5: Speaking (if enabled)
     if(speakMode){
       await speak(`Your turn ${kidName}! Can you say, ${wd.word}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setPhStep("listening");pRef.current=false;hoverNear("mic-area","left","happy");showTeacher("happy","Your turn!");rec.start(handlePhResult);
+      stop();await wait(600);setPhStep("listening");pRef.current=false;showTeacher("happy","Your turn!");rec.start(handlePhResult);
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
@@ -2430,7 +2421,7 @@ export default function App(){
   };
   const retryPh=async()=>{showTeacher("happy","One more try! I believe in you! 🌈");
     setPhRes(null);setPhAcc(null);
-    setPhStep("countdown");hoverNear("countdown","right","excited");
+    setPhStep("countdown");
     await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);
     stop();await wait(600);setPhStep("listening");rec.start(handlePhResult);
   };
@@ -2453,7 +2444,7 @@ export default function App(){
     setShStep("saying_word");
     await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
     await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
-    setShStep("spelling");hoverNear("spell-area","right","pointing");
+    setShStep("spelling");
     await spellWord(sh.name);await wait(400);if(!pRef.current)return;
     await speak(`Awesome! That spells, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
     setShStep("saying_sentence");
@@ -2461,13 +2452,13 @@ export default function App(){
     if(sh.ph){
       setShStep("saying_phonics");
       await speak("Repeat after me!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<sh.ph.length;i++){if(!pRef.current)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.6,pitch:1.0,noCancel:true});await wait(500);}
+      for(let i=0;i<sh.ph.length;i++){if(!pRef.current)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.6,pitch:1.0});await wait(500);}
       setShAI(-1);await wait(400);if(!pRef.current)return;
       await speak(`Now say it with me, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
       await speak(`Your turn ${kidName}! Can you say, ${sh.name}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setShStep("listening");hoverNear("mic-area","left","happy");pRef.current=false;rec.start(handleShResult);
+      stop();await wait(600);setShStep("listening");pRef.current=false;rec.start(handleShResult);
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
   const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setShStep("listening");rec.start(handleShResult);};
@@ -2490,7 +2481,7 @@ export default function App(){
     setCoStep("saying_word");
     await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
     await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
-    setCoStep("spelling");hoverNear("spell-area","right","pointing");
+    setCoStep("spelling");
     await spellWord(co.name);await wait(400);if(!pRef.current)return;
     await speak(`Awesome! That spells, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
     setCoStep("saying_sentence");
@@ -2498,13 +2489,13 @@ export default function App(){
     if(co.ph){
       setCoStep("saying_phonics");
       await speak("Repeat after me!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<co.ph.length;i++){if(!pRef.current)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.6,pitch:1.0,noCancel:true});await wait(500);}
+      for(let i=0;i<co.ph.length;i++){if(!pRef.current)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.6,pitch:1.0});await wait(500);}
       setCoAI(-1);await wait(400);if(!pRef.current)return;
       await speak(`Now say it with me, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
       await speak(`Your turn ${kidName}! Can you say, ${co.name}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setCoStep("listening");hoverNear("mic-area","left","happy");pRef.current=false;rec.start(handleCoResult);
+      stop();await wait(600);setCoStep("listening");pRef.current=false;rec.start(handleCoResult);
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
   const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setCoStep("listening");rec.start(handleCoResult);};
@@ -2544,7 +2535,7 @@ export default function App(){
     }
     const shuffled=shuffle([...choices]);
     
-    setMathProblem({a,b,op,answer});hoverNear("math-problem","right","pointing");
+    setMathProblem({a,b,op,answer});
     setMathChoices(shuffled);
     setMathFb(null);setMathAnswer(null);
     
@@ -2572,7 +2563,7 @@ export default function App(){
 
   // ═══ ALPHABET FUNCTIONS ═══
   const alphaRef=useRef("");
-  const playLetter=async(letter)=>{hoverNear("letter-detail","left","star");
+  const playLetter=async(letter)=>{
     // STOP everything from previous letter
     stop(); // cancel all TTS
     pRef.current=true; // mark as playing
@@ -2733,7 +2724,7 @@ export default function App(){
     const touch=e.touches?e.touches[0]:e;
     return{x:touch.clientX-rect.left,y:touch.clientY-rect.top};
   };
-  const drawStart=(e)=>{hoverNear("write-canvas","left","excited");
+  const drawStart=(e)=>{
     const c=cRef.current;if(!c)return;
     const ctx=c.getContext("2d");
     const{x,y}=getPos(e);
@@ -3529,8 +3520,8 @@ export default function App(){
         <button key={t.id} onClick={()=>{
           stop();movePandaTo("bottomRight");setBasicsTab(t.id);
           if(t.id==="quiz"){if(!quizNum)newQuiz();}
-          if(t.id==="write")hoverNear("write-canvas","left","pointing");
-          if(t.id==="explore")hoverNear("explore-grid","right","happy");
+          if(t.id==="write")
+          if(t.id==="explore")
           if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}
         }} style={{flex:1,padding:"11px 6px",borderRadius:14,border:"none",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
           background:basicsTab===t.id?"#6366F1":"#f3f4f6",color:basicsTab===t.id?"#fff":"#888",transition:"all 0.2s"
