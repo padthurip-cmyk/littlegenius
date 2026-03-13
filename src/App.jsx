@@ -1801,12 +1801,105 @@ const BellaChar=({mood,size=110,speaking=false,joyMode=false,shake="",mouthOpen=
 };
 
 const Particles=({count=10,emojis=["⭐","✨","🌟","💫"]})=>{const items=useRef(Array.from({length:count},(_,i)=>({id:i,emoji:emojis[i%emojis.length],x:Math.random()*100,y:Math.random()*100,sz:12+Math.random()*14,dur:8+Math.random()*12,dl:-Math.random()*10,dr:20+Math.random()*40}))).current;return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>{items.map(p=><div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:`${p.y}%`,fontSize:p.sz,opacity:0.25,animation:`floatP ${p.dur}s ease-in-out ${p.dl}s infinite`,"--dr":`${p.dr}px`}}>{p.emoji}</div>)}</div>;};
-const Confetti=({active,type})=>{if(!active)return null;
-  // Random type: 0=paper confetti, 1=balloons, 2=firecrackers
+const Confetti=({active,type})=>{
+  const items=useRef(null);
+  if(!active)return null;
+  // Generate items once per activation
+  if(!items.current){
+    const t=type||0;
+    if(t===0){
+      // Paper confetti — emoji confetti + colorful swirling paper strips
+      items.current=Array.from({length:50},(_,i)=>{
+        const isEmoji=i<8;
+        const emojis=["🎊","🎉","⭐","✨","💫","🌟","🎊","🎉"];
+        return{
+          emoji:isEmoji?emojis[i]:null,
+          x:5+Math.random()*90,
+          color:["#FF6B6B","#FBBF24","#4ADE80","#60A5FA","#A78BFA","#F472B6","#FF8C42","#34D399"][i%8],
+          w:isEmoji?0:(4+Math.random()*8),
+          h:isEmoji?0:(8+Math.random()*14),
+          dur:1.8+Math.random()*2,
+          del:Math.random()*0.6,
+          sway:15+Math.random()*30,
+          rot:Math.random()*720,
+          sz:isEmoji?(20+Math.random()*14):0,
+        };
+      });
+    } else if(t===1){
+      // Balloons — real balloon emojis rising with gentle float
+      const balloonEmojis=["🎈","🎈","🎈","🟡","🔵","🟢","🔴","🟣","🎈","🎈","🎈","🩷","🎈","🧡","🎈"];
+      items.current=Array.from({length:18},(_,i)=>({
+        emoji:balloonEmojis[i%balloonEmojis.length],
+        x:3+Math.random()*94,
+        sz:28+Math.random()*20,
+        dur:2.5+Math.random()*2,
+        del:Math.random()*1.0,
+        sway:8+Math.random()*16,
+      }));
+    } else {
+      // Fireworks — bursts from 3 launch points
+      const bursts=[];
+      const centers=[{x:25,y:30},{x:55,y:20},{x:75,y:35},{x:40,y:45}];
+      centers.forEach((c,ci)=>{
+        const sparkEmojis=["✨","🌟","⭐","💫","✨","🌟"];
+        for(let j=0;j<12;j++){
+          const angle=(j/12)*Math.PI*2;
+          const dist=40+Math.random()*60;
+          bursts.push({
+            emoji:sparkEmojis[j%sparkEmojis.length],
+            cx:c.x, cy:c.y,
+            dx:Math.cos(angle)*dist,
+            dy:Math.sin(angle)*dist,
+            sz:14+Math.random()*16,
+            dur:0.6+Math.random()*0.6,
+            del:ci*0.4+Math.random()*0.15,
+          });
+        }
+        // Center flash
+        bursts.push({emoji:"🎆",cx:c.x,cy:c.y,dx:0,dy:0,sz:36+Math.random()*12,dur:0.8,del:ci*0.4,isCenter:true});
+      });
+      items.current=bursts;
+    }
+  }
   const t=type||0;
-  if(t===1) return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999}}>{Array.from({length:20},(_,i)=><div key={i} style={{position:"absolute",left:`${5+Math.random()*90}%`,bottom:"-10%",fontSize:24+Math.random()*16,animation:`balloonRise ${2+Math.random()*2}s ease-out ${Math.random()*0.8}s forwards`,opacity:0.9}}>{["🎈","🎈","🟡","🔵","🟢","🔴","🟣"][i%7]==="🎈"?"🎈":["🎈","🎈","🎈","🫧","🎈","🎈","🎈"][i%7]}</div>)}</div>;
-  if(t===2) return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999}}>{Array.from({length:15},(_,i)=><div key={i} style={{position:"absolute",left:`${10+Math.random()*80}%`,top:`${20+Math.random()*40}%`,fontSize:18+Math.random()*14,animation:`firecracker ${0.5+Math.random()*0.5}s ease-out ${Math.random()*1}s both`,opacity:0}}>{["🎆","🎇","✨","💥","🌟","⭐","🎆"][i%7]}</div>)}{Array.from({length:25},(_,i)=><div key={"s"+i} style={{position:"absolute",left:`${5+Math.random()*90}%`,top:`${10+Math.random()*60}%`,width:4+Math.random()*6,height:4+Math.random()*6,borderRadius:"50%",background:["#FF6B6B","#FBBF24","#4ADE80","#60A5FA","#A78BFA","#F472B6","#FF8C42"][i%7],animation:`firecracker ${0.3+Math.random()*0.6}s ease-out ${0.2+Math.random()*1.2}s both`}}/>)}</div>;
-  return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999}}>{Array.from({length:40},(_,i)=><div key={i} style={{position:"absolute",left:`${10+Math.random()*80}%`,top:"-5%",width:6+Math.random()*8,height:4+Math.random()*5,background:["#FF8C42","#4ADE80","#F87171","#60A5FA","#FFB066","#A78BFA","#F472B6","#FBBF24"][i%8],borderRadius:2,animation:`confFall ${1+Math.random()*1.5}s ease-in ${Math.random()*0.5}s forwards`}}/>)}</div>;
+
+  if(t===1) return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999,overflow:"hidden"}}>
+    {items.current.map((b,i)=><div key={i} style={{
+      position:"absolute",left:`${b.x}%`,bottom:"-12%",
+      fontSize:b.sz,
+      animation:`celebBalloon ${b.dur}s ease-out ${b.del}s forwards`,
+      "--sway":`${b.sway}px`,
+    }}>{b.emoji}</div>)}
+  </div>;
+
+  if(t===2) return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999,overflow:"hidden"}}>
+    {items.current.map((s,i)=><div key={i} style={{
+      position:"absolute",
+      left:`${s.cx}%`,top:`${s.cy}%`,
+      fontSize:s.sz,
+      animation:s.isCenter?`celebFlash ${s.dur}s ease-out ${s.del}s both`:`celebBurst ${s.dur}s ease-out ${s.del}s both`,
+      "--dx":`${s.dx||0}px`,"--dy":`${s.dy||0}px`,
+    }}>{s.emoji}</div>)}
+  </div>;
+
+  // Default: paper confetti
+  return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999,overflow:"hidden"}}>
+    {items.current.map((c,i)=>c.emoji?
+      <div key={i} style={{
+        position:"absolute",left:`${c.x}%`,top:"-8%",
+        fontSize:c.sz,
+        animation:`celebFallEmoji ${c.dur}s ease-in ${c.del}s forwards`,
+        "--sway":`${c.sway}px`,
+      }}>{c.emoji}</div>:
+      <div key={i} style={{
+        position:"absolute",left:`${c.x}%`,top:"-5%",
+        width:c.w, height:c.h,
+        background:c.color, borderRadius:3,
+        animation:`celebFallPaper ${c.dur}s ease-in ${c.del}s forwards`,
+        "--sway":`${c.sway}px`,"--rot":`${c.rot}deg`,
+      }}/>
+    )}
+  </div>;
 };
 const Stars=({count,size=26})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"8px 0"}}>{[1,2,3,4,5].map(i=><span key={i} style={{fontSize:size,opacity:i<=count?1:0.2,filter:i<=count?"drop-shadow(0 2px 8px rgba(251,191,36,0.5))":"none",animation:i<=count?`starPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.12}s both`:"none"}}>{i<=count?"⭐":"☆"}</span>)}</div>;
 const Mascot=({mood="happy",msg=""})=>{const f={happy:"😊",excited:"🤩",thinking:"🤔",listening:"👂",cheering:"🥳",speaking:"🗣️",sad:"🥺"};return<div style={{display:"flex",alignItems:"flex-end",gap:10,margin:"4px 0"}}><div style={{fontSize:26,animation:"mascotB 2s ease-in-out infinite",flexShrink:0}}>{f[mood]||"😊"}</div>{msg&&<div style={{background:"#FFF0E0",borderRadius:"18px 18px 18px 4px",padding:"4px 10px",fontSize:11,fontWeight:600,color:"#3E4152",boxShadow:"0 2px 8px rgba(0,0,0,.08)",animation:"bubPop 0.3s cubic-bezier(0.34,1.56,0.64,1)",maxWidth:260,fontFamily:"'Fredoka',sans-serif",lineHeight:1.4}}>{msg}</div>}</div>;};
@@ -1949,11 +2042,13 @@ export default function App(){
       {id:"stories",color:"#3B82F6",msg:"Stories! Read fun tales and answer questions!"},
       {id:"settings",color:"#64748B",msg:"And Settings! You can change your look here!"},
     ];
-    // Create dark overlay
-    const overlay=document.createElement("div");
-    overlay.id="tour-overlay";
-    overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:150;transition:opacity 0.3s;";
-    document.body.appendChild(overlay);
+    // Create dark backdrop
+    const backdrop=document.createElement("div");
+    backdrop.id="tour-overlay";
+    backdrop.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;opacity:0;transition:opacity 0.3s;";
+    document.body.appendChild(backdrop);
+    await wait(50);
+    backdrop.style.opacity="1";
 
     for(const tile of tiles){
       if(!guideTourRef.current)break;
@@ -1961,48 +2056,63 @@ export default function App(){
       if(!el)continue;
       el.scrollIntoView({behavior:"smooth",block:"center"});
       await wait(300);
-      // Save original inline style
-      const origCSS=el.style.cssText;
+      if(!guideTourRef.current)break;
+
       const rect=el.getBoundingClientRect();
-      // Lift tile out of flow to fixed position at its current spot
-      el.style.position="fixed";
-      el.style.left=rect.left+"px";
-      el.style.top=rect.top+"px";
-      el.style.width=rect.width+"px";
-      el.style.height=rect.height+"px";
-      el.style.zIndex="200";
-      el.style.margin="0";
-      el.style.transition="all 0.5s cubic-bezier(0.34,1.56,0.64,1)";
-      await wait(50);
-      // Fly tile to center of screen
-      const bigW=rect.width*1.4;
-      const bigH=rect.height*1.4;
-      el.style.left=(window.innerWidth/2-bigW/2)+"px";
-      el.style.top=(window.innerHeight/2-bigH/2-20)+"px";
-      el.style.width=bigW+"px";
-      el.style.height=bigH+"px";
-      el.style.borderRadius="28px";
-      el.style.boxShadow="0 0 0 5px "+tile.color+", 0 0 50px "+tile.color+"88, 0 20px 60px rgba(0,0,0,.3)";
-      el.style.border="3px solid "+tile.color;
+      // Create a CLONE — original tile stays in grid untouched
+      const clone=el.cloneNode(true);
+      clone.id="tour-clone";
+      clone.style.cssText=`
+        position:fixed; z-index:200; pointer-events:none;
+        left:${rect.left}px; top:${rect.top}px;
+        width:${rect.width}px; height:${rect.height}px;
+        display:flex; align-items:center; gap:14px;
+        padding:22px 18px; border-radius:24px;
+        font-family:'Fredoka',sans-serif;
+        transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1);
+        box-shadow: 0 0 0 5px ${tile.color}, 0 0 40px ${tile.color}88, 0 20px 60px rgba(0,0,0,.25);
+        border: 3px solid ${tile.color};
+      `;
+      // Highlight the original tile gently in-place
+      el.style.outline="3px solid "+tile.color;
+      el.style.outlineOffset="2px";
+      el.style.transition="outline 0.3s";
+      document.body.appendChild(clone);
+      await wait(60);
+
+      // Animate clone to center of screen, bigger
+      const scale=1.5;
+      const cw=rect.width*scale;
+      const ch=rect.height*scale;
+      clone.style.left=(window.innerWidth/2-cw/2)+"px";
+      clone.style.top=(window.innerHeight/2-ch/2-20)+"px";
+      clone.style.width=cw+"px";
+      clone.style.height=ch+"px";
+      clone.style.borderRadius="28px";
+
       setTeacherMood("excited");
       await speak(tile.msg,{rate:0.85,pitch:1.0});
+      if(!guideTourRef.current){clone.remove();el.style.outline="";break;}
       await wait(200);
-      // Fly tile back to its original spot
-      el.style.left=rect.left+"px";
-      el.style.top=rect.top+"px";
-      el.style.width=rect.width+"px";
-      el.style.height=rect.height+"px";
-      el.style.boxShadow="";
-      el.style.border="";
-      el.style.borderRadius="";
+
+      // Animate clone back to original spot
+      clone.style.left=rect.left+"px";
+      clone.style.top=rect.top+"px";
+      clone.style.width=rect.width+"px";
+      clone.style.height=rect.height+"px";
+      clone.style.borderRadius="24px";
+      clone.style.opacity="0";
+      el.style.outline="";
       await wait(500);
-      // Restore original styles completely
-      el.style.cssText=origCSS;
+      clone.remove();
       await wait(100);
     }
-    // Remove overlay
+    // Clean up
     const ov=document.getElementById("tour-overlay");
     if(ov){ov.style.opacity="0";setTimeout(()=>ov.remove(),300);}
+    const leftoverClone=document.getElementById("tour-clone");
+    if(leftoverClone)leftoverClone.remove();
+    document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});
     setTeacherMood("star");
     await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});
     await wait(300);
@@ -2152,7 +2262,8 @@ export default function App(){
 
   const[celebType,setCelebType]=useState(0);
   const[wrongFlash,setWrongFlash]=useState(false);
-  const boom=()=>{setCelebType(Math.floor(Math.random()*3));setConfetti(true);setTimeout(()=>setConfetti(false),3000);};
+  const[celebKey,setCelebKey]=useState(0);
+  const boom=()=>{setCelebType(Math.floor(Math.random()*3));setCelebKey(k=>k+1);setConfetti(true);setTimeout(()=>setConfetti(false),3500);};
   const flashWrong=()=>{setWrongFlash(true);setTimeout(()=>setWrongFlash(false),600);};
   const flyPts=(n)=>{setPtAnim(`+${n}`);setTimeout(()=>setPtAnim(null),1500);};
   // CRITICAL: Combined save to prevent stale state overwrites
@@ -2174,7 +2285,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setPandaSize(80);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];};
+  const goHome=()=>{setJoyFly(false);setPandaSize(80);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const tourCl=document.getElementById("tour-clone");if(tourCl)tourCl.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -3011,7 +3122,7 @@ export default function App(){
 
 
   if(scr==="home")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFF5EB",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
-    <Confetti active={confetti} type={celebType}/>
+    <Confetti key={celebKey} active={confetti} type={celebType}/>
     {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
     {/* ═══ HEADER ═══ */}
     <div style={{background:"linear-gradient(135deg,#FF8C42,#FFB066)",padding:"22px 20px 26px",flexShrink:0,position:"relative",overflow:"hidden",borderRadius:"0 0 28px 28px"}}>
@@ -3045,7 +3156,7 @@ export default function App(){
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",bg:"#FEF3C7",accent:"#F59E0B",shadow:"rgba(245,158,11,.15)"},
           {id:"stories",icon:"📖",title:"Stories",sub:"Read & Learn",bg:"#DBEAFE",accent:"#3B82F6",shadow:"rgba(59,130,246,.15)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",bg:"#F1F5F9",accent:"#64748B",shadow:"rgba(100,116,139,.1)"}
-        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov=document.getElementById("tour-overlay");if(ov)ov.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.cssText="";});}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();const cl2=document.getElementById("tour-clone");if(cl2)cl2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"22px 18px",borderRadius:24,border:`2.5px solid ${m.accent}22`,cursor:"pointer",
           fontFamily:"'Fredoka',sans-serif",background:m.bg,
@@ -3072,7 +3183,7 @@ export default function App(){
 
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
-  if(scr==="numbers"&&selNum){const w=NW[selNum];const scene=getScene(selNum);const color=nClr(selNum);const phs=NPH[selNum];return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={`Number ${selNum}`} onBack={()=>{stop();pRef.current=false;setSelNum(null);setNStep("idle");}} points={prof?.points||0}/>
+  if(scr==="numbers"&&selNum){const w=NW[selNum];const scene=getScene(selNum);const color=nClr(selNum);const phs=NPH[selNum];return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={`Number ${selNum}`} onBack={()=>{stop();pRef.current=false;setSelNum(null);setNStep("idle");}} points={prof?.points||0}/>
     {nStep!=="idle"&&<FlowSteps current={nStep} steps={NUM_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* 🎬 ANIMATED SCENE */}
@@ -3261,7 +3372,7 @@ export default function App(){
     <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ PHONICS DETAIL ═══
-  if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
+  if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
     {phStep!=="idle"&&<FlowSteps current={phStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene for phonics word */}
@@ -3374,7 +3485,7 @@ export default function App(){
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
-  if(scr==="shapes"&&selShape){const sh=selShape;const shColor="#A855F7";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={sh.name} onBack={()=>{stop();pRef.current=false;setSelShape(null);setShStep("idle");}} points={prof?.points||0}/>
+  if(scr==="shapes"&&selShape){const sh=selShape;const shColor="#A855F7";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={sh.name} onBack={()=>{stop();pRef.current=false;setSelShape(null);setShStep("idle");}} points={prof?.points||0}/>
     {shStep!=="idle"&&<FlowSteps current={shStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
@@ -3402,7 +3513,7 @@ export default function App(){
 
   // ═══ COLORS ═══
   // ═══ COLOR DETAIL ═══
-  if(scr==="colors"&&selColor){const co=selColor;return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={co.name} onBack={()=>{stop();pRef.current=false;setSelColor(null);setCoStep("idle");}} points={prof?.points||0}/>
+  if(scr==="colors"&&selColor){const co=selColor;return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={co.name} onBack={()=>{stop();pRef.current=false;setSelColor(null);setCoStep("idle");}} points={prof?.points||0}/>
     {coStep!=="idle"&&<FlowSteps current={coStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
@@ -3431,7 +3542,7 @@ export default function App(){
 
 
   // ═══ ALPHABET ═══
-  if(scr==="alphabet")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Confetti active={confetti} type={celebType}/>
+  if(scr==="alphabet")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="ABC 🔠" onBack={goHome} points={prof?.points||0}/>
     {/* Tab bar */}
     <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
@@ -3539,7 +3650,7 @@ export default function App(){
 
   // ═══ BASICS DASHBOARD ═══
   if(scr==="basics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
-    <Confetti active={confetti} type={celebType}/>
+    <Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="Basics 🧩" onBack={goHome} points={prof?.points||0}/>
     {/* 4 Tab bar */}
     <div style={{display:"flex",gap:5,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
@@ -3775,7 +3886,7 @@ export default function App(){
   </div>;
 
     // ═══ REWARDS ═══
-  if(scr==="rewards")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#2D2B3D",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:22,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px #FBBF2444"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#2D2B3D",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#8E8CA3",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#f3f4f6"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"'Fredoka',sans-serif",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#FFF0E0",borderRadius:14,border:"1px solid #EDE5DC",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="rewards")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#2D2B3D",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:22,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px #FBBF2444"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#2D2B3D",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#8E8CA3",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#f3f4f6"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"'Fredoka',sans-serif",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#FFF0E0",borderRadius:14,border:"1px solid #EDE5DC",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SETTINGS ═══
   if(scr==="settings")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#FFF0E0",borderRadius:24,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"'Fredoka',sans-serif",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#8E8CA3",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#6366F1"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"#FFF0E0",borderRadius:18,padding:16,textAlign:"center",border:"1px solid #EDE5DC"}}><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FFF5EB",color:"#FF8C42",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button>
@@ -3808,10 +3919,39 @@ button:active{transform:scale(0.97)!important;}
 @keyframes splashPop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 @keyframes mascotB{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes floatP{0%,100%{transform:translateY(0) translateX(0)}25%{transform:translateY(calc(-1*var(--dr,15px))) translateX(10px)}75%{transform:translateY(5px) translateX(-10px)}}
-@keyframes confFall{0%{opacity:1;transform:translateY(0) rotate(0) scale(1)}100%{opacity:0;transform:translateY(350px) rotate(720deg) scale(.2)}}
-@keyframes balloonRise{0%{opacity:0;transform:translateY(0) scale(0.5)}20%{opacity:1;transform:translateY(-80px) scale(1)}100%{opacity:0;transform:translateY(-500px) scale(0.8) rotate(10deg)}}
-@keyframes tileGlow{0%,100%{box-shadow:0 0 0 4px var(--gc), 0 0 20px var(--gc)}50%{box-shadow:0 0 0 6px var(--gc), 0 0 40px var(--gc), 0 0 60px var(--gc)}}
-@keyframes firecracker{0%{opacity:0;transform:scale(0)}30%{opacity:1;transform:scale(1.5)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(2)}}
+@keyframes celebFallPaper{
+  0%{opacity:1;transform:translateY(0) translateX(0) rotate(0deg) scale(1)}
+  25%{transform:translateY(25vh) translateX(var(--sway)) rotate(180deg) scale(0.9)}
+  50%{transform:translateY(50vh) translateX(calc(var(--sway)*-0.6)) rotate(var(--rot)) scale(0.8)}
+  75%{transform:translateY(75vh) translateX(var(--sway)) rotate(540deg) scale(0.6)}
+  100%{opacity:0;transform:translateY(105vh) translateX(calc(var(--sway)*-0.3)) rotate(var(--rot)) scale(0.3)}
+}
+@keyframes celebFallEmoji{
+  0%{opacity:1;transform:translateY(0) translateX(0) scale(1)}
+  30%{opacity:1;transform:translateY(30vh) translateX(var(--sway)) scale(1.1) rotate(15deg)}
+  60%{opacity:0.8;transform:translateY(60vh) translateX(calc(var(--sway)*-0.7)) scale(0.9) rotate(-10deg)}
+  100%{opacity:0;transform:translateY(110vh) translateX(var(--sway)) scale(0.5) rotate(20deg)}
+}
+@keyframes celebBalloon{
+  0%{opacity:0;transform:translateY(0) translateX(0) scale(0.3)}
+  10%{opacity:1;transform:translateY(-10vh) translateX(calc(var(--sway)*0.3)) scale(1)}
+  30%{transform:translateY(-30vh) translateX(calc(var(--sway)*-0.5)) scale(1.05)}
+  50%{transform:translateY(-50vh) translateX(var(--sway)) scale(1)}
+  70%{transform:translateY(-70vh) translateX(calc(var(--sway)*-0.7)) scale(0.95)}
+  100%{opacity:0;transform:translateY(-110vh) translateX(var(--sway)) scale(0.8)}
+}
+@keyframes celebBurst{
+  0%{opacity:0;transform:translate(0,0) scale(0)}
+  20%{opacity:1;transform:translate(calc(var(--dx)*0.3),calc(var(--dy)*0.3)) scale(1.3)}
+  50%{opacity:1;transform:translate(calc(var(--dx)*0.7),calc(var(--dy)*0.7)) scale(1)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.2)}
+}
+@keyframes celebFlash{
+  0%{opacity:0;transform:scale(0) rotate(0deg)}
+  25%{opacity:1;transform:scale(1.4) rotate(30deg)}
+  50%{opacity:1;transform:scale(1) rotate(-10deg)}
+  100%{opacity:0;transform:scale(2) rotate(20deg)}
+}
 @keyframes coinSp{0%,100%{transform:rotateY(0)}50%{transform:rotateY(180deg)}}
 @keyframes numPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
