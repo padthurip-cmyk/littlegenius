@@ -2073,7 +2073,9 @@ export default function App(){
         // Cycle through idle moods naturally — no text
         const idleMoods=["happy","waving","proud","happy","excited","happy"];
         setTeacherMood(idleMoods[Math.floor(Math.random()*idleMoods.length)]);
-      },4000);
+        // Return panda to its home position after speech ends
+        movePandaTo("bottomRight");
+      },2500);
     };
     return()=>{onSpeakRef.current=null;onDoneRef.current=null;clearTimeout(teacherIdleRef.current);};
   },[]);
@@ -2085,12 +2087,11 @@ export default function App(){
     setTimeout(()=>movePandaTo(pos[scr]||"bottomRight"),100);
   },[scr]);
   // Basics state
-  const[basicsTab,setBasicsTab]=useState("explore"); // "explore", "find", "write"
-  const[findTarget,setFindTarget]=useState(null);const[findScore,setFindScore]=useState(0);const[findStreak,setFindStreak]=useState(0);const[findFb,setFindFb]=useState(null);const[findUsed,setFindUsed]=useState([]);const[findLevel,setFindLevel]=useState(1);
-  const[foundNum,setFoundNum]=useState(null); // shows celebration + spelling when correct
+  const[basicsTab,setBasicsTab]=useState("explore"); // "explore", "quiz", "write"
   const[writeNum,setWriteNum]=useState(1);
   // Number Quiz state
   const[quizNum,setQuizNum]=useState(null);const[quizOpts,setQuizOpts]=useState([]);const[quizFb,setQuizFb]=useState(null);const[quizScore,setQuizScore]=useState(0);const[quizStreak,setQuizStreak]=useState(0);const[quizTotal,setQuizTotal]=useState(0);
+  const quizUsedRef=useRef([]);
   // Alphabet state
   const[alphaTab,setAlphaTab]=useState("caps"); // "caps","small","match"
   const[selLetter,setSelLetter]=useState(null); // selected letter for detail
@@ -2155,7 +2156,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(110);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setFindTarget(null);setFindFb(null);setFoundNum(null);setFindUsed([]);setFindLevel(1);setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);};
+  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(110);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2664,96 +2665,32 @@ export default function App(){
   };
 
   // ═══ BASICS FUNCTIONS ═══
-  const newFindTarget=()=>{
-    const max=aCfg?.max||20;
-    // Progressive difficulty: start with 1-5, then 1-10, then 1-15, etc.
-    const levelMax=Math.min(max, findLevel*5);
-    
-    // Build pool of unused numbers within current level
-    let pool=[];
-    for(let i=1;i<=levelMax;i++){
-      if(!findUsed.includes(i)) pool.push(i);
-    }
-    // If all used in this level, advance level and reset
-    if(pool.length===0){
-      const nextLevel=findLevel+1;
-      const nextMax=Math.min(max, nextLevel*5);
-      if(nextMax>levelMax){
-        setFindLevel(nextLevel);
-        pool=[];
-        for(let i=1;i<=nextMax;i++) pool.push(i);
-        setFindUsed([]);
-      } else {
-        // All numbers done! Reset everything
-        setFindLevel(1);setFindUsed([]);
-        pool=[];
-        for(let i=1;i<=Math.min(max,5);i++) pool.push(i);
-      }
-    }
-    // Pick random from available pool
-    const n=pool[Math.floor(Math.random()*pool.length)]||1;
-    setFindUsed(prev=>[...prev,n]);
-    setFindTarget(n);setFindFb(null);setFoundNum(null);hoverNear("find-prompt","right","pointing");
-    speak(`Find, number, ${NW[n]||n}.`,{rate:0.8,pitch:1.0});
-  };
-  const repeatFind=()=>{
-    if(findTarget) speak(`Find, number, ${NW[findTarget]||findTarget}.`,{rate:0.8,pitch:1.0});
-  };
-  const onFindTap=(n)=>{
-    if(!findTarget||foundNum)return;
-    speak(NW[n]||String(n),{rate:0.8,pitch:1.0,noCancel:true});
-    if(n===findTarget){
-      setFindFb({ok:true,n});setFindScore(s=>s+1);headYes();setTeacherMood("star");setFindStreak(s=>s+1);
-      if(!isDone("basics",n)) awardPoints(3,"basics",n);
-      if((findStreak+1)%5===0) boom();
-      showTeacher("clapping","You found it! Excellent! 🎯");
-      // Show celebration overlay with spelling
-      setFoundNum(n);
-      (async()=>{
-        await wait(500);
-        await speak(`Yes! This is ${NW[n]||n}.`,{rate:0.8,pitch:1.0});
-        await wait(400);
-        // Spell the word
-        const word=NW[n]||String(n);
-        const letters=word.replace(/\s/g,'').split('');
-        await speak(`I'll spell it for you!`,{rate:0.85,pitch:1.0});
-        await wait(300);
-        for(const letter of letters){
-          await speak(letter.toUpperCase(),{rate:0.7,pitch:1.0,noCancel:true});
-          await wait(350);
-        }
-        await wait(300);
-        await speak(`${NW[n]||n}! ${NUM_FUN[n]||""}`,{rate:0.8,pitch:1.0});
-        await wait(1500);
-        setFoundNum(null);
-        setFindFb(null);
-        newFindTarget();
-      })();
-    } else {
-      setFindFb({ok:false,n});setFindStreak(0);headNo();setTeacherMood("thinking");
-      (async()=>{
-        await wait(300);
-        await speak(`That's ${NW[n]||n}. One more time! Find ${NW[findTarget]||findTarget}.`,{rate:0.8,pitch:1.0});
-        await wait(600);
-        setFindFb(null);
-      })();
-    }
-  };
   const sayNum=(n)=>{
     speak(`${NW[n]||n}.`,{rate:0.8,pitch:1.0});
   };
   // ═══ NUMBER QUIZ ═══
   const newQuiz=()=>{
     const max=aCfg?.max||20;
-    const n=Math.floor(Math.random()*max)+1;
-    // Generate 6 options including the correct answer
+    // Build pool of unused numbers
+    let pool=[];
+    for(let i=1;i<=max;i++){if(!quizUsedRef.current.includes(i))pool.push(i);}
+    // Full cycle done — reset
+    if(pool.length===0){
+      quizUsedRef.current=[];
+      pool=[];for(let i=1;i<=max;i++)pool.push(i);
+    }
+    // Pick random from available pool
+    const n=pool[Math.floor(Math.random()*pool.length)];
+    quizUsedRef.current=[...quizUsedRef.current,n];
+    // Generate 6 wrong options + correct, all unique
     const opts=new Set([n]);
     while(opts.size<Math.min(6,max)){
       const wrong=Math.floor(Math.random()*max)+1;
-      if(wrong!==n)opts.add(wrong);
+      opts.add(wrong);
     }
     const shuffled=[...opts].sort(()=>Math.random()-0.5);
     setQuizNum(n);setQuizOpts(shuffled);setQuizFb(null);
+    movePandaTo("bottomRight");
     setTimeout(()=>speak(`${NW[n]||n}`,{rate:0.75,pitch:1.0}),300);
   };
   const repeatQuiz=()=>{if(quizNum)speak(`${NW[quizNum]||quizNum}`,{rate:0.75,pitch:1.0});};
@@ -2768,6 +2705,7 @@ export default function App(){
       speak(cheers[Math.floor(Math.random()*cheers.length)],{rate:1.0,pitch:1.1});
       if((quizStreak+1)%5===0)boom();
       await wait(1200);
+      movePandaTo("bottomRight");
       newQuiz();
     } else {
       setQuizFb({ok:false,n:tapped});setQuizStreak(0);
@@ -2775,6 +2713,7 @@ export default function App(){
       speak("Oops! Try again!",{rate:0.9,pitch:1.0});
       await wait(1000);
       setQuizFb(null);
+      movePandaTo("bottomRight");
       speak(`${NW[quizNum]||quizNum}`,{rate:0.75,pitch:1.0});
     }
   };
@@ -3089,7 +3028,7 @@ export default function App(){
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",bg:"#FEF3C7",accent:"#F59E0B",shadow:"rgba(245,158,11,.15)"},
           {id:"stories",icon:"📖",title:"Stories",sub:"Read & Learn",bg:"#DBEAFE",accent:"#3B82F6",shadow:"rgba(59,130,246,.15)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",bg:"#F1F5F9",accent:"#64748B",shadow:"rgba(100,116,139,.1)"}
-        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"22px 18px",borderRadius:24,border:`2.5px solid ${m.accent}22`,cursor:"pointer",
           fontFamily:"'Fredoka',sans-serif",background:m.bg,
@@ -3226,14 +3165,14 @@ export default function App(){
     {/* Tab bar */}
     <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF",flexShrink:0}}>
       {[{id:"learn",label:"🔢 Numbers"},{id:"math",label:"➕ Math"}].map(t=>
-        <button key={t.id} onClick={()=>{stop();setNumTab(t.id);if(t.id==="math"&&!mathProblem)genMath();}}
+        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setNumTab(t.id);if(t.id==="math"&&!mathProblem)genMath();}}
           style={{flex:1,padding:"10px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             background:numTab===t.id?"#FC8019":"#F1F3F7",color:numTab===t.id?"#fff":"#93959F",transition:"all 0.2s"
           }}>{t.label}</button>
       )}
     </div>
     {numTab==="learn"&&<div style={{flex:1,overflow:"auto",padding:"12px 14px"}}><div style={{display:"grid",gridTemplateColumns:`repeat(${aCfg.max<=10?3:aCfg.max<=20?4:5},1fr)`,gap:aCfg.max<=10?14:aCfg.max<=20?10:8}}>
-      {Array.from({length:aCfg.max}).map((_,i)=>{const n=i+1;const done=isDone("numbers",n);return<button key={n} onClick={(e)=>{stop();rec.warmUp();setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{
+      {Array.from({length:aCfg.max}).map((_,i)=>{const n=i+1;const done=isDone("numbers",n);return<button key={n} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{
         position:"relative",
         padding:aCfg.max<=10?"20px 8px":aCfg.max<=20?"14px 6px":"10px 4px",
         borderRadius:18,
@@ -3414,7 +3353,7 @@ export default function App(){
     </div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ PHONICS GRID ═══
-  if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
@@ -3441,7 +3380,7 @@ export default function App(){
     </div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ SHAPES GRID ═══
-  if(scr==="shapes")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={(e)=>{stop();rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none"}}>{s.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="shapes")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none"}}>{s.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
 
   // ═══ COLORS ═══
@@ -3469,7 +3408,7 @@ export default function App(){
     </div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ COLORS GRID ═══
-  if(scr==="colors")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={(e)=>{stop();rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:22,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#E8E8E8"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div></div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="colors")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:22,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#E8E8E8"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div></div><div style={{height:120,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
 
 
@@ -3480,7 +3419,7 @@ export default function App(){
     {/* Tab bar */}
     <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
       {[{id:"caps",label:"🔤 CAPITAL"},{id:"small",label:"🔡 small"},{id:"match",label:"🎯 Match"}].map(t=>
-        <button key={t.id} onClick={()=>{stop();setAlphaTab(t.id);setSelLetter(null);if(t.id==="match"&&matchPairs.length===0)startMatch();}}
+        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setAlphaTab(t.id);setSelLetter(null);if(t.id==="match"&&matchPairs.length===0)startMatch();}}
           style={{flex:1,padding:"10px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             background:alphaTab===t.id?"#6366F1":"#F1F3F7",color:alphaTab===t.id?"#fff":"#93959F",transition:"all 0.2s"
           }}>{t.label}</button>
@@ -3514,7 +3453,7 @@ export default function App(){
     {alphaTab==="caps"&&!selLetter&&<div style={{flex:1,overflow:"auto",padding:"10px 12px"}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
         {ALPHA_LETTERS.map((l,i)=>
-          <button key={l} onClick={(e)=>{stop();pRef.current=true;playLetter(l);}} style={{
+          <button key={l} onClick={(e)=>{stop();movePandaTo("bottomRight");pRef.current=true;playLetter(l);}} style={{
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
             padding:"10px 4px",borderRadius:14,border:"2px solid #E8E0D8",cursor:"pointer",
             background:"#FFFBF5",boxShadow:"0 2px 8px rgba(0,0,0,.06)",
@@ -3531,7 +3470,7 @@ export default function App(){
     {alphaTab==="small"&&!selLetter&&<div style={{flex:1,overflow:"auto",padding:"10px 12px"}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
         {ALPHA_LETTERS.map((l,i)=>
-          <button key={l} onClick={(e)=>{stop();pRef.current=true;playLetter(l);}} style={{
+          <button key={l} onClick={(e)=>{stop();movePandaTo("bottomRight");pRef.current=true;playLetter(l);}} style={{
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
             padding:"10px 4px",borderRadius:14,border:"2px solid #E8E0D8",cursor:"pointer",
             background:"#FFFBF5",boxShadow:"0 2px 8px rgba(0,0,0,.06)",
@@ -3586,10 +3525,9 @@ export default function App(){
     <SubHead title="Basics 🧩" onBack={goHome} points={prof?.points||0}/>
     {/* 4 Tab bar */}
     <div style={{display:"flex",gap:5,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
-      {[{id:"explore",label:"🔢 Numbers"},{id:"quiz",label:"🎯 Quiz"},{id:"find",label:"🔍 Find"},{id:"write",label:"✏️ Write"}].map(t=>
+      {[{id:"explore",label:"🔢 Numbers"},{id:"quiz",label:"🎯 Quiz"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
-          stop();setBasicsTab(t.id);
-          if(t.id==="find"){if(!findTarget)newFindTarget();}
+          stop();movePandaTo("bottomRight");setBasicsTab(t.id);
           if(t.id==="quiz"){if(!quizNum)newQuiz();}
           if(t.id==="write")hoverNear("write-canvas","left","pointing");
           if(t.id==="explore")hoverNear("explore-grid","right","happy");
@@ -3654,51 +3592,6 @@ export default function App(){
             }}>{n}</button>;
           })}
         </div>
-      </div>}
-    </div>}
-
-
-    {/* ═══ FIND GAME ═══ */}
-    {basicsTab==="find"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",position:"relative"}}>
-      {/* Header — NO number shown, just listen prompt */}
-      <div data-panda="find-prompt" style={{padding:"10px 14px",background:"linear-gradient(135deg,#FFF5EB,#FEF3C7)",display:"flex",alignItems:"center",gap:10}}>
-        {findTarget?<>
-          <button onClick={repeatFind} style={{padding:"10px 18px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"0 4px 12px rgba(252,128,25,.3)",display:"flex",alignItems:"center",gap:6}}>
-            🔊 Hear Again
-          </button>
-          <div style={{flex:1,textAlign:"center"}}>
-            <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:800,color:"#FF8C42"}}>Listen and find! 👂</div>
-            {findFb&&!foundNum&&<span style={{fontSize:12,fontWeight:800,color:findFb.ok?"#60B246":"#E23744"}}>{findFb.ok?"✅ Correct!":"❌ Try again!"}</span>}
-          </div>
-          <div style={{textAlign:"right"}}>
-            <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:800,color:"#FF8C42"}}>🏆 {findScore}</div>
-            {findStreak>=3&&<span style={{fontSize:10,fontWeight:800,color:"#E23744"}}>🔥{findStreak}</span>}
-          </div>
-        </>:<button onClick={newFindTarget} style={{width:"100%",padding:"16px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"0 6px 20px rgba(252,128,25,.3)"}}>▶️ Start Game!</button>}
-      </div>
-      {/* Number grid */}
-      <div style={{flex:1,overflow:"auto",padding:"10px 12px"}}><div style={{display:"grid",gridTemplateColumns:`repeat(${(aCfg?.max||20)<=10?3:(aCfg?.max||20)<=20?4:5},1fr)`,gap:10}}>
-        {Array.from({length:aCfg?.max||20}).map((_,i)=>{const n=i+1;const fb=findFb?.n===n?findFb:null;
-          return<button key={n} onClick={()=>onFindTap(n)} style={{
-            padding:(aCfg?.max||20)<=10?"18px 8px":"12px 4px",
-            borderRadius:16,border:"3px solid",cursor:"pointer",
-            borderColor:fb?(fb.ok?"#60B246":"#E23744"):"#E8E8E8",
-            background:fb?(fb.ok?"#ECFDF5":"#FEF2F2"):"#fff",
-            fontFamily:"'Fredoka',sans-serif",
-            fontSize:(aCfg?.max||20)<=10?28:(aCfg?.max||20)<=20?24:20,
-            fontWeight:800,color:nClr(n),
-            boxShadow:fb?.ok?"0 4px 16px rgba(96,178,70,.2)":"0 2px 8px rgba(0,0,0,.06)",
-            transform:fb?.ok?"scale(1.1)":"scale(1)",transition:"all 0.15s",
-            aspectRatio:(aCfg?.max||20)<=10?"1":"auto"
-          }}>{n}</button>;
-        })}
-      </div></div>
-
-      {/* ═══ CELEBRATION — simple green flash ═══ */}
-      {foundNum&&<div style={{position:"absolute",inset:0,background:"rgba(255,255,255,.97)",zIndex:20,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,animation:"fadeIn 0.3s ease"}}>
-        <span style={{fontSize:56}}>🎉</span>
-        <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:80,fontWeight:900,color:"#4ADE80",lineHeight:1,animation:"numPulse 0.6s ease-in-out infinite"}}>{foundNum}</div>
-        <span style={{fontSize:18,fontWeight:700,color:"#8E8CA3"}}>Great job!</span>
       </div>}
     </div>}
 
