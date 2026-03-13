@@ -2006,7 +2006,9 @@ export default function App(){
   const getNumRange=()=>{const[a,b]=numRange.split("-").map(Number);return{min:a,max:b};};
   // Alphabet match modes
   const[matchMode,setMatchMode]=useState("findSmall"); // "findSmall","findCaps","voiceQuiz"
-  const[mathProblem,setMathProblem]=useState(null);const[mathAnswer,setMathAnswer]=useState(null);const[mathChoices,setMathChoices]=useState([]);const[mathFb,setMathFb]=useState(null);const[mathScore,setMathScore]=useState(0);const[mathTotal,setMathTotal]=useState(0);const[nStep,setNStep]=useState("idle");const[aPhI,setAPhI]=useState(-1);const[spRes,setSpRes]=useState(null);const[spAcc,setSpAcc]=useState(null);
+  const[mathProblem,setMathProblem]=useState(null);const[mathAnswer,setMathAnswer]=useState(null);const[mathChoices,setMathChoices]=useState([]);const[mathFb,setMathFb]=useState(null);const[mathScore,setMathScore]=useState(0);const[mathTotal,setMathTotal]=useState(0);
+  const[mathOp,setMathOp]=useState("mix"); // "mix","+","-","×"
+  const[mathRange,setMathRange]=useState("1-10");const[nStep,setNStep]=useState("idle");const[aPhI,setAPhI]=useState(-1);const[spRes,setSpRes]=useState(null);const[spAcc,setSpAcc]=useState(null);
   const[phCat,setPhCat]=useState("animals");const[phW,setPhW]=useState(null);const[phStep,setPhStep]=useState("idle");const[phAI,setPhAI]=useState(-1);const[phRes,setPhRes]=useState(null);const[phAcc,setPhAcc]=useState(null);
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
@@ -2054,27 +2056,27 @@ export default function App(){
       {id:"stories",color:"#3B82F6",msg:"Stories! Read fun tales and answer questions!"},
       {id:"settings",color:"#64748B",msg:"And Settings! You can change your look here!"},
     ];
-    // Create dark backdrop — tap anywhere to skip tour
+    // Dark overlay — tap to skip
     const backdrop=document.createElement("div");
     backdrop.id="tour-overlay";
-    backdrop.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;opacity:0;transition:opacity 0.3s;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;";
-    const skipLabel=document.createElement("div");
-    skipLabel.textContent="Tap anywhere to skip →";
-    skipLabel.style.cssText="color:rgba(255,255,255,0.7);font-size:14px;font-weight:600;font-family:'Fredoka',sans-serif;pointer-events:none;";
-    backdrop.appendChild(skipLabel);
-    backdrop.onclick=()=>{
-      guideTourRef.current=false;
-      stop();
-      backdrop.style.opacity="0";
-      setTimeout(()=>backdrop.remove(),300);
-      const cl=document.getElementById("tour-clone");if(cl)cl.remove();
-      document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});
-      setGuideTour(false);
-      setTeacherMood("happy");
+    backdrop.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;opacity:0;transition:opacity 0.3s;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;";
+    const skip=document.createElement("div");
+    skip.textContent="Tap anywhere to skip";
+    skip.style.cssText="color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;font-family:'Fredoka',sans-serif;pointer-events:none;";
+    backdrop.appendChild(skip);
+    const cleanup=()=>{
+      guideTourRef.current=false;stop();
+      backdrop.style.opacity="0";setTimeout(()=>backdrop.remove(),300);
+      const hp=document.getElementById("home-tiles");if(hp){hp.style.zIndex="";hp.style.position="";}
+      document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});
+      setGuideTour(false);setTeacherMood("happy");
     };
+    backdrop.onclick=cleanup;
     document.body.appendChild(backdrop);
-    await wait(50);
-    backdrop.style.opacity="1";
+    // Elevate the grid parent above the overlay
+    const hp=document.getElementById("home-tiles");
+    if(hp){hp.style.zIndex="200";hp.style.position="relative";}
+    await wait(50);backdrop.style.opacity="1";
 
     for(const tile of tiles){
       if(!guideTourRef.current)break;
@@ -2083,75 +2085,29 @@ export default function App(){
       el.scrollIntoView({behavior:"smooth",block:"center"});
       await wait(300);
       if(!guideTourRef.current)break;
-
-      const rect=el.getBoundingClientRect();
-      // Create a CLONE — copy computed styles so it looks identical
-      const clone=el.cloneNode(true);
-      clone.id="tour-clone";
-      const cs=window.getComputedStyle(el);
-      clone.style.cssText=`
-        position:fixed; z-index:200; pointer-events:none;
-        left:${rect.left}px; top:${rect.top}px;
-        width:${rect.width}px; height:${rect.height}px;
-        background:${cs.background};
-        color:${cs.color};
-        font-family:${cs.fontFamily};
-        font-size:${cs.fontSize};
-        font-weight:${cs.fontWeight};
-        display:flex; align-items:center; gap:14px;
-        padding:${cs.padding};
-        border-radius:${cs.borderRadius};
-        text-align:left;
-        transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1);
-        box-shadow: 0 0 0 5px ${tile.color}, 0 0 40px ${tile.color}88, 0 20px 60px rgba(0,0,0,.25);
-        border: 3px solid ${tile.color};
-        overflow:hidden;
-      `;
-      // Highlight the original tile gently in-place
-      el.style.outline="3px solid "+tile.color;
-      el.style.outlineOffset="2px";
-      el.style.transition="outline 0.3s";
-      document.body.appendChild(clone);
-      await wait(60);
-
-      // Animate clone to center of screen, bigger
-      const scale=1.5;
-      const cw=rect.width*scale;
-      const ch=rect.height*scale;
-      clone.style.left=(window.innerWidth/2-cw/2)+"px";
-      clone.style.top=(window.innerHeight/2-ch/2-20)+"px";
-      clone.style.width=cw+"px";
-      clone.style.height=ch+"px";
-      clone.style.borderRadius="28px";
-
+      // Scale up real tile — grid parent is above overlay so this works
+      el.style.transition="transform 0.4s cubic-bezier(0.34,1.56,0.64,1), outline 0.3s";
+      el.style.zIndex="10";
+      el.style.overflow="visible";
+      el.style.transform="scale(1.15)";
+      el.style.outline=`4px solid ${tile.color}`;
+      el.style.outlineOffset="3px";
       setTeacherMood("excited");
       await speak(tile.msg,{rate:0.85,pitch:1.0});
-      if(!guideTourRef.current){clone.remove();el.style.outline="";break;}
+      if(!guideTourRef.current)break;
       await wait(200);
-
-      // Animate clone back to original spot
-      clone.style.left=rect.left+"px";
-      clone.style.top=rect.top+"px";
-      clone.style.width=rect.width+"px";
-      clone.style.height=rect.height+"px";
-      clone.style.borderRadius="24px";
-      clone.style.opacity="0";
-      el.style.outline="";
-      await wait(500);
-      clone.remove();
-      await wait(100);
+      // Shrink back
+      el.style.transform="scale(1)";
+      el.style.outline="";el.style.outlineOffset="";
+      await wait(400);
+      el.style.zIndex="";el.style.transition="";el.style.overflow="";
     }
-    // Clean up
-    const ov=document.getElementById("tour-overlay");
-    if(ov){ov.style.opacity="0";setTimeout(()=>ov.remove(),300);}
-    const leftoverClone=document.getElementById("tour-clone");
-    if(leftoverClone)leftoverClone.remove();
-    document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});
-    setTeacherMood("star");
-    await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});
-    await wait(300);
-    guideTourRef.current=false;
-    setGuideTour(false);
+    if(guideTourRef.current){
+      setTeacherMood("star");
+      await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});
+      await wait(300);
+    }
+    cleanup();
   };
 
 
@@ -2332,7 +2288,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setPandaSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const tourCl=document.getElementById("tour-clone");if(tourCl)tourCl.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);};
+  const goHome=()=>{setJoyFly(false);setPandaSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2695,40 +2651,40 @@ export default function App(){
 
   // ═══ MATH FUNCTIONS ═══
   const genMath=()=>{
-    const age=prof?.age||4;
-    let a,b,op,answer,maxN;
-    // Age-based difficulty
-    if(age<=4){maxN=5;op="+";}
-    else if(age<=5){maxN=10;op=Math.random()>0.3?"+":"-";}
-    else if(age<=6){maxN=12;const r=Math.random();op=r>0.6?"+":r>0.3?"-":"×";}
-    else{maxN=15;const r=Math.random();op=r>0.5?"+":r>0.25?"-":"×";}
+    const[rMin,rMax]=mathRange.split("-").map(Number);
+    // Pick operation
+    let op;
+    if(mathOp==="mix"){
+      const ops=["+","-","×"];op=ops[Math.floor(Math.random()*ops.length)];
+    } else op=mathOp;
     
+    let a,b,answer;
     if(op==="+"){
-      a=Math.floor(Math.random()*maxN)+1;
-      b=Math.floor(Math.random()*(maxN-a))+1;
+      a=rMin+Math.floor(Math.random()*(rMax-rMin));
+      b=rMin+Math.floor(Math.random()*(rMax-a+1));
+      if(b<1)b=1;
       answer=a+b;
     } else if(op==="-"){
-      a=Math.floor(Math.random()*maxN)+2;
-      b=Math.floor(Math.random()*(a-1))+1;
+      a=rMin+1+Math.floor(Math.random()*(rMax-rMin));
+      b=rMin+Math.floor(Math.random()*(a-rMin));
+      if(b<1)b=1;
       answer=a-b;
     } else {
-      a=Math.floor(Math.random()*5)+1;
-      b=Math.floor(Math.random()*5)+1;
+      const mMax=Math.min(rMax,12);
+      a=Math.max(1,rMin)+Math.floor(Math.random()*Math.min(mMax,10));
+      b=1+Math.floor(Math.random()*Math.min(mMax,10));
+      if(a<1)a=1;if(b<1)b=1;
       answer=a*b;
     }
     
-    // Generate 4 choices including correct answer
     const choices=new Set([answer]);
     while(choices.size<4){
       const wrong=answer+Math.floor(Math.random()*7)-3;
       if(wrong>=0&&wrong!==answer)choices.add(wrong);
     }
-    const shuffled=shuffle([...choices]);
-    
     setMathProblem({a,b,op,answer});
-    setMathChoices(shuffled);
+    setMathChoices(shuffle([...choices]));
     setMathFb(null);setMathAnswer(null);
-    
     const opWord=op==="+"?"plus":op==="-"?"minus":"times";
     speak(`What is ${a} ${opWord} ${b}?`,{rate:0.8,pitch:1.0});
   };
@@ -2808,14 +2764,19 @@ export default function App(){
         await speak(`Find capital ${picked[0].toUpperCase()}.`,{rate:0.85,pitch:1.0});
       })();
     } else if(m==="voiceQuiz"){
-      // Hear letter, pick from 6 options
-      const opts=new Set([picked[0]]);
-      while(opts.size<6){opts.add(ALPHA_LETTERS[Math.floor(Math.random()*26)]);}
-      setMatchOpts(shuffle([...opts]));
+      // Hear letter, pick from 6 options - correct MUST be included
+      const correct=picked[0];
+      const opts=[correct];
+      const pool=ALPHA_LETTERS.filter(l=>l!==correct);
+      while(opts.length<6&&pool.length>0){
+        const idx=Math.floor(Math.random()*pool.length);
+        opts.push(pool.splice(idx,1)[0]);
+      }
+      setMatchOpts(shuffle(opts));
       (async()=>{
-        await speak("Listen and find the letter!",{rate:0.85,pitch:1.0});
-        await wait(400);
-        await speak(`${picked[0]}`,{rate:0.7,pitch:1.0});
+        await speak("Listen carefully!",{rate:0.85,pitch:1.0});
+        await wait(500);
+        await speak(`${correct}`,{rate:0.65,pitch:1.0});
       })();
     } else {
       // Default: show CAPS, find small
@@ -2835,10 +2796,15 @@ export default function App(){
     } else {
       setMatchIdx(nextIdx);
       if(matchMode==="voiceQuiz"){
-        const opts=new Set([pairs[nextIdx].cap]);
-        while(opts.size<6){opts.add(ALPHA_LETTERS[Math.floor(Math.random()*26)]);}
-        setMatchOpts(shuffle([...opts]));
-        (async()=>{await wait(400);await speak(`${pairs[nextIdx].cap}`,{rate:0.7,pitch:1.0});})();
+        const correct=pairs[nextIdx].cap;
+        const opts=[correct];
+        const pool=ALPHA_LETTERS.filter(l=>l!==correct);
+        while(opts.length<6&&pool.length>0){
+          const idx=Math.floor(Math.random()*pool.length);
+          opts.push(pool.splice(idx,1)[0]);
+        }
+        setMatchOpts(shuffle(opts));
+        (async()=>{await wait(500);await speak(`${correct}`,{rate:0.65,pitch:1.0});})();
       } else {
         setMatchOpts(genOpts(pairs[nextIdx].cap));
         (async()=>{
@@ -3227,7 +3193,7 @@ export default function App(){
       <h2 style={{color:"#fff",fontSize:22,fontWeight:700,marginTop:16,position:"relative",zIndex:2}}>What shall we learn? 🎯</h2>
     </div>
     {/* ═══ TILES GRID ═══ */}
-    <div style={{flex:1,overflow:"auto",padding:"16px 16px 0"}}>
+    <div id="home-tiles" style={{flex:1,overflow:"auto",padding:"16px 16px 0"}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:16}}>
         {[
           {id:"numbers",icon:"🔢",title:"Numbers",sub:`Learn 1-${aCfg.max}`,bg:"#FFE8E8",accent:"#FF6B6B",shadow:"rgba(255,107,107,.15)"},
@@ -3239,13 +3205,13 @@ export default function App(){
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",bg:"#FEF3C7",accent:"#F59E0B",shadow:"rgba(245,158,11,.15)"},
           {id:"stories",icon:"📖",title:"Stories",sub:"Read & Learn",bg:"#DBEAFE",accent:"#3B82F6",shadow:"rgba(59,130,246,.15)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",bg:"#F1F5F9",accent:"#64748B",shadow:"rgba(100,116,139,.1)"}
-        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();const cl2=document.getElementById("tour-clone");if(cl2)cl2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"22px 18px",borderRadius:24,border:`2.5px solid ${m.accent}22`,cursor:"pointer",
           fontFamily:"'Fredoka',sans-serif",background:m.bg,
           boxShadow:`0 6px 20px ${m.shadow}`,
           animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,
-          position:"relative",overflow:"hidden",textAlign:"left",width:"100%"
+          position:"relative",textAlign:"left",width:"100%"
         }}>
           <span style={{fontSize:38,flexShrink:0,filter:"drop-shadow(0 2px 4px rgba(0,0,0,.08))"}}>{m.icon}</span>
           <div style={{flex:1,minWidth:0}}>
@@ -3421,6 +3387,21 @@ export default function App(){
     </div>}
     {/* ═══ MATH TAB ═══ */}
     {numTab==="math"&&<div style={{flex:1,overflow:"auto",padding:"12px 14px"}}>
+      {/* Math settings bar */}
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:4,flex:1,overflowX:"auto"}}>
+          {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);setMathProblem(null);setTimeout(genMath,100);}} style={{
+            padding:"5px 10px",borderRadius:10,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",
+            borderColor:mathRange===r?"#FF8C42":"#E8E0D8",background:mathRange===r?"#FF8C42":"#FFFBF5",color:mathRange===r?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
+          }}>{r}</button>)}
+        </div>
+        <div style={{display:"flex",gap:4}}>
+          {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);setMathProblem(null);setTimeout(genMath,100);}} style={{
+            padding:"5px 10px",borderRadius:10,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",
+            borderColor:mathOp===o.id?"#6366F1":"#E8E0D8",background:mathOp===o.id?"#6366F1":"#FFFBF5",color:mathOp===o.id?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
+          }}>{o.label}</button>)}
+        </div>
+      </div>
       {mathProblem?<div data-panda="math-problem">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <span style={{fontSize:14,fontWeight:800,color:"#FF8C42"}}>🏆 {mathScore}/{mathTotal}</span>
@@ -3737,7 +3718,13 @@ export default function App(){
             {matchMode==="findSmall"?"Find the small letter for:":matchMode==="findCaps"?"Find the CAPITAL for:":"Which letter did you hear?"}
           </div>
           {matchMode==="voiceQuiz"?
-            <button onClick={()=>speak(`${matchPairs[matchIdx]?.cap}`,{rate:0.7,pitch:1.0})} style={{fontSize:48,background:"linear-gradient(135deg,#6366F1,#818CF8)",border:"none",borderRadius:20,padding:"12px 28px",color:"#fff",cursor:"pointer",marginTop:6,animation:"numPulse 1.5s ease-in-out infinite"}}>🔊 Hear Again</button>:
+            <div style={{marginTop:6}}>
+              <button onClick={()=>speak(`${matchPairs[matchIdx]?.cap}`,{rate:0.65,pitch:1.0})} style={{
+                fontSize:16,fontWeight:700,fontFamily:"'Fredoka',sans-serif",
+                background:"linear-gradient(135deg,#6366F1,#818CF8)",border:"none",borderRadius:16,
+                padding:"12px 24px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:8,margin:"0 auto"
+              }}>🔊 Hear Again</button>
+            </div>:
             <div style={{fontSize:56,fontWeight:900,color:"#6366F1",fontFamily:"'Fredoka',sans-serif",lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>
               {matchMode==="findCaps"?(matchPairs[matchIdx]?.cap||"").toLowerCase():(matchPairs[matchIdx]?.cap||"")}
             </div>
@@ -3793,21 +3780,38 @@ export default function App(){
     </div>
 
     {/* ═══ EXPLORE: Simple number grid — tap to hear ═══ */}
-    {basicsTab==="explore"&&<div data-panda="explore-grid" style={{flex:1,overflow:"auto",padding:"10px 12px",display:"flex",alignItems:"flex-start"}}>
-      <div style={{display:"grid",gridTemplateColumns:`repeat(${(aCfg?.max||20)<=10?3:(aCfg?.max||20)<=20?4:5},1fr)`,gap:10,width:"100%"}}>
-        {Array.from({length:aCfg?.max||20}).map((_,i)=>{const n=i+1;
+    {basicsTab==="explore"&&<div data-panda="explore-grid" style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
+      {/* Range filter + spelling toggle */}
+      <div style={{display:"flex",gap:5,padding:"8px 10px",overflowX:"auto",flexShrink:0}}>
+        {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
+          padding:"5px 10px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
+          borderColor:numRange===r?"#6366F1":"#E8E0D8",
+          background:numRange===r?"#6366F1":"#FFFBF5",
+          color:numRange===r?"#fff":"#8E8CA3",fontSize:11,fontWeight:700,
+          cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0
+        }}>{r}</button>)}
+        <div style={{display:"flex",alignItems:"center",gap:4,padding:"3px 8px",background:"#FFF5EB",borderRadius:10,flexShrink:0}}>
+          <span style={{fontSize:10,fontWeight:700,color:numSpelling?"#22C55E":"#999"}}>Abc</span>
+          <button onClick={()=>setNumSpelling(!numSpelling)} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:numSpelling?"#22C55E":"#ddd",position:"relative"}}>
+            <div style={{width:12,height:12,borderRadius:6,background:"#fff",position:"absolute",top:2,left:numSpelling?16:2,transition:"left 0.3s"}}/>
+          </button>
+        </div>
+      </div>
+      {/* Number grid */}
+      <div style={{flex:1,overflow:"auto",padding:"6px 10px"}}>{(()=>{const{min,max}=getNumRange();const count=max-min+1;const cols=count<=10?3:count<=20?4:5;return<div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:count<=10?12:8,width:"100%"}}>
+        {Array.from({length:count}).map((_,i)=>{const n=min+i;
           return<button key={n} onClick={()=>{stop();sayNum(n);}} style={{
-            display:"flex",alignItems:"center",justifyContent:"center",
-            padding:"14px 8px",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+            padding:count<=10?"14px 8px":"10px 6px",
             borderRadius:16,border:"2px solid #E8E0D8",cursor:"pointer",
             background:"#FFFBF5",boxShadow:"0 2px 8px rgba(0,0,0,.04)",fontFamily:"'Fredoka',sans-serif",
-            animation:`gridPop 0.3s ease ${i*0.03}s both`,transition:"all 0.3s",
-            ...glowStyle("num-explore-"+n)
+            transition:"all 0.3s",...glowStyle("num-explore-"+n)
           }}>
-            <span style={{fontSize:26,fontWeight:800,color:nClr(n),lineHeight:1}}>{n}</span>
+            <span style={{fontSize:count<=10?26:count<=20?20:16,fontWeight:800,color:nClr(n),lineHeight:1}}>{n}</span>
+            {numSpelling&&<span style={{fontSize:count<=10?9:7,fontWeight:700,color:"#8E8CA3",marginTop:2}}>{NW[n]||""}</span>}
           </button>;
         })}
-      </div>
+      </div>;})()}</div>
     </div>}
 
     {/* ═══ NUMBER QUIZ: Listen & tap the right number ═══ */}
