@@ -2009,6 +2009,9 @@ export default function App(){
   const[mathOp,setMathOp]=useState("mix"); // "mix","+","-","×"
   const[mathRange,setMathRange]=useState("1-10");const[nStep,setNStep]=useState("idle");const[aPhI,setAPhI]=useState(-1);const[spRes,setSpRes]=useState(null);const[spAcc,setSpAcc]=useState(null);
   const[phCat,setPhCat]=useState("animals");const[phW,setPhW]=useState(null);const[phStep,setPhStep]=useState("idle");const[phAI,setPhAI]=useState(-1);const[phRes,setPhRes]=useState(null);const[phAcc,setPhAcc]=useState(null);
+  // Phonics teaching modes — parents choose what to include
+  const[phModes,setPhModes]=useState({spelling:true,phonics:true,sentence:true,speak:false});
+  const togglePhMode=(key)=>setPhModes(p=>({...p,[key]:!p[key]}));
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
@@ -2523,7 +2526,7 @@ export default function App(){
     if(pRef.current){stop();pRef.current=false;setPhStep("idle");return;}
     pRef.current=true;setPhW(wd);setPhRes(null);setPhAcc(null);setPhAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
 
-    // Step 1: Say the word with excitement
+    // Step 1: Say the word (always)
     setPhStep("saying_word");
     glow("ph-word");
     await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});
@@ -2532,31 +2535,37 @@ export default function App(){
     await speak(`This word is, ${wd.word}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
-    // Step 2: Interactive spelling
-    setPhStep("spelling");
-    await spellWord(wd.word);
-    await wait(400);if(!pRef.current)return;
-    glow("ph-word");
-    await speak(`Awesome! That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
-    await wait(500);if(!pRef.current)return;
+    // Step 2: Interactive spelling (if enabled)
+    if(phModes.spelling){
+      setPhStep("spelling");
+      await spellWord(wd.word);
+      await wait(400);if(!pRef.current)return;
+      glow("ph-word");
+      await speak(`Awesome! That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
+      await wait(500);if(!pRef.current)return;
+    }
 
-    // Step 3: Sentence
-    setPhStep("saying_sentence");
-    glow("ph-sentence");
-    await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
-    glow("ph-sentence");
-    await speak(wd.sentence,{rate:0.75,pitch:1.0});
-    await wait(600);if(!pRef.current)return;
+    // Step 3: Sentence (if enabled)
+    if(phModes.sentence){
+      setPhStep("saying_sentence");
+      glow("ph-sentence");
+      await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
+      glow("ph-sentence");
+      await speak(wd.sentence,{rate:0.75,pitch:1.0});
+      await wait(600);if(!pRef.current)return;
+    }
 
-    // Step 4: Phonics - "let's understand how to speak this word"
-    setPhStep("saying_phonics");
-    await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-    for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
-    setPhAI(-1);await wait(400);if(!pRef.current)return;
-    await speak(`Now say it with me, ${wd.word}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+    // Step 4: Phonics sounds (if enabled)
+    if(phModes.phonics){
+      setPhStep("saying_phonics");
+      await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+      for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
+      setPhAI(-1);await wait(400);if(!pRef.current)return;
+      await speak(`Now say it with me, ${wd.word}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+    }
 
-    // Step 5: Speaking (if enabled)
-    if(speakMode){
+    // Step 5: Speaking practice (if enabled)
+    if(phModes.speak){
       await speak(`Your turn ${kidName}! Can you say, ${wd.word}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
       stop();await wait(600);setPhStep("listening");pRef.current=false;showTeacher("happy","Your turn!");rec.start(handlePhResult);
     }else{
@@ -3452,7 +3461,9 @@ export default function App(){
 
   // ═══ PHONICS DETAIL ═══
   if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
-    {phStep!=="idle"&&<FlowSteps current={phStep} steps={PH_STEPS}/>}
+    {phStep!=="idle"&&<FlowSteps current={phStep} steps={PH_STEPS.filter(s=>
+      s.id==="saying_word"||(s.id==="spelling"&&phModes.spelling)||(s.id==="saying_sentence"&&phModes.sentence)||(s.id==="saying_phonics"&&phModes.phonics)||(s.id==="countdown"&&phModes.speak)||(s.id==="result"&&phModes.speak)
+    )}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene for phonics word */}
       {(()=>{
@@ -3477,13 +3488,12 @@ export default function App(){
       <div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{phW.ph.map((ph,i)=>{const d=gPh(ph);const act=phAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:46,background:act?cc:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${cc}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div>
       <div style={{marginTop:14}}>
         {phStep==="idle"&&<>
-          <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:8}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#FFF0E0",borderRadius:14,flex:1}}>
-              <span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span>
-              <button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}>
-                <div style={{width:18,height:18,borderRadius:9,background:"#FFF0E0",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
-              </button>
-              <span style={{fontSize:11,color:speakMode?"#22C55E":"#93959F",fontWeight:600}}>{speakMode?"Speak ON":"Speak OFF"}</span>
+          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+            <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
+              {phModes.spelling&&<span style={{fontSize:10,fontWeight:700,background:"#ECFDF5",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔤 Spelling</span>}
+              {phModes.phonics&&<span style={{fontSize:10,fontWeight:700,background:"#ECFDF5",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔡 Sounds</span>}
+              {phModes.sentence&&<span style={{fontSize:10,fontWeight:700,background:"#ECFDF5",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>💬 Sentence</span>}
+              {phModes.speak&&<span style={{fontSize:10,fontWeight:700,background:"#ECFDF5",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🎤 Speak</span>}
             </div>
             <button onClick={()=>playPh(phW)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${cc},${cc}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button>
           </div>
@@ -3560,7 +3570,24 @@ export default function App(){
     </div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ PHONICS GRID ═══
-  if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>{setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/>
+    {/* Teaching mode toggles */}
+    <div style={{display:"flex",gap:6,padding:"8px 12px",background:"#FFF0E0",borderBottom:"1px solid #EDE5DC",flexWrap:"wrap"}}>
+      {[
+        {key:"spelling",icon:"🔤",label:"Spelling"},
+        {key:"phonics",icon:"🔡",label:"Sounds"},
+        {key:"sentence",icon:"💬",label:"Sentence"},
+        {key:"speak",icon:"🎤",label:"Speak"},
+      ].map(m=><button key={m.key} onClick={()=>togglePhMode(m.key)} style={{
+        display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:20,
+        border:`2px solid ${phModes[m.key]?"#34D399":"#E8E0D8"}`,
+        background:phModes[m.key]?"#ECFDF5":"#FFFBF5",
+        color:phModes[m.key]?"#16A34A":"#8E8CA3",
+        fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
+        transition:"all 0.2s"
+      }}><span style={{fontSize:14}}>{m.icon}</span>{m.label}{phModes[m.key]?<span style={{fontSize:10}}>✓</span>:null}</button>)}
+    </div>
+    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>{setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
