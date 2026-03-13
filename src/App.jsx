@@ -397,19 +397,18 @@ const WCATS={
     {word:"watermelon",ph:["w","or","t","er","m","e","l","o","n"],img:"🍉",sentence:"Watermelon is great in summer!"},
   
     {word:"guava",ph:["g","w","ar","v","a"],img:"🍈",sentence:"Guava is sweet and pink inside!"},
-    {word:"fig",ph:["f","i","g"],img:"🫒",sentence:"Figs grow on trees!"},
+    {word:"fig",ph:["f","i","g"],img:"🍈",sentence:"Figs grow on trees!"},
     {word:"lime",ph:["l","igh","m"],img:"🍋",sentence:"Lime is green and sour!"},
-    {word:"date",ph:["d","ai","t"],img:"🌴",sentence:"Dates are sweet brown fruits!"},
+    {word:"date",ph:["d","ai","t"],img:"🫘",sentence:"Dates are sweet brown fruits!"},
     {word:"papaya",ph:["p","a","p","igh","a"],img:"🥭",sentence:"Papaya is orange inside!"},
     {word:"apricot",ph:["ai","p","r","i","c","o","t"],img:"🍑",sentence:"Apricots are small and orange!"},
     {word:"avocado",ph:["a","v","o","c","a","d","o"],img:"🥑",sentence:"Avocado is green and creamy!"},
     {word:"blueberry",ph:["b","l","oo","b","e","r","ee"],img:"🫐",sentence:"Blueberries are tiny and sweet!"},
-    {word:"raspberry",ph:["r","a","z","b","e","r","ee"],img:"🫐",sentence:"Raspberries are red and tangy!"},
+    {word:"raspberry",ph:["r","a","z","b","e","r","ee"],img:"🍓",sentence:"Raspberries are red and tangy!"},
     {word:"jackfruit",ph:["j","a","ck","f","r","oo","t"],img:"🍈",sentence:"Jackfruit is the biggest fruit!"},
   
-    {word:"grape",ph:["g","r","ai","p"],img:"🍇",sentence:"Grapes come in bunches!"},
-    {word:"pomegranate",ph:["p","o","m","e","g","r","a","n","i","t"],img:"🫐",sentence:"Pomegranate has many seeds!"},
-    {word:"dragonfruit",ph:["d","r","a","g","o","n","f","r","oo","t"],img:"🍈",sentence:"Dragonfruit is pink outside!"},
+    {word:"pomegranate",ph:["p","o","m","e","g","r","a","n","i","t"],img:"🍎",sentence:"Pomegranate has many seeds!"},
+    {word:"dragonfruit",ph:["d","r","a","g","o","n","f","r","oo","t"],img:"🌺",sentence:"Dragonfruit is pink outside!"},
   ]},
   vegetables:{emoji:"🥬",color:"#16A34A",words:[
     {word:"carrot",ph:["c","a","r","o","t"],img:"🥕",sentence:"Rabbits love carrots!"},
@@ -3343,7 +3342,7 @@ export default function App(){
     {/* Tab bar */}
     <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF",flexShrink:0}}>
       {[{id:"learn",label:"🔢 Numbers"},{id:"math",label:"➕ Math"}].map(t=>
-        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setNumTab(t.id);if(t.id==="math"&&!mathProblem)genMath();}}
+        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setNumTab(t.id);if(t.id==="math"&&!mathProblem)genMath();}}
           style={{flex:1,padding:"10px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             background:numTab===t.id?"#FC8019":"#F1F3F7",color:numTab===t.id?"#fff":"#93959F",transition:"all 0.2s"
           }}>{t.label}</button>
@@ -3351,7 +3350,7 @@ export default function App(){
     </div>
     {numTab==="learn"&&<div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
       {/* Range filter */}
-      <div style={{display:"flex",gap:6,padding:"8px 12px",overflowX:"auto",flexShrink:0}}>
+      <div style={{display:"flex",gap:6,padding:"8px 12px",flexWrap:"wrap",flexShrink:0}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
           padding:"6px 12px",borderRadius:14,border:"2px solid",whiteSpace:"nowrap",
           borderColor:numRange===r?"#FF8C42":"#E8E0D8",
@@ -3388,7 +3387,7 @@ export default function App(){
     {numTab==="math"&&<div style={{flex:1,overflow:"auto",padding:"12px 14px"}}>
       {/* Math settings bar */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
-        <div style={{display:"flex",gap:4,flex:1,overflowX:"auto"}}>
+        <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
             padding:"5px 10px",borderRadius:10,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",
             borderColor:mathRange===r?"#FF8C42":"#E8E0D8",background:mathRange===r?"#FF8C42":"#FFFBF5",color:mathRange===r?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
@@ -3565,7 +3564,7 @@ export default function App(){
     </div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ PHONICS GRID ═══
-  if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",flexWrap:"wrap",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>{setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
@@ -3631,7 +3630,7 @@ export default function App(){
     {/* Tab bar */}
     <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
       {[{id:"caps",label:"🔤 CAPITAL"},{id:"small",label:"🔡 small"},{id:"match",label:"🎯 Match"}].map(t=>
-        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setAlphaTab(t.id);setSelLetter(null);if(t.id==="match"&&matchPairs.length===0){startMatch();}}}
+        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setAlphaTab(t.id);setSelLetter(null);if(t.id==="match"&&matchPairs.length===0){startMatch();}}}
           style={{flex:1,padding:"10px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             background:alphaTab===t.id?"#6366F1":"#F1F3F7",color:alphaTab===t.id?"#fff":"#93959F",transition:"all 0.2s"
           }}>{t.label}</button>
@@ -3701,7 +3700,7 @@ export default function App(){
       {/* Mode selector */}
       <div style={{display:"flex",gap:6,marginBottom:10}}>
         {[{id:"findSmall",label:"A→a"},{id:"findCaps",label:"a→A"},{id:"voiceQuiz",label:"🔊 Listen"}].map(m=>
-          <button key={m.id} onClick={()=>{stop();startMatch(m.id);}} style={{
+          <button key={m.id} onClick={()=>{stop();setTeacherMood("excited");startMatch(m.id);}} style={{
             flex:1,padding:"8px 4px",borderRadius:12,border:"2px solid",fontSize:12,fontWeight:700,
             cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             borderColor:matchMode===m.id?"#6366F1":"#E8E0D8",
@@ -3767,7 +3766,7 @@ export default function App(){
     <div style={{display:"flex",gap:5,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
       {[{id:"explore",label:"🔢 Numbers"},{id:"quiz",label:"🎯 Quiz"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
-          stop();movePandaTo("bottomRight");setBasicsTab(t.id);
+          stop();movePandaTo("bottomRight");setTeacherMood("happy");setBasicsTab(t.id);
           if(t.id==="quiz"){if(!quizNum)newQuiz();}
           if(t.id==="write")
           if(t.id==="explore")
@@ -3781,7 +3780,7 @@ export default function App(){
     {/* ═══ EXPLORE: Simple number grid — tap to hear ═══ */}
     {basicsTab==="explore"&&<div data-panda="explore-grid" style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
       {/* Range filter + spelling toggle */}
-      <div style={{display:"flex",gap:5,padding:"8px 10px",overflowX:"auto",flexShrink:0}}>
+      <div style={{display:"flex",gap:5,padding:"8px 10px",flexWrap:"wrap",flexShrink:0}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
           padding:"5px 10px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
           borderColor:numRange===r?"#6366F1":"#E8E0D8",
