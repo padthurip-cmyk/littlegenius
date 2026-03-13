@@ -2000,13 +2000,18 @@ export default function App(){
   const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey}=useSpeech();const rec=useRec();
   const[scr,setScr]=useState("splash");
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
-  const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn"); // "learn" or "math"
+  const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn");
+  const[numRange,setNumRange]=useState("1-10");const[numSpelling,setNumSpelling]=useState(true);
+  const NUM_RANGES=["1-10","11-20","21-40","41-60","61-80","81-100"];
+  const getNumRange=()=>{const[a,b]=numRange.split("-").map(Number);return{min:a,max:b};};
+  // Alphabet match modes
+  const[matchMode,setMatchMode]=useState("findSmall"); // "findSmall","findCaps","voiceQuiz"
   const[mathProblem,setMathProblem]=useState(null);const[mathAnswer,setMathAnswer]=useState(null);const[mathChoices,setMathChoices]=useState([]);const[mathFb,setMathFb]=useState(null);const[mathScore,setMathScore]=useState(0);const[mathTotal,setMathTotal]=useState(0);const[nStep,setNStep]=useState("idle");const[aPhI,setAPhI]=useState(-1);const[spRes,setSpRes]=useState(null);const[spAcc,setSpAcc]=useState(null);
   const[phCat,setPhCat]=useState("animals");const[phW,setPhW]=useState(null);const[phStep,setPhStep]=useState("idle");const[phAI,setPhAI]=useState(-1);const[phRes,setPhRes]=useState(null);const[phAcc,setPhAcc]=useState(null);
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(80);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(95);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
   const[mouthOpen,setMouthOpen]=useState(0); // 0.0 to 1.0 smooth
   const teacherIdleRef=useRef(null);
   const guideTourRef=useRef(false);
@@ -2080,19 +2085,27 @@ export default function App(){
       if(!guideTourRef.current)break;
 
       const rect=el.getBoundingClientRect();
-      // Create a CLONE — original tile stays in grid untouched
+      // Create a CLONE — copy computed styles so it looks identical
       const clone=el.cloneNode(true);
       clone.id="tour-clone";
+      const cs=window.getComputedStyle(el);
       clone.style.cssText=`
         position:fixed; z-index:200; pointer-events:none;
         left:${rect.left}px; top:${rect.top}px;
         width:${rect.width}px; height:${rect.height}px;
+        background:${cs.background};
+        color:${cs.color};
+        font-family:${cs.fontFamily};
+        font-size:${cs.fontSize};
+        font-weight:${cs.fontWeight};
         display:flex; align-items:center; gap:14px;
-        padding:22px 18px; border-radius:24px;
-        font-family:'Fredoka',sans-serif;
+        padding:${cs.padding};
+        border-radius:${cs.borderRadius};
+        text-align:left;
         transition: all 0.5s cubic-bezier(0.34,1.56,0.64,1);
         box-shadow: 0 0 0 5px ${tile.color}, 0 0 40px ${tile.color}88, 0 20px 60px rgba(0,0,0,.25);
         border: 3px solid ${tile.color};
+        overflow:hidden;
       `;
       // Highlight the original tile gently in-place
       el.style.outline="3px solid "+tile.color;
@@ -2145,7 +2158,7 @@ export default function App(){
   // Joy fly: panda does a quick loop around screen
   const doJoyFly=()=>{
     setJoyFly(true);setTeacherMood("star");
-    const w=window.innerWidth,h=window.innerHeight,ps=pandaSize||80;
+    const w=window.innerWidth,h=window.innerHeight,ps=pandaSize||95;
     const path=[{x:w/2-ps/2,y:20},{x:w-ps-10,y:h/3},{x:w/2-ps/2,y:h/2},{x:10,y:h/3},{x:w/2-ps/2,y:20}];
     let i=0;
     const step=()=>{
@@ -2158,7 +2171,7 @@ export default function App(){
   const flyTo=(e,mood)=>{
     if(!e?.currentTarget)return;
     const rect=e.currentTarget.getBoundingClientRect();
-    const ps=pandaSize||80;
+    const ps=pandaSize||95;
     const x=Math.min(rect.right+6,window.innerWidth-ps);
     const y=Math.max(Math.min(rect.top+rect.height/2-ps/2,window.innerHeight-ps),0);
     setPandaPos({x,y});
@@ -2166,7 +2179,7 @@ export default function App(){
   };
   const movePandaTo=(position)=>{
     const w=window.innerWidth,h=window.innerHeight;
-    const ps=pandaSize||80;
+    const ps=pandaSize||95;
     const positions={
       topRight:{x:w-ps-4,y:4},
       midRight:{x:w-ps-4,y:h/2-ps/2},
@@ -2183,7 +2196,7 @@ export default function App(){
       const el=document.querySelector(`[data-panda="${selector}"]`);
       if(!el){movePandaTo("bottomRight");return;}
       const r=el.getBoundingClientRect();
-      const ps=pandaSize||80;
+      const ps=pandaSize||95;
       const w=window.innerWidth,h=window.innerHeight;
       let x,y;
       if(side==="right"){
@@ -2250,6 +2263,11 @@ export default function App(){
   const[activeSpellIdx,setActiveSpellIdx]=useState(-1); // which letter is being spelled
   const[spellStatus,setSpellStatus]=useState([]); // per-letter: 'waiting'|'listening'|'correct'|'skipped'
   const pRef=useRef(false);
+  // Highlight system — pulses any element Bella talks about
+  const[glowTarget,setGlowTarget]=useState(null);
+  const glowTimer=useRef(null);
+  const glow=(id,dur=1800)=>{clearTimeout(glowTimer.current);setGlowTarget(id);glowTimer.current=setTimeout(()=>setGlowTarget(null),dur);};
+  const glowStyle=(id)=>glowTarget===id?{animation:"itemGlow 0.8s ease-in-out infinite",transform:"scale(1.06)",transition:"transform 0.3s",position:"relative",zIndex:10}:{};
   // Stories state
   const[storyIdx,setStoryIdx]=useState(0);
   const[storyStep,setStoryStep]=useState("list"); // "list","reading","questions","done"
@@ -2284,8 +2302,16 @@ export default function App(){
   const[celebType,setCelebType]=useState(0);
   const[wrongFlash,setWrongFlash]=useState(false);
   const[celebKey,setCelebKey]=useState(0);
-  const boom=()=>{setCelebType(Math.floor(Math.random()*3));setCelebKey(k=>k+1);setConfetti(true);setTimeout(()=>setConfetti(false),3500);};
-  const flashWrong=()=>{setWrongFlash(true);setTimeout(()=>setWrongFlash(false),600);};
+  const celebTimer=useRef(null);
+  const boom=()=>{
+    // Clear any previous celebration timeout so it doesn't kill this one
+    if(celebTimer.current)clearTimeout(celebTimer.current);
+    setCelebType(Math.floor(Math.random()*3));
+    setCelebKey(k=>k+1);
+    setConfetti(true);
+    celebTimer.current=setTimeout(()=>{setConfetti(false);celebTimer.current=null;},3500);
+  };
+  const flashWrong=()=>{setWrongFlash(true);setTimeout(()=>setWrongFlash(false),800);};
   const flyPts=(n)=>{setPtAnim(`+${n}`);setTimeout(()=>setPtAnim(null),1500);};
   // CRITICAL: Combined save to prevent stale state overwrites
   const awardPoints=useCallback((pts, type, id)=>{
@@ -2306,7 +2332,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setPandaSize(80);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const tourCl=document.getElementById("tour-clone");if(tourCl)tourCl.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];};
+  const goHome=()=>{setJoyFly(false);setPandaSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const tourCl=document.getElementById("tour-clone");if(tourCl)tourCl.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2316,8 +2342,7 @@ export default function App(){
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(w,normalized);setSpRes(normalized);setSpAcc(acc);setNStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0) awardPoints(p,"numbers",selNum);
-    boom();
+    if(p>0){awardPoints(p,"numbers",selNum);boom();}else{flashWrong();}
     // Voice cheer with name and reward motivation!
     setTimeout(()=>{
       const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
@@ -2338,8 +2363,7 @@ export default function App(){
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(phW.word,normalized);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0) awardPoints(p,"phonics",phW.word);
-    boom();
+    if(p>0){awardPoints(p,"phonics",phW.word);boom();}else{flashWrong();}
     setTimeout(()=>{
       const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
       const need=nextR?(nextR.cost-((prof?.points||0)+p)):0;
@@ -2489,8 +2513,10 @@ export default function App(){
 
     // Step 1: Say the number with excitement (high pitch, warm)
     setNStep("saying_number");
+    glow("num-display");
     await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});
     await wait(300);
+    glow("num-display");
     await speak(`This is the number, ${w}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
@@ -2503,7 +2529,9 @@ export default function App(){
 
     // Step 3: Sentence
     setNStep("saying_sentence");
+    glow("num-scene");
     await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
+    glow("num-sentence");
     await speak(scene.sentence,{rate:0.75,pitch:1.0});
     await wait(600);if(!pRef.current)return;
 
@@ -2542,8 +2570,10 @@ export default function App(){
 
     // Step 1: Say the word with excitement
     setPhStep("saying_word");
+    glow("ph-word");
     await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});
     await wait(300);
+    glow("ph-word");
     await speak(`This word is, ${wd.word}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
@@ -2551,12 +2581,15 @@ export default function App(){
     setPhStep("spelling");
     await spellWord(wd.word);
     await wait(400);if(!pRef.current)return;
+    glow("ph-word");
     await speak(`Awesome! That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
     // Step 3: Sentence
     setPhStep("saying_sentence");
+    glow("ph-sentence");
     await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
+    glow("ph-sentence");
     await speak(wd.sentence,{rate:0.75,pitch:1.0});
     await wait(600);if(!pRef.current)return;
 
@@ -2590,8 +2623,7 @@ export default function App(){
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selShape.name,normalized);setShRes(normalized);setShAcc(acc);setShStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0) awardPoints(p,"shapes",selShape.name);
-    boom();
+    if(p>0){awardPoints(p,"shapes",selShape.name);boom();}else{flashWrong();}
     setTimeout(()=>{
       if(s>=3) speak(`${kidName}, you got it!`,{rate:0.8,pitch:1.0});
       else speak(`Nice try ${kidName}!`,{rate:0.8,pitch:1.0});
@@ -2600,13 +2632,13 @@ export default function App(){
   const playShape=async(sh)=>{
     if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
     pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
-    setShStep("saying_word");
+    setShStep("saying_word");glow("shape-display");
     await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
     await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setShStep("spelling");
     await spellWord(sh.name);await wait(400);if(!pRef.current)return;
     await speak(`Awesome! That spells, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-    setShStep("saying_sentence");
+    setShStep("saying_sentence");glow("shape-sentence");
     await speak(sh.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
     if(sh.ph){
       setShStep("saying_phonics");
@@ -2627,8 +2659,7 @@ export default function App(){
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selColor.name,normalized);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0) awardPoints(p,"colors",selColor.name);
-    boom();
+    if(p>0){awardPoints(p,"colors",selColor.name);boom();}else{flashWrong();}
     setTimeout(()=>{
       if(s>=3) speak(`${kidName}, you got it!`,{rate:0.8,pitch:1.0});
       else speak(`Nice try ${kidName}!`,{rate:0.8,pitch:1.0});
@@ -2637,13 +2668,13 @@ export default function App(){
   const playColor=async(co)=>{
     if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
     pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
-    setCoStep("saying_word");
+    setCoStep("saying_word");glow("color-display");
     await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
     await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setCoStep("spelling");
     await spellWord(co.name);await wait(400);if(!pRef.current)return;
     await speak(`Awesome! That spells, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-    setCoStep("saying_sentence");
+    setCoStep("saying_sentence");glow("color-sentence");
     await speak(co.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
     if(co.ph){
       setCoStep("saying_phonics");
@@ -2732,15 +2763,19 @@ export default function App(){
     await wait(200); // let cancel settle
     // Check if still on this letter after each step
     const ok=()=>alphaRef.current===letter&&pRef.current;
+    glow("letter-big");
     await speak(`${letter}!`,{rate:0.85,pitch:1.0});
     if(!ok())return;
     await wait(200);
     if(!ok())return;
+    glow("letter-sound");
     await speak(`${letter} says ${d.ph}!`,{rate:0.85,pitch:1.0});
     if(!ok())return;
     await wait(300);
-    for(const ex of d.examples){
+    for(let ei=0;ei<d.examples.length;ei++){
+      const ex=d.examples[ei];
       if(!ok())return;
+      glow("letter-ex-"+ei);
       await speak(`${letter} for ${ex.w}!`,{rate:0.85,pitch:1.0});
       if(!ok())return;
       await wait(400);
@@ -2759,54 +2794,80 @@ export default function App(){
     }
     return shuffle([...opts]);
   };
-  const startMatch=()=>{
+  const startMatch=(mode)=>{
+    const m=mode||matchMode;setMatchMode(m);
     const picked=shuffle(ALPHA_LETTERS.slice()).slice(0,8);
     setMatchPairs(picked.map(l=>({cap:l})));
     setMatchLeft(null);setMatchScore(0);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);
-    setMatchOpts(genOpts(picked[0]));
-    (async()=>{
-      await speak("Let's match letters!",{rate:0.85,pitch:1.0});
-      await wait(400);
-      await speak(`Find small ${picked[0].toLowerCase()}.`,{rate:0.85,pitch:1.0});
-    })();
+    if(m==="findCaps"){
+      // Show small, find CAPS
+      setMatchOpts(genOpts(picked[0]));
+      (async()=>{
+        await speak("Find the capital letter!",{rate:0.85,pitch:1.0});
+        await wait(400);
+        await speak(`Find capital ${picked[0].toUpperCase()}.`,{rate:0.85,pitch:1.0});
+      })();
+    } else if(m==="voiceQuiz"){
+      // Hear letter, pick from 6 options
+      const opts=new Set([picked[0]]);
+      while(opts.size<6){opts.add(ALPHA_LETTERS[Math.floor(Math.random()*26)]);}
+      setMatchOpts(shuffle([...opts]));
+      (async()=>{
+        await speak("Listen and find the letter!",{rate:0.85,pitch:1.0});
+        await wait(400);
+        await speak(`${picked[0]}`,{rate:0.7,pitch:1.0});
+      })();
+    } else {
+      // Default: show CAPS, find small
+      setMatchOpts(genOpts(picked[0]));
+      (async()=>{
+        await speak("Let's match letters!",{rate:0.85,pitch:1.0});
+        await wait(400);
+        await speak(`Find small ${picked[0].toLowerCase()}.`,{rate:0.85,pitch:1.0});
+      })();
+    }
   };
   const advanceMatch=(nextIdx,pairs)=>{
     if(nextIdx>=pairs.length){
       setMatchIdx(nextIdx);setMatchOpts([]);
-      boom(); // 🎉 big celebration for finishing all
-      (async()=>{
-        await wait(300);
-        await speak("Wow! You matched them all!",{rate:0.85,pitch:1.0});
-      })();
+      boom();
+      (async()=>{await wait(300);await speak("Wow! You matched them all!",{rate:0.85,pitch:1.0});})();
     } else {
       setMatchIdx(nextIdx);
-      setMatchOpts(genOpts(pairs[nextIdx].cap)); // ← NEW random options each time
-      (async()=>{
-        await wait(300);
-        await speak(`Find small ${pairs[nextIdx].cap.toLowerCase()}.`,{rate:0.85,pitch:1.0});
-      })();
+      if(matchMode==="voiceQuiz"){
+        const opts=new Set([pairs[nextIdx].cap]);
+        while(opts.size<6){opts.add(ALPHA_LETTERS[Math.floor(Math.random()*26)]);}
+        setMatchOpts(shuffle([...opts]));
+        (async()=>{await wait(400);await speak(`${pairs[nextIdx].cap}`,{rate:0.7,pitch:1.0});})();
+      } else {
+        setMatchOpts(genOpts(pairs[nextIdx].cap));
+        (async()=>{
+          await wait(300);
+          if(matchMode==="findCaps") await speak(`Find capital ${pairs[nextIdx].cap.toUpperCase()}.`,{rate:0.85,pitch:1.0});
+          else await speak(`Find small ${pairs[nextIdx].cap.toLowerCase()}.`,{rate:0.85,pitch:1.0});
+        })();
+      }
     }
   };
-  const onMatchSmallTap=async(tappedLetter)=>{
+  const onMatchTap=async(tappedLetter)=>{
     if(matchWrong||matchCorrect)return;
     const currentCap=matchPairs[matchIdx]?.cap;
     if(!currentCap)return;
-
-    if(tappedLetter===currentCap){
-      // ✅ CORRECT — fire confetti!
+    const isCorrect=tappedLetter.toUpperCase()===currentCap.toUpperCase();
+    if(isCorrect){
       setMatchCorrect(tappedLetter);
-      setMatchDone(p=>[...p,tappedLetter]);
+      setMatchDone(p=>[...p,currentCap]);
       setMatchScore(s=>s+1);
-      boom();headYes(); // 🎆 CONFETTI + teacher on every correct match!
-      await speak(`${tappedLetter}! Yes! You got it!`,{rate:0.7,pitch:1.0});
+      boom();headYes();
+      await speak(`${currentCap}! Yes! You got it!`,{rate:0.7,pitch:1.0});
       await wait(800);
       setMatchCorrect(null);
       advanceMatch(matchIdx+1,matchPairs);
     } else {
-      // ❌ WRONG — freeze wrong, highlight correct
       setMatchWrong(tappedLetter);
       setMatchCorrect(currentCap);
-      await speak(`Oops! That's ${tappedLetter.toLowerCase()}. We need ${currentCap.toLowerCase()}.`,{rate:0.8,pitch:1.0});
+      headNo();flashWrong();
+      await speak(`Oops! That's ${tappedLetter}. We need ${currentCap}.`,{rate:0.8,pitch:1.0});
       await wait(2000);
       setMatchWrong(null);setMatchCorrect(null);
       setMatchDone(p=>[...p,currentCap]);
@@ -2816,6 +2877,7 @@ export default function App(){
 
   // ═══ BASICS FUNCTIONS ═══
   const sayNum=(n)=>{
+    glow("num-explore-"+n);
     speak(`${NW[n]||n}.`,{rate:0.8,pitch:1.0});
   };
   // ═══ NUMBER QUIZ ═══
@@ -2947,11 +3009,11 @@ export default function App(){
       setWriteScore(score);
       if(score>=85){
         setWriteOk(true);
-        headYes();speak(`Perfect! Great job writing ${NW[writeNum]||writeNum}! ${NUM_FUN[writeNum]||""}`,{rate:0.85,pitch:1.0});
+        headYes();boom();speak(`Perfect! Great job writing ${NW[writeNum]||writeNum}! ${NUM_FUN[writeNum]||""}`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(5,"basics_w",writeNum);
       } else if(score>=50){
         setWriteOk(true);
-        headYes();speak(`Good! ${NW[writeNum]||writeNum}! That's a pass!`,{rate:0.85,pitch:1.0});
+        headYes();boom();speak(`Good! ${NW[writeNum]||writeNum}! That's a pass!`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(3,"basics_w",writeNum);
       } else if(score>=40){
         speak("Almost there! Keep tracing.",{rate:0.85,pitch:1.0});
@@ -3026,7 +3088,7 @@ export default function App(){
     speak(reaction.sound,{rate:1.0,pitch:1.1});
   };
 
-  const TeacherBubble=<>{wrongFlash&&<div style={{position:"fixed",inset:0,background:"rgba(248,113,113,0.15)",zIndex:198,pointerEvents:"none",animation:"fadeIn 0.1s ease-out"}}/>}<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:"none",transition:dragRef.current?"none":joyFly?"left 0.3s ease-out, top 0.3s ease-out":"left 1s cubic-bezier(0.4,0,0.2,1), top 1s cubic-bezier(0.4,0,0.2,1)",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.1))"}}>
+  const TeacherBubble=<>{wrongFlash&&<div style={{position:"fixed",inset:0,background:"rgba(239,68,68,0.25)",zIndex:198,pointerEvents:"none",animation:"cWrongPulse 0.8s ease-out forwards"}}/>}<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:"none",transition:dragRef.current?"none":joyFly?"left 0.3s ease-out, top 0.3s ease-out":"left 1s cubic-bezier(0.4,0,0.2,1), top 1s cubic-bezier(0.4,0,0.2,1)",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.1))"}}>
     {/* Panda — draggable + tappable */}
     <div
       onMouseDown={(e)=>{pandaTapTime.current=Date.now();pandaDragStart(e);}}
@@ -3047,7 +3109,7 @@ export default function App(){
     welcomeSpoken.current=true;
     await wait(400);
     stop(); // clean silence before transition
-    setPandaSize(80);
+    setPandaSize(95);
     if(prof){
       setScr("home");
       await wait(600);
@@ -3177,7 +3239,7 @@ export default function App(){
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",bg:"#FEF3C7",accent:"#F59E0B",shadow:"rgba(245,158,11,.15)"},
           {id:"stories",icon:"📖",title:"Stories",sub:"Read & Learn",bg:"#DBEAFE",accent:"#3B82F6",shadow:"rgba(59,130,246,.15)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",bg:"#F1F5F9",accent:"#64748B",shadow:"rgba(100,116,139,.1)"}
-        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();const cl2=document.getElementById("tour-clone");if(cl2)cl2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();const cl2=document.getElementById("tour-clone");if(cl2)cl2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"22px 18px",borderRadius:24,border:`2.5px solid ${m.accent}22`,cursor:"pointer",
           fontFamily:"'Fredoka',sans-serif",background:m.bg,
@@ -3199,7 +3261,7 @@ export default function App(){
         <p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,flex:1}}>⭐⭐⭐⭐⭐ = 20 points per word!</p>
       </div>
     </div>
-    <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
   </div>;
 
 
@@ -3208,10 +3270,12 @@ export default function App(){
     {nStep!=="idle"&&<FlowSteps current={nStep} steps={NUM_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* 🎬 ANIMATED SCENE */}
+      <div style={{...glowStyle("num-scene")}}>
       <AnimatedScene num={selNum} active={nStep==="saying_sentence"}/>
+      </div>
       
       {/* Number + Word below scene */}
-      <div style={{textAlign:"center",marginTop:4}}>
+      <div style={{textAlign:"center",marginTop:4,...glowStyle("num-display")}}>
         <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:36,fontWeight:800,color,lineHeight:1,animation:nStep==="saying_number"?"numPulse 0.8s ease-in-out infinite":"none"}}>{selNum}</span>
         <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,color:"#6366F1",fontWeight:600,textTransform:"capitalize"}}>{w}</div>
       </div>
@@ -3307,7 +3371,7 @@ export default function App(){
         {nStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]}/>}
         {nStep==="result"&&spRes!==null&&<ResultBox acc={spAcc} result={spRes} expected={w} onRetry={retryNum} onDone={()=>{setSpRes(null);const next=selNum>=(aCfg?.max||20)?1:selNum+1;setSelNum(next);setNStep("idle");setTimeout(()=>playNum(next),200);}} color={color} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
-    </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
+    </div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ NUMBERS GRID ═══
   if(scr==="numbers"&&!selNum)return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Numbers" onBack={goHome} points={prof?.points||0}/>
@@ -3320,22 +3384,41 @@ export default function App(){
           }}>{t.label}</button>
       )}
     </div>
-    {numTab==="learn"&&<div style={{flex:1,overflow:"auto",padding:"12px 14px"}}><div style={{display:"grid",gridTemplateColumns:`repeat(${aCfg.max<=10?3:aCfg.max<=20?4:5},1fr)`,gap:aCfg.max<=10?14:aCfg.max<=20?10:8}}>
-      {Array.from({length:aCfg.max}).map((_,i)=>{const n=i+1;const done=isDone("numbers",n);return<button key={n} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{
-        position:"relative",
-        padding:aCfg.max<=10?"20px 8px":aCfg.max<=20?"14px 6px":"10px 4px",
-        borderRadius:18,
-        border:`2px solid ${done?nClr(n)+"44":"#E8E8E8"}`,
-        cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
-        fontFamily:"'Fredoka',sans-serif",
-        background:done?`linear-gradient(135deg,${nClr(n)}08,${nClr(n)}15)`:"#fff",
-        animation:`gridPop 0.3s ease ${i*0.02}s both`,
-        boxShadow:"0 2px 10px rgba(0,0,0,.06)",
-        aspectRatio:aCfg.max<=20?"1":"auto"
-      }}>{done&&<span style={{position:"absolute",top:4,right:5,fontSize:12,color:"#60B246",fontWeight:900}}>✓</span>}
-        <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:aCfg.max<=10?32:aCfg.max<=20?24:18,fontWeight:800,color:nClr(n)}}>{n}</span>
-        {aCfg.max<=20&&<span style={{fontSize:aCfg.max<=10?10:8,fontWeight:700,color:"#8E8CA3",textTransform:"capitalize"}}>{NW[n]||""}</span>}
-      </button>;})}</div></div>}
+    {numTab==="learn"&&<div style={{flex:1,overflow:"auto",display:"flex",flexDirection:"column"}}>
+      {/* Range filter */}
+      <div style={{display:"flex",gap:6,padding:"8px 12px",overflowX:"auto",flexShrink:0}}>
+        {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
+          padding:"6px 12px",borderRadius:14,border:"2px solid",whiteSpace:"nowrap",
+          borderColor:numRange===r?"#FF8C42":"#E8E0D8",
+          background:numRange===r?"#FF8C42":"#FFFBF5",
+          color:numRange===r?"#fff":"#8E8CA3",fontSize:12,fontWeight:700,
+          cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0
+        }}>{r}</button>)}
+        {/* Spelling toggle */}
+        <div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",background:"#FFF5EB",borderRadius:14,flexShrink:0}}>
+          <span style={{fontSize:11,fontWeight:700,color:numSpelling?"#22C55E":"#999"}}>ABC</span>
+          <button onClick={()=>setNumSpelling(!numSpelling)} style={{width:34,height:18,borderRadius:9,border:"none",cursor:"pointer",background:numSpelling?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}>
+            <div style={{width:14,height:14,borderRadius:7,background:"#fff",position:"absolute",top:2,left:numSpelling?18:2,transition:"left 0.3s"}}/>
+          </button>
+        </div>
+      </div>
+      {/* Number grid */}
+      <div style={{flex:1,overflow:"auto",padding:"8px 14px"}}>{(()=>{const{min,max}=getNumRange();const count=max-min+1;const cols=count<=10?3:count<=20?4:5;return<div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:count<=10?14:count<=20?10:8}}>
+        {Array.from({length:count}).map((_,i)=>{const n=min+i;const done=isDone("numbers",n);return<button key={n} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{
+          position:"relative",
+          padding:count<=10?"18px 8px":count<=20?"12px 6px":"8px 4px",
+          borderRadius:18,
+          border:`2px solid ${done?nClr(n)+"44":"#E8E0D8"}`,
+          cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
+          fontFamily:"'Fredoka',sans-serif",
+          background:done?`linear-gradient(135deg,${nClr(n)}08,${nClr(n)}15)`:"#fff",
+          animation:`gridPop 0.3s ease ${i*0.02}s both`,
+          boxShadow:"0 2px 10px rgba(0,0,0,.06)"
+        }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
+          <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:count<=10?30:count<=20?22:16,fontWeight:800,color:nClr(n)}}>{n}</span>
+          {numSpelling&&<span style={{fontSize:count<=10?9:7,fontWeight:700,color:"#8E8CA3",textTransform:"capitalize"}}>{NW[n]||""}</span>}
+        </button>;})}</div>;})()}</div>
+    </div>}
     {/* ═══ MATH TAB ═══ */}
     {numTab==="math"&&<div style={{flex:1,overflow:"auto",padding:"12px 14px"}}>
       {mathProblem?<div data-panda="math-problem">
@@ -3390,7 +3473,7 @@ export default function App(){
         <button onClick={genMath} style={{marginTop:16,padding:"14px 32px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer"}}>▶️ Start!</button>
       </div>}
     </div>}
-    <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+    <div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ PHONICS DETAIL ═══
   if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
@@ -3402,7 +3485,7 @@ export default function App(){
         const catEmojis={animals:["🌳","🌿","☁️","🌸","🦋"],food:["🍽️","🧑‍🍳","✨","🌟","💫"],nature:["☀️","🌈","🦋","🌺","💧"],things:["🏠","⭐","☁️","🌟","✨"],colors:["🎨","✨","🌈","💫","🎉"]};
         const bg=catBg[phCat]||catBg.things;
         const extras=catEmojis[phCat]||catEmojis.things;
-        return <div style={{position:"relative",width:"100%",height:120,borderRadius:16,overflow:"hidden",background:bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)"}}>
+        return <div style={{position:"relative",width:"100%",height:120,borderRadius:16,overflow:"hidden",background:bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)",...glowStyle("ph-word")}}>
           {/* Main word emoji - big, bouncing */}
           <div style={{position:"absolute",left:"50%",top:"40%",transform:"translate(-50%,-50%)",fontSize:56,zIndex:3,animation:"scene_floatBob 2s ease-in-out infinite",filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.2))"}}>{phW.img}</div>
           {/* Category ambient elements */}
@@ -3412,7 +3495,7 @@ export default function App(){
             <h2 style={{fontFamily:"'Fredoka',sans-serif",fontSize:22,fontWeight:800,color:"#2D2B3D",letterSpacing:3,margin:0,textShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>{phW.word.toUpperCase()}{phStep==="saying_word"&&<span style={{animation:"pulse 0.5s infinite",fontSize:20,marginLeft:8}}>🔊</span>}</h2>
           </div>
           {/* Sentence overlay */}
-          {phStep==="saying_sentence"&&<div style={{position:"absolute",top:8,left:8,right:8,padding:"8px 14px",background:"#FFF5EB",borderRadius:14,zIndex:11,animation:"slideUp 0.3s ease-out"}}><span style={{fontSize:13,fontWeight:700,color:"#FF8C42"}}>💬 {phW.sentence}</span></div>}
+          {phStep==="saying_sentence"&&<div style={{position:"absolute",top:8,left:8,right:8,padding:"8px 14px",background:"#FFF5EB",borderRadius:14,zIndex:11,animation:"slideUp 0.3s ease-out",...glowStyle("ph-sentence")}}><span style={{fontSize:13,fontWeight:700,color:"#FF8C42"}}>💬 {phW.sentence}</span></div>}
         </div>;
       })()}
       {/* Phoneme chips */}
@@ -3499,10 +3582,10 @@ export default function App(){
         {phStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""}/>}
         {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhRes(null);const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),200);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
-    </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
+    </div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ PHONICS GRID ═══
-  if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/><nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>setPhCat(k)} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
@@ -3510,9 +3593,9 @@ export default function App(){
     {shStep!=="idle"&&<FlowSteps current={shStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
-      {sh.scene&&<div style={{position:"relative",width:"100%",height:120,borderRadius:16,overflow:"hidden",background:sh.scene.bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)"}}>
+      {sh.scene&&<div style={{position:"relative",width:"100%",height:120,borderRadius:16,overflow:"hidden",background:sh.scene.bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)",...glowStyle("shape-display")}}>
         {sh.scene.elements.map((el,i)=><div key={i} style={{position:"absolute",left:`${el.x}%`,top:`${el.y}%`,transform:"translate(-50%,-50%)",fontSize:el.size,zIndex:2,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))",animation:el.anim!=="none"?`scene_${el.anim} ${el.dur}s ease-in-out ${el.delay||0}s infinite`:"none"}}>{el.emoji}</div>)}
-        {shStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10}}><p style={{color:"#2D2B3D",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {sh.sentence}</p></div>}
+        {shStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10,...glowStyle("shape-sentence")}}><p style={{color:"#2D2B3D",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {sh.sentence}</p></div>}
       </div>}
       <div style={{textAlign:"center",marginTop:4}}><span style={{fontSize:30}}>{sh.emoji}</span><div style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{sh.name}</div>{sh.sides>0&&<span style={{fontSize:12,fontWeight:700,background:"#FFF5EB",color:"#FF8C42",padding:"4px 12px",borderRadius:10}}>{sh.sides} sides</span>}</div>
       {sh.ph&&(shStep==="saying_phonics"||shStep==="idle")&&<div style={{marginTop:6,background:"#FFF0E0",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{sh.ph.map((ph,i)=>{const d=gPh(ph);const act=shAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.6,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:44,background:act?shColor:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
@@ -3526,10 +3609,10 @@ export default function App(){
         {shStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleShResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
         {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShRes(null);const idx=SHAPES.findIndex(x=>x.name===sh.name);const next=SHAPES[(idx+1)%SHAPES.length];setSelShape(next);setShStep("idle");setTimeout(()=>playShape(next),200);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
-    </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
+    </div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ SHAPES GRID ═══
-  if(scr==="shapes")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none"}}>{s.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="shapes")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none"}}>{s.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
 
   // ═══ COLORS ═══
@@ -3538,9 +3621,9 @@ export default function App(){
     {coStep!=="idle"&&<FlowSteps current={coStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
-      {co.scene&&<div style={{position:"relative",width:"100%",height:120,borderRadius:16,overflow:"hidden",background:co.scene.bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)"}}>
+      {co.scene&&<div style={{position:"relative",width:"100%",height:120,borderRadius:16,overflow:"hidden",background:co.scene.bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)",...glowStyle("color-display")}}>
         {co.scene.elements.map((el,i)=><div key={i} style={{position:"absolute",left:`${el.x}%`,top:`${el.y}%`,transform:"translate(-50%,-50%)",fontSize:el.size,zIndex:2,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))",animation:el.anim!=="none"?`scene_${el.anim} ${el.dur}s ease-in-out ${el.delay||0}s infinite`:"none"}}>{el.emoji}</div>)}
-        {coStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10}}><p style={{color:"#2D2B3D",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {co.sentence}</p></div>}
+        {coStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10,...glowStyle("color-sentence")}}><p style={{color:"#2D2B3D",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {co.sentence}</p></div>}
       </div>}
       <div style={{textAlign:"center",marginTop:4}}><div style={{width:50,height:50,borderRadius:16,background:co.hex,margin:"0 auto 8px",boxShadow:`0 8px 24px ${co.hex}44`}}/><div style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{co.name}</div><div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>{co.things.map((t,j)=><span key={j} style={{fontSize:11,fontWeight:700,background:"#FFF0E0",color:"rgba(255,255,255,0.5)",padding:"4px 10px",borderRadius:8}}>{t}</span>)}</div></div>
       {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:6,background:"#FFF0E0",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.6,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:44,background:act?co.hex:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
@@ -3554,10 +3637,10 @@ export default function App(){
         {coStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleCoResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
         {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoRes(null);const idx=COLORSDATA.findIndex(x=>x.name===co.name);const next=COLORSDATA[(idx+1)%COLORSDATA.length];setSelColor(next);setCoStep("idle");setTimeout(()=>playColor(next),200);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
-    </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
+    </div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ COLORS GRID ═══
-  if(scr==="colors")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:22,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#E8E8E8"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="colors")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:22,borderRadius:22,border:`2px solid ${done?c.hex+"44":"#E8E8E8"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<div style={{width:54,height:54,borderRadius:16,background:c.hex,marginBottom:6,boxShadow:`0 4px 12px ${c.hex}44`}}/><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span><span style={{fontSize:22}}>{c.emoji}</span></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
 
 
@@ -3568,7 +3651,7 @@ export default function App(){
     {/* Tab bar */}
     <div style={{display:"flex",gap:6,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
       {[{id:"caps",label:"🔤 CAPITAL"},{id:"small",label:"🔡 small"},{id:"match",label:"🎯 Match"}].map(t=>
-        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setAlphaTab(t.id);setSelLetter(null);if(t.id==="match"&&matchPairs.length===0)startMatch();}}
+        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setAlphaTab(t.id);setSelLetter(null);if(t.id==="match"&&matchPairs.length===0){startMatch();}}}
           style={{flex:1,padding:"10px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             background:alphaTab===t.id?"#6366F1":"#F1F3F7",color:alphaTab===t.id?"#fff":"#93959F",transition:"all 0.2s"
           }}>{t.label}</button>
@@ -3578,14 +3661,15 @@ export default function App(){
     {/* ═══ LETTER DETAIL OVERLAY ═══ */}
     {selLetter&&<div data-panda="letter-detail" style={{position:"absolute",inset:0,background:"rgba(255,255,255,.97)",zIndex:30,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,animation:"fadeIn 0.3s",padding:20}}>
       <button onClick={closeLetter} style={{position:"absolute",top:12,right:16,padding:"8px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#FFFBF5",fontSize:13,fontWeight:800,cursor:"pointer"}}>✕ Close</button>
-      <div style={{fontSize:80,fontFamily:"'Fredoka',sans-serif",fontWeight:900,color:ALPHA_COLORS[ALPHA_LETTERS.indexOf(selLetter)%13],lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>{selLetter}{selLetter.toLowerCase()}</div>
-      <div style={{fontSize:18,fontWeight:800,color:"#2D2B3D",marginTop:4}}>"{ALPHA_DATA[selLetter]?.ph}" sound</div>
+      <div style={{fontSize:80,fontFamily:"'Fredoka',sans-serif",fontWeight:900,color:ALPHA_COLORS[ALPHA_LETTERS.indexOf(selLetter)%13],lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite",...glowStyle("letter-big")}}>{selLetter}{selLetter.toLowerCase()}</div>
+      <div style={{fontSize:18,fontWeight:800,color:"#2D2B3D",marginTop:4,...glowStyle("letter-sound")}}>"{ALPHA_DATA[selLetter]?.ph}" sound</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:10,justifyContent:"center",marginTop:8}}>
         {ALPHA_DATA[selLetter]?.examples.map((ex,i)=>
           <button key={i} onClick={()=>speak(`${selLetter} for ${ex.w}!`,{rate:0.85,pitch:1.0})} style={{
             display:"flex",flexDirection:"column",alignItems:"center",padding:"12px 14px",borderRadius:16,
             border:"2px solid #E8E0D8",background:"#FFF5EB",cursor:"pointer",minWidth:80,
-            animation:`gridPop 0.3s ease ${i*0.08}s both`
+            animation:`gridPop 0.3s ease ${i*0.08}s both`,
+            ...glowStyle("letter-ex-"+i)
           }}>
             <span style={{fontSize:32}}>{ex.e}</span>
             <span style={{fontSize:12,fontWeight:800,color:"#2D2B3D",marginTop:4}}>{selLetter} for {ex.w}</span>
@@ -3634,39 +3718,59 @@ export default function App(){
 
     {/* ═══ MATCH GAME TAB ═══ */}
     {alphaTab==="match"&&!selLetter&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",padding:"10px 14px"}}>
-      {/* Current letter being asked */}
+      {/* Mode selector */}
+      <div style={{display:"flex",gap:6,marginBottom:10}}>
+        {[{id:"findSmall",label:"A→a"},{id:"findCaps",label:"a→A"},{id:"voiceQuiz",label:"🔊 Listen"}].map(m=>
+          <button key={m.id} onClick={()=>{stop();startMatch(m.id);}} style={{
+            flex:1,padding:"8px 4px",borderRadius:12,border:"2px solid",fontSize:12,fontWeight:700,
+            cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
+            borderColor:matchMode===m.id?"#6366F1":"#E8E0D8",
+            background:matchMode===m.id?"#6366F1":"#FFFBF5",
+            color:matchMode===m.id?"#fff":"#8E8CA3",transition:"all 0.2s"
+          }}>{m.label}</button>
+        )}
+      </div>
+      {/* Current letter prompt */}
       <div style={{textAlign:"center",padding:"10px",background:"linear-gradient(135deg,#EEF2FF,#E0E7FF)",borderRadius:16,marginBottom:10}}>
         {matchIdx<matchPairs.length?<>
-          <div style={{fontSize:12,fontWeight:700,color:"#8E8CA3"}}>Find the small letter for:</div>
-          <div style={{fontSize:56,fontWeight:900,color:"#6366F1",fontFamily:"'Fredoka',sans-serif",lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>{matchPairs[matchIdx]?.cap||""}</div>
-          <div style={{fontSize:14,fontWeight:800,color:"#6366F1"}}>🏆 {matchScore}/8</div>
+          <div style={{fontSize:12,fontWeight:700,color:"#8E8CA3"}}>
+            {matchMode==="findSmall"?"Find the small letter for:":matchMode==="findCaps"?"Find the CAPITAL for:":"Which letter did you hear?"}
+          </div>
+          {matchMode==="voiceQuiz"?
+            <button onClick={()=>speak(`${matchPairs[matchIdx]?.cap}`,{rate:0.7,pitch:1.0})} style={{fontSize:48,background:"linear-gradient(135deg,#6366F1,#818CF8)",border:"none",borderRadius:20,padding:"12px 28px",color:"#fff",cursor:"pointer",marginTop:6,animation:"numPulse 1.5s ease-in-out infinite"}}>🔊 Hear Again</button>:
+            <div style={{fontSize:56,fontWeight:900,color:"#6366F1",fontFamily:"'Fredoka',sans-serif",lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>
+              {matchMode==="findCaps"?(matchPairs[matchIdx]?.cap||"").toLowerCase():(matchPairs[matchIdx]?.cap||"")}
+            </div>
+          }
+          <div style={{fontSize:14,fontWeight:800,color:"#6366F1",marginTop:4}}>🏆 {matchScore}/8</div>
         </>:<>
           <div style={{fontSize:36}}>🎉</div>
           <div style={{fontSize:18,fontWeight:800,color:"#6366F1"}}>All Done! {matchScore}/{matchPairs.length} correct</div>
           <button onClick={()=>{stop();startMatch();}} style={{marginTop:8,padding:"10px 24px",borderRadius:14,border:"none",background:"#6366F1",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔄 Play Again</button>
         </>}
       </div>
-      {/* Small letters to tap */}
-      {matchIdx<matchPairs.length&&matchOpts.length>0&&<div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+      {/* Answer options */}
+      {matchIdx<matchPairs.length&&matchOpts.length>0&&<div style={{display:"grid",gridTemplateColumns:matchMode==="voiceQuiz"?"repeat(3,1fr)":"repeat(5,1fr)",gap:10}}>
         {matchOpts.map((l,i)=>{
           const isWrong=matchWrong===l;
-          const isCorrect=matchCorrect===l;
-          return<button key={"m"+l+matchIdx} onClick={(e)=>{onMatchSmallTap(l);}} style={{
-            padding:"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
-            borderColor:isWrong?"#E23744":isCorrect?"#60B246":"#6366F1",
+          const isCorrect=matchCorrect===l||matchCorrect===l.toUpperCase()||matchCorrect===l.toLowerCase();
+          const displayLetter=matchMode==="findCaps"?l.toUpperCase():matchMode==="voiceQuiz"?l.toUpperCase():l.toLowerCase();
+          return<button key={"m"+l+matchIdx+matchMode} onClick={()=>onMatchTap(l)} style={{
+            padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
+            borderColor:isWrong?"#F87171":isCorrect?"#4ADE80":"#6366F1",
             background:isWrong?"#FEF2F2":isCorrect?"#ECFDF5":"#fff",
-            fontSize:30,fontWeight:900,
-            color:isWrong?"#E23744":isCorrect?"#60B246":"#1C1C2B",
+            fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
+            color:isWrong?"#F87171":isCorrect?"#4ADE80":"#2D2B3D",
             fontFamily:"'Fredoka',sans-serif",
             transform:isCorrect?"scale(1.2)":isWrong?"scale(0.9)":"scale(1)",
             transition:"all 0.2s",
             animation:`gridPop 0.3s ease ${i*0.06}s both`,
-            boxShadow:isCorrect?"0 6px 24px rgba(96,178,70,.3)":isWrong?"0 4px 16px rgba(226,55,68,.2)":"0 2px 10px rgba(99,102,241,.12)"
-          }}>{l.toLowerCase()}</button>;
+            boxShadow:isCorrect?"0 6px 24px rgba(74,222,128,.3)":isWrong?"0 4px 16px rgba(248,113,113,.2)":"0 2px 10px rgba(99,102,241,.12)"
+          }}>{displayLetter}</button>;
         })}
       </div>}
     </div>}
-    <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
   </div>;
 
   // ═══ BASICS DASHBOARD ═══
@@ -3697,7 +3801,8 @@ export default function App(){
             padding:"14px 8px",
             borderRadius:16,border:"2px solid #E8E0D8",cursor:"pointer",
             background:"#FFFBF5",boxShadow:"0 2px 8px rgba(0,0,0,.04)",fontFamily:"'Fredoka',sans-serif",
-            animation:`gridPop 0.3s ease ${i*0.03}s both`,transition:"all 0.15s"
+            animation:`gridPop 0.3s ease ${i*0.03}s both`,transition:"all 0.3s",
+            ...glowStyle("num-explore-"+n)
           }}>
             <span style={{fontSize:26,fontWeight:800,color:nClr(n),lineHeight:1}}>{n}</span>
           </button>;
@@ -3802,7 +3907,7 @@ export default function App(){
         <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif"}}>🔊 How</button>
         <button onClick={nextWrite} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:"linear-gradient(135deg,var(--green),var(--cyan))",color:"#000",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif"}}>Next ➡️</button>
       </div>
-    </div>}<div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
+    </div>}<div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
   </div>;
 
   // ═══ STORIES ═══
@@ -3865,7 +3970,7 @@ export default function App(){
             return<button key={oi} disabled={answered} onClick={async()=>{
               const correct=oi===storyPicked.questions[storyIdx].answer;
               const newAnswers=[...storyAnswers];newAnswers[storyIdx]=oi;setStoryAnswers(newAnswers);
-              if(correct){setStoryScore(s=>s+1);headYes();speak("That's right!",{rate:0.9});}
+              if(correct){setStoryScore(s=>s+1);headYes();boom();speak("That's right!",{rate:0.9});}
               else{headNo();flashWrong();speak("Not quite!",{rate:0.9});}
               await wait(1800);
               if(storyIdx+1<storyPicked.questions.length){setStoryIdx(storyIdx+1);}
@@ -3903,11 +4008,11 @@ export default function App(){
         <button onClick={()=>{stop();setStoryStep("list");setStoryPicked(null);}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#3B82F6",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>📚 More Stories</button>
       </div>
     </div>}
-    <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
   </div>;
 
     // ═══ REWARDS ═══
-  if(scr==="rewards")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#2D2B3D",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:22,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px #FBBF2444"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#2D2B3D",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#8E8CA3",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#f3f4f6"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"'Fredoka',sans-serif",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#FFF0E0",borderRadius:14,border:"1px solid #EDE5DC",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="rewards")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#2D2B3D",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:22,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px #FBBF2444"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#2D2B3D",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#8E8CA3",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#f3f4f6"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"'Fredoka',sans-serif",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#FFF0E0",borderRadius:14,border:"1px solid #EDE5DC",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SETTINGS ═══
   if(scr==="settings")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#FFF0E0",borderRadius:24,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"'Fredoka',sans-serif",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#8E8CA3",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#6366F1"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"#FFF0E0",borderRadius:18,padding:16,textAlign:"center",border:"1px solid #EDE5DC"}}><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FFF5EB",color:"#FF8C42",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button>
@@ -3922,9 +4027,9 @@ export default function App(){
 </div>
 {ttsKey&&<p style={{fontSize:10,color:"#22C55E",fontWeight:700,marginTop:6}}>✅ Cloud voice active</p>}
 </div>
-<button onClick={()=>{if(window.confirm("Are you sure? This will delete all your progress and points!")){save(null);setScr("onboard");setObSt(0);}}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FEE2E2",color:"#DC2626",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",marginTop:8}}>🗑️ Reset</button></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+<button onClick={()=>{if(window.confirm("Are you sure? This will delete all your progress and points!")){save(null);setScr("onboard");setObSt(0);}}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FEE2E2",color:"#DC2626",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",marginTop:8}}>🗑️ Reset</button></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
-  return<div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  return<div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -3963,6 +4068,15 @@ button:active{transform:scale(0.97)!important;}
   15%{opacity:1;transform:translate(-50%,-50%) scale(12)}
   40%{opacity:0.8;transform:translate(-50%,-50%) scale(18)}
   100%{opacity:0;transform:translate(-50%,-50%) scale(25)}
+}
+@keyframes cWrongPulse{
+  0%{background:rgba(239,68,68,0.35)}
+  50%{background:rgba(239,68,68,0.15)}
+  100%{background:rgba(239,68,68,0)}
+}
+@keyframes itemGlow{
+  0%,100%{box-shadow:0 0 0 3px #FBBF24, 0 0 16px rgba(251,191,36,0.4)}
+  50%{box-shadow:0 0 0 5px #FBBF24, 0 0 28px rgba(251,191,36,0.6), 0 0 48px rgba(251,191,36,0.2)}
 }
 @keyframes coinSp{0%,100%{transform:rotateY(0)}50%{transform:rotateY(180deg)}}
 @keyframes numPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
