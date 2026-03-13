@@ -2650,30 +2650,29 @@ export default function App(){
 
 
   // ═══ MATH FUNCTIONS ═══
-  const genMath=()=>{
-    const[rMin,rMax]=mathRange.split("-").map(Number);
-    // Pick operation
+  const genMath=(overrideRange,overrideOp)=>{
+    const range=overrideRange||mathRange;
+    const opSel=overrideOp||mathOp;
+    const[rMin,rMax]=range.split("-").map(Number);
     let op;
-    if(mathOp==="mix"){
+    if(opSel==="mix"){
       const ops=["+","-","×"];op=ops[Math.floor(Math.random()*ops.length)];
-    } else op=mathOp;
+    } else op=opSel;
     
     let a,b,answer;
     if(op==="+"){
-      a=rMin+Math.floor(Math.random()*(rMax-rMin));
-      b=rMin+Math.floor(Math.random()*(rMax-a+1));
-      if(b<1)b=1;
+      a=rMin+Math.floor(Math.random()*(rMax-rMin+1));
+      b=rMin+Math.floor(Math.random()*(rMax-rMin+1));
       answer=a+b;
     } else if(op==="-"){
-      a=rMin+1+Math.floor(Math.random()*(rMax-rMin));
-      b=rMin+Math.floor(Math.random()*(a-rMin));
-      if(b<1)b=1;
+      a=rMin+Math.floor(Math.random()*(rMax-rMin+1));
+      b=rMin+Math.floor(Math.random()*(rMax-rMin+1));
+      if(a<b){const t=a;a=b;b=t;}
       answer=a-b;
     } else {
       const mMax=Math.min(rMax,12);
-      a=Math.max(1,rMin)+Math.floor(Math.random()*Math.min(mMax,10));
+      a=Math.max(1,rMin)+Math.floor(Math.random()*(mMax-Math.max(1,rMin)+1));
       b=1+Math.floor(Math.random()*Math.min(mMax,10));
-      if(a<1)a=1;if(b<1)b=1;
       answer=a*b;
     }
     
@@ -3390,13 +3389,13 @@ export default function App(){
       {/* Math settings bar */}
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,flex:1,overflowX:"auto"}}>
-          {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);setMathProblem(null);setTimeout(genMath,100);}} style={{
+          {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
             padding:"5px 10px",borderRadius:10,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",
             borderColor:mathRange===r?"#FF8C42":"#E8E0D8",background:mathRange===r?"#FF8C42":"#FFFBF5",color:mathRange===r?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
           }}>{r}</button>)}
         </div>
         <div style={{display:"flex",gap:4}}>
-          {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);setMathProblem(null);setTimeout(genMath,100);}} style={{
+          {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
             padding:"5px 10px",borderRadius:10,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",
             borderColor:mathOp===o.id?"#6366F1":"#E8E0D8",background:mathOp===o.id?"#6366F1":"#FFFBF5",color:mathOp===o.id?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
           }}>{o.label}</button>)}
