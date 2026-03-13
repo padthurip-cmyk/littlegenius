@@ -1688,7 +1688,7 @@ const TEACHER_MSGS={
 };
 const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return msgs[Math.floor(Math.random()*msgs.length)];};
 
-const BellaChar=({mood,size=110,speaking=false,hiFive=false,joyMode=false,shake="",mouthOpen=0})=>{
+const BellaChar=({mood,size=110,speaking=false,joyMode=false,shake="",mouthOpen=0})=>{
   const s=size;
   const W=mood==="waving",C=mood==="clapping",T=mood==="thinking",P=mood==="pointing",S=mood==="star",E=mood==="excited",PR=mood==="proud",H=mood==="happy",SAD=mood==="sad";
   // mouthOpen: 0.0 (closed smile) to 1.0 (fully open) — driven by smooth sine wave externally
@@ -1796,11 +1796,6 @@ const BellaChar=({mood,size=110,speaking=false,hiFive=false,joyMode=false,shake=
       )}
       {C&&<text x="34" y="46" fontSize="8" style={{animation:"pSpark .5s ease-in-out infinite"}}>👏</text>}
       {W&&<text x="64" y="30" fontSize="7" style={{animation:"pSpark .8s ease-in-out infinite"}}>✨</text>}
-      {/* High-five hand */}
-      {hiFive&&<g style={{animation:"pHiFive 1s ease-in-out infinite",transformOrigin:"50px 25px"}}>
-        <text x="48" y="18" fontSize="22">✋</text>
-        <text x="10" y="8" fontSize="8" style={{animation:"pSpark .6s ease-in-out infinite"}}>⭐</text>
-      </g>}
     </g>
   </svg>;
 };
@@ -1911,7 +1906,7 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[pandaEmoji,setPandaEmoji]=useState("");const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(80);const[highFive,setHighFive]=useState(false);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(80);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
   const[mouthOpen,setMouthOpen]=useState(0); // 0.0 to 1.0 smooth
   const teacherIdleRef=useRef(null);
   const guideTourRef=useRef(false);
@@ -1934,7 +1929,6 @@ export default function App(){
     },180);
     return()=>clearInterval(iv);
   },[]);
-  const pandaEmojiTimer=useRef(null);
   // Head reactions
   const headYes=()=>{setHeadShake("yes");setTeacherMood("star");setTimeout(()=>{setHeadShake("");setTeacherMood("happy");},1500);};
   const headNo=()=>{setHeadShake("no");setTeacherMood("sad");setTimeout(()=>{setHeadShake("");setTeacherMood("happy");},2000);};
@@ -2000,17 +1994,6 @@ export default function App(){
     setGuideTour(false);
   };
 
-  // High-five: panda zooms to center, gets big, shows hand
-  const doHighFive=async()=>{
-    setHighFive(true);
-    setPandaSize(100);
-    setPandaPos({x:window.innerWidth/2-75,y:window.innerHeight/2-75});
-    setTeacherMood("clapping");
-    await wait(1800);
-    setHighFive(false);
-    setPandaSize(80);
-    movePandaTo("bottomRight");
-  };
   // Joy fly: panda does a quick loop around screen
   const doJoyFly=()=>{
     setJoyFly(true);setTeacherMood("star");
@@ -2072,19 +2055,13 @@ export default function App(){
       if(mood)setTeacherMood(mood);
     },200);
   };
-  const showPandaEmoji=(emoji)=>{
-    setPandaEmoji(emoji);
-    clearTimeout(pandaEmojiTimer.current);
-    pandaEmojiTimer.current=setTimeout(()=>setPandaEmoji(""),1500);
-  };
   useEffect(()=>{
     onSpeakRef.current=(text)=>{
       let mood="happy";const lo=text.toLowerCase();
-      if(lo.includes("correct")||lo.includes("perfect")||lo.includes("well done")||lo.includes("amazing")){mood="star";showPandaEmoji("⭐");}
-      else if(lo.includes("try again")||lo.includes("not quite")||lo.includes("almost")){mood="thinking";showPandaEmoji("💪");}
-      else if(lo.includes("find")||lo.includes("tap")||lo.includes("match"))mood="pointing";
-      else if(lo.includes("spell")||lo.includes("watch")||lo.includes("let"))mood="excited";
-      else if(lo.includes("great")||lo.includes("good")||lo.includes("earned")){mood="proud";showPandaEmoji("🎉");}
+      if(lo.includes("correct")||lo.includes("perfect")||lo.includes("well done")||lo.includes("amazing")||lo.includes("yes")||lo.includes("awesome")||lo.includes("yay")||lo.includes("super")||lo.includes("right"))mood="star";
+      else if(lo.includes("try again")||lo.includes("not quite")||lo.includes("almost")||lo.includes("oops"))mood="sad";
+      else if(lo.includes("great")||lo.includes("good")||lo.includes("earned"))mood="star";
+      else if(lo.includes("spell")||lo.includes("watch")||lo.includes("let")||lo.includes("repeat"))mood="excited";
       setTeacherMood(mood);
       clearTimeout(teacherIdleRef.current);
     };
@@ -2180,7 +2157,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setHighFive(false);setJoyFly(false);setPandaSize(80);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];};
+  const goHome=()=>{setJoyFly(false);setPandaSize(80);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2191,7 +2168,7 @@ export default function App(){
     const acc=calcAcc(w,normalized);setSpRes(normalized);setSpAcc(acc);setNStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0) awardPoints(p,"numbers",selNum);
-    if(s>=3)boom();
+    boom();
     // Voice cheer with name and reward motivation!
     setTimeout(()=>{
       const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
@@ -2213,7 +2190,7 @@ export default function App(){
     const acc=calcAcc(phW.word,normalized);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0) awardPoints(p,"phonics",phW.word);
-    if(s>=3)boom();
+    boom();
     setTimeout(()=>{
       const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
       const need=nextR?(nextR.cost-((prof?.points||0)+p)):0;
@@ -2465,7 +2442,7 @@ export default function App(){
     const acc=calcAcc(selShape.name,normalized);setShRes(normalized);setShAcc(acc);setShStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0) awardPoints(p,"shapes",selShape.name);
-    if(s>=3)boom();
+    boom();
     setTimeout(()=>{
       if(s>=3) speak(`${kidName}, you got it!`,{rate:0.8,pitch:1.0});
       else speak(`Nice try ${kidName}!`,{rate:0.8,pitch:1.0});
@@ -2502,7 +2479,7 @@ export default function App(){
     const acc=calcAcc(selColor.name,normalized);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0) awardPoints(p,"colors",selColor.name);
-    if(s>=3)boom();
+    boom();
     setTimeout(()=>{
       if(s>=3) speak(`${kidName}, you got it!`,{rate:0.8,pitch:1.0});
       else speak(`Nice try ${kidName}!`,{rate:0.8,pitch:1.0});
@@ -2580,14 +2557,14 @@ export default function App(){
     setMathAnswer(choice);
     setMathTotal(t=>t+1);
     if(choice===mathProblem.answer){
-      setMathFb("correct");headYes();showTeacher("clapping","That's right! You're so smart! 🧠");
+      setMathFb("correct");headYes();boom();
       setMathScore(s=>s+1);
       awardPoints(3,"math",`${mathProblem.a}${mathProblem.op}${mathProblem.b}`);
       await speak(`${choice}! Yes, that's right!`,{rate:0.85,pitch:1.0});
       await wait(1000);
       genMath();
     } else {
-      setMathFb("wrong");headNo();flashWrong();;
+      setMathFb("wrong");headNo();flashWrong();
       await speak(`Oops! ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.8,pitch:1.0});
       await wait(2000);
       genMath();
@@ -2727,7 +2704,7 @@ export default function App(){
       if(!isDone("quiz",quizNum))awardPoints(3,"quiz",quizNum);
       const cheers=["Yes!","Awesome!","Yay!","Right!","Super!"];
       speak(cheers[Math.floor(Math.random()*cheers.length)],{rate:1.0,pitch:1.1});
-      if((quizStreak+1)%5===0)boom();
+      boom();
       await wait(1200);
       movePandaTo("bottomRight");
       newQuiz();
@@ -2896,14 +2873,11 @@ export default function App(){
     const reaction=pandaTapReactions[pandaTapRef.current%pandaTapReactions.length];
     pandaTapRef.current++;
     setTeacherMood(reaction.mood);
-    showPandaEmoji(reaction.emoji);
+    
     speak(reaction.sound,{rate:1.0,pitch:1.1});
   };
 
   const TeacherBubble=<>{wrongFlash&&<div style={{position:"fixed",inset:0,background:"rgba(248,113,113,0.15)",zIndex:198,pointerEvents:"none",animation:"fadeIn 0.1s ease-out"}}/>}<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:"none",transition:dragRef.current?"none":joyFly?"left 0.3s ease-out, top 0.3s ease-out":"left 1s cubic-bezier(0.4,0,0.2,1), top 1s cubic-bezier(0.4,0,0.2,1)",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.1))"}}>
-    {/* Reaction emoji floats up */}
-    {pandaEmoji&&<div key={pandaEmoji+Date.now()} style={{position:"absolute",top:-24,left:"50%",transform:"translateX(-50%)",fontSize:26,animation:"ptFly 1.5s ease-out forwards",pointerEvents:"none"}}>{pandaEmoji}</div>}
-    {highFive&&<div style={{position:"absolute",top:-40,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",padding:"8px 16px",borderRadius:18,fontSize:16,fontWeight:900,animation:"slideUp 0.3s ease-out",boxShadow:"0 6px 20px rgba(252,128,25,.3)",pointerEvents:"none"}}>High Five! ✋</div>}
     {/* Panda — draggable + tappable */}
     <div
       onMouseDown={(e)=>{pandaTapTime.current=Date.now();pandaDragStart(e);}}
@@ -2911,7 +2885,7 @@ export default function App(){
       onTouchStart={(e)=>{pandaTapTime.current=Date.now();pandaDragStart(e);}}
       onTouchEnd={()=>{if(Date.now()-pandaTapTime.current<250)onPandaTap();}}
       style={{cursor:"pointer",pointerEvents:"auto",userSelect:"none",WebkitUserSelect:"none"}}>
-      <BellaChar mood={teacherMood} size={pandaSize} speaking={isSpeaking} hiFive={highFive} joyMode={joyFly} shake={headShake} mouthOpen={mouthOpen}/>
+      <BellaChar mood={teacherMood} size={pandaSize} speaking={isSpeaking} joyMode={joyFly} shake={headShake} mouthOpen={mouthOpen}/>
     </div>
   </div></>;
 
