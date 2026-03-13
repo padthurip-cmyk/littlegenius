@@ -1712,8 +1712,8 @@ const BellaChar=({mood,size=110,speaking=false,joyMode=false,shake="",mouthOpen=
       @keyframes pLookAround{0%,100%{transform:rotate(0deg) translateX(0)}25%{transform:rotate(-3deg) translateX(-1px)}50%{transform:rotate(2deg) translateX(1px)}75%{transform:rotate(-2deg) translateX(-1px)}}
       @keyframes pHiFive{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
       @keyframes pJoySpin{0%{transform:rotate(0deg)}25%{transform:rotate(5deg)}50%{transform:rotate(-5deg)}75%{transform:rotate(3deg)}100%{transform:rotate(0deg)}}
-      @keyframes pHeadYes{0%,100%{transform:rotate(0deg) translateY(0)}25%{transform:rotate(6deg) translateY(2px)}50%{transform:rotate(-3deg) translateY(-1px)}75%{transform:rotate(4deg) translateY(1px)}}
-      @keyframes pHeadNo{0%,100%{transform:rotate(0deg) translateX(0)}20%{transform:rotate(-8deg) translateX(-3px)}40%{transform:rotate(8deg) translateX(3px)}60%{transform:rotate(-6deg) translateX(-2px)}80%{transform:rotate(6deg) translateX(2px)}}
+      @keyframes pHeadYes{0%{transform:rotate(0deg) translateY(0)}15%{transform:rotate(3deg) translateY(1.5px)}30%{transform:rotate(-1deg) translateY(-0.5px)}45%{transform:rotate(2deg) translateY(1px)}60%{transform:rotate(-0.5deg) translateY(0)}100%{transform:rotate(0deg) translateY(0)}}
+      @keyframes pHeadNo{0%{transform:rotate(0deg) translateX(0)}15%{transform:rotate(-4deg) translateX(-2px)}35%{transform:rotate(4deg) translateX(2px)}55%{transform:rotate(-3deg) translateX(-1.5px)}75%{transform:rotate(2deg) translateX(1px)}100%{transform:rotate(0deg) translateX(0)}}
       @keyframes pSadBody{0%,100%{transform:translateY(0)}50%{transform:translateY(2px)}}
       @keyframes pGentleArm{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-8deg)}}
     `}</style>
@@ -1747,7 +1747,7 @@ const BellaChar=({mood,size=110,speaking=false,joyMode=false,shake="",mouthOpen=
         <ellipse cx={W?58:58} cy={W?36:52} rx="6.5" ry="5" fill="#333" transform={W?"rotate(-30,58,36)":"rotate(-15,58,52)"}/>
       </g>
       {/* Head */}
-      <g style={{transformOrigin:"40px 26px",animation:shake==="yes"?"pHeadYes 0.6s ease-in-out infinite":shake==="no"?"pHeadNo 0.5s ease-in-out infinite":joyMode?"pJoySpin 0.8s ease-in-out infinite":speaking?"pGentleNod 2s ease-in-out infinite":"pLookAround 8s ease-in-out infinite"}}>
+      <g style={{transformOrigin:"40px 26px",animation:shake==="yes"?"pHeadYes 1s ease-in-out infinite":shake==="no"?"pHeadNo 1.2s ease-in-out infinite":joyMode?"pJoySpin 0.8s ease-in-out infinite":speaking?"pGentleNod 2s ease-in-out infinite":"pLookAround 8s ease-in-out infinite"}}>
         <ellipse cx="40" cy="26" rx="17" ry="15" fill="url(#pf)"/>
         {/* Ears */}
         <g style={{transformOrigin:"24px 13px",animation:(E||S||W)?"pEar .6s ease-in-out infinite":"none"}}>
@@ -1949,50 +1949,67 @@ export default function App(){
       {id:"stories",color:"#3B82F6",msg:"Stories! Read fun tales and answer questions!"},
       {id:"settings",color:"#64748B",msg:"And Settings! You can change your look here!"},
     ];
-    // Dim all tiles first
-    const allTiles=document.querySelectorAll('[data-tile]');
+    // Create dark overlay
+    const overlay=document.createElement("div");
+    overlay.id="tour-overlay";
+    overlay.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:150;transition:opacity 0.3s;";
+    document.body.appendChild(overlay);
+
     for(const tile of tiles){
       if(!guideTourRef.current)break;
       const el=document.querySelector('[data-tile="'+tile.id+'"]');
-      if(el){
-        // Scroll tile into view
-        el.scrollIntoView({behavior:"smooth",block:"center"});
-        await wait(200);
-        // Dim all others
-        allTiles.forEach(t=>{
-          if(t!==el){t.style.opacity="0.3";t.style.filter="grayscale(0.8)";t.style.transition="all 0.4s";}
-        });
-        // Highlight this tile BIG
-        el.style.transform="scale(1.25)";
-        el.style.zIndex="100";
-        el.style.position="relative";
-        el.style.setProperty("--gc",tile.color);
-        el.style.animation="tileGlow 1s ease-in-out infinite";
-        el.style.boxShadow=`0 0 0 4px ${tile.color}, 0 0 30px ${tile.color}88, 0 8px 32px rgba(0,0,0,.15)`;
-        el.style.border=`3px solid ${tile.color}`;
-        el.style.transition="transform 0.3s cubic-bezier(0.34,1.56,0.64,1)";
-        el.style.opacity="1";
-        el.style.filter="none";
-      }
+      if(!el)continue;
+      el.scrollIntoView({behavior:"smooth",block:"center"});
+      await wait(300);
+      // Save original inline style
+      const origCSS=el.style.cssText;
+      const rect=el.getBoundingClientRect();
+      // Lift tile out of flow to fixed position at its current spot
+      el.style.position="fixed";
+      el.style.left=rect.left+"px";
+      el.style.top=rect.top+"px";
+      el.style.width=rect.width+"px";
+      el.style.height=rect.height+"px";
+      el.style.zIndex="200";
+      el.style.margin="0";
+      el.style.transition="all 0.5s cubic-bezier(0.34,1.56,0.64,1)";
+      await wait(50);
+      // Fly tile to center of screen
+      const bigW=rect.width*1.4;
+      const bigH=rect.height*1.4;
+      el.style.left=(window.innerWidth/2-bigW/2)+"px";
+      el.style.top=(window.innerHeight/2-bigH/2-20)+"px";
+      el.style.width=bigW+"px";
+      el.style.height=bigH+"px";
+      el.style.borderRadius="28px";
+      el.style.boxShadow="0 0 0 5px "+tile.color+", 0 0 50px "+tile.color+"88, 0 20px 60px rgba(0,0,0,.3)";
+      el.style.border="3px solid "+tile.color;
       setTeacherMood("excited");
       await speak(tile.msg,{rate:0.85,pitch:1.0});
-      // Reset this tile
-      if(el){
-        el.style.transform="";el.style.boxShadow="";el.style.border="";
-        el.style.zIndex="";el.style.position="";el.style.animation="";
-      }
-      // Restore all tiles briefly
-      allTiles.forEach(t=>{t.style.opacity="";t.style.filter="";t.style.transition="all 0.3s";});
-      await wait(250);
+      await wait(200);
+      // Fly tile back to its original spot
+      el.style.left=rect.left+"px";
+      el.style.top=rect.top+"px";
+      el.style.width=rect.width+"px";
+      el.style.height=rect.height+"px";
+      el.style.boxShadow="";
+      el.style.border="";
+      el.style.borderRadius="";
+      await wait(500);
+      // Restore original styles completely
+      el.style.cssText=origCSS;
+      await wait(100);
     }
+    // Remove overlay
+    const ov=document.getElementById("tour-overlay");
+    if(ov){ov.style.opacity="0";setTimeout(()=>ov.remove(),300);}
     setTeacherMood("star");
-    // Restore all tiles fully
-    allTiles.forEach(t=>{t.style.opacity="";t.style.filter="";t.style.transform="";t.style.boxShadow="";t.style.border="";t.style.zIndex="";t.style.position="";t.style.animation="";t.style.transition="";});
     await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});
     await wait(300);
     guideTourRef.current=false;
     setGuideTour(false);
   };
+
 
   // Joy fly: panda does a quick loop around screen
   const doJoyFly=()=>{
@@ -2157,7 +2174,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setPandaSize(80);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];};
+  const goHome=()=>{setJoyFly(false);setPandaSize(80);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -3028,7 +3045,7 @@ export default function App(){
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",bg:"#FEF3C7",accent:"#F59E0B",shadow:"rgba(245,158,11,.15)"},
           {id:"stories",icon:"📖",title:"Stories",sub:"Read & Learn",bg:"#DBEAFE",accent:"#3B82F6",shadow:"rgba(59,130,246,.15)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",bg:"#F1F5F9",accent:"#64748B",shadow:"rgba(100,116,139,.1)"}
-        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);document.querySelectorAll('[data-tile]').forEach(t=>{t.style.opacity="";t.style.filter="";t.style.transform="";t.style.boxShadow="";t.style.border="";t.style.zIndex="";t.style.position="";t.style.animation="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov=document.getElementById("tour-overlay");if(ov)ov.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.cssText="";});}rec.warmUp();setTeacherMood("star");headYes();setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"22px 18px",borderRadius:24,border:`2.5px solid ${m.accent}22`,cursor:"pointer",
           fontFamily:"'Fredoka',sans-serif",background:m.bg,
@@ -3522,6 +3539,7 @@ export default function App(){
 
   // ═══ BASICS DASHBOARD ═══
   if(scr==="basics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <Confetti active={confetti} type={celebType}/>
     <SubHead title="Basics 🧩" onBack={goHome} points={prof?.points||0}/>
     {/* 4 Tab bar */}
     <div style={{display:"flex",gap:5,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
