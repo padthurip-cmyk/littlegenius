@@ -1803,100 +1803,107 @@ const BellaChar=({mood,size=110,speaking=false,joyMode=false,shake="",mouthOpen=
 const Particles=({count=10,emojis=["⭐","✨","🌟","💫"]})=>{const items=useRef(Array.from({length:count},(_,i)=>({id:i,emoji:emojis[i%emojis.length],x:Math.random()*100,y:Math.random()*100,sz:12+Math.random()*14,dur:8+Math.random()*12,dl:-Math.random()*10,dr:20+Math.random()*40}))).current;return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>{items.map(p=><div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:`${p.y}%`,fontSize:p.sz,opacity:0.25,animation:`floatP ${p.dur}s ease-in-out ${p.dl}s infinite`,"--dr":`${p.dr}px`}}>{p.emoji}</div>)}</div>;};
 const Confetti=({active,type})=>{
   const items=useRef(null);
-  if(!active)return null;
-  // Generate items once per activation
+  if(!active){items.current=null;return null;}
   if(!items.current){
     const t=type||0;
     if(t===0){
-      // Paper confetti — emoji confetti + colorful swirling paper strips
-      items.current=Array.from({length:50},(_,i)=>{
-        const isEmoji=i<8;
-        const emojis=["🎊","🎉","⭐","✨","💫","🌟","🎊","🎉"];
-        return{
-          emoji:isEmoji?emojis[i]:null,
-          x:5+Math.random()*90,
-          color:["#FF6B6B","#FBBF24","#4ADE80","#60A5FA","#A78BFA","#F472B6","#FF8C42","#34D399"][i%8],
-          w:isEmoji?0:(4+Math.random()*8),
-          h:isEmoji?0:(8+Math.random()*14),
-          dur:1.8+Math.random()*2,
-          del:Math.random()*0.6,
-          sway:15+Math.random()*30,
-          rot:Math.random()*720,
-          sz:isEmoji?(20+Math.random()*14):0,
-        };
-      });
+      // Confetti: colorful paper + a few emoji
+      items.current=Array.from({length:55},(_,i)=>({
+        isEmoji:i<6,
+        emoji:["🎊","🎉","⭐","✨","🎊","🎉"][i]||null,
+        x:2+Math.random()*96,
+        color:["#FF6B6B","#FBBF24","#4ADE80","#60A5FA","#A78BFA","#F472B6","#FF8C42","#34D399"][i%8],
+        w:3+Math.random()*7, h:6+Math.random()*12,
+        dur:2.2+Math.random()*1.8,
+        del:Math.random()*0.8,
+        drift:-30+Math.random()*60,
+        rot:360+Math.random()*720,
+        sz:i<6?(18+Math.random()*12):0,
+      }));
     } else if(t===1){
-      // Balloons — real balloon emojis rising with gentle float
-      const balloonEmojis=["🎈","🎈","🎈","🟡","🔵","🟢","🔴","🟣","🎈","🎈","🎈","🩷","🎈","🧡","🎈"];
-      items.current=Array.from({length:18},(_,i)=>({
-        emoji:balloonEmojis[i%balloonEmojis.length],
-        x:3+Math.random()*94,
-        sz:28+Math.random()*20,
-        dur:2.5+Math.random()*2,
-        del:Math.random()*1.0,
-        sway:8+Math.random()*16,
+      // Balloons: smooth rise
+      items.current=Array.from({length:16},(_,i)=>({
+        emoji:["🎈","🎈","🎈","🎈","🎈","🎈","🎈","🎈","🎈","🎈","🎈","🎈","🎈","🎈","🎈","🎈"][i],
+        x:4+Math.random()*92,
+        sz:30+Math.random()*18,
+        dur:3+Math.random()*2,
+        del:i*0.15+Math.random()*0.3,
+        drift:-12+Math.random()*24,
       }));
     } else {
-      // Fireworks — bursts from 3 launch points
-      const bursts=[];
-      const centers=[{x:25,y:30},{x:55,y:20},{x:75,y:35},{x:40,y:45}];
-      centers.forEach((c,ci)=>{
-        const sparkEmojis=["✨","🌟","⭐","💫","✨","🌟"];
-        for(let j=0;j<12;j++){
-          const angle=(j/12)*Math.PI*2;
-          const dist=40+Math.random()*60;
-          bursts.push({
-            emoji:sparkEmojis[j%sparkEmojis.length],
-            cx:c.x, cy:c.y,
-            dx:Math.cos(angle)*dist,
-            dy:Math.sin(angle)*dist,
-            sz:14+Math.random()*16,
-            dur:0.6+Math.random()*0.6,
-            del:ci*0.4+Math.random()*0.15,
+      // Fireworks: golden/white glowing particles bursting from points
+      const sparks=[];
+      const pts=[{x:30,y:28},{x:60,y:22},{x:45,y:40},{x:75,y:32}];
+      pts.forEach((p,pi)=>{
+        // Core flash
+        sparks.push({type:"flash",cx:p.x,cy:p.y,sz:8,del:pi*0.5,dur:0.6});
+        // Burst particles
+        const count=20+Math.floor(Math.random()*10);
+        for(let j=0;j<count;j++){
+          const angle=(j/count)*Math.PI*2+Math.random()*0.3;
+          const speed=50+Math.random()*80;
+          const isGold=Math.random()>0.3;
+          sparks.push({
+            type:"spark",cx:p.x,cy:p.y,
+            dx:Math.cos(angle)*speed, dy:Math.sin(angle)*speed,
+            sz:2+Math.random()*3,
+            color:isGold?`hsl(${40+Math.random()*20},100%,${60+Math.random()*30}%)`:"#fff",
+            dur:0.8+Math.random()*0.8,
+            del:pi*0.5+Math.random()*0.1,
+            trail:6+Math.random()*10,
           });
         }
-        // Center flash
-        bursts.push({emoji:"🎆",cx:c.x,cy:c.y,dx:0,dy:0,sz:36+Math.random()*12,dur:0.8,del:ci*0.4,isCenter:true});
       });
-      items.current=bursts;
+      items.current=sparks;
     }
   }
   const t=type||0;
 
   if(t===1) return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999,overflow:"hidden"}}>
     {items.current.map((b,i)=><div key={i} style={{
-      position:"absolute",left:`${b.x}%`,bottom:"-12%",
-      fontSize:b.sz,
-      animation:`celebBalloon ${b.dur}s ease-out ${b.del}s forwards`,
-      "--sway":`${b.sway}px`,
+      position:"absolute",left:`${b.x}%`,bottom:"-14%",
+      fontSize:b.sz,opacity:0,
+      animation:`cBalloon ${b.dur}s cubic-bezier(0.2,0.8,0.3,1) ${b.del}s forwards`,
+      "--drift":`${b.drift}px`,
     }}>{b.emoji}</div>)}
   </div>;
 
-  if(t===2) return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999,overflow:"hidden"}}>
-    {items.current.map((s,i)=><div key={i} style={{
-      position:"absolute",
-      left:`${s.cx}%`,top:`${s.cy}%`,
-      fontSize:s.sz,
-      animation:s.isCenter?`celebFlash ${s.dur}s ease-out ${s.del}s both`:`celebBurst ${s.dur}s ease-out ${s.del}s both`,
-      "--dx":`${s.dx||0}px`,"--dy":`${s.dy||0}px`,
-    }}>{s.emoji}</div>)}
+  if(t===2) return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999,overflow:"hidden",background:"transparent"}}>
+    {items.current.map((s,i)=>s.type==="flash"?
+      <div key={i} style={{
+        position:"absolute",left:`${s.cx}%`,top:`${s.cy}%`,
+        width:s.sz,height:s.sz,borderRadius:"50%",
+        background:"radial-gradient(circle,#fff 0%,#FFD700 40%,transparent 70%)",
+        animation:`cFlash ${s.dur}s ease-out ${s.del}s both`,
+        transform:"translate(-50%,-50%)",
+      }}/>:
+      <div key={i} style={{
+        position:"absolute",left:`${s.cx}%`,top:`${s.cy}%`,
+        width:s.sz,height:s.trail,borderRadius:s.sz,
+        background:`linear-gradient(to bottom, ${s.color}, transparent)`,
+        boxShadow:`0 0 ${s.sz*2}px ${s.color}, 0 0 ${s.sz*4}px ${s.color}44`,
+        opacity:0,
+        animation:`cSpark ${s.dur}s ease-out ${s.del}s both`,
+        "--dx":`${s.dx}px`,"--dy":`${s.dy}px`,
+        transformOrigin:"center top",
+      }}/>
+    )}
   </div>;
 
-  // Default: paper confetti
   return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:999,overflow:"hidden"}}>
-    {items.current.map((c,i)=>c.emoji?
+    {items.current.map((c,i)=>c.isEmoji?
       <div key={i} style={{
         position:"absolute",left:`${c.x}%`,top:"-8%",
-        fontSize:c.sz,
-        animation:`celebFallEmoji ${c.dur}s ease-in ${c.del}s forwards`,
-        "--sway":`${c.sway}px`,
+        fontSize:c.sz,opacity:0,
+        animation:`cFallEmoji ${c.dur}s ease-in ${c.del}s forwards`,
+        "--drift":`${c.drift}px`,
       }}>{c.emoji}</div>:
       <div key={i} style={{
         position:"absolute",left:`${c.x}%`,top:"-5%",
         width:c.w, height:c.h,
-        background:c.color, borderRadius:3,
-        animation:`celebFallPaper ${c.dur}s ease-in ${c.del}s forwards`,
-        "--sway":`${c.sway}px`,"--rot":`${c.rot}deg`,
+        background:c.color, borderRadius:2,opacity:0,
+        animation:`cFallPaper ${c.dur}s ease-in ${c.del}s forwards`,
+        "--drift":`${c.drift}px`,"--rot":`${c.rot}deg`,
       }}/>
     )}
   </div>;
@@ -2042,10 +2049,24 @@ export default function App(){
       {id:"stories",color:"#3B82F6",msg:"Stories! Read fun tales and answer questions!"},
       {id:"settings",color:"#64748B",msg:"And Settings! You can change your look here!"},
     ];
-    // Create dark backdrop
+    // Create dark backdrop — tap anywhere to skip tour
     const backdrop=document.createElement("div");
     backdrop.id="tour-overlay";
-    backdrop.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;opacity:0;transition:opacity 0.3s;";
+    backdrop.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:150;opacity:0;transition:opacity 0.3s;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;";
+    const skipLabel=document.createElement("div");
+    skipLabel.textContent="Tap anywhere to skip →";
+    skipLabel.style.cssText="color:rgba(255,255,255,0.7);font-size:14px;font-weight:600;font-family:'Fredoka',sans-serif;pointer-events:none;";
+    backdrop.appendChild(skipLabel);
+    backdrop.onclick=()=>{
+      guideTourRef.current=false;
+      stop();
+      backdrop.style.opacity="0";
+      setTimeout(()=>backdrop.remove(),300);
+      const cl=document.getElementById("tour-clone");if(cl)cl.remove();
+      document.querySelectorAll("[data-tile]").forEach(t=>{t.style.outline="";t.style.outlineOffset="";});
+      setGuideTour(false);
+      setTeacherMood("happy");
+    };
     document.body.appendChild(backdrop);
     await wait(50);
     backdrop.style.opacity="1";
@@ -3919,38 +3940,29 @@ button:active{transform:scale(0.97)!important;}
 @keyframes splashPop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 @keyframes mascotB{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes floatP{0%,100%{transform:translateY(0) translateX(0)}25%{transform:translateY(calc(-1*var(--dr,15px))) translateX(10px)}75%{transform:translateY(5px) translateX(-10px)}}
-@keyframes celebFallPaper{
-  0%{opacity:1;transform:translateY(0) translateX(0) rotate(0deg) scale(1)}
-  25%{transform:translateY(25vh) translateX(var(--sway)) rotate(180deg) scale(0.9)}
-  50%{transform:translateY(50vh) translateX(calc(var(--sway)*-0.6)) rotate(var(--rot)) scale(0.8)}
-  75%{transform:translateY(75vh) translateX(var(--sway)) rotate(540deg) scale(0.6)}
-  100%{opacity:0;transform:translateY(105vh) translateX(calc(var(--sway)*-0.3)) rotate(var(--rot)) scale(0.3)}
+@keyframes cFallPaper{
+  0%{opacity:1;transform:translateY(0) translateX(0) rotate(0deg)}
+  100%{opacity:0;transform:translateY(110vh) translateX(var(--drift)) rotate(var(--rot))}
 }
-@keyframes celebFallEmoji{
-  0%{opacity:1;transform:translateY(0) translateX(0) scale(1)}
-  30%{opacity:1;transform:translateY(30vh) translateX(var(--sway)) scale(1.1) rotate(15deg)}
-  60%{opacity:0.8;transform:translateY(60vh) translateX(calc(var(--sway)*-0.7)) scale(0.9) rotate(-10deg)}
-  100%{opacity:0;transform:translateY(110vh) translateX(var(--sway)) scale(0.5) rotate(20deg)}
+@keyframes cFallEmoji{
+  0%{opacity:1;transform:translateY(0) translateX(0) scale(1) rotate(0deg)}
+  100%{opacity:0;transform:translateY(110vh) translateX(var(--drift)) scale(0.4) rotate(25deg)}
 }
-@keyframes celebBalloon{
+@keyframes cBalloon{
   0%{opacity:0;transform:translateY(0) translateX(0) scale(0.3)}
-  10%{opacity:1;transform:translateY(-10vh) translateX(calc(var(--sway)*0.3)) scale(1)}
-  30%{transform:translateY(-30vh) translateX(calc(var(--sway)*-0.5)) scale(1.05)}
-  50%{transform:translateY(-50vh) translateX(var(--sway)) scale(1)}
-  70%{transform:translateY(-70vh) translateX(calc(var(--sway)*-0.7)) scale(0.95)}
-  100%{opacity:0;transform:translateY(-110vh) translateX(var(--sway)) scale(0.8)}
+  8%{opacity:1;transform:translateY(-8vh) translateX(calc(var(--drift)*0.1)) scale(1.05)}
+  100%{opacity:0;transform:translateY(-115vh) translateX(var(--drift)) scale(0.85)}
 }
-@keyframes celebBurst{
-  0%{opacity:0;transform:translate(0,0) scale(0)}
-  20%{opacity:1;transform:translate(calc(var(--dx)*0.3),calc(var(--dy)*0.3)) scale(1.3)}
-  50%{opacity:1;transform:translate(calc(var(--dx)*0.7),calc(var(--dy)*0.7)) scale(1)}
-  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.2)}
+@keyframes cSpark{
+  0%{opacity:1;transform:translate(0,0) scaleY(1)}
+  30%{opacity:1;transform:translate(calc(var(--dx)*0.5),calc(var(--dy)*0.5)) scaleY(1.5)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scaleY(0.3)}
 }
-@keyframes celebFlash{
-  0%{opacity:0;transform:scale(0) rotate(0deg)}
-  25%{opacity:1;transform:scale(1.4) rotate(30deg)}
-  50%{opacity:1;transform:scale(1) rotate(-10deg)}
-  100%{opacity:0;transform:scale(2) rotate(20deg)}
+@keyframes cFlash{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(0)}
+  15%{opacity:1;transform:translate(-50%,-50%) scale(12)}
+  40%{opacity:0.8;transform:translate(-50%,-50%) scale(18)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(25)}
 }
 @keyframes coinSp{0%,100%{transform:rotateY(0)}50%{transform:rotateY(180deg)}}
 @keyframes numPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
