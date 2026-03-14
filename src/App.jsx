@@ -2933,11 +2933,11 @@ export default function App(){
     const dispW=w/dpr,dispH=h/dpr;
     if(w===0||h===0)return 0;
     try{
-      // 1. Save the user's drawing
+      // 1. Save user drawing
       const userPixels=ctx.getImageData(0,0,w,h);
       const userData=new Uint8Array(userPixels.data);
       
-      // 2. Clear canvas and draw template character (same font as watermark)
+      // 2. Render template on same canvas (has fonts loaded)
       ctx.clearRect(0,0,w,h);
       ctx.save();
       ctx.scale(dpr,dpr);
@@ -2951,17 +2951,15 @@ export default function App(){
       ctx.fillText(target,dispW/2,dispH/2);
       ctx.restore();
       
-      // 3. Read template pixels
-      const tplPixels=ctx.getImageData(0,0,w,h);
-      const tplData=tplPixels.data;
+      // 3. Read template
+      const tplData=ctx.getImageData(0,0,w,h).data;
       
-      // 4. Restore user's drawing back onto canvas
+      // 4. Restore user drawing
       ctx.putImageData(userPixels,0,0);
       
-      // 5. Compare: count template pixels, user ink, overlap
+      // 5. Pixel comparison
       let tplCount=0,inkCount=0,overlap=0;
-      const step=4;
-      for(let i=3;i<userData.length;i+=step*4){
+      for(let i=3;i<userData.length;i+=16){
         const hasTpl=tplData[i]>20;
         const hasInk=userData[i]>10;
         if(hasTpl)tplCount++;
@@ -2969,20 +2967,20 @@ export default function App(){
         if(hasTpl&&hasInk)overlap++;
       }
       
-      if(tplCount<5)return 0; // template didn't render
-      if(inkCount<3)return 0; // nothing drawn
+      if(tplCount<5||inkCount<3)return 0;
       
-      // Coverage: what % of the watermark is filled by ink (0-100)
-      const coverage=Math.round((overlap/tplCount)*100);
+      // Coverage: what % of watermark is filled (how complete is the tracing)
+      const coverage=overlap/tplCount;
       
-      // Penalty: ink outside watermark reduces score
-      const inkOutside=inkCount-overlap;
-      const spillRatio=inkCount>0?(inkOutside/inkCount):0;
-      // If >60% of ink is outside template, heavy penalty
-      const penalty=Math.round(spillRatio*30);
+      // Precision: what % of ink is ON the watermark (how accurate is the tracing)
+      const precision=overlap/inkCount;
       
-      const score=Math.max(0,Math.min(100,coverage-penalty));
-      return score;
+      // SCORE = coverage × precision × 100
+      // If you trace perfectly ON the watermark: coverage=90%, precision=90% → 81%
+      // If you draw completely OUTSIDE: coverage=0%, precision=0% → 0%
+      // If you scribble everywhere: coverage=80%, precision=20% → 16%
+      const score=Math.round(coverage*precision*130);
+      return Math.min(100,Math.max(0,score));
     }catch(e){return 0;}
   };
   const drawEnd=()=>{
