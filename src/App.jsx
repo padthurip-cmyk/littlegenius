@@ -2928,25 +2928,61 @@ export default function App(){
   const scoreWriting=()=>{
     const c=cRef.current;if(!c)return 0;
     const ctx=c.getContext("2d");
+    const dpr=window.devicePixelRatio||1;
     const w=c.width,h=c.height;
+    const dispW=w/dpr,dispH=h/dpr;
     if(w===0||h===0)return 0;
     try{
-      const data=ctx.getImageData(0,0,w,h).data;
-      let totalPx=0,inkedPx=0;
-      // Count total ink
-      for(let p=3;p<data.length;p+=16){totalPx++;if(data[p]>10)inkedPx++;}
-      if(inkedPx<3)return 0; // nothing drawn
-      const coverage=inkedPx/totalPx;
-      // Sweet spot: a well-traced character covers 5-20% of canvas
-      // Too little (<2%) = barely anything = low score
-      // Too much (>35%) = random scribble = low score
-      if(coverage>0.40)return 15; // scribble
-      if(coverage>0.30)return 25;
-      if(coverage<0.01)return 5;
-      if(coverage<0.02)return 15;
-      // Map 2%-25% coverage to 40-100% score (sweet zone)
-      const normalized=Math.min(1,(coverage-0.02)/0.20);
-      return Math.round(40+normalized*60);
+      // 1. Save the user's drawing
+      const userPixels=ctx.getImageData(0,0,w,h);
+      const userData=new Uint8Array(userPixels.data);
+      
+      // 2. Clear canvas and draw template character (same font as watermark)
+      ctx.clearRect(0,0,w,h);
+      ctx.save();
+      ctx.scale(dpr,dpr);
+      const fontSize=Math.round(dispW*0.5);
+      ctx.font=`900 ${fontSize}px 'Fredoka',Arial,sans-serif`;
+      ctx.textAlign="center";
+      ctx.textBaseline="middle";
+      ctx.fillStyle="rgba(0,0,0,1)";
+      const isNum=writeMode==="numbers";
+      const target=isNum?String(writeNum):(writeCase==="caps"?writeChar.toUpperCase():writeChar.toLowerCase());
+      ctx.fillText(target,dispW/2,dispH/2);
+      ctx.restore();
+      
+      // 3. Read template pixels
+      const tplPixels=ctx.getImageData(0,0,w,h);
+      const tplData=tplPixels.data;
+      
+      // 4. Restore user's drawing back onto canvas
+      ctx.putImageData(userPixels,0,0);
+      
+      // 5. Compare: count template pixels, user ink, overlap
+      let tplCount=0,inkCount=0,overlap=0;
+      const step=4;
+      for(let i=3;i<userData.length;i+=step*4){
+        const hasTpl=tplData[i]>20;
+        const hasInk=userData[i]>10;
+        if(hasTpl)tplCount++;
+        if(hasInk)inkCount++;
+        if(hasTpl&&hasInk)overlap++;
+      }
+      
+      if(tplCount<5)return 0; // template didn't render
+      if(inkCount<3)return 0; // nothing drawn
+      
+      // Coverage: what % of the watermark is filled by ink (0-100)
+      const coverage=Math.round((overlap/tplCount)*100);
+      
+      // Penalty: ink outside watermark reduces score
+      const inkOutside=inkCount-overlap;
+      const spillRatio=inkCount>0?(inkOutside/inkCount):0;
+      // If >60% of ink is outside template, heavy penalty
+      const penalty=Math.round(spillRatio*30);
+      
+      const score=Math.max(0,Math.min(100,coverage-penalty));
+      return score;
     }catch(e){return 0;}
   };
   const drawEnd=()=>{
