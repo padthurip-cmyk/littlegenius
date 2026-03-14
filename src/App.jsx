@@ -2936,10 +2936,19 @@ export default function App(){
     if(dispW===0||dispH===0)return 0;
     const isNum=writeMode==="numbers";
     const target=isNum?String(writeNum):(writeCase==="caps"?writeChar.toUpperCase():writeChar.toLowerCase());
+    // Scribble detection: check total ink coverage
+    let totalSampled=0,totalInk=0;
+    try{
+      const all=ctx.getImageData(0,0,c.width,c.height).data;
+      for(let p=3;p<all.length;p+=32){totalSampled++;if(all[p]>15)totalInk++;}
+    }catch(e){}
+    const globalCoverage=totalSampled>0?(totalInk/totalSampled):0;
+    if(globalCoverage>0.45)return 15; // random scribble fills too much
+    if(globalCoverage<0.01)return 0; // nothing drawn
     const digits=isNum?target.split("").map(ch=>{const n=parseInt(ch);return isNaN(n)?-1:n;}).filter(n=>n>=0):[];
     if(isNum&&digits.length>0){
       const COLS=6,ROWS=8;
-      let hit=0,total=0,miss=0,empty=0;
+      let hit=0,total=0;
       digits.forEach((d,di)=>{
         const tpl=NUM_TPL[d];if(!tpl)return;
         const offX=digits.length>1?(di===0?0:dispW/2):0;
@@ -2947,58 +2956,37 @@ export default function App(){
         const cW=dW/COLS,cH=dispH/ROWS;
         for(let r=0;r<ROWS;r++){
           for(let cl=0;cl<COLS;cl++){
-            const isTpl=tpl[r*COLS+cl]===1;
-            if(isTpl)total++;
-            const sx=Math.max(0,Math.floor((offX+cl*cW)*dpr));
-            const sy=Math.max(0,Math.floor((r*cH)*dpr));
-            const sw=Math.min(Math.ceil(cW*dpr),c.width-sx);
-            const sh=Math.min(Math.ceil(cH*dpr),c.height-sy);
+            if(tpl[r*COLS+cl]!==1)continue;
+            total++;
+            // Sample the FULL cell with 20% padding on each side
+            const sx=Math.max(0,Math.floor((offX+(cl-0.2)*cW)*dpr));
+            const sy=Math.max(0,Math.floor(((r-0.2)*cH)*dpr));
+            const sw=Math.min(Math.ceil(cW*1.4*dpr),c.width-sx);
+            const sh=Math.min(Math.ceil(cH*1.4*dpr),c.height-sy);
             if(sw<=0||sh<=0)continue;
-            let hasInk=false;
             try{
               const data=ctx.getImageData(sx,sy,sw,sh).data;
-              for(let p=3;p<data.length;p+=8){if(data[p]>15){hasInk=true;break;}}
+              for(let p=3;p<data.length;p+=4){if(data[p]>10){hit++;break;}}
             }catch(e){}
-            if(isTpl&&hasInk)hit++;
-            if(!isTpl&&hasInk)miss++;
-            if(!isTpl&&!hasInk)empty++;
           }
         }
       });
-      if(total===0)return 0;
-      // Accuracy = template cells hit, penalized by ink outside template
-      const accuracy=hit/total;
-      const totalEmpty=COLS*ROWS*digits.length-total;
-      const spillPenalty=totalEmpty>0?Math.min(0.5,(miss/totalEmpty)*1.5):0;
-      const score=Math.max(0,Math.round((accuracy-spillPenalty)*100));
-      return Math.min(100,score);
+      return total>0?Math.min(100,Math.round((hit/total)*115)):0;
     }
-    // Letter scoring: check ink coverage + distribution
-    // Must have ink in multiple distinct zones, not just a blob
-    const GC=4,GR=5;
-    let inked=0,totalPx=0,inkedPx=0;
+    // Letter: zone distribution check
+    const GC=3,GR=4;
+    let inked=0;
     for(let r=0;r<GR;r++){
       for(let cl=0;cl<GC;cl++){
         const sx=Math.floor(cl*(c.width/GC));
         const sy=Math.floor(r*(c.height/GR));
-        const sw=Math.ceil(c.width/GC);
-        const sh=Math.ceil(c.height/GR);
         try{
-          const data=ctx.getImageData(sx,sy,sw,sh).data;
-          let zoneInk=false;
-          for(let p=3;p<data.length;p+=8){totalPx++;if(data[p]>15){inkedPx++;zoneInk=true;}}
-          if(zoneInk)inked++;
+          const data=ctx.getImageData(sx,sy,Math.ceil(c.width/GC),Math.ceil(c.height/GR)).data;
+          for(let p=3;p<data.length;p+=16){if(data[p]>15){inked++;break;}}
         }catch(e){}
       }
     }
-    // Need ink in at least 3 zones but not ALL zones (that means scribble)
-    const zonePct=inked/(GC*GR);
-    const pixelPct=totalPx>0?(inkedPx/totalPx):0;
-    // If >80% pixels are inked = random scribble = low score
-    if(pixelPct>0.6)return Math.max(10,Math.round(30-pixelPct*30));
-    // Good letter covers 25-60% of zones with 5-30% pixel coverage
-    if(zonePct<0.15)return Math.round(zonePct*200); // barely any ink
-    return Math.min(100,Math.round(zonePct*170));
+    return Math.min(100,Math.round((inked/(GC*GR))*180));
   };
   const drawEnd=()=>{
     if(!cRef.current)return;
