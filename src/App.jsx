@@ -2454,8 +2454,6 @@ export default function App(){
     // Step 1: Say the number (always)
     setNStep("saying_number");
     glow("num-display");
-    await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});
-    await wait(300);
     glow("num-display");
     await speak(`This is the number, ${w}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current)return;
@@ -2517,8 +2515,6 @@ export default function App(){
     // Step 1: Say the word (always)
     setPhStep("saying_word");
     glow("ph-word");
-    await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});
-    await wait(300);
     glow("ph-word");
     await speak(`This word is, ${wd.word}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current)return;
@@ -2585,7 +2581,6 @@ export default function App(){
     if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
     pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setShStep("saying_word");glow("shape-display");
-    await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
     await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setShStep("spelling");
     await spellWord(sh.name);await wait(400);if(!pRef.current)return;
@@ -2621,7 +2616,6 @@ export default function App(){
     if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
     pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setCoStep("saying_word");glow("color-display");
-    await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});await wait(300);
     await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setCoStep("spelling");
     await spellWord(co.name);await wait(400);if(!pRef.current)return;
@@ -2931,62 +2925,43 @@ export default function App(){
   const scoreWriting=()=>{
     const c=cRef.current;if(!c)return 0;
     const ctx=c.getContext("2d");
-    const dpr=window.devicePixelRatio||1;
-    const dispW=c.width/dpr,dispH=c.height/dpr;
-    if(dispW===0||dispH===0)return 0;
+    const w=c.width,h=c.height;
+    if(w===0||h===0)return 0;
     const isNum=writeMode==="numbers";
     const target=isNum?String(writeNum):(writeCase==="caps"?writeChar.toUpperCase():writeChar.toLowerCase());
-    // Scribble detection: check total ink coverage
-    let totalSampled=0,totalInk=0;
-    try{
-      const all=ctx.getImageData(0,0,c.width,c.height).data;
-      for(let p=3;p<all.length;p+=32){totalSampled++;if(all[p]>15)totalInk++;}
-    }catch(e){}
-    const globalCoverage=totalSampled>0?(totalInk/totalSampled):0;
-    if(globalCoverage>0.45)return 15; // random scribble fills too much
-    if(globalCoverage<0.01)return 0; // nothing drawn
-    const digits=isNum?target.split("").map(ch=>{const n=parseInt(ch);return isNaN(n)?-1:n;}).filter(n=>n>=0):[];
-    if(isNum&&digits.length>0){
-      const COLS=6,ROWS=8;
-      let hit=0,total=0;
-      digits.forEach((d,di)=>{
-        const tpl=NUM_TPL[d];if(!tpl)return;
-        const offX=digits.length>1?(di===0?0:dispW/2):0;
-        const dW=digits.length>1?dispW/2:dispW;
-        const cW=dW/COLS,cH=dispH/ROWS;
-        for(let r=0;r<ROWS;r++){
-          for(let cl=0;cl<COLS;cl++){
-            if(tpl[r*COLS+cl]!==1)continue;
-            total++;
-            // Sample the FULL cell with 20% padding on each side
-            const sx=Math.max(0,Math.floor((offX+(cl-0.2)*cW)*dpr));
-            const sy=Math.max(0,Math.floor(((r-0.2)*cH)*dpr));
-            const sw=Math.min(Math.ceil(cW*1.4*dpr),c.width-sx);
-            const sh=Math.min(Math.ceil(cH*1.4*dpr),c.height-sy);
-            if(sw<=0||sh<=0)continue;
-            try{
-              const data=ctx.getImageData(sx,sy,sw,sh).data;
-              for(let p=3;p<data.length;p+=4){if(data[p]>10){hit++;break;}}
-            }catch(e){}
-          }
-        }
-      });
-      return total>0?Math.min(100,Math.round((hit/total)*115)):0;
+    // Create offscreen canvas with the target rendered as the watermark
+    const off=document.createElement("canvas");
+    off.width=w;off.height=h;
+    const ox=off.getContext("2d");
+    const dpr=window.devicePixelRatio||1;
+    ox.scale(dpr,dpr);
+    ox.font="900 "+Math.round(h/(dpr*1.1))+"px Fredoka,sans-serif";
+    ox.textAlign="center";ox.textBaseline="middle";
+    ox.fillStyle="#000";
+    ox.fillText(target,w/(2*dpr),h/(2*dpr));
+    // Get both canvases pixel data
+    const userData=ctx.getImageData(0,0,w,h).data;
+    const tplData=ox.getImageData(0,0,w,h).data;
+    // Count: template pixels, user ink pixels, overlap pixels
+    let tplPx=0,inkPx=0,overlap=0,inkOutside=0;
+    const step=4; // sample every 4th pixel for speed
+    for(let p=3;p<userData.length;p+=step*4){
+      const hasTpl=tplData[p]>30;
+      const hasInk=userData[p]>10;
+      if(hasTpl)tplPx++;
+      if(hasInk)inkPx++;
+      if(hasTpl&&hasInk)overlap++;
+      if(!hasTpl&&hasInk)inkOutside++;
     }
-    // Letter: zone distribution check
-    const GC=3,GR=4;
-    let inked=0;
-    for(let r=0;r<GR;r++){
-      for(let cl=0;cl<GC;cl++){
-        const sx=Math.floor(cl*(c.width/GC));
-        const sy=Math.floor(r*(c.height/GR));
-        try{
-          const data=ctx.getImageData(sx,sy,Math.ceil(c.width/GC),Math.ceil(c.height/GR)).data;
-          for(let p=3;p<data.length;p+=16){if(data[p]>15){inked++;break;}}
-        }catch(e){}
-      }
-    }
-    return Math.min(100,Math.round((inked/(GC*GR))*180));
+    if(tplPx===0)return 0;
+    if(inkPx===0)return 0;
+    // Accuracy = how much of the template is covered by ink
+    const coverage=overlap/tplPx;
+    // Precision = how much ink is on the template vs outside
+    const precision=inkPx>0?(overlap/inkPx):0;
+    // Combined score: weighted average favoring coverage
+    const raw=coverage*0.7+precision*0.3;
+    return Math.min(100,Math.round(raw*120));
   };
   const drawEnd=()=>{
     if(!cRef.current)return;
@@ -3410,13 +3385,16 @@ export default function App(){
 
     {/* ═══ NUMBERS TAB ═══ */}
     {learnTab==="numbers"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
-      <div style={{display:"flex",gap:5,padding:"8px 10px",flexWrap:"wrap",flexShrink:0}}>
+      <div style={{padding:"6px 10px",flexShrink:0}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:4}}>NUMBER RANGE</div>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
           padding:"6px 12px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
           borderColor:numRange===r?"#6366F1":"#E8E0D8",background:numRange===r?"#6366F1":"#FFFBF5",
           color:numRange===r?"#fff":"#8E8CA3",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif"
         }}>{r}</button>)}
-        <div style={{display:"flex",alignItems:"center",gap:4,padding:"3px 8px",background:"#FFF5EB",borderRadius:10}}>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:4,padding:"3px 8px",background:"#FFF5EB",borderRadius:10,marginTop:6}}>
           <span style={{fontSize:10,fontWeight:700,color:numSpelling?"#22C55E":"#999"}}>Abc</span>
           <button onClick={()=>setNumSpelling(!numSpelling)} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:numSpelling?"#22C55E":"#ddd",position:"relative"}}>
             <div style={{width:12,height:12,borderRadius:6,background:"#fff",position:"absolute",top:2,left:numSpelling?16:2,transition:"left 0.3s"}}/>
@@ -3519,11 +3497,14 @@ export default function App(){
     {/* ═══ NUMBER QUIZ ═══ */}
     {quizTab==="numquiz"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflowY:"auto",overflowX:"hidden"}}>
       {/* Range filter */}
-      <div style={{display:"flex",gap:4,padding:"8px 12px",flexWrap:"wrap",background:"#F5F3FF",borderBottom:"1px solid #EDE9FE"}}>
+      <div style={{padding:"6px 12px",background:"#F5F3FF",borderBottom:"1px solid #EDE9FE"}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:4}}>NUMBER RANGE</div>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
         {["1-10","1-20","11-20","21-50","51-100","1-100"].map(r=><button key={r} onClick={()=>{setQuizRange(r);quizUsedRef.current=[];setQuizScore(0);setQuizStreak(0);setQuizTotal(0);newQuiz(r);}} style={{
           padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
           borderColor:quizRange===r?"#8B5CF6":"#E8E0D8",background:quizRange===r?"#8B5CF6":"#FFFBF5",color:quizRange===r?"#fff":"#8E8CA3"
         }}>{r}</button>)}
+        </div>
       </div>
       <div style={{padding:"10px 16px",background:"linear-gradient(135deg,#EDE9FE,#F5F3FF)",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #DDD6FE"}}>
         {quizNum?<>
@@ -3553,7 +3534,9 @@ export default function App(){
 
     {/* ═══ MATH QUIZ ═══ */}
     {quizTab==="math"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"12px 14px"}}>
-      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:4}}>DIFFICULTY</div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
             padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"'Fredoka',sans-serif",
@@ -3969,7 +3952,9 @@ export default function App(){
   // ═══ PHONICS GRID ═══
   if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/>
     {/* Teaching mode toggles */}
-    <div style={{display:"flex",gap:6,padding:"8px 12px",background:"#FFF0E0",borderBottom:"1px solid #EDE5DC",flexWrap:"wrap"}}>
+    <div style={{padding:"6px 12px",background:"#FFF0E0",borderBottom:"1px solid #EDE5DC"}}>
+      <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:4}}>TEACHING OPTIONS</div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       {[
         {key:"spelling",icon:"🔤",label:"Spelling"},
         {key:"phonics",icon:"🔡",label:"Sounds"},
