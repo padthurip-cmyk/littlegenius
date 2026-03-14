@@ -2177,10 +2177,15 @@ export default function App(){
   },[scr]);
   // Basics state
   const[basicsTab,setBasicsTab]=useState("explore"); // legacy
-  const[learnTab,setLearnTab]=useState("numbers"); // "numbers","abc","shapes","colors"
+  const[learnTab,setLearnTab]=useState("numbers");
+  const[learnModes,setLearnModes]=useState({spelling:true,phonics:true,sentence:true,speak:false});
+  const toggleLearnMode=(key)=>setLearnModes(p=>({...p,[key]:!p[key]})); // "numbers","abc","shapes","colors"
   const[quizTab,setQuizTab]=useState("numquiz"); // "numquiz","math","letters","write"
   const prevScrRef=useRef("home"); // track where user navigated from
   const[writeNum,setWriteNum]=useState(1);
+  const[writeMode,setWriteMode]=useState("numbers"); // "numbers" or "letters"
+  const[writeChar,setWriteChar]=useState("A"); // current letter to write
+  const[writeCase,setWriteCase]=useState("caps"); // "caps" or "small"
   // Number Quiz state
   const[quizNum,setQuizNum]=useState(null);const[quizOpts,setQuizOpts]=useState([]);const[quizFb,setQuizFb]=useState(null);const[quizScore,setQuizScore]=useState(0);const[quizStreak,setQuizStreak]=useState(0);const[quizTotal,setQuizTotal]=useState(0);
   const quizUsedRef=useRef([]);
@@ -2394,20 +2399,21 @@ export default function App(){
     setActiveSpellIdx(-1);
     await wait(400);
 
-    // ─── ROUND 2: Tap game (if speakMode) ───
-    if(!speakMode || !pRef.current){setSpellRound(0);return;}
+    // ─── ROUND 2: Tap game — ALWAYS runs ───
+    if(!pRef.current){setSpellRound(0);return;}
 
     setSpellRound(2);
     setSpellStatus(letters.map(()=>'waiting'));
     setTapIndex(0);
     setTapWrong(-1);
 
-    // Create scrambled letter buttons (with unique IDs for duplicates)
     const scrambled=shuffle(letters.map((l,i)=>({letter:l.toUpperCase(),id:i,used:false})));
     setScrambledLetters(scrambled);
 
     await speak("Your turn! Tap the letters!",{rate:0.75,pitch:1.0});
     await wait(400);
+    // Auto-scroll to show scrambled letters
+    setTimeout(()=>{const el=document.querySelector('[data-spell-tap]');if(el)el.scrollIntoView({behavior:"smooth",block:"center"});},200);
 
     // Wait for kid to finish tapping (resolved by handleLetterTap)
     const success=await new Promise((resolve)=>{
@@ -2444,7 +2450,7 @@ export default function App(){
     pRef.current=true;setSelNum(num);setSpRes(null);setSpAcc(null);setAPhI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     const w=NW[num];const scene=getScene(num);
 
-    // Step 1: Say the number with excitement (high pitch, warm)
+    // Step 1: Say the number (always)
     setNStep("saying_number");
     glow("num-display");
     await speak(`Hey ${kidName}!`,{rate:0.8,pitch:1.05});
@@ -2453,33 +2459,39 @@ export default function App(){
     await speak(`This is the number, ${w}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current)return;
 
-    // Step 2: Interactive spelling
-    setNStep("spelling");
-    await spellWord(w.replace(/\s/g,''));
-    await wait(400);if(!pRef.current)return;
-    await speak(`Awesome! That spells, ${w}.`,{rate:0.75,pitch:1.0});
-    await wait(500);if(!pRef.current)return;
+    // Step 2: Interactive spelling (if enabled)
+    if(learnModes.spelling){
+      setNStep("spelling");
+      await spellWord(w.replace(/\s/g,''));
+      await wait(400);if(!pRef.current)return;
+      await speak(`Awesome! That spells, ${w}.`,{rate:0.75,pitch:1.0});
+      await wait(500);if(!pRef.current)return;
+    }
 
-    // Step 3: Sentence
-    setNStep("saying_sentence");
-    glow("num-scene");
-    await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
-    glow("num-sentence");
-    await speak(scene.sentence,{rate:0.75,pitch:1.0});
-    await wait(600);if(!pRef.current)return;
+    // Step 3: Sentence (if enabled)
+    if(learnModes.sentence){
+      setNStep("saying_sentence");
+      glow("num-scene");
+      await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
+      glow("num-sentence");
+      await speak(scene.sentence,{rate:0.75,pitch:1.0});
+      await wait(600);if(!pRef.current)return;
+    }
 
-    // Step 4: Phonics - "Now let's understand how to speak this"
-    const phs=NPH[num];
-    if(phs){
-      setNStep("saying_phonics");
-      await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
-      setAPhI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`Now say it with me, ${w}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+    // Step 4: Phonics sounds (if enabled)
+    if(learnModes.phonics){
+      const phs=NPH[num];
+      if(phs){
+        setNStep("saying_phonics");
+        await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
+        for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
+        setAPhI(-1);await wait(400);if(!pRef.current)return;
+        await speak(`Now say it with me, ${w}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      }
     }
 
     // Step 5: Speaking practice (if enabled)
-    if(speakMode){
+    if(learnModes.speak){
       await speak(`Your turn ${kidName}! Can you say, ${w}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
       stop();await wait(600);setNStep("listening");pRef.current=false;showTeacher("happy","I'm listening!");rec.start(handleNumResult);
     }else{
@@ -2917,33 +2929,54 @@ export default function App(){
   const scoreWriting=()=>{
     const c=cRef.current;if(!c)return 0;
     const ctx=c.getContext("2d");
-    const w=c.width,h=c.height;
-    if(w===0||h===0)return 0;
-    // Simple zone-based scoring: divide canvas into 4x6 grid, check which zones have ink
-    const COLS=4,ROWS=6;
-    const cW=w/COLS,cH=h/ROWS;
-    let inked=0,total=COLS*ROWS;
-    for(let r=0;r<ROWS;r++){
-      for(let cl=0;cl<COLS;cl++){
-        const sx=Math.floor(cl*cW),sy=Math.floor(r*cH);
-        const sw=Math.floor(cW),sh=Math.floor(cH);
-        if(sw<=0||sh<=0)continue;
+    const dpr=window.devicePixelRatio||1;
+    const dispW=c.width/dpr,dispH=c.height/dpr;
+    if(dispW===0||dispH===0)return 0;
+    const isNum=writeMode==="numbers";
+    const target=isNum?String(writeNum):(writeCase==="caps"?writeChar.toUpperCase():writeChar.toLowerCase());
+    const digits=isNum?target.split("").map(ch=>{const n=parseInt(ch);return isNaN(n)?-1:n;}).filter(n=>n>=0):[];
+    if(isNum&&digits.length>0){
+      const COLS=6,ROWS=8;
+      let hit=0,total=0;
+      digits.forEach((d,di)=>{
+        const tpl=NUM_TPL[d];if(!tpl)return;
+        const offX=digits.length>1?(di===0?0:dispW/2):0;
+        const dW=digits.length>1?dispW/2:dispW;
+        const cW=dW/COLS,cH=dispH/ROWS;
+        for(let r=0;r<ROWS;r++){
+          for(let cl=0;cl<COLS;cl++){
+            if(tpl[r*COLS+cl]!==1)continue;
+            total++;
+            const sx=Math.max(0,Math.floor((offX+cl*cW-cW*0.2)*dpr));
+            const sy=Math.max(0,Math.floor((r*cH-cH*0.2)*dpr));
+            const sw=Math.min(Math.ceil(cW*1.4*dpr),c.width-sx);
+            const sh=Math.min(Math.ceil(cH*1.4*dpr),c.height-sy);
+            if(sw<=0||sh<=0)continue;
+            try{
+              const data=ctx.getImageData(sx,sy,sw,sh).data;
+              for(let p=3;p<data.length;p+=8){if(data[p]>15){hit++;break;}}
+            }catch(e){}
+          }
+        }
+      });
+      return total>0?Math.min(100,Math.round((hit/total)*130)):0;
+    }
+    // Letter scoring: 3x4 zone check
+    const GC=3,GR=4;
+    let inked=0;
+    for(let r=0;r<GR;r++){
+      for(let cl=0;cl<GC;cl++){
+        const sx=Math.floor(cl*(c.width/GC));
+        const sy=Math.floor(r*(c.height/GR));
+        const sw=Math.ceil(c.width/GC);
+        const sh=Math.ceil(c.height/GR);
         try{
           const data=ctx.getImageData(sx,sy,sw,sh).data;
-          let found=false;
-          // Sample every 4th pixel for speed
-          for(let p=0;p<data.length;p+=16){
-            if(data[p+3]>20){found=true;break;}
-          }
-          if(found)inked++;
+          for(let p=3;p<data.length;p+=16){if(data[p]>15){inked++;break;}}
         }catch(e){}
       }
     }
-    // A well-traced number covers roughly 30-50% of zones
-    // Scale so that 30% coverage = 100%
-    const coverage=inked/total;
-    const score=Math.min(100,Math.round(coverage*330));
-    return score;
+    return Math.min(100,Math.round((inked/(GC*GR))*200));
   };
   const drawEnd=()=>{
     if(!cRef.current)return;
@@ -2951,24 +2984,30 @@ export default function App(){
     if(drawPts>15&&!writeOk){
       const score=scoreWriting();
       setWriteScore(score);
+      const advanceNext=()=>{
+        setTimeout(()=>{
+          if(writeMode==="numbers"){
+            const n=(writeNum%20)+1;
+            setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);
+            setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
+          } else {
+            const idx=ALPHA_LETTERS.indexOf(writeChar);
+            const next=ALPHA_LETTERS[(idx+1)%26];
+            setWriteChar(next);setWriteOk(false);setWriteScore(null);setDrawPts(0);
+            setTimeout(()=>{initCanvas();speak(`Now write ${next}.`,{rate:0.75,pitch:1.0});},300);
+          }
+        },2500);
+      };
       if(score>=70){
         setWriteOk(true);
-        headYes();boom();speak(`Perfect! Great job!`,{rate:0.85,pitch:1.0});
-        if(!isDone("basics_w",writeNum)) awardPoints(5,"basics_w",writeNum);
-        setTimeout(()=>{
-          const n=(writeNum%20)+1;
-          setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);
-          setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
-        },2500);
+        headYes();boom();speak(`Perfect!`,{rate:0.85,pitch:1.0});
+        if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(5,"basics_w",writeMode==="numbers"?writeNum:writeChar);
+        advanceNext();
       } else if(score>=40){
         setWriteOk(true);
-        headYes();boom();speak(`Good! That's a pass!`,{rate:0.85,pitch:1.0});
-        if(!isDone("basics_w",writeNum)) awardPoints(3,"basics_w",writeNum);
-        setTimeout(()=>{
-          const n=(writeNum%20)+1;
-          setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);
-          setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
-        },2500);
+        headYes();boom();speak(`Good job!`,{rate:0.85,pitch:1.0});
+        if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(3,"basics_w",writeMode==="numbers"?writeNum:writeChar);
+        advanceNext();
       } else if(score>=25){
         speak("Almost! Keep tracing.",{rate:0.85,pitch:1.0});
       }
@@ -3280,7 +3319,7 @@ export default function App(){
               </div>
               {/* Scrambled tappable letters (Round 2 only) */}
               {spellRound===2&&(
-                <div style={{marginTop:4}}>
+                <div data-spell-tap="true" style={{marginTop:4}}>
                   <div style={{textAlign:"center",fontSize:13,fontWeight:700,color:"#6366F1",marginBottom:12}}>Tap each letter:</div>
                   <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
                     {scrambledLetters.map((item,i)=>(
@@ -3334,6 +3373,21 @@ export default function App(){
   if(scr==="learn"&&!selNum&&!selShape&&!selColor)return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="Learn 📚" onBack={goHome} points={prof?.points||0}/>
+    {/* Teaching mode toggles */}
+    <div style={{display:"flex",gap:5,padding:"6px 12px",background:"#FFF0E0",borderBottom:"1px solid #EDE5DC",flexWrap:"wrap"}}>
+      {[
+        {key:"spelling",icon:"🔤",label:"Spell"},
+        {key:"phonics",icon:"🔡",label:"Sounds"},
+        {key:"sentence",icon:"💬",label:"Sentence"},
+        {key:"speak",icon:"🎤",label:"Speak"},
+      ].map(m=><button key={m.key} onClick={()=>toggleLearnMode(m.key)} style={{
+        display:"flex",alignItems:"center",gap:3,padding:"5px 10px",borderRadius:16,
+        border:`2px solid ${learnModes[m.key]?"#34D399":"#E8E0D8"}`,
+        background:learnModes[m.key]?"#ECFDF5":"#FFFBF5",
+        color:learnModes[m.key]?"#16A34A":"#8E8CA3",
+        fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif"
+      }}><span style={{fontSize:12}}>{m.icon}</span>{m.label}{learnModes[m.key]&&<span style={{fontSize:8}}>✓</span>}</button>)}
+    </div>
     {/* Tab bar */}
     <div style={{display:"flex",gap:5,padding:"6px 10px",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>
       {[{id:"numbers",label:"🔢 Numbers"},{id:"abc",label:"🔤 ABC"},{id:"shapes",label:"🔷 Shapes"},{id:"colors",label:"🎨 Colors"}].map(t=>
@@ -3578,30 +3632,61 @@ export default function App(){
 
     {/* ═══ WRITING TAB ═══ */}
     {quizTab==="write"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflowY:"auto",overflowX:"hidden",padding:"10px 14px"}}>
+      {/* Mode toggle: Numbers vs Letters */}
+      <div style={{display:"flex",gap:6,marginBottom:8}}>
+        {[{id:"numbers",label:"🔢 Numbers"},{id:"letters",label:"🔤 Letters"}].map(m=>
+          <button key={m.id} onClick={()=>{setWriteMode(m.id);setWriteOk(false);setWriteScore(null);setDrawPts(0);setTimeout(()=>{initCanvas();if(m.id==="numbers")speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75});else speak(`Write ${writeCase==="caps"?writeChar:writeChar.toLowerCase()}.`,{rate:0.75});},300);}} style={{
+            flex:1,padding:"8px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
+            borderColor:writeMode===m.id?"#FF8C42":"#E8E0D8",background:writeMode===m.id?"#FF8C42":"#FFFBF5",color:writeMode===m.id?"#fff":"#8E8CA3"
+          }}>{m.label}</button>
+        )}
+      </div>
+      {/* Caps/Small toggle for letters */}
+      {writeMode==="letters"&&<div style={{display:"flex",gap:6,marginBottom:8}}>
+        {[{id:"caps",label:"ABC Capital"},{id:"small",label:"abc Small"}].map(m=>
+          <button key={m.id} onClick={()=>{setWriteCase(m.id);setWriteOk(false);setWriteScore(null);setDrawPts(0);const ch=m.id==="caps"?writeChar.toUpperCase():writeChar.toLowerCase();setTimeout(()=>{initCanvas();speak(`Write ${ch}.`,{rate:0.75});},300);}} style={{
+            flex:1,padding:"7px",borderRadius:10,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
+            borderColor:writeCase===m.id?"#6366F1":"#E8E0D8",background:writeCase===m.id?"#6366F1":"#FFFBF5",color:writeCase===m.id?"#fff":"#8E8CA3"
+          }}>{m.label}</button>
+        )}
+      </div>}
+      {/* Current target + score */}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
         <div style={{textAlign:"center",minWidth:60}}>
-          <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:48,fontWeight:900,color:"#FF8C42",lineHeight:1}}>{writeNum}</span>
-          <div style={{fontSize:11,fontWeight:700,color:"#6366F1",textTransform:"capitalize"}}>{NW[writeNum]||writeNum}</div>
+          <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:44,fontWeight:900,color:"#FF8C42",lineHeight:1}}>
+            {writeMode==="numbers"?writeNum:(writeCase==="caps"?writeChar.toUpperCase():writeChar.toLowerCase())}
+          </span>
+          <div style={{fontSize:11,fontWeight:700,color:"#6366F1",textTransform:"capitalize"}}>
+            {writeMode==="numbers"?(NW[writeNum]||writeNum):(writeCase==="caps"?"Capital":"Small")}
+          </div>
         </div>
         <div style={{flex:1}}>
           {writeScore!==null&&<div style={{display:"flex",alignItems:"center",gap:6}}>
             <div style={{flex:1,height:8,background:"#f3f4f6",borderRadius:4,overflow:"hidden"}}>
-              <div style={{height:"100%",background:writeScore>=80?"#22C55E":writeScore>=50?"#F59E0B":"#F87171",borderRadius:4,width:`${writeScore}%`,transition:"width 0.5s"}}/>
+              <div style={{height:"100%",background:writeScore>=70?"#22C55E":writeScore>=40?"#F59E0B":"#F87171",borderRadius:4,width:`${writeScore}%`,transition:"width 0.5s"}}/>
             </div>
-            <span style={{fontSize:13,fontWeight:800,color:writeScore>=80?"#22C55E":writeScore>=50?"#F59E0B":"#F87171"}}>{writeScore}%</span>
+            <span style={{fontSize:13,fontWeight:800,color:writeScore>=70?"#22C55E":writeScore>=40?"#F59E0B":"#F87171"}}>{writeScore}%</span>
           </div>}
           {writeOk&&<div style={{fontSize:12,fontWeight:700,color:"#22C55E",marginTop:2}}>✅ Moving to next...</div>}
         </div>
-        <button onClick={()=>{const n=(writeNum%20)+1;setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);setTimeout(()=>{initCanvas();speak(`Write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);}} style={{padding:"8px 16px",borderRadius:12,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
+        <button onClick={()=>{
+          if(writeMode==="numbers"){const n=(writeNum%20)+1;setWriteNum(n);}
+          else{const idx=ALPHA_LETTERS.indexOf(writeChar.toUpperCase());setWriteChar(ALPHA_LETTERS[(idx+1)%26]);}
+          setWriteOk(false);setWriteScore(null);setDrawPts(0);
+          setTimeout(()=>{initCanvas();speak(`Write ${writeMode==="numbers"?NW[(writeNum%20)+1]||"":ALPHA_LETTERS[(ALPHA_LETTERS.indexOf(writeChar.toUpperCase())+1)%26]}.`,{rate:0.75});},300);
+        }} style={{padding:"8px 16px",borderRadius:12,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
       </div>
+      {/* Canvas */}
       <div style={{position:"relative",background:"#fff",borderRadius:16,border:"3px solid #E8E0D8",overflow:"hidden",aspectRatio:"1",width:"100%",maxWidth:320,margin:"0 auto"}}>
-        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:140,fontWeight:900,color:"#f0f0f0",fontFamily:"'Fredoka',sans-serif",pointerEvents:"none",zIndex:0,lineHeight:1}}>{writeNum}</div>
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:160,fontWeight:900,color:"#f0f0f0",fontFamily:"'Fredoka',sans-serif",pointerEvents:"none",zIndex:0,lineHeight:1}}>
+          {writeMode==="numbers"?writeNum:(writeCase==="caps"?writeChar.toUpperCase():writeChar.toLowerCase())}
+        </div>
         <canvas ref={cRef} style={{position:"relative",zIndex:1,width:"100%",height:"100%",touchAction:"none",cursor:"crosshair"}}
           onPointerDown={drawStart} onPointerMove={drawMove} onPointerUp={drawEnd} onPointerLeave={drawEnd}/>
       </div>
       <div style={{display:"flex",gap:10,marginTop:10}}>
         <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"#f3f4f6",color:"#888",fontSize:14,fontWeight:700,cursor:"pointer"}}>🗑️ Clear</button>
-        <button onClick={()=>speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0})} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6366F1,#818CF8)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>🔊 Hear</button>
+        <button onClick={()=>speak(`Write ${writeMode==="numbers"?(NW[writeNum]||writeNum):writeChar}.`,{rate:0.75})} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6366F1,#818CF8)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>🔊 Hear</button>
       </div>
     </div>}
 
