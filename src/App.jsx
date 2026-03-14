@@ -2894,7 +2894,8 @@ export default function App(){
     c.height=rect.height*dpr;
     const ctx=c.getContext("2d");
     ctx.scale(dpr,dpr);
-    ctx.lineWidth=10;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#FC8019";
+    const penW=Math.max(20,Math.round(rect.width*0.08));
+    ctx.lineWidth=penW;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#FC8019";
   };
   const getPos=(e)=>{
     const c=cRef.current;if(!c)return{x:0,y:0};
@@ -2910,7 +2911,9 @@ export default function App(){
     const ctx=c.getContext("2d");
     const{x,y}=getPos(e);
     ctx.beginPath();ctx.moveTo(x,y);
-    ctx.strokeStyle="#FC8019";ctx.lineWidth=10;ctx.lineCap="round";ctx.lineJoin="round";
+    const rect2=c.getBoundingClientRect();
+    const penW2=Math.max(20,Math.round(rect2.width*0.08));
+    ctx.strokeStyle="#FC8019";ctx.lineWidth=penW2;ctx.lineCap="round";ctx.lineJoin="round";
     c._drawing=true;
     setDrawPts(p=>p+1);
   };
@@ -2935,10 +2938,12 @@ export default function App(){
     const ox=off.getContext("2d");
     const dpr=window.devicePixelRatio||1;
     ox.scale(dpr,dpr);
-    ox.font="900 "+Math.round(h/(dpr*1.1))+"px Fredoka,sans-serif";
+    // Match the watermark: fontSize:160 in a ~320px wide container = 50% of width
+    const fontSize=Math.round(dispW*0.5);
+    ox.font="900 "+fontSize+"px Fredoka,sans-serif";
     ox.textAlign="center";ox.textBaseline="middle";
     ox.fillStyle="#000";
-    ox.fillText(target,w/(2*dpr),h/(2*dpr));
+    ox.fillText(target,dispW/2,dispH/2);
     // Get both canvases pixel data
     const userData=ctx.getImageData(0,0,w,h).data;
     const tplData=ox.getImageData(0,0,w,h).data;
