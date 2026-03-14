@@ -222,52 +222,27 @@ const getScene = (n) => SCENE_DATA[n] || getGenericScene(n);
 // ═══════════════════════════════════════════════════════════════
 // 🎬 ANIMATED SCENE COMPONENT
 // ═══════════════════════════════════════════════════════════════
-const AnimatedScene = ({num, active}) => {
+const NumberHero = ({num, word, color, active, sentence}) => {
   const scene = getScene(num);
-  return (
-    <div style={{position:"relative",width:"100%",height:220,borderRadius:24,overflow:"hidden",background:scene.bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)"}}>
-      {/* Scene number overlay */}
-      <div style={{position:"absolute",top:8,right:12,fontFamily:"'Fredoka',sans-serif",fontSize:48,fontWeight:800,color:"rgba(0,0,0,0.06)",lineHeight:1,zIndex:1}}>{num}</div>
-      
-      {/* Wall element for #2 */}
-      {scene.elements.filter(e=>e.isWall).map((_,i)=>(
-        <div key={`wall-${i}`} style={{position:"absolute",bottom:0,left:0,right:0,height:"35%",background:"repeating-linear-gradient(90deg,#8B4513 0px,#8B4513 28px,#654321 28px,#654321 30px)",borderTop:"3px solid #654321",
-          backgroundSize:"60px 30px",backgroundImage:"repeating-linear-gradient(0deg,transparent,transparent 28px,#654321 28px,#654321 30px),repeating-linear-gradient(90deg,#8B4513 0px,#8B4513 28px,#654321 28px,#654321 30px)"}}/>
-      ))}
-      
-      {/* Box element for #6 */}
-      {scene.elements.filter(e=>e.isBox).map((_,i)=>(
-        <div key={`box-${i}`} style={{position:"absolute",left:"20%",right:"20%",top:"25%",bottom:"20%",background:"#D2691E",borderRadius:8,border:"3px solid #8B4513",boxShadow:"inset 0 0 20px rgba(0,0,0,0.2)"}}/>
-      ))}
-      
-      {/* Animated elements */}
-      {scene.elements.filter(e=>!e.isWall && !e.isBox).map((el,i) => (
-        <div key={i} style={{
-          position:"absolute",
-          left:`${el.x}%`,top:`${el.y}%`,
-          transform:"translate(-50%,-50%)",
-          fontSize:el.size,lineHeight:1,
-          animation:el.anim !== "none" ? `scene_${el.anim} ${el.dur}s ease-in-out ${el.delay||0}s infinite` : "none",
-          zIndex:2,
-          filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
-          ...(el.anim === "orbitSpin" ? {
-            animation:`scene_orbitSpin ${el.dur}s linear ${el.delay||0}s infinite`,
-            transformOrigin:"50% 50%",
-            "--orbit":`${el.orbit||30}px`,
-          } : {}),
-        }}>{el.emoji}</div>
-      ))}
-      
-      {/* Sentence overlay */}
-      {active && (
-        <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"24px 16px 12px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10}}>
-          <p style={{color:"#fff",fontFamily:"'Fredoka',sans-serif",fontSize:14,fontWeight:700,textAlign:"center",textShadow:"0 1px 4px rgba(0,0,0,0.5)",lineHeight:1.3}}>
-            💬 {scene.sentence}
-          </p>
-        </div>
+  const mainEmoji = scene.elements.find(e=>!e.isWall&&!e.isBox&&e.size>=40)?.emoji||"⭐";
+  // Show exactly `num` objects (max 20 for layout)
+  const count = Math.min(num, 20);
+  return <div style={{textAlign:"center",padding:"16px 10px 10px",background:"linear-gradient(180deg,#FFFBF5,#FFF5EB)",borderRadius:20,margin:"0 4px",position:"relative",overflow:"hidden"}}>
+    {/* Giant number */}
+    <div style={{fontSize:100,fontWeight:900,fontFamily:"'Fredoka',sans-serif",color:color,lineHeight:1,animation:active?"none":"numPulse 2s ease-in-out infinite",filter:`drop-shadow(0 4px 16px ${color}44)`}}>{num}</div>
+    {/* Word */}
+    <div style={{fontSize:24,fontWeight:800,fontFamily:"'Fredoka',sans-serif",color:"#2D2B3D",textTransform:"capitalize",marginTop:2}}>{word}</div>
+    {/* Counting objects */}
+    <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center",marginTop:10,minHeight:36}}>
+      {Array.from({length:count}).map((_,i)=>
+        <span key={i} style={{fontSize:count<=5?32:count<=10?26:count<=15?22:18,animation:`gridPop 0.3s ease ${i*0.06}s both`,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{mainEmoji}</span>
       )}
     </div>
-  );
+    {/* Sentence overlay when active */}
+    {active&&<div style={{marginTop:10,padding:"10px 14px",background:"rgba(99,102,241,0.1)",borderRadius:14,animation:"slideUp 0.3s ease-out"}}>
+      <p style={{fontSize:14,fontWeight:700,color:"#6366F1",fontFamily:"'Fredoka',sans-serif",margin:0}}>💬 {sentence}</p>
+    </div>}
+  </div>;
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -3238,15 +3213,9 @@ export default function App(){
   if((scr==="numbers"||scr==="learn")&&selNum){const w=NW[selNum];const scene=getScene(selNum);const color=nClr(selNum);const phs=NPH[selNum];return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={`Number ${selNum}`} onBack={()=>{stop();pRef.current=false;setSelNum(null);setNStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
     {nStep!=="idle"&&<FlowSteps current={nStep} steps={NUM_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
-      {/* 🎬 ANIMATED SCENE */}
-      <div style={{...glowStyle("num-scene")}}>
-      <AnimatedScene num={selNum} active={nStep==="saying_sentence"}/>
-      </div>
-      
-      {/* Number + Word below scene */}
-      <div style={{textAlign:"center",marginTop:4,...glowStyle("num-display")}}>
-        <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:36,fontWeight:800,color,lineHeight:1,animation:nStep==="saying_number"?"numPulse 0.8s ease-in-out infinite":"none"}}>{selNum}</span>
-        <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,color:"#6366F1",fontWeight:600,textTransform:"capitalize"}}>{w}</div>
+      {/* 🎯 NUMBER HERO */}
+      <div style={{...glowStyle("num-display")}}>
+      <NumberHero num={selNum} word={w} color={color} active={nStep==="saying_sentence"} sentence={getScene(selNum).sentence}/>
       </div>
 
       {/* Phonemes */}
@@ -3267,67 +3236,75 @@ export default function App(){
             <button onClick={()=>playNum(selNum)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${color},${color}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button>
           </div>
         </>}
-        {nStep==="saying_number"&&<Mascot mood="speaking" msg={`Listen! "${w.toUpperCase()}" 🔊`}/>}
+        {nStep==="saying_number"&&<div style={{textAlign:"center",padding:12,background:"#FFF5EB",borderRadius:16,animation:"slideUp 0.3s"}}>
+          <span style={{fontSize:14,fontWeight:700,color:"#FF8C42"}}>🔊 Listen to the number!</span>
+        </div>}
         {/* SPELLING */}
         {nStep==="spelling"&&(
           <div style={{animation:"slideUp 0.3s ease-out"}}>
-            <Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters in order! 👆":"🔤"}/>
-            <div style={{padding:10,background:"#FFF0E0",borderRadius:16}}>
-              {/* Letter slots (top row) */}
-              <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>
+            <div style={{textAlign:"center",padding:"8px 12px",background:"#FFF5EB",borderRadius:14,marginBottom:8}}>
+              <span style={{fontSize:13,fontWeight:700,color:"#6366F1"}}>{spellRound===1?"👀 Watch and listen!":"👆 Tap the letters in order!"}</span>
+            </div>
+            <div style={{padding:14,background:"#FFF0E0",borderRadius:20}}>
+              {/* Letter slots */}
+              <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?20:0}}>
                 {w.replace(/\s/g,'').toUpperCase().split('').map((letter,i)=>{
                   const st=spellStatus[i]||'waiting';
                   const isActive=activeSpellIdx===i;
                   const isTapTarget=spellRound===2 && i===tapIndex;
-                  return <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                  return <div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
                     <span style={{
-                      fontSize:24,fontFamily:"'Fredoka',sans-serif",fontWeight:800,
-                      padding:"6px 10px",borderRadius:12,minWidth:36,textAlign:"center",
+                      fontSize:32,fontFamily:"'Fredoka',sans-serif",fontWeight:800,
+                      padding:"10px 14px",borderRadius:16,minWidth:48,textAlign:"center",
                       background:isActive?color:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#f3f4f6",
                       color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",
-                      transform:isActive?"scale(1.2) translateY(-4px)":isTapTarget?"scale(1.1)":"scale(1)",
-                      boxShadow:isActive?`0 6px 20px ${color}55`:isTapTarget?`0 4px 16px ${color}33`:"none",
+                      transform:isActive?"scale(1.15) translateY(-4px)":isTapTarget?"scale(1.05)":"scale(1)",
+                      boxShadow:isActive?`0 8px 24px ${color}55`:isTapTarget?`0 4px 16px ${color}33`:"0 2px 8px rgba(0,0,0,.04)",
                       transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
                     }}>{letter}</span>
-                    {st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}
-                    {st==='wrong'&&!isActive&&<span style={{fontSize:12}}>❌</span>}
-                    {isActive&&spellRound===1&&<span style={{fontSize:12,animation:"pulse 1s ease-in-out infinite"}}>👂</span>}
-                    {isTapTarget&&spellRound===2&&<span style={{fontSize:12,color:color,fontWeight:800,animation:"pulse 1s ease-in-out infinite"}}>👆</span>}
+                    {st==='correct'&&!isActive&&<span style={{fontSize:14}}>✅</span>}
+                    {st==='wrong'&&!isActive&&<span style={{fontSize:14}}>❌</span>}
+                    {isActive&&spellRound===1&&<span style={{fontSize:14,animation:"pulse 1s ease-in-out infinite"}}>👂</span>}
+                    {isTapTarget&&spellRound===2&&<span style={{fontSize:14,color:color,fontWeight:800,animation:"pulse 1s ease-in-out infinite"}}>👆</span>}
                   </div>;
                 })}
               </div>
               {/* Scrambled tappable letters (Round 2 only) */}
               {spellRound===2&&(
-                <div>
-                  <div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6366F1",marginBottom:10}}>Tap each letter:</div>
-                  <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+                <div style={{marginTop:4}}>
+                  <div style={{textAlign:"center",fontSize:13,fontWeight:700,color:"#6366F1",marginBottom:12}}>Tap each letter:</div>
+                  <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
                     {scrambledLetters.map((item,i)=>(
                       <button key={item.id} disabled={item.used}
                         onClick={()=>!item.used&&handleLetterTap(item.letter,i)}
                         style={{
-                          fontSize:28,fontFamily:"'Fredoka',sans-serif",fontWeight:800,
-                          padding:"6px 10px",borderRadius:16,minWidth:50,
+                          fontSize:34,fontFamily:"'Fredoka',sans-serif",fontWeight:800,
+                          padding:"10px 16px",borderRadius:18,minWidth:56,
                           border:"3px solid",cursor:item.used?"default":"pointer",
-                          borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#6366F1",
+                          borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":color,
                           background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",
-                          color:item.used?"#ddd":tapWrong===i?"#EF4444":"#1a1a2e",
+                          color:item.used?"#ddd":tapWrong===i?"#EF4444":"#2D2B3D",
                           transform:tapWrong===i?"scale(0.9) rotate(-5deg)":item.used?"scale(0.8)":"scale(1)",
-                          opacity:item.used?0.4:1,
+                          opacity:item.used?0.35:1,
                           transition:"all 0.2s cubic-bezier(0.34,1.56,0.64,1)",
-                          boxShadow:!item.used&&tapWrong!==i?"0 4px 12px rgba(99,102,241,0.15)":"none",
+                          boxShadow:!item.used&&tapWrong!==i?`0 4px 14px ${color}22`:"none",
                         }}>{item.letter}</button>
                     ))}
                   </div>
                 </div>
               )}
-              {spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px 14px",background:"#FFF5EB",borderRadius:12}}>
-                <p style={{fontSize:13,fontWeight:700,color:"#FF8C42"}}>👀 Watch and listen!</p>
+              {spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"10px 14px",background:"#FFF5EB",borderRadius:14}}>
+                <p style={{fontSize:14,fontWeight:700,color:"#FF8C42",margin:0}}>👀 Watch and listen!</p>
               </div>}
             </div>
           </div>
         )}
-        {nStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen to this sentence! 🎬"/>}
-        {nStep==="saying_phonics"&&<Mascot mood="thinking" msg="Repeat after me! 🗣️"/>}
+        {nStep==="saying_sentence"&&<div style={{textAlign:"center",padding:12,background:"#EDE9FE",borderRadius:16,animation:"slideUp 0.3s"}}>
+          <span style={{fontSize:14,fontWeight:700,color:"#6366F1"}}>💬 Listen to the sentence!</span>
+        </div>}
+        {nStep==="saying_phonics"&&<div style={{textAlign:"center",padding:12,background:"#D1FAE5",borderRadius:16,animation:"slideUp 0.3s"}}>
+          <span style={{fontSize:14,fontWeight:700,color:"#16A34A"}}>🗣️ Repeat after me!</span>
+        </div>}
         {/* COUNTDOWN */}
         {nStep==="countdown"&&(
           <div style={{textAlign:"center",padding:24,background:"#FFF0E0",borderRadius:24,animation:"slideUp 0.3s ease-out"}}>
