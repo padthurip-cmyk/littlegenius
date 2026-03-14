@@ -3386,49 +3386,60 @@ export default function App(){
     </div>}
 
     {/* ═══ ABC TAB ═══ */}
-    {learnTab==="abc"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"10px 12px"}}>
-      <p style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#8E8CA3",marginBottom:8}}>Tap a letter to learn it!</p>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
-        {ALPHA_LETTERS.map((l,i)=>
-          <button key={l} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");pRef.current=true;setScr("alphabet");setSelLetter(l);playLetter(l);}} style={{
-            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-            padding:"10px 4px",borderRadius:14,border:"2px solid #E8E0D8",cursor:"pointer",
-            background:"#FFFBF5",boxShadow:"0 2px 8px rgba(0,0,0,.06)"
-          }}>
-            <span style={{fontSize:20,fontWeight:900,color:ALPHA_COLORS[i%13]}}>{l}</span>
-            <span style={{fontSize:8,fontWeight:900,color:ALPHA_COLORS[i%13]}}>{l.toLowerCase()}</span>
-            <span style={{fontSize:10,color:"#8E8CA3"}}>{ALPHA_DATA[l]?.examples[0]?.e||""}</span>
-          </button>
-        )}
+    {learnTab==="abc"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
+      <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+          {ALPHA_LETTERS.map((l,i)=>{const done=isDone("alphabet",l);return<button key={l} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");pRef.current=true;setScr("alphabet");setSelLetter(l);playLetter(l);}} style={{
+            position:"relative",padding:"14px 4px",borderRadius:18,
+            border:`2px solid ${done?ALPHA_COLORS[i%13]+"44":"#E8E0D8"}`,cursor:"pointer",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
+            fontFamily:"'Fredoka',sans-serif",
+            background:done?`linear-gradient(135deg,${ALPHA_COLORS[i%13]}08,${ALPHA_COLORS[i%13]}15)`:"#fff",
+            boxShadow:"0 2px 10px rgba(0,0,0,.06)"
+          }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
+            <span style={{fontSize:24,fontWeight:900,color:ALPHA_COLORS[i%13],lineHeight:1}}>{l}{l.toLowerCase()}</span>
+            <span style={{fontSize:8,fontWeight:700,color:"#8E8CA3"}}>{ALPHA_DATA[l]?.examples[0]?.w||""}</span>
+          </button>;})}
+        </div>
       </div>
     </div>}
 
     {/* ═══ SHAPES TAB ═══ */}
-    {learnTab==="shapes"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:14}}>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14}}>
-        {SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{
-          position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:20,borderRadius:22,
-          border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",
-          cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"0 2px 8px rgba(0,0,0,.08)"
-        }}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}
-          <span style={{fontSize:44}}>{s.emoji}</span>
-          <span style={{fontSize:15,fontWeight:700,marginTop:4,textTransform:"capitalize"}}>{s.name}</span>
-          <span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{s.desc}</span>
-        </button>;})}</div>
+    {learnTab==="shapes"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
+      <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          {SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{
+            position:"relative",padding:"16px 6px",borderRadius:18,
+            border:`2px solid ${done?"#A855F744":"#E8E0D8"}`,cursor:"pointer",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
+            fontFamily:"'Fredoka',sans-serif",
+            background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",
+            boxShadow:"0 2px 10px rgba(0,0,0,.06)"
+          }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
+            <span style={{fontSize:36}}>{s.emoji}</span>
+            <span style={{fontSize:12,fontWeight:700,textTransform:"capitalize",color:"#2D2B3D"}}>{s.name}</span>
+          </button>;})}
+        </div>
+      </div>
     </div>}
 
     {/* ═══ COLORS TAB ═══ */}
-    {learnTab==="colors"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:14}}>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14}}>
-        {COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{
-          position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:20,borderRadius:22,
-          border:`2px solid ${done?c.hex+"44":"#E8E8E8"}`,background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",
-          cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"0 2px 8px rgba(0,0,0,.08)"
-        }}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}
-          <div style={{width:50,height:50,borderRadius:16,background:c.hex,marginBottom:4,boxShadow:`0 4px 12px ${c.hex}44`}}/>
-          <span style={{fontSize:15,fontWeight:700,textTransform:"capitalize"}}>{c.name}</span>
-          <span style={{fontSize:20}}>{c.emoji}</span>
-        </button>;})}</div>
+    {learnTab==="colors"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
+      <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          {COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{
+            position:"relative",padding:"14px 6px",borderRadius:18,
+            border:`2px solid ${done?c.hex+"44":"#E8E0D8"}`,cursor:"pointer",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
+            fontFamily:"'Fredoka',sans-serif",
+            background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",
+            boxShadow:"0 2px 10px rgba(0,0,0,.06)"
+          }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
+            <div style={{width:40,height:40,borderRadius:12,background:c.hex,boxShadow:`0 3px 10px ${c.hex}44`}}/>
+            <span style={{fontSize:12,fontWeight:700,textTransform:"capitalize",color:"#2D2B3D"}}>{c.name}</span>
+          </button>;})}
+        </div>
+      </div>
     </div>}
 
     <div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
