@@ -3537,17 +3537,18 @@ export default function App(){
       <div style={{marginBottom:10}}>
         <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:4}}>DIFFICULTY</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-        <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
+          <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
             padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"'Fredoka',sans-serif",
-            borderColor:mathRange===r?"#FF8C42":"#E8E0D8",background:mathRange===r?"#FF8C42":"#FFFBF5",color:mathRange===r?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
+            borderColor:mathRange===r?"#FF8C42":"#E8E0D8",background:mathRange===r?"#FF8C42":"#FFFBF5",color:mathRange===r?"#fff":"#8E8CA3"
           }}>{r}</button>)}
-        </div>
-        <div style={{display:"flex",gap:4}}>
+          </div>
+          <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
             padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
-            borderColor:mathOp===o.id?"#6366F1":"#E8E0D8",background:mathOp===o.id?"#6366F1":"#FFFBF5",color:mathOp===o.id?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
+            borderColor:mathOp===o.id?"#6366F1":"#E8E0D8",background:mathOp===o.id?"#6366F1":"#FFFBF5",color:mathOp===o.id?"#fff":"#8E8CA3"
           }}>{o.label}</button>)}
+          </div>
         </div>
       </div>
       {mathProblem?<div>
@@ -3968,6 +3969,7 @@ export default function App(){
         fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
         transition:"all 0.2s"
       }}><span style={{fontSize:14}}>{m.icon}</span>{m.label}{phModes[m.key]?<span style={{fontSize:10}}>✓</span>:null}</button>)}
+      </div>
     </div>
     <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF5EB",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>{setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
