@@ -2189,6 +2189,7 @@ export default function App(){
   // Number Quiz state
   const[quizNum,setQuizNum]=useState(null);const[quizOpts,setQuizOpts]=useState([]);const[quizFb,setQuizFb]=useState(null);const[quizScore,setQuizScore]=useState(0);const[quizStreak,setQuizStreak]=useState(0);const[quizTotal,setQuizTotal]=useState(0);
   const quizUsedRef=useRef([]);
+  const[quizRange,setQuizRange]=useState("1-20");
   // Alphabet state
   const[alphaTab,setAlphaTab]=useState("caps"); // "caps","small","match"
   const[selLetter,setSelLetter]=useState(null); // selected letter for detail
@@ -2837,23 +2838,24 @@ export default function App(){
     speak(`${NW[n]||n}.`,{rate:0.8,pitch:1.0});
   };
   // ═══ NUMBER QUIZ ═══
-  const newQuiz=()=>{
-    const max=aCfg?.max||20;
-    // Build pool of unused numbers
+  const newQuiz=(overrideRange)=>{
+    const range=overrideRange||quizRange;
+    const[rMin,rMax]=range.split("-").map(Number);
+    // Build pool of unused numbers in range
     let pool=[];
-    for(let i=1;i<=max;i++){if(!quizUsedRef.current.includes(i))pool.push(i);}
+    for(let i=rMin;i<=rMax;i++){if(!quizUsedRef.current.includes(i))pool.push(i);}
     // Full cycle done — reset
     if(pool.length===0){
       quizUsedRef.current=[];
-      pool=[];for(let i=1;i<=max;i++)pool.push(i);
+      pool=[];for(let i=rMin;i<=rMax;i++)pool.push(i);
     }
-    // Pick random from available pool
     const n=pool[Math.floor(Math.random()*pool.length)];
     quizUsedRef.current=[...quizUsedRef.current,n];
-    // Generate 6 wrong options + correct, all unique
+    // Generate 6 options from the SAME range + correct, all unique
     const opts=new Set([n]);
-    while(opts.size<Math.min(6,max)){
-      const wrong=Math.floor(Math.random()*max)+1;
+    const rangeSize=rMax-rMin+1;
+    while(opts.size<Math.min(6,rangeSize)){
+      const wrong=rMin+Math.floor(Math.random()*(rMax-rMin+1));
       opts.add(wrong);
     }
     const shuffled=[...opts].sort(()=>Math.random()-0.5);
@@ -2937,7 +2939,7 @@ export default function App(){
     const digits=isNum?target.split("").map(ch=>{const n=parseInt(ch);return isNaN(n)?-1:n;}).filter(n=>n>=0):[];
     if(isNum&&digits.length>0){
       const COLS=6,ROWS=8;
-      let hit=0,total=0;
+      let hit=0,total=0,miss=0,empty=0;
       digits.forEach((d,di)=>{
         const tpl=NUM_TPL[d];if(!tpl)return;
         const offX=digits.length>1?(di===0?0:dispW/2):0;
@@ -2945,25 +2947,36 @@ export default function App(){
         const cW=dW/COLS,cH=dispH/ROWS;
         for(let r=0;r<ROWS;r++){
           for(let cl=0;cl<COLS;cl++){
-            if(tpl[r*COLS+cl]!==1)continue;
-            total++;
-            const sx=Math.max(0,Math.floor((offX+cl*cW-cW*0.2)*dpr));
-            const sy=Math.max(0,Math.floor((r*cH-cH*0.2)*dpr));
-            const sw=Math.min(Math.ceil(cW*1.4*dpr),c.width-sx);
-            const sh=Math.min(Math.ceil(cH*1.4*dpr),c.height-sy);
+            const isTpl=tpl[r*COLS+cl]===1;
+            if(isTpl)total++;
+            const sx=Math.max(0,Math.floor((offX+cl*cW)*dpr));
+            const sy=Math.max(0,Math.floor((r*cH)*dpr));
+            const sw=Math.min(Math.ceil(cW*dpr),c.width-sx);
+            const sh=Math.min(Math.ceil(cH*dpr),c.height-sy);
             if(sw<=0||sh<=0)continue;
+            let hasInk=false;
             try{
               const data=ctx.getImageData(sx,sy,sw,sh).data;
-              for(let p=3;p<data.length;p+=8){if(data[p]>15){hit++;break;}}
+              for(let p=3;p<data.length;p+=8){if(data[p]>15){hasInk=true;break;}}
             }catch(e){}
+            if(isTpl&&hasInk)hit++;
+            if(!isTpl&&hasInk)miss++;
+            if(!isTpl&&!hasInk)empty++;
           }
         }
       });
-      return total>0?Math.min(100,Math.round((hit/total)*130)):0;
+      if(total===0)return 0;
+      // Accuracy = template cells hit, penalized by ink outside template
+      const accuracy=hit/total;
+      const totalEmpty=COLS*ROWS*digits.length-total;
+      const spillPenalty=totalEmpty>0?Math.min(0.5,(miss/totalEmpty)*1.5):0;
+      const score=Math.max(0,Math.round((accuracy-spillPenalty)*100));
+      return Math.min(100,score);
     }
-    // Letter scoring: 3x4 zone check
-    const GC=3,GR=4;
-    let inked=0;
+    // Letter scoring: check ink coverage + distribution
+    // Must have ink in multiple distinct zones, not just a blob
+    const GC=4,GR=5;
+    let inked=0,totalPx=0,inkedPx=0;
     for(let r=0;r<GR;r++){
       for(let cl=0;cl<GC;cl++){
         const sx=Math.floor(cl*(c.width/GC));
@@ -2972,16 +2985,25 @@ export default function App(){
         const sh=Math.ceil(c.height/GR);
         try{
           const data=ctx.getImageData(sx,sy,sw,sh).data;
-          for(let p=3;p<data.length;p+=16){if(data[p]>15){inked++;break;}}
+          let zoneInk=false;
+          for(let p=3;p<data.length;p+=8){totalPx++;if(data[p]>15){inkedPx++;zoneInk=true;}}
+          if(zoneInk)inked++;
         }catch(e){}
       }
     }
-    return Math.min(100,Math.round((inked/(GC*GR))*200));
+    // Need ink in at least 3 zones but not ALL zones (that means scribble)
+    const zonePct=inked/(GC*GR);
+    const pixelPct=totalPx>0?(inkedPx/totalPx):0;
+    // If >80% pixels are inked = random scribble = low score
+    if(pixelPct>0.6)return Math.max(10,Math.round(30-pixelPct*30));
+    // Good letter covers 25-60% of zones with 5-30% pixel coverage
+    if(zonePct<0.15)return Math.round(zonePct*200); // barely any ink
+    return Math.min(100,Math.round(zonePct*170));
   };
   const drawEnd=()=>{
     if(!cRef.current)return;
     cRef.current._drawing=false;
-    if(drawPts>15&&!writeOk){
+    if(drawPts>30&&!writeOk){
       const score=scoreWriting();
       setWriteScore(score);
       const advanceNext=()=>{
@@ -2998,17 +3020,17 @@ export default function App(){
           }
         },2500);
       };
-      if(score>=70){
+      if(score>=60){
         setWriteOk(true);
         headYes();boom();speak(`Perfect!`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(5,"basics_w",writeMode==="numbers"?writeNum:writeChar);
         advanceNext();
-      } else if(score>=40){
+      } else if(score>=35){
         setWriteOk(true);
         headYes();boom();speak(`Good job!`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(3,"basics_w",writeMode==="numbers"?writeNum:writeChar);
         advanceNext();
-      } else if(score>=25){
+      } else if(score>=20){
         speak("Almost! Keep tracing.",{rate:0.85,pitch:1.0});
       }
     }
@@ -3381,7 +3403,7 @@ export default function App(){
         {key:"sentence",icon:"💬",label:"Sentence"},
         {key:"speak",icon:"🎤",label:"Speak"},
       ].map(m=><button key={m.key} onClick={()=>toggleLearnMode(m.key)} style={{
-        display:"flex",alignItems:"center",gap:3,padding:"5px 10px",borderRadius:16,
+        display:"flex",alignItems:"center",gap:3,padding:"6px 12px",borderRadius:12,
         border:`2px solid ${learnModes[m.key]?"#34D399":"#E8E0D8"}`,
         background:learnModes[m.key]?"#ECFDF5":"#FFFBF5",
         color:learnModes[m.key]?"#16A34A":"#8E8CA3",
@@ -3402,7 +3424,7 @@ export default function App(){
     {learnTab==="numbers"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
       <div style={{display:"flex",gap:5,padding:"8px 10px",flexWrap:"wrap",flexShrink:0}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
-          padding:"5px 10px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
+          padding:"6px 12px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
           borderColor:numRange===r?"#6366F1":"#E8E0D8",background:numRange===r?"#6366F1":"#FFFBF5",
           color:numRange===r?"#fff":"#8E8CA3",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif"
         }}>{r}</button>)}
@@ -3508,12 +3530,19 @@ export default function App(){
 
     {/* ═══ NUMBER QUIZ ═══ */}
     {quizTab==="numquiz"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflowY:"auto",overflowX:"hidden"}}>
-      <div style={{padding:"12px 16px",background:"linear-gradient(135deg,#EDE9FE,#F5F3FF)",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #DDD6FE"}}>
+      {/* Range filter */}
+      <div style={{display:"flex",gap:4,padding:"8px 12px",flexWrap:"wrap",background:"#F5F3FF",borderBottom:"1px solid #EDE9FE"}}>
+        {["1-10","1-20","11-20","21-50","51-100","1-100"].map(r=><button key={r} onClick={()=>{setQuizRange(r);quizUsedRef.current=[];setQuizScore(0);setQuizStreak(0);setQuizTotal(0);newQuiz(r);}} style={{
+          padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
+          borderColor:quizRange===r?"#8B5CF6":"#E8E0D8",background:quizRange===r?"#8B5CF6":"#FFFBF5",color:quizRange===r?"#fff":"#8E8CA3"
+        }}>{r}</button>)}
+      </div>
+      <div style={{padding:"10px 16px",background:"linear-gradient(135deg,#EDE9FE,#F5F3FF)",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #DDD6FE"}}>
         {quizNum?<>
-          <button onClick={repeatQuiz} style={{padding:"10px 18px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#8B5CF6,#A78BFA)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"0 4px 12px rgba(139,92,246,.3)",display:"flex",alignItems:"center",gap:6}}>🔊 Hear Again</button>
-          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:15,fontWeight:700,color:"#7C3AED"}}>Which number? 👂</div></div>
-          <div><div style={{fontSize:15,fontWeight:700,color:"#7C3AED"}}>🏆 {quizScore}</div></div>
-        </>:<button onClick={newQuiz} style={{width:"100%",padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#8B5CF6,#A78BFA)",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif"}}>▶️ Start Quiz!</button>}
+          <button onClick={repeatQuiz} style={{padding:"10px 16px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#8B5CF6,#A78BFA)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"0 4px 12px rgba(139,92,246,.3)"}}>🔊 Hear</button>
+          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:"#7C3AED"}}>Which number? 👂</div></div>
+          <div><div style={{fontSize:14,fontWeight:700,color:"#7C3AED"}}>🏆 {quizScore}</div>{quizStreak>=3&&<span style={{fontSize:10,fontWeight:700,color:"#EF4444"}}>🔥{quizStreak}</span>}</div>
+        </>:<button onClick={()=>newQuiz()} style={{width:"100%",padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#8B5CF6,#A78BFA)",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif"}}>▶️ Start Quiz!</button>}
       </div>
       {quizNum&&<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,width:"100%",maxWidth:360}}>
@@ -3539,13 +3568,13 @@ export default function App(){
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
-            padding:"5px 10px",borderRadius:10,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",
+            padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"'Fredoka',sans-serif",
             borderColor:mathRange===r?"#FF8C42":"#E8E0D8",background:mathRange===r?"#FF8C42":"#FFFBF5",color:mathRange===r?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
           }}>{r}</button>)}
         </div>
         <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
-            padding:"5px 10px",borderRadius:10,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",
+            padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             borderColor:mathOp===o.id?"#6366F1":"#E8E0D8",background:mathOp===o.id?"#6366F1":"#FFFBF5",color:mathOp===o.id?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
           }}>{o.label}</button>)}
         </div>
@@ -3746,13 +3775,13 @@ export default function App(){
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
-            padding:"5px 10px",borderRadius:10,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",
+            padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"'Fredoka',sans-serif",
             borderColor:mathRange===r?"#FF8C42":"#E8E0D8",background:mathRange===r?"#FF8C42":"#FFFBF5",color:mathRange===r?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
           }}>{r}</button>)}
         </div>
         <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
-            padding:"5px 10px",borderRadius:10,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",
+            padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             borderColor:mathOp===o.id?"#6366F1":"#E8E0D8",background:mathOp===o.id?"#6366F1":"#FFFBF5",color:mathOp===o.id?"#fff":"#8E8CA3",fontFamily:"'Fredoka',sans-serif"
           }}>{o.label}</button>)}
         </div>
@@ -3959,7 +3988,7 @@ export default function App(){
         {key:"sentence",icon:"💬",label:"Sentence"},
         {key:"speak",icon:"🎤",label:"Speak"},
       ].map(m=><button key={m.key} onClick={()=>togglePhMode(m.key)} style={{
-        display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:20,
+        display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:12,
         border:`2px solid ${phModes[m.key]?"#34D399":"#E8E0D8"}`,
         background:phModes[m.key]?"#ECFDF5":"#FFFBF5",
         color:phModes[m.key]?"#16A34A":"#8E8CA3",
@@ -4185,7 +4214,7 @@ export default function App(){
       {/* Range filter + spelling toggle */}
       <div style={{display:"flex",gap:5,padding:"8px 10px",flexWrap:"wrap",flexShrink:0}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
-          padding:"5px 10px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
+          padding:"6px 12px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
           borderColor:numRange===r?"#6366F1":"#E8E0D8",
           background:numRange===r?"#6366F1":"#FFFBF5",
           color:numRange===r?"#fff":"#8E8CA3",fontSize:11,fontWeight:700,
