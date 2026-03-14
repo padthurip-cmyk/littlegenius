@@ -2930,87 +2930,77 @@ export default function App(){
     const ctx=c.getContext("2d");
     const w=c.width,h=c.height;
     if(w===0||h===0)return 0;
-    const isNum=writeMode==="numbers";
-    const target=isNum?String(writeNum):(writeCase==="caps"?writeChar.toUpperCase():writeChar.toLowerCase());
-    // Create offscreen canvas with the target rendered as the watermark
-    const off=document.createElement("canvas");
-    off.width=w;off.height=h;
-    const ox=off.getContext("2d");
-    const dpr=window.devicePixelRatio||1;
-    ox.scale(dpr,dpr);
-    // Match the watermark: fontSize:160 in a ~320px wide container = 50% of width
-    const fontSize=Math.round(dispW*0.5);
-    ox.font="900 "+fontSize+"px Fredoka,Arial,sans-serif";
-    ox.textAlign="center";ox.textBaseline="middle";
-    ox.fillStyle="#000";
-    ox.fillText(target,dispW/2,dispH/2);
-    // Get both canvases pixel data
-    const userData=ctx.getImageData(0,0,w,h).data;
-    const tplData=ox.getImageData(0,0,w,h).data;
-    // Count: template pixels, user ink pixels, overlap pixels
-    let tplPx=0,inkPx=0,overlap=0;
-    const step=4; // sample every 4th pixel for speed
-    for(let p=3;p<userData.length;p+=step*4){
-      const hasTpl=tplData[p]>30;
-      const hasInk=userData[p]>10;
-      if(hasTpl)tplPx++;
-      if(hasInk)inkPx++;
-      if(hasTpl&&hasInk)overlap++;
-    }
-    if(tplPx===0){
-      // Font didn't render — fallback: give score based on ink amount
-      if(inkPx>10)return Math.min(80,Math.round(inkPx*2));
-      return 0;
-    }
-    if(inkPx===0)return 0;
-    // Accuracy = how much of the template is covered by ink
-    const coverage=overlap/tplPx;
-    // Precision = how much ink is on the template vs outside
-    const precision=inkPx>0?(overlap/inkPx):0;
-    // Combined score: weighted average favoring coverage
-    const raw=coverage*0.7+precision*0.3;
-    return Math.max(inkPx>5?10:0,Math.min(100,Math.round(raw*120)));
+    try{
+      const data=ctx.getImageData(0,0,w,h).data;
+      let totalPx=0,inkedPx=0;
+      // Count total ink
+      for(let p=3;p<data.length;p+=16){totalPx++;if(data[p]>10)inkedPx++;}
+      if(inkedPx<3)return 0; // nothing drawn
+      const coverage=inkedPx/totalPx;
+      // Sweet spot: a well-traced character covers 5-20% of canvas
+      // Too little (<2%) = barely anything = low score
+      // Too much (>35%) = random scribble = low score
+      if(coverage>0.40)return 15; // scribble
+      if(coverage>0.30)return 25;
+      if(coverage<0.01)return 5;
+      if(coverage<0.02)return 15;
+      // Map 2%-25% coverage to 40-100% score (sweet zone)
+      const normalized=Math.min(1,(coverage-0.02)/0.20);
+      return Math.round(40+normalized*60);
+    }catch(e){return 0;}
   };
   const drawEnd=()=>{
     if(!cRef.current)return;
     cRef.current._drawing=false;
-    const score=drawPtsRef.current>15?scoreWriting():0;
-    if(drawPtsRef.current>15)setWriteScore(score);
-    if(drawPtsRef.current>25&&!writeOkRef.current&&score>0){
-      const advanceNext=()=>{
-        setTimeout(()=>{
-          if(writeMode==="numbers"){
-            setWriteNum(prev=>{
-              const n=(prev%20)+1;
-              setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
-              setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
-              return n;
-            });
-          } else {
-            setWriteChar(prev=>{
-              const idx=ALPHA_LETTERS.indexOf(prev.toUpperCase());
-              const next=ALPHA_LETTERS[(idx+1)%26];
-              const ch=writeCase==="caps"?next:next.toLowerCase();
-              setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
-              setTimeout(()=>{initCanvas();speak(`Now write ${ch}.`,{rate:0.75,pitch:1.0});},300);
-              return next;
-            });
-          }
-        },2500);
-      };
-      if(score>=60){
-        setWriteOk(true);writeOkRef.current=true;
-        headYes();boom();speak(`Perfect!`,{rate:0.85,pitch:1.0});
-        if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(5,"basics_w",writeMode==="numbers"?writeNum:writeChar);
-        advanceNext();
-      } else if(score>=35){
-        setWriteOk(true);writeOkRef.current=true;
-        headYes();boom();speak(`Good job!`,{rate:0.85,pitch:1.0});
-        if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(3,"basics_w",writeMode==="numbers"?writeNum:writeChar);
-        advanceNext();
-      } else if(score>=20){
-        speak("Almost! Keep tracing.",{rate:0.85,pitch:1.0});
-      }
+    // Always calculate score after drawing
+    const score=scoreWriting();
+    setWriteScore(score);
+    if(score>=60&&!writeOkRef.current){
+      setWriteOk(true);writeOkRef.current=true;
+      headYes();boom();speak(`Perfect!`,{rate:0.85,pitch:1.0});
+      if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(5,"basics_w",writeMode==="numbers"?writeNum:writeChar);
+      setTimeout(()=>{
+        if(writeMode==="numbers"){
+          setWriteNum(prev=>{
+            const n=(prev%20)+1;
+            setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
+            setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
+            return n;
+          });
+        } else {
+          setWriteChar(prev=>{
+            const idx=ALPHA_LETTERS.indexOf(prev.toUpperCase());
+            const next=ALPHA_LETTERS[(idx+1)%26];
+            const ch=writeCase==="caps"?next:next.toLowerCase();
+            setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
+            setTimeout(()=>{initCanvas();speak(`Now write ${ch}.`,{rate:0.75,pitch:1.0});},300);
+            return next;
+          });
+        }
+      },2500);
+    } else if(score>=35&&!writeOkRef.current){
+      setWriteOk(true);writeOkRef.current=true;
+      headYes();boom();speak(`Good job!`,{rate:0.85,pitch:1.0});
+      if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(3,"basics_w",writeMode==="numbers"?writeNum:writeChar);
+      setTimeout(()=>{
+        if(writeMode==="numbers"){
+          setWriteNum(prev=>{
+            const n=(prev%20)+1;
+            setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
+            setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
+            return n;
+          });
+        } else {
+          setWriteChar(prev=>{
+            const idx=ALPHA_LETTERS.indexOf(prev.toUpperCase());
+            const next=ALPHA_LETTERS[(idx+1)%26];
+            const ch=writeCase==="caps"?next:next.toLowerCase();
+            setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
+            setTimeout(()=>{initCanvas();speak(`Now write ${ch}.`,{rate:0.75,pitch:1.0});},300);
+            return next;
+          });
+        }
+      },2500);
     }
   };
   const clearPad=()=>{
