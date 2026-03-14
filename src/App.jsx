@@ -2195,7 +2195,7 @@ export default function App(){
   const[selLetter,setSelLetter]=useState(null); // selected letter for detail
   const[matchPairs,setMatchPairs]=useState([]); // match game pairs
   const[matchLeft,setMatchLeft]=useState(null);const[matchIdx,setMatchIdx]=useState(0);const[matchWrong,setMatchWrong]=useState(null);const[matchCorrect,setMatchCorrect]=useState(null);const[matchOpts,setMatchOpts]=useState([]);
-  const[matchScore,setMatchScore]=useState(0);const[matchDone,setMatchDone]=useState([]);const[drawPts,setDrawPts]=useState(0);const[writeOk,setWriteOk]=useState(false);const[writeScore,setWriteScore]=useState(null);
+  const[matchScore,setMatchScore]=useState(0);const[matchDone,setMatchDone]=useState([]);const[drawPts,setDrawPts]=useState(0);const drawPtsRef=useRef(0);const[writeOk,setWriteOk]=useState(false);const[writeScore,setWriteScore]=useState(null);
   const cRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);const[rwdMsg,setRwdMsg]=useState(null);
   const[speakMode,setSpeakMode]=useState(true); // toggle for speech practice
   const[countdown,setCountdown]=useState(0); // 3,2,1 countdown
@@ -2271,7 +2271,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setPandaSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
+  const goHome=()=>{setJoyFly(false);setPandaSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2915,7 +2915,7 @@ export default function App(){
     const penW2=Math.max(20,Math.round(rect2.width*0.08));
     ctx.strokeStyle="#FC8019";ctx.lineWidth=penW2;ctx.lineCap="round";ctx.lineJoin="round";
     c._drawing=true;
-    setDrawPts(p=>p+1);
+    drawPtsRef.current++;setDrawPts(p=>p+1);
   };
   const drawMove=(e)=>{
     e.preventDefault&&e.preventDefault();
@@ -2923,7 +2923,7 @@ export default function App(){
     const ctx=c.getContext("2d");
     const{x,y}=getPos(e);
     ctx.lineTo(x,y);ctx.stroke();
-    setDrawPts(p=>p+1);
+    drawPtsRef.current++;setDrawPts(p=>p+1);
   };
   const scoreWriting=()=>{
     const c=cRef.current;if(!c)return 0;
@@ -2971,19 +2971,19 @@ export default function App(){
   const drawEnd=()=>{
     if(!cRef.current)return;
     cRef.current._drawing=false;
-    if(drawPts>30&&!writeOk){
-      const score=scoreWriting();
-      setWriteScore(score);
+    const score=drawPtsRef.current>15?scoreWriting():0;
+    if(drawPtsRef.current>15)setWriteScore(score);
+    if(drawPtsRef.current>25&&!writeOk&&score>0){
       const advanceNext=()=>{
         setTimeout(()=>{
           if(writeMode==="numbers"){
             const n=(writeNum%20)+1;
-            setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);
+            setWriteNum(n);setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
             setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
           } else {
             const idx=ALPHA_LETTERS.indexOf(writeChar);
             const next=ALPHA_LETTERS[(idx+1)%26];
-            setWriteChar(next);setWriteOk(false);setWriteScore(null);setDrawPts(0);
+            setWriteChar(next);setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
             setTimeout(()=>{initCanvas();speak(`Now write ${next}.`,{rate:0.75,pitch:1.0});},300);
           }
         },2500);
@@ -3006,11 +3006,11 @@ export default function App(){
   const clearPad=()=>{
     const c=cRef.current;if(!c)return;
     initCanvas(); // Re-init instead of just clearing
-    setDrawPts(0);setWriteOk(false);setWriteScore(null);
+    drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);setWriteScore(null);
   };
   const nextWrite=()=>{
     setWriteNum(n=>n>=100?1:n+1);
-    setDrawPts(0);setWriteOk(false);setWriteScore(null);
+    drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);setWriteScore(null);
     setTimeout(()=>{initCanvas();},100);
     speak(`Write ${NW[writeNum>=100?1:writeNum+1]||writeNum+1}.`,{rate:0.75,pitch:1.0});
   };
@@ -3391,7 +3391,7 @@ export default function App(){
     {/* ═══ NUMBERS TAB ═══ */}
     {learnTab==="numbers"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
       <div style={{padding:"6px 10px",flexShrink:0}}>
-        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:4}}>NUMBER RANGE</div>
+        <div style={{fontSize:11,fontWeight:800,color:"#6366F1",marginBottom:5}}>📊 Pick a range:</div>
         <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
           padding:"6px 12px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
@@ -3503,7 +3503,7 @@ export default function App(){
     {quizTab==="numquiz"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflowY:"auto",overflowX:"hidden"}}>
       {/* Range filter */}
       <div style={{padding:"6px 12px",background:"#F5F3FF",borderBottom:"1px solid #EDE9FE"}}>
-        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:4}}>NUMBER RANGE</div>
+        <div style={{fontSize:11,fontWeight:800,color:"#6366F1",marginBottom:5}}>📊 Pick a range:</div>
         <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
         {["1-10","1-20","11-20","21-50","51-100","1-100"].map(r=><button key={r} onClick={()=>{setQuizRange(r);quizUsedRef.current=[];setQuizScore(0);setQuizStreak(0);setQuizTotal(0);newQuiz(r);}} style={{
           padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
@@ -3540,7 +3540,7 @@ export default function App(){
     {/* ═══ MATH QUIZ ═══ */}
     {quizTab==="math"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"12px 14px"}}>
       <div style={{marginBottom:10}}>
-        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:4}}>DIFFICULTY</div>
+        <div style={{fontSize:11,fontWeight:800,color:"#FF8C42",marginBottom:5}}>📊 Difficulty:</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
@@ -3641,7 +3641,7 @@ export default function App(){
       {/* Mode toggle: Numbers vs Letters */}
       <div style={{display:"flex",gap:6,marginBottom:8}}>
         {[{id:"numbers",label:"🔢 Numbers"},{id:"letters",label:"🔤 Letters"}].map(m=>
-          <button key={m.id} onClick={()=>{setWriteMode(m.id);setWriteOk(false);setWriteScore(null);setDrawPts(0);setTimeout(()=>{initCanvas();if(m.id==="numbers")speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75});else speak(`Write ${writeCase==="caps"?writeChar:writeChar.toLowerCase()}.`,{rate:0.75});},300);}} style={{
+          <button key={m.id} onClick={()=>{setWriteMode(m.id);setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);setTimeout(()=>{initCanvas();if(m.id==="numbers")speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75});else speak(`Write ${writeCase==="caps"?writeChar:writeChar.toLowerCase()}.`,{rate:0.75});},300);}} style={{
             flex:1,padding:"8px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             borderColor:writeMode===m.id?"#FF8C42":"#E8E0D8",background:writeMode===m.id?"#FF8C42":"#FFFBF5",color:writeMode===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
@@ -3650,7 +3650,7 @@ export default function App(){
       {/* Caps/Small toggle for letters */}
       {writeMode==="letters"&&<div style={{display:"flex",gap:6,marginBottom:8}}>
         {[{id:"caps",label:"ABC Capital"},{id:"small",label:"abc Small"}].map(m=>
-          <button key={m.id} onClick={()=>{setWriteCase(m.id);setWriteOk(false);setWriteScore(null);setDrawPts(0);const ch=m.id==="caps"?writeChar.toUpperCase():writeChar.toLowerCase();setTimeout(()=>{initCanvas();speak(`Write ${ch}.`,{rate:0.75});},300);}} style={{
+          <button key={m.id} onClick={()=>{setWriteCase(m.id);setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);const ch=m.id==="caps"?writeChar.toUpperCase():writeChar.toLowerCase();setTimeout(()=>{initCanvas();speak(`Write ${ch}.`,{rate:0.75});},300);}} style={{
             flex:1,padding:"7px",borderRadius:10,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             borderColor:writeCase===m.id?"#6366F1":"#E8E0D8",background:writeCase===m.id?"#6366F1":"#FFFBF5",color:writeCase===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
@@ -3678,7 +3678,7 @@ export default function App(){
         <button onClick={()=>{
           if(writeMode==="numbers"){const n=(writeNum%20)+1;setWriteNum(n);}
           else{const idx=ALPHA_LETTERS.indexOf(writeChar.toUpperCase());setWriteChar(ALPHA_LETTERS[(idx+1)%26]);}
-          setWriteOk(false);setWriteScore(null);setDrawPts(0);
+          setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
           setTimeout(()=>{initCanvas();speak(`Write ${writeMode==="numbers"?NW[(writeNum%20)+1]||"":ALPHA_LETTERS[(ALPHA_LETTERS.indexOf(writeChar.toUpperCase())+1)%26]}.`,{rate:0.75});},300);
         }} style={{padding:"8px 16px",borderRadius:12,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
       </div>
@@ -3959,7 +3959,7 @@ export default function App(){
   if(scr==="phonics")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/>
     {/* Teaching mode toggles */}
     <div style={{padding:"6px 12px",background:"#FFF0E0",borderBottom:"1px solid #EDE5DC"}}>
-      <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:4}}>TEACHING OPTIONS</div>
+      <div style={{fontSize:11,fontWeight:800,color:"#FF8C42",marginBottom:5}}>⚙️ What to teach:</div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       {[
         {key:"spelling",icon:"🔤",label:"Spelling"},
