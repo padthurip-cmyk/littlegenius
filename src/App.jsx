@@ -2876,39 +2876,48 @@ export default function App(){
   // Drawing pad
   const initCanvas=()=>{
     const c=cRef.current;if(!c)return;
-    // Match canvas pixels to display pixels exactly — no scaling
     const rect=c.getBoundingClientRect();
-    c.width=rect.width;
-    c.height=rect.height;
+    if(rect.width===0||rect.height===0){
+      // Canvas not visible yet — retry in 100ms
+      setTimeout(initCanvas,100);return;
+    }
+    const dpr=window.devicePixelRatio||1;
+    c.width=rect.width*dpr;
+    c.height=rect.height*dpr;
     const ctx=c.getContext("2d");
-    ctx.lineWidth=14;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#FC8019";
+    ctx.scale(dpr,dpr);
+    ctx.lineWidth=10;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#FC8019";
   };
   const getPos=(e)=>{
     const c=cRef.current;if(!c)return{x:0,y:0};
     const rect=c.getBoundingClientRect();
-    const touch=e.touches?e.touches[0]:e;
-    return{x:touch.clientX-rect.left,y:touch.clientY-rect.top};
+    const t=e.touches?e.touches[0]:(e.nativeEvent?.touches?e.nativeEvent.touches[0]:e);
+    const cx=t.clientX||t.pageX||0;
+    const cy=t.clientY||t.pageY||0;
+    return{x:cx-rect.left,y:cy-rect.top};
   };
   const drawStart=(e)=>{
+    e.preventDefault&&e.preventDefault();
     const c=cRef.current;if(!c)return;
     const ctx=c.getContext("2d");
     const{x,y}=getPos(e);
     ctx.beginPath();ctx.moveTo(x,y);
-    ctx.strokeStyle="#FC8019";ctx.lineWidth=14;ctx.lineCap="round";ctx.lineJoin="round";
+    ctx.strokeStyle="#FC8019";ctx.lineWidth=10;ctx.lineCap="round";ctx.lineJoin="round";
     c._drawing=true;
     setDrawPts(p=>p+1);
   };
   const drawMove=(e)=>{
+    e.preventDefault&&e.preventDefault();
     const c=cRef.current;if(!c||!c._drawing)return;
     const ctx=c.getContext("2d");
     const{x,y}=getPos(e);
     ctx.lineTo(x,y);ctx.stroke();
     setDrawPts(p=>p+1);
   };
-  // Score handwriting — check how many template cells have ink (forgiving)
   const scoreWriting=()=>{
     const c=cRef.current;if(!c)return 0;
     const ctx=c.getContext("2d");
+    const dpr=window.devicePixelRatio||1;
     const w=c.width,h=c.height;
     if(w===0||h===0)return 0;
     const COLS=6,ROWS=8;
@@ -2916,17 +2925,16 @@ export default function App(){
     let hit=0,total=0;
     digits.forEach((d,di)=>{
       const tpl=NUM_TPL[d];if(!tpl)return;
-      const offX=digits.length>1?(di===0?0:w/2):0;
-      const dW=digits.length>1?w/2:w;
-      const cW=dW/COLS,cH=h/ROWS;
+      const offX=digits.length>1?(di===0?0:w/(2*dpr)):0;
+      const dW=digits.length>1?w/(2*dpr):w/dpr;
+      const cW=dW/COLS,cH=(h/dpr)/ROWS;
       for(let r=0;r<ROWS;r++){
         for(let cl=0;cl<COLS;cl++){
           if(tpl[r*COLS+cl]!==1)continue;
           total++;
-          // Sample center of cell + nearby — generous detection
-          const cx=Math.floor(offX+cl*cW+cW/2);
-          const cy=Math.floor(r*cH+cH/2);
-          const sz=Math.max(4,Math.floor(Math.min(cW,cH)*0.7));
+          const cx=Math.floor((offX+cl*cW+cW/2)*dpr);
+          const cy=Math.floor((r*cH+cH/2)*dpr);
+          const sz=Math.max(4,Math.floor(Math.min(cW,cH)*0.7*dpr));
           const sx=Math.max(0,cx-Math.floor(sz/2));
           const sy=Math.max(0,cy-Math.floor(sz/2));
           const sw=Math.min(sz,w-sx);
@@ -2935,34 +2943,42 @@ export default function App(){
           try{
             const data=ctx.getImageData(sx,sy,sw,sh).data;
             for(let p=0;p<data.length;p+=4){
-              // Check for any non-transparent pixel (R,G,B > 0 or A > 30)
-              if(data[p]>30||data[p+1]>30||data[p+2]>30||data[p+3]>30){hit++;break;}
+              if(data[p+3]>30){hit++;break;}
             }
           }catch(e){}
         }
       }
     });
-    return total>0?Math.min(100,Math.round((hit/total)*110)):0; // slight boost
+    return total>0?Math.min(100,Math.round((hit/total)*115)):0;
   };
   const drawEnd=()=>{
     if(!cRef.current)return;
     cRef.current._drawing=false;
-    // Only score after enough strokes — don't score tiny taps
-    if(drawPts>25&&!writeOk){
+    if(drawPts>20&&!writeOk){
       const score=scoreWriting();
       setWriteScore(score);
-      if(score>=85){
+      if(score>=80){
         setWriteOk(true);
-        headYes();boom();speak(`Perfect! Great job writing ${NW[writeNum]||writeNum}! ${NUM_FUN[writeNum]||""}`,{rate:0.85,pitch:1.0});
+        headYes();boom();speak(`Perfect! Great job writing ${NW[writeNum]||writeNum}!`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(5,"basics_w",writeNum);
+        // Auto-advance to next number after 2.5s
+        setTimeout(()=>{
+          const n=(writeNum%20)+1;
+          setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);
+          setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
+        },2500);
       } else if(score>=50){
         setWriteOk(true);
-        headYes();boom();speak(`Good! ${NW[writeNum]||writeNum}! That's a pass!`,{rate:0.85,pitch:1.0});
+        headYes();boom();speak(`Good! That's a pass!`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(3,"basics_w",writeNum);
-      } else if(score>=40){
+        setTimeout(()=>{
+          const n=(writeNum%20)+1;
+          setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);
+          setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
+        },2500);
+      } else if(score>=35){
         speak("Almost there! Keep tracing.",{rate:0.85,pitch:1.0});
       }
-      // Don't say anything below 40% — kid is still drawing
     }
   };
   const clearPad=()=>{
@@ -3570,17 +3586,25 @@ export default function App(){
     {/* ═══ WRITING TAB ═══ */}
     {quizTab==="write"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflowY:"auto",overflowX:"hidden",padding:"10px 14px"}}>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-        <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:52,fontWeight:900,color:"#FF8C42",lineHeight:1}}>{writeNum}</span>
-        <div style={{flex:1}}>
-          <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,color:"#6366F1",textTransform:"capitalize"}}>{NW[writeNum]||writeNum}</span>
-          {writeScore!==null&&<div style={{fontSize:12,fontWeight:700,color:writeScore>=85?"#22C55E":writeScore>=50?"#F59E0B":"#F87171"}}>Score: {writeScore}%</div>}
+        <div style={{textAlign:"center",minWidth:60}}>
+          <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:48,fontWeight:900,color:"#FF8C42",lineHeight:1}}>{writeNum}</span>
+          <div style={{fontSize:11,fontWeight:700,color:"#6366F1",textTransform:"capitalize"}}>{NW[writeNum]||writeNum}</div>
         </div>
-        <button onClick={()=>{const n=1+Math.floor(Math.random()*20);setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);setTimeout(()=>{initCanvas();speak(`Write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);}} style={{padding:"8px 16px",borderRadius:12,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Next ➡️</button>
+        <div style={{flex:1}}>
+          {writeScore!==null&&<div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{flex:1,height:8,background:"#f3f4f6",borderRadius:4,overflow:"hidden"}}>
+              <div style={{height:"100%",background:writeScore>=80?"#22C55E":writeScore>=50?"#F59E0B":"#F87171",borderRadius:4,width:`${writeScore}%`,transition:"width 0.5s"}}/>
+            </div>
+            <span style={{fontSize:13,fontWeight:800,color:writeScore>=80?"#22C55E":writeScore>=50?"#F59E0B":"#F87171"}}>{writeScore}%</span>
+          </div>}
+          {writeOk&&<div style={{fontSize:12,fontWeight:700,color:"#22C55E",marginTop:2}}>✅ Moving to next...</div>}
+        </div>
+        <button onClick={()=>{const n=(writeNum%20)+1;setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);setTimeout(()=>{initCanvas();speak(`Write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);}} style={{padding:"8px 16px",borderRadius:12,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
       </div>
-      <div style={{position:"relative",background:"#fff",borderRadius:16,border:"3px solid #E8E0D8",overflow:"hidden",aspectRatio:"1",width:"100%",maxWidth:300,margin:"0 auto"}}>
-        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:120,fontWeight:900,color:"#f0f0f0",fontFamily:"'Fredoka',sans-serif",pointerEvents:"none",zIndex:0}}>{writeNum}</div>
+      <div style={{position:"relative",background:"#fff",borderRadius:16,border:"3px solid #E8E0D8",overflow:"hidden",aspectRatio:"1",width:"100%",maxWidth:320,margin:"0 auto"}}>
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:140,fontWeight:900,color:"#f0f0f0",fontFamily:"'Fredoka',sans-serif",pointerEvents:"none",zIndex:0,lineHeight:1}}>{writeNum}</div>
         <canvas ref={cRef} style={{position:"relative",zIndex:1,width:"100%",height:"100%",touchAction:"none",cursor:"crosshair"}}
-          onPointerDown={startDraw} onPointerMove={draw} onPointerUp={endDraw} onPointerLeave={endDraw}/>
+          onPointerDown={drawStart} onPointerMove={drawMove} onPointerUp={drawEnd} onPointerLeave={drawEnd}/>
       </div>
       <div style={{display:"flex",gap:10,marginTop:10}}>
         <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"#f3f4f6",color:"#888",fontSize:14,fontWeight:700,cursor:"pointer"}}>🗑️ Clear</button>
@@ -3729,7 +3753,7 @@ export default function App(){
         <div style={{position:"absolute",left:36,top:0,bottom:0,width:2,background:"#FECACA",zIndex:1,pointerEvents:"none"}}/>
         <div style={{position:"absolute",inset:0,pointerEvents:"none",zIndex:0,backgroundImage:"repeating-linear-gradient(transparent,transparent 47px,#E8E8E8 47px,#E8E8E8 48px)",backgroundSize:"100% 48px",backgroundPosition:"0 24px"}}/>
         <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:0}}><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:writeNum>9?180:240,fontWeight:800,color:"rgba(0,0,0,.07)",userSelect:"none",lineHeight:1}}>{writeNum}</span></div>
-        <canvas ref={cRef} style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:2,cursor:"crosshair"}} onMouseDown={drawStart} onMouseMove={drawMove} onMouseUp={drawEnd} onMouseLeave={drawEnd} onTouchStart={(e)=>{e.preventDefault();drawStart(e);}} onTouchMove={(e)=>{e.preventDefault();drawMove(e);}} onTouchEnd={drawEnd}/>
+        <canvas ref={cRef} style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:2,cursor:"crosshair",touchAction:"none"}} onPointerDown={drawStart} onPointerMove={drawMove} onPointerUp={drawEnd} onPointerLeave={drawEnd}/>
       </div>
       <div style={{display:"flex",gap:6,padding:"8px 10px",background:"#FFF5EB",borderTop:"1px solid rgba(255,255,255,.06)",flexShrink:0}}>
         <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif"}}>🗑️ Clear</button>
@@ -4198,9 +4222,8 @@ export default function App(){
         </div>
         {/* Canvas */}
         <canvas ref={cRef}
-          style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:2,cursor:"crosshair"}}
-          onMouseDown={drawStart} onMouseMove={drawMove} onMouseUp={drawEnd} onMouseLeave={drawEnd}
-          onTouchStart={(e)=>{e.preventDefault();drawStart(e);}} onTouchMove={(e)=>{e.preventDefault();drawMove(e);}} onTouchEnd={drawEnd}
+          style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:2,cursor:"crosshair",touchAction:"none"}}
+          onPointerDown={drawStart} onPointerMove={drawMove} onPointerUp={drawEnd} onPointerLeave={drawEnd}
         />
       </div>
 
