@@ -2200,7 +2200,7 @@ export default function App(){
   const[glowTarget,setGlowTarget]=useState(null);
   const glowTimer=useRef(null);
   const glow=(id,dur=1800)=>{clearTimeout(glowTimer.current);setGlowTarget(id);glowTimer.current=setTimeout(()=>setGlowTarget(null),dur);};
-  const glowStyle=(id)=>glowTarget===id?{animation:"itemGlow 0.8s ease-in-out infinite",transform:"scale(1.06)",transition:"transform 0.3s",position:"relative",zIndex:10}:{};
+  const glowStyle=(id)=>glowTarget===id?{animation:"itemGlow 0.8s ease-in-out infinite",position:"relative",zIndex:10,borderRadius:"inherit"}:{};
   // Stories state
   const[storyIdx,setStoryIdx]=useState(0);
   const[storyStep,setStoryStep]=useState("list"); // "list","reading","questions","done"
@@ -2917,57 +2917,50 @@ export default function App(){
   const scoreWriting=()=>{
     const c=cRef.current;if(!c)return 0;
     const ctx=c.getContext("2d");
-    const dpr=window.devicePixelRatio||1;
     const w=c.width,h=c.height;
     if(w===0||h===0)return 0;
-    const COLS=6,ROWS=8;
-    const digits=String(writeNum).split("").map(Number);
-    let hit=0,total=0;
-    digits.forEach((d,di)=>{
-      const tpl=NUM_TPL[d];if(!tpl)return;
-      const offX=digits.length>1?(di===0?0:w/(2*dpr)):0;
-      const dW=digits.length>1?w/(2*dpr):w/dpr;
-      const cW=dW/COLS,cH=(h/dpr)/ROWS;
-      for(let r=0;r<ROWS;r++){
-        for(let cl=0;cl<COLS;cl++){
-          if(tpl[r*COLS+cl]!==1)continue;
-          total++;
-          const cx=Math.floor((offX+cl*cW+cW/2)*dpr);
-          const cy=Math.floor((r*cH+cH/2)*dpr);
-          const sz=Math.max(4,Math.floor(Math.min(cW,cH)*0.7*dpr));
-          const sx=Math.max(0,cx-Math.floor(sz/2));
-          const sy=Math.max(0,cy-Math.floor(sz/2));
-          const sw=Math.min(sz,w-sx);
-          const sh=Math.min(sz,h-sy);
-          if(sw<=0||sh<=0)continue;
-          try{
-            const data=ctx.getImageData(sx,sy,sw,sh).data;
-            for(let p=0;p<data.length;p+=4){
-              if(data[p+3]>30){hit++;break;}
-            }
-          }catch(e){}
-        }
+    // Simple zone-based scoring: divide canvas into 4x6 grid, check which zones have ink
+    const COLS=4,ROWS=6;
+    const cW=w/COLS,cH=h/ROWS;
+    let inked=0,total=COLS*ROWS;
+    for(let r=0;r<ROWS;r++){
+      for(let cl=0;cl<COLS;cl++){
+        const sx=Math.floor(cl*cW),sy=Math.floor(r*cH);
+        const sw=Math.floor(cW),sh=Math.floor(cH);
+        if(sw<=0||sh<=0)continue;
+        try{
+          const data=ctx.getImageData(sx,sy,sw,sh).data;
+          let found=false;
+          // Sample every 4th pixel for speed
+          for(let p=0;p<data.length;p+=16){
+            if(data[p+3]>20){found=true;break;}
+          }
+          if(found)inked++;
+        }catch(e){}
       }
-    });
-    return total>0?Math.min(100,Math.round((hit/total)*115)):0;
+    }
+    // A well-traced number covers roughly 30-50% of zones
+    // Scale so that 30% coverage = 100%
+    const coverage=inked/total;
+    const score=Math.min(100,Math.round(coverage*330));
+    return score;
   };
   const drawEnd=()=>{
     if(!cRef.current)return;
     cRef.current._drawing=false;
-    if(drawPts>20&&!writeOk){
+    if(drawPts>15&&!writeOk){
       const score=scoreWriting();
       setWriteScore(score);
-      if(score>=80){
+      if(score>=70){
         setWriteOk(true);
-        headYes();boom();speak(`Perfect! Great job writing ${NW[writeNum]||writeNum}!`,{rate:0.85,pitch:1.0});
+        headYes();boom();speak(`Perfect! Great job!`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(5,"basics_w",writeNum);
-        // Auto-advance to next number after 2.5s
         setTimeout(()=>{
           const n=(writeNum%20)+1;
           setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);
           setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
         },2500);
-      } else if(score>=50){
+      } else if(score>=40){
         setWriteOk(true);
         headYes();boom();speak(`Good! That's a pass!`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeNum)) awardPoints(3,"basics_w",writeNum);
@@ -2976,8 +2969,8 @@ export default function App(){
           setWriteNum(n);setWriteOk(false);setWriteScore(null);setDrawPts(0);
           setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
         },2500);
-      } else if(score>=35){
-        speak("Almost there! Keep tracing.",{rate:0.85,pitch:1.0});
+      } else if(score>=25){
+        speak("Almost! Keep tracing.",{rate:0.85,pitch:1.0});
       }
     }
   };
@@ -3193,12 +3186,12 @@ export default function App(){
     <div id="home-tiles" style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"16px 16px 0"}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:16}}>
         {[
-          {id:"learn",icon:"📚",title:"Learn",sub:"Numbers, ABC, Shapes & Colors",bg:"#E0E7FF",accent:"#6366F1",shadow:"rgba(99,102,241,.15)"},
-          {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",bg:"#D1FAE5",accent:"#34D399",shadow:"rgba(52,211,153,.15)"},
-          {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Test Your Skills!",bg:"#FFF0DB",accent:"#FF8C42",shadow:"rgba(255,140,66,.15)"},
-          {id:"stories",icon:"📚",title:"Stories",sub:"Read & Answer",bg:"#DBEAFE",accent:"#3B82F6",shadow:"rgba(59,130,246,.15)"},
+          {id:"learn",icon:"📚",title:"Learn",sub:"Numbers, ABC & More",bg:"#E0E7FF",accent:"#6366F1",shadow:"rgba(99,102,241,.15)"},
+          {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words",bg:"#D1FAE5",accent:"#34D399",shadow:"rgba(52,211,153,.15)"},
+          {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Test Yourself",bg:"#FFF0DB",accent:"#FF8C42",shadow:"rgba(255,140,66,.15)"},
+          {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",bg:"#DBEAFE",accent:"#3B82F6",shadow:"rgba(59,130,246,.15)"},
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",bg:"#FEF3C7",accent:"#F59E0B",shadow:"rgba(245,158,11,.15)"},
-          {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",bg:"#F1F5F9",accent:"#64748B",shadow:"rgba(100,116,139,.1)"},
+          {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile",bg:"#F1F5F9",accent:"#64748B",shadow:"rgba(100,116,139,.1)"},
         ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"22px 18px",borderRadius:24,border:`2.5px solid ${m.accent}22`,cursor:"pointer",
@@ -3226,9 +3219,9 @@ export default function App(){
 
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
-  if((scr==="numbers"||scr==="learn")&&selNum){const w=NW[selNum];const scene=getScene(selNum);const color=nClr(selNum);const phs=NPH[selNum];return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={`Number ${selNum}`} onBack={()=>{stop();pRef.current=false;setSelNum(null);setNStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
+  if((scr==="numbers"||scr==="learn")&&selNum){const w=NW[selNum];const scene=getScene(selNum);const color=nClr(selNum);const phs=NPH[selNum];return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflowY:"auto",overflowX:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={`Number ${selNum}`} onBack={()=>{stop();pRef.current=false;setSelNum(null);setNStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
     {nStep!=="idle"&&<FlowSteps current={nStep} steps={NUM_STEPS}/>}
-    <div style={{padding:"6px 10px"}}>
+    <div style={{padding:"6px 10px",overflow:"hidden"}}>
       {/* 🎯 NUMBER HERO */}
       <div style={{...glowStyle("num-display")}}>
       <NumberHero num={selNum} word={w} color={color} active={nStep==="saying_sentence"} sentence={getScene(selNum).sentence}/>
@@ -3762,7 +3755,7 @@ export default function App(){
       </div>
     </div>}
     <div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
-  if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
+  if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#6366F1";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflowY:"auto",overflowX:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
     {phStep!=="idle"&&<FlowSteps current={phStep} steps={PH_STEPS.filter(s=>
       s.id==="saying_word"||(s.id==="spelling"&&phModes.spelling)||(s.id==="saying_sentence"&&phModes.sentence)||(s.id==="saying_phonics"&&phModes.phonics)||(s.id==="countdown"&&phModes.speak)||(s.id==="result"&&phModes.speak)
     )}/>}
@@ -3893,7 +3886,7 @@ export default function App(){
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
-  if((scr==="shapes"||scr==="learn")&&selShape){const sh=selShape;const shColor="#A855F7";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={sh.name} onBack={()=>{stop();pRef.current=false;setSelShape(null);setShStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
+  if((scr==="shapes"||scr==="learn")&&selShape){const sh=selShape;const shColor="#A855F7";return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflowY:"auto",overflowX:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={sh.name} onBack={()=>{stop();pRef.current=false;setSelShape(null);setShStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
     {shStep!=="idle"&&<FlowSteps current={shStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
@@ -3921,7 +3914,7 @@ export default function App(){
 
   // ═══ COLORS ═══
   // ═══ COLOR DETAIL ═══
-  if((scr==="colors"||scr==="learn")&&selColor){const co=selColor;return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={co.name} onBack={()=>{stop();pRef.current=false;setSelColor(null);setCoStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
+  if((scr==="colors"||scr==="learn")&&selColor){const co=selColor;return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflowY:"auto",overflowX:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={co.name} onBack={()=>{stop();pRef.current=false;setSelColor(null);setCoStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
     {coStep!=="idle"&&<FlowSteps current={coStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
@@ -3929,7 +3922,7 @@ export default function App(){
         {co.scene.elements.map((el,i)=><div key={i} style={{position:"absolute",left:`${el.x}%`,top:`${el.y}%`,transform:"translate(-50%,-50%)",fontSize:el.size,zIndex:2,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))",animation:el.anim!=="none"?`scene_${el.anim} ${el.dur}s ease-in-out ${el.delay||0}s infinite`:"none"}}>{el.emoji}</div>)}
         {coStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10,...glowStyle("color-sentence")}}><p style={{color:"#2D2B3D",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {co.sentence}</p></div>}
       </div>}
-      <div style={{textAlign:"center",marginTop:4}}><div style={{width:50,height:50,borderRadius:16,background:co.hex,margin:"0 auto 8px",boxShadow:`0 8px 24px ${co.hex}44`}}/><div style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{co.name}</div><div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>{co.things.map((t,j)=><span key={j} style={{fontSize:11,fontWeight:700,background:"#FFF0E0",color:"rgba(255,255,255,0.5)",padding:"4px 10px",borderRadius:8}}>{t}</span>)}</div></div>
+      <div style={{textAlign:"center",marginTop:4}}><div style={{width:50,height:50,borderRadius:16,background:co.hex,margin:"0 auto 8px",boxShadow:`0 8px 24px ${co.hex}44`}}/><div style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{co.name}</div><div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>{co.things.map((t,j)=><span key={j} style={{fontSize:11,fontWeight:700,background:"#FFF0E0",color:"#FF8C42",padding:"4px 10px",borderRadius:8}}>{t}</span>)}</div></div>
       {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:6,background:"#FFF0E0",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:800,color:"#6366F1",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:44,background:act?co.hex:"#f3f4f6",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
       <div style={{marginTop:12}}>
         {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#FFF0E0",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#FFF0E0",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
