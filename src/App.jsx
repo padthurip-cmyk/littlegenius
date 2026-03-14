@@ -2195,7 +2195,7 @@ export default function App(){
   const[selLetter,setSelLetter]=useState(null); // selected letter for detail
   const[matchPairs,setMatchPairs]=useState([]); // match game pairs
   const[matchLeft,setMatchLeft]=useState(null);const[matchIdx,setMatchIdx]=useState(0);const[matchWrong,setMatchWrong]=useState(null);const[matchCorrect,setMatchCorrect]=useState(null);const[matchOpts,setMatchOpts]=useState([]);
-  const[matchScore,setMatchScore]=useState(0);const[matchDone,setMatchDone]=useState([]);const[drawPts,setDrawPts]=useState(0);const drawPtsRef=useRef(0);const[writeOk,setWriteOk]=useState(false);const[writeScore,setWriteScore]=useState(null);
+  const[matchScore,setMatchScore]=useState(0);const[matchDone,setMatchDone]=useState([]);const[drawPts,setDrawPts]=useState(0);const drawPtsRef=useRef(0);const[writeOk,setWriteOk]=useState(false);const writeOkRef=useRef(false);const[writeScore,setWriteScore]=useState(null);
   const cRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);const[rwdMsg,setRwdMsg]=useState(null);
   const[speakMode,setSpeakMode]=useState(true); // toggle for speech practice
   const[countdown,setCountdown]=useState(0); // 3,2,1 countdown
@@ -2271,7 +2271,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setPandaSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
+  const goHome=()=>{setJoyFly(false);setPandaSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -2940,7 +2940,7 @@ export default function App(){
     ox.scale(dpr,dpr);
     // Match the watermark: fontSize:160 in a ~320px wide container = 50% of width
     const fontSize=Math.round(dispW*0.5);
-    ox.font="900 "+fontSize+"px Fredoka,sans-serif";
+    ox.font="900 "+fontSize+"px Fredoka,Arial,sans-serif";
     ox.textAlign="center";ox.textBaseline="middle";
     ox.fillStyle="#000";
     ox.fillText(target,dispW/2,dispH/2);
@@ -2948,7 +2948,7 @@ export default function App(){
     const userData=ctx.getImageData(0,0,w,h).data;
     const tplData=ox.getImageData(0,0,w,h).data;
     // Count: template pixels, user ink pixels, overlap pixels
-    let tplPx=0,inkPx=0,overlap=0,inkOutside=0;
+    let tplPx=0,inkPx=0,overlap=0;
     const step=4; // sample every 4th pixel for speed
     for(let p=3;p<userData.length;p+=step*4){
       const hasTpl=tplData[p]>30;
@@ -2956,9 +2956,12 @@ export default function App(){
       if(hasTpl)tplPx++;
       if(hasInk)inkPx++;
       if(hasTpl&&hasInk)overlap++;
-      if(!hasTpl&&hasInk)inkOutside++;
     }
-    if(tplPx===0)return 0;
+    if(tplPx===0){
+      // Font didn't render — fallback: give score based on ink amount
+      if(inkPx>10)return Math.min(80,Math.round(inkPx*2));
+      return 0;
+    }
     if(inkPx===0)return 0;
     // Accuracy = how much of the template is covered by ink
     const coverage=overlap/tplPx;
@@ -2966,35 +2969,42 @@ export default function App(){
     const precision=inkPx>0?(overlap/inkPx):0;
     // Combined score: weighted average favoring coverage
     const raw=coverage*0.7+precision*0.3;
-    return Math.min(100,Math.round(raw*120));
+    return Math.max(inkPx>5?10:0,Math.min(100,Math.round(raw*120)));
   };
   const drawEnd=()=>{
     if(!cRef.current)return;
     cRef.current._drawing=false;
     const score=drawPtsRef.current>15?scoreWriting():0;
     if(drawPtsRef.current>15)setWriteScore(score);
-    if(drawPtsRef.current>25&&!writeOk&&score>0){
+    if(drawPtsRef.current>25&&!writeOkRef.current&&score>0){
       const advanceNext=()=>{
         setTimeout(()=>{
           if(writeMode==="numbers"){
-            const n=(writeNum%20)+1;
-            setWriteNum(n);setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
-            setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
+            setWriteNum(prev=>{
+              const n=(prev%20)+1;
+              setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
+              setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
+              return n;
+            });
           } else {
-            const idx=ALPHA_LETTERS.indexOf(writeChar);
-            const next=ALPHA_LETTERS[(idx+1)%26];
-            setWriteChar(next);setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
-            setTimeout(()=>{initCanvas();speak(`Now write ${next}.`,{rate:0.75,pitch:1.0});},300);
+            setWriteChar(prev=>{
+              const idx=ALPHA_LETTERS.indexOf(prev.toUpperCase());
+              const next=ALPHA_LETTERS[(idx+1)%26];
+              const ch=writeCase==="caps"?next:next.toLowerCase();
+              setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
+              setTimeout(()=>{initCanvas();speak(`Now write ${ch}.`,{rate:0.75,pitch:1.0});},300);
+              return next;
+            });
           }
         },2500);
       };
       if(score>=60){
-        setWriteOk(true);
+        setWriteOk(true);writeOkRef.current=true;
         headYes();boom();speak(`Perfect!`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(5,"basics_w",writeMode==="numbers"?writeNum:writeChar);
         advanceNext();
       } else if(score>=35){
-        setWriteOk(true);
+        setWriteOk(true);writeOkRef.current=true;
         headYes();boom();speak(`Good job!`,{rate:0.85,pitch:1.0});
         if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(3,"basics_w",writeMode==="numbers"?writeNum:writeChar);
         advanceNext();
@@ -3006,11 +3016,11 @@ export default function App(){
   const clearPad=()=>{
     const c=cRef.current;if(!c)return;
     initCanvas(); // Re-init instead of just clearing
-    drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);setWriteScore(null);
+    drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);
   };
   const nextWrite=()=>{
     setWriteNum(n=>n>=100?1:n+1);
-    drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);setWriteScore(null);
+    drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);
     setTimeout(()=>{initCanvas();},100);
     speak(`Write ${NW[writeNum>=100?1:writeNum+1]||writeNum+1}.`,{rate:0.75,pitch:1.0});
   };
@@ -3641,7 +3651,7 @@ export default function App(){
       {/* Mode toggle: Numbers vs Letters */}
       <div style={{display:"flex",gap:6,marginBottom:8}}>
         {[{id:"numbers",label:"🔢 Numbers"},{id:"letters",label:"🔤 Letters"}].map(m=>
-          <button key={m.id} onClick={()=>{setWriteMode(m.id);setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);setTimeout(()=>{initCanvas();if(m.id==="numbers")speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75});else speak(`Write ${writeCase==="caps"?writeChar:writeChar.toLowerCase()}.`,{rate:0.75});},300);}} style={{
+          <button key={m.id} onClick={()=>{setWriteMode(m.id);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);setTimeout(()=>{initCanvas();if(m.id==="numbers")speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75});else speak(`Write ${writeCase==="caps"?writeChar:writeChar.toLowerCase()}.`,{rate:0.75});},300);}} style={{
             flex:1,padding:"8px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             borderColor:writeMode===m.id?"#FF8C42":"#E8E0D8",background:writeMode===m.id?"#FF8C42":"#FFFBF5",color:writeMode===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
@@ -3650,7 +3660,7 @@ export default function App(){
       {/* Caps/Small toggle for letters */}
       {writeMode==="letters"&&<div style={{display:"flex",gap:6,marginBottom:8}}>
         {[{id:"caps",label:"ABC Capital"},{id:"small",label:"abc Small"}].map(m=>
-          <button key={m.id} onClick={()=>{setWriteCase(m.id);setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);const ch=m.id==="caps"?writeChar.toUpperCase():writeChar.toLowerCase();setTimeout(()=>{initCanvas();speak(`Write ${ch}.`,{rate:0.75});},300);}} style={{
+          <button key={m.id} onClick={()=>{setWriteCase(m.id);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);const ch=m.id==="caps"?writeChar.toUpperCase():writeChar.toLowerCase();setTimeout(()=>{initCanvas();speak(`Write ${ch}.`,{rate:0.75});},300);}} style={{
             flex:1,padding:"7px",borderRadius:10,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
             borderColor:writeCase===m.id?"#6366F1":"#E8E0D8",background:writeCase===m.id?"#6366F1":"#FFFBF5",color:writeCase===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
@@ -3667,18 +3677,18 @@ export default function App(){
           </div>
         </div>
         <div style={{flex:1}}>
-          {writeScore!==null&&<div style={{display:"flex",alignItems:"center",gap:6}}>
-            <div style={{flex:1,height:8,background:"#f3f4f6",borderRadius:4,overflow:"hidden"}}>
-              <div style={{height:"100%",background:writeScore>=70?"#22C55E":writeScore>=40?"#F59E0B":"#F87171",borderRadius:4,width:`${writeScore}%`,transition:"width 0.5s"}}/>
+          {writeScore!==null?<div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{flex:1,height:10,background:"#f3f4f6",borderRadius:5,overflow:"hidden"}}>
+              <div style={{height:"100%",background:writeScore>=60?"#22C55E":writeScore>=35?"#F59E0B":"#F87171",borderRadius:5,width:`${writeScore}%`,transition:"width 0.3s"}}/>
             </div>
-            <span style={{fontSize:13,fontWeight:800,color:writeScore>=70?"#22C55E":writeScore>=40?"#F59E0B":"#F87171"}}>{writeScore}%</span>
-          </div>}
+            <span style={{fontSize:14,fontWeight:800,minWidth:40,color:writeScore>=60?"#22C55E":writeScore>=35?"#F59E0B":"#F87171"}}>{writeScore}%</span>
+          </div>:<div style={{fontSize:12,fontWeight:600,color:"#8E8CA3"}}>✏️ Trace on the watermark!</div>}
           {writeOk&&<div style={{fontSize:12,fontWeight:700,color:"#22C55E",marginTop:2}}>✅ Moving to next...</div>}
         </div>
         <button onClick={()=>{
           if(writeMode==="numbers"){const n=(writeNum%20)+1;setWriteNum(n);}
           else{const idx=ALPHA_LETTERS.indexOf(writeChar.toUpperCase());setWriteChar(ALPHA_LETTERS[(idx+1)%26]);}
-          setWriteOk(false);setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
+          setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
           setTimeout(()=>{initCanvas();speak(`Write ${writeMode==="numbers"?NW[(writeNum%20)+1]||"":ALPHA_LETTERS[(ALPHA_LETTERS.indexOf(writeChar.toUpperCase())+1)%26]}.`,{rate:0.75});},300);
         }} style={{padding:"8px 16px",borderRadius:12,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
       </div>
