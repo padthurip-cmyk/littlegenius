@@ -3375,6 +3375,27 @@ export default function App(){
         </button>)}
       </div>
     </div>
+    {/* ═══ PIN MODAL ═══ */}
+    {showPinModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"var(--shadow-float)"}}>
+        <span style={{fontSize:48}}>🔒</span>
+        <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
+        <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
+        <div style={{display:"flex",gap:8,justifyContent:"center",margin:"16px 0"}}>
+          {[1,2,3,4].map(i=><div key={i} style={{width:44,height:44,borderRadius:12,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9",boxShadow:"var(--shadow-card)"}}>{pinInput.length>=i?"●":"○"}</div>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:240,margin:"0 auto"}}>
+          {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
+            sfxTap();
+            if(n==="⌫"){setPinInput(p=>p.slice(0,-1));}
+            else{const np=pinInput+n;setPinInput(np);
+              if(np.length===4){if(np===parentPin){setShowPinModal(false);setPinInput("");setScr("parent");setParentMode(true);}else{setPinInput("");}}
+            }
+          }} style={{padding:"14px",borderRadius:14,border:"none",background:n==="⌫"?"#FEE2E2":"#F0F4FF",fontSize:n==="⌫"?18:22,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"#FF6B81":"var(--dark)",boxShadow:"var(--shadow-card)"}}>{n}</button>)}
+        </div>
+        <p style={{fontSize:10,color:"#A4B0BE",marginTop:10}}>Default PIN: 1234</p>
+      </div>
+    </div>}
     {BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
@@ -3626,28 +3647,6 @@ export default function App(){
       </div>}
     </div>
     
-    {/* ═══ PIN MODAL ═══ */}
-    {showPinModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"var(--shadow-float)"}}>
-        <span style={{fontSize:48}}>🔒</span>
-        <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
-        <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
-        <div style={{display:"flex",gap:8,justifyContent:"center",margin:"16px 0"}}>
-          {[1,2,3,4].map(i=><div key={i} style={{width:44,height:44,borderRadius:12,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9",boxShadow:"var(--shadow-card)"}}>{pinInput.length>=i?"●":"○"}</div>)}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:240,margin:"0 auto"}}>
-          {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
-            sfxTap();
-            if(n==="⌫"){setPinInput(p=>p.slice(0,-1));}
-            else{const np=pinInput+n;setPinInput(np);
-              if(np.length===4){if(np===parentPin){setShowPinModal(false);setPinInput("");setScr("parent");setParentMode(true);}else{setPinInput("");}}
-            }
-          }} style={{padding:"14px",borderRadius:14,border:"none",background:n==="⌫"?"#FEE2E2":"#F0F4FF",fontSize:n==="⌫"?18:22,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"#FF6B81":"var(--dark)",boxShadow:"var(--shadow-card)"}}>{n}</button>)}
-        </div>
-        <p style={{fontSize:10,color:"#A4B0BE",marginTop:10}}>Default PIN: 1234</p>
-      </div>
-    </div>}
-
     {BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
