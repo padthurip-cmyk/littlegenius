@@ -1373,7 +1373,9 @@ const NUM_TPL={
 
 // Helpers
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
-const nClr=(n)=>["#FF6B6B","#4ECDC4","#45B7D1","#FF8C42","#A855F7","#F472B6","#34D399","#FBBF24","#60A5FA","#F87171"][(Math.floor((n-1)/10))%10];
+const N_GRADIENTS=["linear-gradient(135deg,#FF6B6B,#EE5A5A)","linear-gradient(135deg,#54A0FF,#2E86DE)","linear-gradient(135deg,#FF9F43,#EE8520)","linear-gradient(135deg,#00D2A0,#00B894)","linear-gradient(135deg,#A29BFE,#6C5CE7)","linear-gradient(135deg,#FD79A8,#E84393)","linear-gradient(135deg,#FECA57,#F9CA24)","linear-gradient(135deg,#00CEC9,#00B5AD)","linear-gradient(135deg,#74B9FF,#0984E3)","linear-gradient(135deg,#FF6348,#EE5A24)"];
+const nGrad=(n)=>N_GRADIENTS[(n-1)%10];
+const nClr=(n)=>["#FF6B6B","#54A0FF","#FF9F43","#00D2A0","#A29BFE","#FD79A8","#FECA57","#00CEC9","#74B9FF","#FF6348"][(n-1)%10];
 // Normalize speech: "17" → "seventeen", strip filler words, fix common mishears
 const normalizeSpoken=(text)=>{
   let t=text.trim().toLowerCase();
@@ -3310,18 +3312,18 @@ export default function App(){
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",accent:"#00CEC9",grad:"linear-gradient(135deg,#00CEC9,#81ECEC)"},
         ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
           display:"flex",alignItems:"center",gap:14,
-          padding:"20px 18px",borderRadius:22,cursor:"pointer",
-          fontFamily:"var(--font)",background:"#fff",
+          padding:"20px 18px",borderRadius:24,cursor:"pointer",
+          fontFamily:"var(--font)",background:m.grad,
           border:"none",
-          borderLeft:`4px solid ${m.accent}`,
-          boxShadow:"var(--shadow-card)",
+          boxShadow:`0 6px 20px ${m.accent}30`,
           animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,
-          textAlign:"left"
+          textAlign:"left",
+          transition:"all 0.25s cubic-bezier(0.34,1.56,0.64,1)"
         }}>
-          <span style={{fontSize:32,flexShrink:0}}>{m.icon}</span>
+          <span style={{fontSize:36,flexShrink:0,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.15))"}}>{m.icon}</span>
           <div style={{flex:1,minWidth:0}}>
-            <div style={{color:"#2D2B3D",fontWeight:900,fontSize:18}}>{m.title}</div>
-            <div style={{color:"#8E8CA3",fontSize:11,fontWeight:600,marginTop:2}}>{m.sub}</div>
+            <div style={{color:"#fff",fontWeight:900,fontSize:18,textShadow:"0 1px 3px rgba(0,0,0,0.1)"}}>{m.title}</div>
+            <div style={{color:"rgba(255,255,255,0.8)",fontSize:11,fontWeight:600,marginTop:2}}>{m.sub}</div>
           </div>
         </button>)}
       </div>
@@ -3454,9 +3456,10 @@ export default function App(){
         {key:"speak",icon:"🎤",label:"Speak"},
       ].map(m=><button key={m.key} onClick={()=>toggleLearnMode(m.key)} style={{
         display:"flex",alignItems:"center",gap:3,padding:"6px 12px",borderRadius:12,
-        border:`2px solid ${learnModes[m.key]?"#FF8C42":"#EDE5DC"}`,
-        background:learnModes[m.key]?"#E5FFE0":"#fff",
-        color:learnModes[m.key]?"#FF8C42":"#8E8CA3",
+        border:"none",
+        background:learnModes[m.key]?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#F0F4FF",
+        color:learnModes[m.key]?"#fff":"#A4B0BE",
+        boxShadow:learnModes[m.key]?"0 3px 10px rgba(0,210,160,0.2)":"none",
         fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"
       }}><span style={{fontSize:12}}>{m.icon}</span>{m.label}{learnModes[m.key]&&<span style={{fontSize:8}}>✓</span>}</button>)}
     </div>
@@ -3490,13 +3493,14 @@ export default function App(){
       </div>
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>{(()=>{const{min,max}=getNumRange();const count=max-min+1;const cols=count<=10?3:count<=20?4:5;return<div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:count<=10?12:8}}>
         {Array.from({length:count}).map((_,i)=>{const n=min+i;const done=isDone("numbers",n);return<button key={n} data-r="num" onClick={()=>{sfxTap();stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{
-          position:"relative",padding:count<=10?"22px 10px":count<=20?"16px 8px":"12px 6px",borderRadius:18,
-          border:`2px solid ${done?nClr(n)+"44":"#E8E0D8"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-          fontFamily:"var(--font)",background:done?`linear-gradient(135deg,${nClr(n)}08,${nClr(n)}15)`:"#fff",
-          boxShadow:"var(--shadow-card)",...glowStyle("num-explore-"+n)
-        }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
-          <span style={{fontFamily:"var(--font)",fontSize:count<=10?28:count<=20?20:16,fontWeight:800,color:nClr(n)}}>{n}</span>
-          {numSpelling&&<span style={{fontSize:count<=10?9:7,fontWeight:700,color:"#8E8CA3"}}>{NW[n]||""}</span>}
+          position:"relative",padding:count<=10?"22px 10px":count<=20?"16px 8px":"12px 6px",borderRadius:22,
+          border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
+          fontFamily:"var(--font)",background:nGrad(n),
+          boxShadow:`0 4px 14px ${nClr(n)}33`,...glowStyle("num-explore-"+n),
+          transition:"all 0.25s cubic-bezier(0.34,1.56,0.64,1)"
+        }}>{done&&<span style={{position:"absolute",top:4,right:6,fontSize:12,background:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:"#22C55E",fontWeight:900,boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>✓</span>}
+          <span style={{fontFamily:"var(--font)",fontSize:count<=10?32:count<=20?22:18,fontWeight:800,color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>{n}</span>
+          {numSpelling&&<span style={{fontSize:count<=10?10:8,fontWeight:700,color:"rgba(255,255,255,0.85)"}}>{NW[n]||""}</span>}
         </button>;})}</div>;})()}</div>
     </div>}
 
@@ -3505,15 +3509,16 @@ export default function App(){
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
           {ALPHA_LETTERS.map((l,i)=>{const done=isDone("alphabet",l);return<button key={l} data-r="letter" onClick={()=>{sfxTap();stop();prevScrRef.current="learn";movePandaTo("bottomRight");pRef.current=true;setScr("alphabet");setSelLetter(l);playLetter(l);}} style={{
-            position:"relative",padding:"14px 4px",borderRadius:18,
-            border:`2px solid ${done?ALPHA_COLORS[i%13]+"44":"#E8E0D8"}`,cursor:"pointer",
+            position:"relative",padding:"16px 6px",borderRadius:20,
+            border:"none",cursor:"pointer",
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
             fontFamily:"var(--font)",
-            background:done?`linear-gradient(135deg,${ALPHA_COLORS[i%13]}08,${ALPHA_COLORS[i%13]}15)`:"#fff",
-            boxShadow:"var(--shadow-card)"
-          }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
-            <span style={{fontSize:24,fontWeight:900,color:ALPHA_COLORS[i%13],lineHeight:1}}>{l}{l.toLowerCase()}</span>
-            <span style={{fontSize:8,fontWeight:700,color:"#8E8CA3"}}>{ALPHA_DATA[l]?.examples[0]?.w||""}</span>
+            background:`linear-gradient(135deg,${ALPHA_COLORS[i%13]},${ALPHA_COLORS[i%13]}CC)`,
+            boxShadow:`0 4px 14px ${ALPHA_COLORS[i%13]}33`,
+            transition:"all 0.25s cubic-bezier(0.34,1.56,0.64,1)"
+          }}>{done&&<span style={{position:"absolute",top:3,right:5,fontSize:12,background:"#fff",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",color:"#22C55E",fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}
+            <span style={{fontSize:24,fontWeight:900,color:"#fff",lineHeight:1,textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>{l}{l.toLowerCase()}</span>
+            <span style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.8)"}}>{ALPHA_DATA[l]?.examples[0]?.w||""}</span>
           </button>;})}
         </div>
       </div>
@@ -3524,15 +3529,16 @@ export default function App(){
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
           {SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} data-r="shape" onClick={()=>{sfxTap();stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{
-            position:"relative",padding:"16px 6px",borderRadius:18,
-            border:`2px solid ${done?"#A855F744":"#E8E0D8"}`,cursor:"pointer",
-            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
+            position:"relative",padding:"18px 8px",borderRadius:22,
+            border:"none",cursor:"pointer",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
             fontFamily:"var(--font)",
-            background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",
-            boxShadow:"var(--shadow-card)"
-          }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
-            <span style={{fontSize:36}}>{s.emoji}</span>
-            <span style={{fontSize:12,fontWeight:700,textTransform:"capitalize",color:"#2D2B3D"}}>{s.name}</span>
+            background:`linear-gradient(135deg,${["#6C5CE7","#00D2A0","#FF9F43","#54A0FF","#FECA57","#FD79A8","#00CEC9","#FF6B81","#A29BFE","#74B9FF","#FF6348","#55EFC4"][i%12]},${["#5A4BD1","#00B894","#EE8520","#2E86DE","#F9CA24","#E84393","#00B5AD","#EE5A6F","#6C5CE7","#0984E3","#EE5A24","#00D2A0"][i%12]})`,
+            boxShadow:`0 4px 14px ${["#6C5CE7","#00D2A0","#FF9F43","#54A0FF","#FECA57","#FD79A8","#00CEC9","#FF6B81","#A29BFE","#74B9FF","#FF6348","#55EFC4"][i%12]}33`,
+            transition:"all 0.25s cubic-bezier(0.34,1.56,0.64,1)"
+          }}>{done&&<span style={{position:"absolute",top:4,right:5,fontSize:12,background:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:"#22C55E",fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}
+            <span style={{fontSize:36,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))"}}>{s.emoji}</span>
+            <span style={{fontSize:12,fontWeight:700,textTransform:"capitalize",color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{s.name}</span>
           </button>;})}
         </div>
       </div>
@@ -3543,15 +3549,16 @@ export default function App(){
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
           {COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} data-r="color" onClick={()=>{sfxTap();stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{
-            position:"relative",padding:"14px 6px",borderRadius:18,
-            border:`2px solid ${done?c.hex+"44":"#E8E0D8"}`,cursor:"pointer",
-            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
+            position:"relative",padding:"16px 8px",borderRadius:22,
+            border:"none",cursor:"pointer",
+            display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
             fontFamily:"var(--font)",
-            background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",
-            boxShadow:"var(--shadow-card)"
-          }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
-            <div style={{width:40,height:40,borderRadius:12,background:c.hex,boxShadow:`0 3px 10px ${c.hex}44`}}/>
-            <span style={{fontSize:12,fontWeight:700,textTransform:"capitalize",color:"#2D2B3D"}}>{c.name}</span>
+            background:`linear-gradient(145deg,${c.hex},${c.hex}CC)`,
+            boxShadow:`0 4px 14px ${c.hex}33`,
+            transition:"all 0.25s cubic-bezier(0.34,1.56,0.64,1)"
+          }}>{done&&<span style={{position:"absolute",top:4,right:5,fontSize:12,background:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:"#22C55E",fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}
+            <div style={{width:44,height:44,borderRadius:14,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,boxShadow:"inset 0 2px 4px rgba(255,255,255,0.3)"}}>{c.things?.[0]||"●"}</div>
+            <span style={{fontSize:12,fontWeight:700,textTransform:"capitalize",color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.2)"}}>{c.name}</span>
           </button>;})}
         </div>
       </div>
@@ -3591,11 +3598,11 @@ export default function App(){
         }}>{r}</button>)}
         </div>
       </div>
-      <div style={{padding:"10px 16px",background:"linear-gradient(135deg,#FFF5EB,#FFFBF5)",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #EDE5DC"}}>
+      <div style={{padding:"10px 16px",background:"linear-gradient(135deg,#FFF5EB,#FFFBF5)",display:"flex",alignItems:"center",gap:10,borderBottom:"none"}}>
         {quizNum?<>
           <button onClick={repeatQuiz} style={{padding:"10px 16px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-btn)"}}>🔊 Hear</button>
-          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:"#E67A30"}}>Which number? 👂</div></div>
-          <div><div style={{fontSize:14,fontWeight:700,color:"#E67A30"}}>🏆 {quizScore}</div>{quizStreak>=3&&<span style={{fontSize:10,fontWeight:700,color:"#EF4444"}}>🔥{quizStreak}</span>}</div>
+          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:"#6C5CE7"}}>Which number? 👂</div></div>
+          <div><div style={{fontSize:14,fontWeight:700,color:"#6C5CE7"}}>🏆 {quizScore}</div>{quizStreak>=3&&<span style={{fontSize:10,fontWeight:700,color:"#EF4444"}}>🔥{quizStreak}</span>}</div>
         </>:<button onClick={()=>newQuiz()} style={{width:"100%",padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>▶️ Start Quiz!</button>}
       </div>
       {quizNum&&<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
@@ -3604,13 +3611,12 @@ export default function App(){
             const isCorrect=quizFb?.ok&&quizFb?.n===n;
             const isWrong=quizFb&&!quizFb.ok&&quizFb.n===n;
             return<button key={n} data-r="quiz" onClick={()=>{sfxTap();onQuizTap(n);}} style={{
-              padding:"26px 10px",borderRadius:22,border:"3px solid",cursor:"pointer",
-              borderColor:isCorrect?"#4ADE80":isWrong?"#F87171":"#E8E0D8",
-              background:isCorrect?"#F0FDF4":isWrong?"#FEF2F2":"#fff",
+              padding:"26px 10px",borderRadius:24,border:"none",cursor:"pointer",
+              background:isCorrect?"linear-gradient(135deg,#00D2A0,#00B894)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":nGrad(n),
               fontFamily:"var(--font)",fontSize:32,fontWeight:800,
-              color:isCorrect?"#16A34A":isWrong?"#DC2626":nClr(n),
+              color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.15)",
               transform:isCorrect?"scale(1.1)":isWrong?"scale(0.95)":"scale(1)",
-              transition:"all 0.2s",boxShadow:"var(--shadow-card)"
+              transition:"all 0.2s",boxShadow:isCorrect?"0 6px 20px rgba(0,210,160,0.3)":isWrong?"0 4px 16px rgba(255,107,129,0.3)":`0 4px 14px ${nClr(n)}30`
             }}>{n}</button>;
           })}
         </div>
@@ -3642,8 +3648,8 @@ export default function App(){
           <button onClick={()=>genMath()} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
         </div>
         <div style={{background:"#fff",borderRadius:20,padding:14,textAlign:"center",marginBottom:12}}>
-          <div style={{fontFamily:"var(--font)",fontSize:28,fontWeight:900,color:"#2D2B3D",marginTop:4}}>
-            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#6C5CE7"}}>?</span>
+          <div style={{fontFamily:"var(--font)",fontSize:30,fontWeight:900,color:"#fff",marginTop:4,textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>
+            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#FECA57",textShadow:"0 0 12px rgba(254,202,87,0.5)"}}>?</span>
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
@@ -3651,12 +3657,11 @@ export default function App(){
             const isRight=mathFb&&c===mathProblem.answer;
             const isWrong=mathFb==="wrong"&&c===mathAnswer;
             return<button key={c+"-"+i} data-r="quiz" onClick={()=>{sfxTap();onMathTap(c);}} style={{
-              padding:"22px 12px",borderRadius:22,border:"3px solid",cursor:"pointer",
-              borderColor:isRight?"#4ADE80":isWrong?"#F87171":"#E8E0D8",
-              background:isRight?"#F0FDF4":isWrong?"#FEF2F2":"#fff",
+              padding:"22px 12px",borderRadius:24,border:"none",cursor:"pointer",
+              background:isRight?"linear-gradient(135deg,#00D2A0,#00B894)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":"linear-gradient(135deg,#54A0FF,#74B9FF)",
               fontFamily:"var(--font)",fontSize:26,fontWeight:800,
-              color:isRight?"#16A34A":isWrong?"#DC2626":"#2D2B3D",
-              transition:"all 0.2s",boxShadow:"var(--shadow-card)"
+              color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.1)",
+              transition:"all 0.2s",boxShadow:isRight?"0 4px 16px rgba(0,210,160,0.25)":isWrong?"0 4px 16px rgba(255,107,129,0.25)":"0 4px 14px rgba(84,160,255,0.25)"
             }}>{c}</button>;
           })}
         </div>
@@ -3705,12 +3710,12 @@ export default function App(){
           const displayLetter=matchMode==="findCaps"?l.toUpperCase():matchMode==="voiceQuiz"?l.toUpperCase():l.toLowerCase();
           return<button key={"m"+l+matchIdx+matchMode} data-r="quiz" onClick={()=>{sfxTap();onMatchTap(l);}} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
-            borderColor:isWrong?"#F87171":isCorrect?"#4ADE80":"#FF8C42",
-            background:isWrong?"#FEF2F2":isCorrect?"#FFF5EB":"#fff",
+            borderColor:isWrong?"#FF6B81":isCorrect?"#00D2A0":"transparent",
+            background:isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":"linear-gradient(135deg,#6C5CE7,#A29BFE)",
             fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
-            color:isWrong?"#F87171":isCorrect?"#4ADE80":"#2D2B3D",fontFamily:"var(--font)",
+            color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.15)",fontFamily:"var(--font)",
             transform:isCorrect?"scale(1.2)":isWrong?"scale(0.9)":"scale(1)",
-            transition:"all 0.2s",boxShadow:isCorrect?"0 6px 24px rgba(74,222,128,.3)":isWrong?"0 4px 16px rgba(248,113,113,.2)":"0 2px 10px rgba(99,102,241,.12)"
+            transition:"all 0.2s",boxShadow:isCorrect?"0 6px 20px rgba(0,210,160,.3)":isWrong?"0 4px 16px rgba(255,107,129,.25)":"0 4px 14px rgba(108,92,231,.2)"
           }}>{displayLetter}</button>;
         })}
       </div>}
@@ -3859,8 +3864,8 @@ export default function App(){
               <span key={"b"+i} style={{fontSize:26,animation:`gridPop 0.2s ease ${(mathProblem.a+i)*0.04}s both`}}>{getMathEmoji(1)}</span>
             )}
           </div>
-          <div style={{fontFamily:"var(--font)",fontSize:28,fontWeight:900,color:"#2D2B3D",marginTop:4}}>
-            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#6C5CE7"}}>?</span>
+          <div style={{fontFamily:"var(--font)",fontSize:30,fontWeight:900,color:"#fff",marginTop:4,textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>
+            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#FECA57",textShadow:"0 0 12px rgba(254,202,87,0.5)"}}>?</span>
           </div>
         </div>
         {/* 4 answer choices */}
@@ -4046,15 +4051,16 @@ export default function App(){
         {key:"speak",icon:"🎤",label:"Speak"},
       ].map(m=><button key={m.key} onClick={()=>togglePhMode(m.key)} style={{
         display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:12,
-        border:`2px solid ${phModes[m.key]?"#FF8C42":"#EDE5DC"}`,
-        background:phModes[m.key]?"#E5FFE0":"#fff",
+        border:"none",
+        background:phModes[m.key]?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#F0F4FF",
+        boxShadow:phModes[m.key]?"0 3px 10px rgba(0,210,160,0.2)":"none",
         color:phModes[m.key]?"#FF8C42":"#8E8CA3",
         fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
         transition:"all 0.2s"
       }}><span style={{fontSize:14}}>{m.icon}</span>{m.label}{phModes[m.key]?<span style={{fontSize:10}}>✓</span>:null}</button>)}
       </div>
     </div>
-    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#fff",borderBottom:"none"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} data-r="pill" onClick={()=>{sfxTap();setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?"#FF8C42":"#EDE5DC",background:phCat===k?"#FF8C42":"#fff",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"var(--font)",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} data-r="word" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?"#FF8C4244":"#EDE5DC"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"var(--font)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"var(--shadow-card)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#fff",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#fff",borderBottom:"none"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} data-r="pill" onClick={()=>{sfxTap();setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?"transparent":"#DFE6E9",background:phCat===k?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",boxShadow:phCat===k?"0 3px 12px rgba(108,92,231,0.2)":"none",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"var(--font)",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} data-r="word" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:"none",background:done?`linear-gradient(135deg,${cc},${cc}DD)`:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:done?`0 4px 14px ${cc}30`:"var(--shadow-card)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"var(--shadow-card)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{w.img}</span><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,marginTop:4,color:done?"#fff":"#2D3436"}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#fff",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
@@ -4081,7 +4087,7 @@ export default function App(){
     </div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ SHAPES GRID ═══
-  if(scr==="shapes")return<div style={{fontFamily:"var(--font)",height:"100dvh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} data-r="shape" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"var(--font)",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"var(--shadow-card)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none"}}>{s.emoji}</span><span style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="shapes")return<div style={{fontFamily:"var(--font)",height:"100dvh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} data-r="shape" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:"none",background:done?"linear-gradient(135deg,#A29BFE,#6C5CE7)":"linear-gradient(145deg,#fff,#F8FAFF)",cursor:"pointer",fontFamily:"var(--font)",boxShadow:done?"0 4px 14px rgba(108,92,231,0.25)":"var(--shadow-card)",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"var(--shadow-card)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{s.emoji}</span><span style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize",color:done?"#fff":"#2D3436"}}>{s.name}</span><span style={{fontSize:11,color:done?"rgba(255,255,255,0.8)":"#A4B0BE",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
 
   // ═══ COLORS ═══
@@ -4232,15 +4238,15 @@ export default function App(){
           const displayLetter=matchMode==="findCaps"?l.toUpperCase():matchMode==="voiceQuiz"?l.toUpperCase():l.toLowerCase();
           return<button key={"m"+l+matchIdx+matchMode} data-r="quiz" onClick={()=>{sfxTap();onMatchTap(l);}} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
-            borderColor:isWrong?"#F87171":isCorrect?"#4ADE80":"#FF8C42",
-            background:isWrong?"#FEF2F2":isCorrect?"#FFF5EB":"#fff",
+            borderColor:isWrong?"#FF6B81":isCorrect?"#00D2A0":"transparent",
+            background:isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":"linear-gradient(135deg,#6C5CE7,#A29BFE)",
             fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
             color:isWrong?"#F87171":isCorrect?"#4ADE80":"#2D2B3D",
             fontFamily:"var(--font)",
             transform:isCorrect?"scale(1.2)":isWrong?"scale(0.9)":"scale(1)",
             transition:"all 0.2s",
             animation:`gridPop 0.3s ease ${i*0.06}s both`,
-            boxShadow:isCorrect?"0 6px 24px rgba(74,222,128,.3)":isWrong?"0 4px 16px rgba(248,113,113,.2)":"0 2px 10px rgba(99,102,241,.12)"
+            boxShadow:isCorrect?"0 6px 20px rgba(0,210,160,.3)":isWrong?"0 4px 16px rgba(255,107,129,.25)":"0 4px 14px rgba(108,92,231,.2)"
           }}>{displayLetter}</button>;
         })}
       </div>}
@@ -4305,16 +4311,16 @@ export default function App(){
     {/* ═══ NUMBER QUIZ: Listen & tap the right number ═══ */}
     {basicsTab==="quiz"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* Quiz header */}
-      <div style={{padding:"12px 16px",background:"linear-gradient(135deg,#FFF5EB,#FFFBF5)",display:"flex",alignItems:"center",gap:10,borderBottom:"1px solid #EDE5DC"}}>
+      <div style={{padding:"12px 16px",background:"linear-gradient(135deg,#FFF5EB,#FFFBF5)",display:"flex",alignItems:"center",gap:10,borderBottom:"none"}}>
         {quizNum?<>
           <button onClick={repeatQuiz} style={{padding:"10px 18px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-btn)",display:"flex",alignItems:"center",gap:6}}>
             🔊 Hear Again
           </button>
           <div style={{flex:1,textAlign:"center"}}>
-            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,color:"#E67A30"}}>Which number is it? 👂</div>
+            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,color:"#6C5CE7"}}>Which number is it? 👂</div>
           </div>
           <div style={{textAlign:"right"}}>
-            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,color:"#E67A30"}}>🏆 {quizScore}</div>
+            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,color:"#6C5CE7"}}>🏆 {quizScore}</div>
             {quizStreak>=3&&<span style={{fontSize:10,fontWeight:700,color:"#EF4444"}}>🔥{quizStreak}</span>}
           </div>
         </>:<button onClick={newQuiz} style={{width:"100%",padding:"16px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:18,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 20px rgba(139,92,246,.3)"}}>▶️ Start Quiz!</button>}
@@ -4503,12 +4509,12 @@ export default function App(){
   </div>;
 
     // ═══ REWARDS ═══
-  if(scr==="rewards")return<div style={{fontFamily:"var(--font)",height:"100dvh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#2D2B3D",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FF9F43,#FECA57)",borderRadius:24,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px rgba(255,159,67,0.25)"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#2D2B3D",fontFamily:"var(--font)",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#8E8CA3",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} data-r="reward" onClick={()=>{if(can){sfxTap();buyR(r);}}} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:`2px solid ${can?"#eee":"#FFF0E0"}`,background:can?"#fff":"#fafafa",cursor:can?"pointer":"default",fontFamily:"var(--font)",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"var(--font)",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:14,border:"1px solid #EDE5DC",marginBottom:6}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="rewards")return<div style={{fontFamily:"var(--font)",height:"100dvh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#2D2B3D",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FF9F43,#FECA57)",borderRadius:24,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px rgba(255,159,67,0.25)"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#2D2B3D",fontFamily:"var(--font)",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#8E8CA3",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} data-r="reward" onClick={()=>{if(can){sfxTap();buyR(r);}}} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:"none",background:can?"linear-gradient(145deg,#fff,#F8FAFF)":"#F0F0F0",boxShadow:can?"var(--shadow-card)":"none",cursor:can?"pointer":"default",fontFamily:"var(--font)",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"var(--font)",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#00D2A0,#00B894)":"#D4D5D9",boxShadow:can?"0 3px 10px rgba(0,210,160,0.2)":"none",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"linear-gradient(145deg,#fff,#F8FAFF)",borderRadius:18,border:"none",marginBottom:8,boxShadow:"var(--shadow-card)"}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SETTINGS ═══
-  if(scr==="settings")return<div style={{fontFamily:"var(--font)",height:"100dvh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,boxShadow:"var(--shadow-card)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"var(--font)",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#8E8CA3",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#FF8C42"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"#fff",borderRadius:18,padding:16,textAlign:"center",border:"1px solid #EDE5DC"}}><span style={{fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#fff",color:"#6C5CE7",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button>
+  if(scr==="settings")return<div style={{fontFamily:"var(--font)",height:"100dvh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,boxShadow:"var(--shadow-card)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"var(--font)",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#8E8CA3",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#FF8C42"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"linear-gradient(145deg,#fff,#F8FAFF)",borderRadius:22,padding:18,textAlign:"center",border:"none",boxShadow:"var(--shadow-card)"}}><span style={{fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#fff",color:"#6C5CE7",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button>
 {/* Voice Settings */}
-<div style={{marginTop:16,padding:16,background:"#fff",borderRadius:20,border:"1px solid #EDE5DC"}}>
+<div style={{marginTop:16,padding:16,background:"#fff",borderRadius:20,border:"none"}}>
 <div style={{fontSize:13,fontWeight:800,color:"#6C5CE7",marginBottom:8}}>🔊 Voice Settings</div>
 <p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{ttsKey?"Using Google Cloud voice (same sweet voice on all devices!)":"Using your device's built-in voice. Add a Google Cloud API key for a consistent sweet voice everywhere."}</p>
 <input value={ttsKey} onChange={e=>saveTtsKey(e.target.value.trim())} placeholder="Paste Google Cloud API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E0D8",borderRadius:12,fontSize:12,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
@@ -4545,7 +4551,7 @@ const CSS=`
   --font:'Fredoka',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{background:var(--bg)!important;overflow-x:hidden;color:var(--dark);font-family:var(--font);}
+html,body{background:linear-gradient(180deg,#F0F4FF 0%,#E8EEFF 50%,#F0F4FF 100%)!important;overflow-x:hidden;color:var(--dark);font-family:var(--font);}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--primary-light),var(--primary));border-radius:5px;}::-webkit-scrollbar-track{background:transparent;}
 button{font-family:var(--font)!important;transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)!important;}
 button:active{transform:scale(0.94)!important;}
