@@ -2937,10 +2937,11 @@ export default function App(){
       const userPixels=ctx.getImageData(0,0,w,h);
       const userData=new Uint8Array(userPixels.data);
       
-      // 2. Render template on same canvas (has fonts loaded)
-      ctx.clearRect(0,0,w,h);
+      // 2. Reset transform and render template character
       ctx.save();
-      ctx.scale(dpr,dpr);
+      ctx.setTransform(1,0,0,1,0,0); // reset ALL transforms
+      ctx.clearRect(0,0,w,h);
+      ctx.scale(dpr,dpr); // apply DPR once
       const fontSize=Math.round(dispW*0.5);
       ctx.font=`900 ${fontSize}px 'Fredoka',Arial,sans-serif`;
       ctx.textAlign="center";
@@ -2951,13 +2952,17 @@ export default function App(){
       ctx.fillText(target,dispW/2,dispH/2);
       ctx.restore();
       
-      // 3. Read template
+      // 3. Read template pixels
       const tplData=ctx.getImageData(0,0,w,h).data;
       
       // 4. Restore user drawing
+      ctx.save();
+      ctx.setTransform(1,0,0,1,0,0);
+      ctx.clearRect(0,0,w,h);
       ctx.putImageData(userPixels,0,0);
+      ctx.restore();
       
-      // 5. Pixel comparison
+      // 5. Pixel comparison (sample every 4th pixel)
       let tplCount=0,inkCount=0,overlap=0;
       for(let i=3;i<userData.length;i+=16){
         const hasTpl=tplData[i]>20;
@@ -2969,18 +2974,12 @@ export default function App(){
       
       if(tplCount<5||inkCount<3)return 0;
       
-      // Coverage: what % of watermark is filled (how complete is the tracing)
+      // Coverage: % of watermark filled by ink
       const coverage=overlap/tplCount;
-      
-      // Precision: what % of ink is ON the watermark (how accurate is the tracing)
+      // Precision: % of ink that is ON the watermark
       const precision=overlap/inkCount;
-      
-      // SCORE = coverage × precision × 100
-      // If you trace perfectly ON the watermark: coverage=90%, precision=90% → 81%
-      // If you draw completely OUTSIDE: coverage=0%, precision=0% → 0%
-      // If you scribble everywhere: coverage=80%, precision=20% → 16%
-      const score=Math.round(coverage*precision*130);
-      return Math.min(100,Math.max(0,score));
+      // Score = coverage × precision × boost
+      return Math.min(100,Math.max(0,Math.round(coverage*precision*140)));
     }catch(e){return 0;}
   };
   const drawEnd=()=>{
@@ -3726,11 +3725,11 @@ export default function App(){
         <div style={{flex:1}}>
           {writeScore!==null?<div style={{display:"flex",alignItems:"center",gap:6}}>
             <div style={{flex:1,height:10,background:"#f3f4f6",borderRadius:5,overflow:"hidden"}}>
-              <div style={{height:"100%",background:writeScore>=60?"#22C55E":writeScore>=35?"#F59E0B":"#F87171",borderRadius:5,width:`${writeScore}%`,transition:"width 0.3s"}}/>
+              <div style={{height:"100%",background:writeScore>=60?"#22C55E":writeScore>=35?"#FBBF24":"#FF8C42",borderRadius:5,width:`${Math.max(3,writeScore)}%`,transition:"width 0.3s"}}/>
             </div>
-            <span style={{fontSize:14,fontWeight:800,minWidth:40,color:writeScore>=60?"#22C55E":writeScore>=35?"#F59E0B":"#F87171"}}>{writeScore}%</span>
+            <span style={{fontSize:14,fontWeight:800,minWidth:40,color:writeScore>=60?"#22C55E":writeScore>=35?"#FBBF24":"#FF8C42"}}>{writeScore}%</span>
           </div>:<div style={{fontSize:12,fontWeight:600,color:"#8E8CA3"}}>✏️ Trace on the watermark!</div>}
-          {writeOk&&<div style={{fontSize:12,fontWeight:700,color:"#22C55E",marginTop:2}}>✅ Moving to next...</div>}
+          {writeOk&&<div style={{fontSize:12,fontWeight:700,color:"#22C55E",marginTop:2}}>✅ Next coming up...</div>}
         </div>
         <button onClick={()=>{
           if(writeMode==="numbers"){const n=(writeNum%20)+1;setWriteNum(n);}
