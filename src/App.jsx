@@ -3725,9 +3725,9 @@ export default function App(){
         <div style={{flex:1}}>
           {writeScore!==null?<div style={{display:"flex",alignItems:"center",gap:6}}>
             <div style={{flex:1,height:10,background:"#f3f4f6",borderRadius:5,overflow:"hidden"}}>
-              <div style={{height:"100%",background:writeScore>=60?"#22C55E":writeScore>=35?"#FBBF24":"#FF8C42",borderRadius:5,width:`${Math.max(3,writeScore)}%`,transition:"width 0.3s"}}/>
+              <div style={{height:"100%",background:writeScore>=60?"#22C55E":writeScore>=35?"#F59E0B":"#F87171",borderRadius:5,width:`${Math.max(3,writeScore)}%`,transition:"width 0.3s"}}/>
             </div>
-            <span style={{fontSize:14,fontWeight:800,minWidth:40,color:writeScore>=60?"#22C55E":writeScore>=35?"#FBBF24":"#FF8C42"}}>{writeScore}%</span>
+            <span style={{fontSize:14,fontWeight:800,minWidth:40,color:writeScore>=60?"#22C55E":writeScore>=35?"#F59E0B":"#F87171"}}>{writeScore}%</span>
           </div>:<div style={{fontSize:12,fontWeight:600,color:"#8E8CA3"}}>✏️ Trace on the watermark!</div>}
           {writeOk&&<div style={{fontSize:12,fontWeight:700,color:"#22C55E",marginTop:2}}>✅ Next coming up...</div>}
         </div>
