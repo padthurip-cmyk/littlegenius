@@ -1165,6 +1165,26 @@ const sfxWin=()=>{try{const a=new AudioContext();[523,659,784].forEach((f,i)=>{c
 const sfxLvl=()=>{try{const a=new AudioContext();[523,659,784,1047].forEach((f,i)=>{const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=f;o.type="triangle";g.gain.value=0.06;o.start(a.currentTime+i*0.12);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+i*0.12+0.25);o.stop(a.currentTime+i*0.12+0.25);});}catch(e){}};
 const chkStreak=p=>{const d=new Date().toDateString(),l=p?.lastActive;if(!l)return{s:1,n:true};const ld=new Date(l);const y=new Date();y.setDate(y.getDate()-1);if(ld.toDateString()===d)return{s:p.streak||1,n:false};if(ld.toDateString()===y.toDateString())return{s:(p.streak||0)+1,n:true};return{s:1,n:true};};
 
+
+// ═══ PARENT CONTROL CENTER + STUDY PLAN + REWARDS ENGINE ═══
+const PARENT_PIN_DEFAULT="1234";
+const REWARD_CATALOG=[
+  {cat:"Food",items:[{id:"burger",name:"Burger",emoji:"🍔",defPts:40},{id:"icecream",name:"Ice Cream",emoji:"🍦",defPts:20},{id:"pizza",name:"Pizza",emoji:"🍕",defPts:50},{id:"fries",name:"Fries",emoji:"🍟",defPts:15},{id:"cake",name:"Cake",emoji:"🎂",defPts:60},{id:"juice",name:"Juice Box",emoji:"🧃",defPts:10},{id:"cookie",name:"Cookies",emoji:"🍪",defPts:15},{id:"candy",name:"Candy",emoji:"🍬",defPts:10}]},
+  {cat:"Toys",items:[{id:"lego",name:"Lego Set",emoji:"🧩",defPts:100},{id:"teddy",name:"Teddy Bear",emoji:"🧸",defPts:80},{id:"car",name:"Toy Car",emoji:"🚗",defPts:60},{id:"doll",name:"Doll",emoji:"🪆",defPts:70},{id:"puzzle",name:"Puzzle",emoji:"🧩",defPts:40},{id:"blocks",name:"Building Blocks",emoji:"🧱",defPts:50},{id:"ball",name:"Ball",emoji:"⚽",defPts:30},{id:"kite",name:"Kite",emoji:"🪁",defPts:35}]},
+  {cat:"Activities",items:[{id:"park",name:"Park Visit",emoji:"🏞️",defPts:30},{id:"movie",name:"Movie Night",emoji:"🎬",defPts:80},{id:"swim",name:"Swimming",emoji:"🏊",defPts:50},{id:"zoo",name:"Zoo Trip",emoji:"🦁",defPts:100},{id:"bike",name:"Bike Ride",emoji:"🚲",defPts:25},{id:"paint",name:"Art Time",emoji:"🎨",defPts:20},{id:"game",name:"Game Night",emoji:"🎮",defPts:40},{id:"story",name:"Extra Story",emoji:"📖",defPts:15}]},
+  {cat:"Screen Time",items:[{id:"tv30",name:"30min TV",emoji:"📺",defPts:30},{id:"tv60",name:"1hr TV",emoji:"📺",defPts:60},{id:"tablet",name:"30min Tablet",emoji:"📱",defPts:40},{id:"youtube",name:"YouTube Time",emoji:"▶️",defPts:35}]},
+];
+const STUDY_TOPICS=[
+  {id:"numbers",name:"Numbers",emoji:"🔢",sub:[{id:"1-10",name:"1-10"},{id:"11-20",name:"11-20"},{id:"21-50",name:"21-50"},{id:"51-100",name:"51-100"}]},
+  {id:"alphabet",name:"Alphabet",emoji:"🔤",sub:[{id:"A-M",name:"A to M"},{id:"N-Z",name:"N to Z"}]},
+  {id:"phonics",name:"Phonics",emoji:"📖",sub:[{id:"animals",name:"Animals"},{id:"food",name:"Food"},{id:"nature",name:"Nature"},{id:"body",name:"Body"},{id:"transport",name:"Transport"},{id:"clothes",name:"Clothes"},{id:"house",name:"House"},{id:"toys",name:"Toys"}]},
+  {id:"shapes",name:"Shapes",emoji:"🔷",sub:[{id:"basic",name:"Basic Shapes"},{id:"advanced",name:"Advanced"}]},
+  {id:"colors",name:"Colors",emoji:"🎨",sub:[{id:"primary",name:"Primary"},{id:"all",name:"All Colors"}]},
+  {id:"math",name:"Math Quiz",emoji:"➕",sub:[{id:"addition",name:"Addition"},{id:"subtraction",name:"Subtraction"},{id:"multiply",name:"Multiply"}]},
+  {id:"writing",name:"Writing",emoji:"✏️",sub:[{id:"numbers",name:"Write Numbers"},{id:"caps",name:"Write Capitals"},{id:"small",name:"Write Lowercase"}]},
+];
+const ENGAGE_TIERS=[{mins:10,pts:5,label:"10 min"},{mins:20,pts:10,label:"20 min"},{mins:30,pts:20,label:"30 min"},{mins:45,pts:30,label:"45 min"},{mins:60,pts:50,label:"1 hour"}];
+
 const STORIES = [
   {id:1,title:"The Lost Kitten",emoji:"🐱",level:"easy",
     text:"A small kitten sat under a big tree. It was cold and wet from the rain. A kind girl named Mia saw the kitten. She picked it up gently. She took it home and gave it warm milk. Now the kitten has a cozy bed and a best friend!",
@@ -2226,6 +2246,31 @@ export default function App(){
   const[matchLeft,setMatchLeft]=useState(null);const[matchIdx,setMatchIdx]=useState(0);const[matchWrong,setMatchWrong]=useState(null);const[matchCorrect,setMatchCorrect]=useState(null);const[matchOpts,setMatchOpts]=useState([]);
   const[matchScore,setMatchScore]=useState(0);const[matchDone,setMatchDone]=useState([]);const[drawPts,setDrawPts]=useState(0);const drawPtsRef=useRef(0);const[writeOk,setWriteOk]=useState(false);const writeOkRef=useRef(false);const[writeScore,setWriteScore]=useState(null);
   const cRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);
+  // ═══ PARENT SYSTEM STATE ═══
+  const[parentMode,setParentMode]=useState(false);
+  const[pinInput,setPinInput]=useState("");
+  const[showPinModal,setShowPinModal]=useState(false);
+  const[parentTab,setParentTab]=useState("plan"); // plan, rewards, dashboard
+  const[studyPlan,setStudyPlan]=useState(()=>{try{const s=localStorage.getItem("lg_studyplan");return s?JSON.parse(s):[];}catch(e){return[];}});
+  const[customRewards,setCustomRewards]=useState(()=>{try{const s=localStorage.getItem("lg_rewards");return s?JSON.parse(s):[];}catch(e){return[];}});
+  const[parentPin,setParentPin]=useState(()=>localStorage.getItem("lg_pin")||PARENT_PIN_DEFAULT);
+  const[engageStart]=useState(()=>Date.now());
+  const[engageMins,setEngageMins]=useState(0);
+  const[engageAwarded,setEngageAwarded]=useState(()=>{try{const s=localStorage.getItem("lg_engage_"+new Date().toDateString());return s?JSON.parse(s):[];}catch(e){return[];}});
+  const[perfLog,setPerfLog]=useState(()=>{try{const s=localStorage.getItem("lg_perf");return s?JSON.parse(s):[];}catch(e){return[];}});
+  const savePlan=(p)=>{setStudyPlan(p);localStorage.setItem("lg_studyplan",JSON.stringify(p));};
+  const saveRewards=(r)=>{setCustomRewards(r);localStorage.setItem("lg_rewards",JSON.stringify(r));};
+  const savePin=(p)=>{setParentPin(p);localStorage.setItem("lg_pin",p);};
+  const logPerf=(cat,sub,correct,total)=>{const entry={cat,sub,correct,total,date:new Date().toISOString(),ts:Date.now()};const nl=[...perfLog,entry];setPerfLog(nl);localStorage.setItem("lg_perf",JSON.stringify(nl.slice(-500)));};
+  // Engagement timer
+  useEffect(()=>{const iv=setInterval(()=>{const m=Math.floor((Date.now()-engageStart)/60000);setEngageMins(m);
+    // Auto-award engagement points
+    const today=new Date().toDateString();
+    ENGAGE_TIERS.forEach(t=>{if(m>=t.mins&&!engageAwarded.includes(t.mins)){
+      const na=[...engageAwarded,t.mins];setEngageAwarded(na);localStorage.setItem("lg_engage_"+today,JSON.stringify(na));
+      if(prof){const np={...prof,points:(prof.points||0)+t.pts,totalEarned:(prof.totalEarned||0)+t.pts};save(np);setPtAnim(`+${t.pts} ⏱️`);}
+    }});
+  },15000);return()=>clearInterval(iv);},[engageStart,engageAwarded,prof]);
   const[showStreakPop,setShowStreakPop]=useState(false);
   const[showBadgePop,setShowBadgePop]=useState(null);
   const[showLvlPop,setShowLvlPop]=useState(null);
@@ -3254,7 +3299,7 @@ export default function App(){
 
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
-  const showNav=["home","learn","quizzone","phonics","stories","rewards","settings"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
+  const showNav=["home","learn","quizzone","phonics","stories","rewards","settings","studyplan"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
   const BottomNav=showNav?<div style={{position:"fixed",bottom:10,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
     {[
       {id:"home",icon:"🏠",label:"Home"},
@@ -3308,9 +3353,11 @@ export default function App(){
           {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",accent:"#00D2A0",grad:"linear-gradient(135deg,#00D2A0,#55EFC4)"},
           {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Test Your Skills!",accent:"#54A0FF",grad:"linear-gradient(135deg,#54A0FF,#74B9FF)"},
           {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",accent:"#FF9F43",grad:"linear-gradient(135deg,#FF9F43,#FECA57)"},
+          {id:"studyplan",icon:"📋",title:"Study Plan",sub:studyPlan.length>0?`${studyPlan.length} tasks assigned`:"No plan yet",accent:"#FF9F43",grad:"linear-gradient(135deg,#FF9F43,#FECA57)"},
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",accent:"#FF6B81",grad:"linear-gradient(135deg,#FF6B81,#FDA7DF)"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",accent:"#00CEC9",grad:"linear-gradient(135deg,#00CEC9,#81ECEC)"},
-        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
+          {id:"parent",icon:"👨‍👩‍👧",title:"Parents",sub:"Control Center",accent:"#636E72",grad:"linear-gradient(135deg,#636E72,#B2BEC3)"},
+        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");if(m.id==="parent"){setShowPinModal(true);}else{setScr(m.id);}}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"20px 18px",borderRadius:24,cursor:"pointer",
           fontFamily:"var(--font)",background:m.grad,
@@ -3328,6 +3375,279 @@ export default function App(){
         </button>)}
       </div>
     </div>
+    {BottomNav}{TeacherBubble}<style>{CSS}</style>
+  </div>;
+
+
+
+  // ═══ PARENT CONTROL CENTER ═══
+  if(scr==="parent")return<div style={{fontFamily:"var(--font)",height:"100dvh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <SubHead title="Parent Center 👨‍👩‍👧" onBack={()=>{setParentMode(false);goHome();}} points={prof?.points||0}/>
+    {/* Tabs */}
+    <div style={{display:"flex",gap:6,padding:"8px 12px",flexShrink:0,background:"#fff"}}>
+      {[{id:"plan",label:"📋 Study Plan"},{id:"rewards",label:"🎁 Rewards"},{id:"dashboard",label:"📊 Dashboard"}].map(t=>
+        <button key={t.id} onClick={()=>{sfxTap();setParentTab(t.id);}} style={{
+          flex:1,padding:"12px 6px",borderRadius:16,border:"none",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
+          background:parentTab===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",
+          color:parentTab===t.id?"#fff":"#A4B0BE",boxShadow:parentTab===t.id?"var(--shadow-btn)":"none"
+        }}>{t.label}</button>
+      )}
+    </div>
+    <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"12px 16px 40px",minHeight:0}}>
+
+    {/* ═══ STUDY PLAN TAB ═══ */}
+    {parentTab==="plan"&&<div>
+      <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginBottom:10}}>Assign Topics to Study Plan</h3>
+      <p style={{fontSize:11,color:"#A4B0BE",fontWeight:600,marginBottom:12}}>Select what your child should practice. They'll see these in "Study Plan" on their home screen.</p>
+      {STUDY_TOPICS.map(topic=><div key={topic.id} style={{marginBottom:12}}>
+        <div style={{fontWeight:800,fontSize:14,color:"var(--dark)",marginBottom:6}}>{topic.emoji} {topic.name}</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          {topic.sub.map(sub=>{
+            const isAdded=studyPlan.some(s=>s.topicId===topic.id&&s.subId===sub.id);
+            return<button key={sub.id} onClick={()=>{sfxTap();
+              if(isAdded){savePlan(studyPlan.filter(s=>!(s.topicId===topic.id&&s.subId===sub.id)));}
+              else{savePlan([...studyPlan,{topicId:topic.id,subId:sub.id,completed:false,addedAt:Date.now()}]);}
+            }} style={{
+              padding:"12px 18px",borderRadius:16,border:"none",cursor:"pointer",fontFamily:"var(--font)",
+              fontSize:13,fontWeight:700,
+              background:isAdded?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#F0F4FF",
+              color:isAdded?"#fff":"#636E72",
+              boxShadow:isAdded?"0 3px 10px rgba(0,210,160,0.2)":"var(--shadow-card)",
+              transition:"all 0.2s"
+            }}>{isAdded?"✅ ":""}{sub.name}</button>;
+          })}
+        </div>
+      </div>)}
+      {studyPlan.length>0&&<div style={{marginTop:16,padding:14,borderRadius:18,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",boxShadow:"var(--shadow-btn)"}}>
+        <div style={{color:"#fff",fontWeight:800,fontSize:14}}>{studyPlan.length} task{studyPlan.length!==1?"s":""} assigned</div>
+        <button onClick={()=>{sfxTap();savePlan([]);}} style={{marginTop:8,padding:"8px 16px",borderRadius:12,border:"none",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Clear All</button>
+      </div>}
+    </div>}
+
+    {/* ═══ REWARDS TAB ═══ */}
+    {parentTab==="rewards"&&<div>
+      <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginBottom:6}}>Custom Rewards</h3>
+      <p style={{fontSize:11,color:"#A4B0BE",fontWeight:600,marginBottom:4}}>1 point per correct answer from Study Plan. Set point goals for real rewards!</p>
+      <div style={{padding:12,borderRadius:16,background:"linear-gradient(135deg,#FF9F43,#FECA57)",marginBottom:12,boxShadow:"0 4px 14px rgba(255,159,67,0.2)"}}>
+        <div style={{color:"#fff",fontWeight:800,fontSize:13}}>⏱️ Engagement Time Bonus</div>
+        <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+          {ENGAGE_TIERS.map(t=><span key={t.mins} style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,255,255,0.25)",color:"#fff",fontSize:10,fontWeight:700}}>{t.label}=+{t.pts}pts</span>)}
+        </div>
+      </div>
+      {/* Active rewards */}
+      {customRewards.length>0&&<div style={{marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:800,color:"var(--dark)",marginBottom:6}}>Active Rewards:</div>
+        {customRewards.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:16,marginBottom:6,boxShadow:"var(--shadow-card)"}}>
+          <span style={{fontSize:24}}>{r.emoji}</span>
+          <div style={{flex:1}}><div style={{fontWeight:700,fontSize:13}}>{r.name}</div><div style={{fontSize:10,color:"#A4B0BE"}}>{r.pts} points needed</div></div>
+          <button onClick={()=>{sfxTap();saveRewards(customRewards.filter((_,j)=>j!==i));}} style={{padding:"6px 10px",borderRadius:10,border:"none",background:"#FEE2E2",color:"#FF6B81",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕</button>
+        </div>)}
+      </div>}
+      {/* Catalog */}
+      {REWARD_CATALOG.map(cat=><div key={cat.cat} style={{marginBottom:14}}>
+        <div style={{fontWeight:800,fontSize:14,color:"var(--dark)",marginBottom:8}}>{cat.cat}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+          {cat.items.map(item=>{
+            const isAdded=customRewards.some(r=>r.id===item.id);
+            return<button key={item.id} onClick={()=>{sfxTap();
+              if(!isAdded){
+                const pts=prompt(`Points needed for ${item.name}?`,item.defPts);
+                if(pts){saveRewards([...customRewards,{...item,pts:parseInt(pts)||item.defPts}]);}
+              }
+            }} style={{
+              display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 4px",borderRadius:16,border:"none",cursor:"pointer",
+              background:isAdded?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#F0F4FF",
+              color:isAdded?"#fff":"var(--dark)",fontSize:10,fontWeight:700,fontFamily:"var(--font)",
+              boxShadow:isAdded?"0 3px 10px rgba(0,210,160,0.15)":"var(--shadow-card)",
+              opacity:isAdded?0.6:1
+            }}>
+              <span style={{fontSize:24}}>{item.emoji}</span>
+              <span style={{marginTop:2}}>{item.name}</span>
+              <span style={{fontSize:9,color:isAdded?"rgba(255,255,255,0.7)":"#A4B0BE"}}>{item.defPts}pts</span>
+            </button>;
+          })}
+        </div>
+      </div>)}
+      {/* PIN change */}
+      <div style={{marginTop:16,padding:14,borderRadius:16,background:"#F0F4FF"}}>
+        <div style={{fontWeight:800,fontSize:13,marginBottom:6}}>🔒 Change PIN</div>
+        <div style={{display:"flex",gap:8}}>
+          <input value={pinInput} onChange={e=>setPinInput(e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="New 4-digit PIN" style={{flex:1,padding:"10px 14px",borderRadius:12,border:"2px solid #DFE6E9",fontSize:14,fontWeight:700,fontFamily:"var(--font)"}}/>
+          <button onClick={()=>{if(pinInput.length===4){savePin(pinInput);setPinInput("");alert("PIN updated!");}}} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer"}}>Save</button>
+        </div>
+      </div>
+    </div>}
+
+    {/* ═══ DASHBOARD TAB ═══ */}
+    {parentTab==="dashboard"&&<div>
+      <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginBottom:10}}>📊 {prof?.name||"Child"}'s Performance</h3>
+      {/* Time Period Selector */}
+      {(()=>{
+        const now=new Date();
+        const today=now.toDateString();
+        const weekAgo=new Date(now-7*86400000);
+        const monthAgo=new Date(now-30*86400000);
+        const todayLogs=perfLog.filter(l=>new Date(l.date).toDateString()===today);
+        const weekLogs=perfLog.filter(l=>new Date(l.date)>=weekAgo);
+        const monthLogs=perfLog.filter(l=>new Date(l.date)>=monthAgo);
+        const calcStats=(logs)=>{
+          if(logs.length===0)return{total:0,correct:0,pct:0,cats:{}};
+          let total=0,correct=0;const cats={};
+          logs.forEach(l=>{total+=l.total;correct+=l.correct;if(!cats[l.cat])cats[l.cat]={correct:0,total:0};cats[l.cat].correct+=l.correct;cats[l.cat].total+=l.total;});
+          return{total,correct,pct:total>0?Math.round(correct/total*100):0,cats};
+        };
+        const dS=calcStats(todayLogs),wS=calcStats(weekLogs),mS=calcStats(monthLogs);
+        return<div>
+          {/* Summary Cards */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+            {[{label:"Today",s:dS,color:"#6C5CE7"},{label:"This Week",s:wS,color:"#54A0FF"},{label:"This Month",s:mS,color:"#00D2A0"}].map(p=>
+              <div key={p.label} style={{padding:14,borderRadius:18,background:`linear-gradient(135deg,${p.color},${p.color}AA)`,textAlign:"center",boxShadow:`0 4px 14px ${p.color}25`}}>
+                <div style={{color:"rgba(255,255,255,0.8)",fontSize:10,fontWeight:700}}>{p.label}</div>
+                <div style={{color:"#fff",fontSize:28,fontWeight:800,margin:"4px 0"}}>{p.s.pct}%</div>
+                <div style={{color:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:600}}>{p.s.correct}/{p.s.total} correct</div>
+              </div>
+            )}
+          </div>
+          {/* Strengths & Weaknesses */}
+          <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>💪 Strengths & 📉 Weaknesses</div>
+          {Object.entries(mS.cats).length===0?<p style={{color:"#A4B0BE",fontSize:12}}>No data yet — complete some activities!</p>:
+          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            {Object.entries(mS.cats).sort((a,b)=>(b[1].total>0?b[1].correct/b[1].total:0)-(a[1].total>0?a[1].correct/a[1].total:0)).map(([cat,data])=>{
+              const pct=data.total>0?Math.round(data.correct/data.total*100):0;
+              const isStrong=pct>=70;
+              return<div key={cat} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)"}}>
+                <span style={{fontSize:10,fontWeight:800,color:isStrong?"#00D2A0":"#FF6B81"}}>{isStrong?"💪":"📉"}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:12,textTransform:"capitalize"}}>{cat}</div>
+                  <div style={{height:6,borderRadius:3,background:"#F0F4FF",marginTop:4,overflow:"hidden"}}>
+                    <div style={{height:"100%",borderRadius:3,background:pct>=70?"linear-gradient(90deg,#00D2A0,#55EFC4)":pct>=40?"linear-gradient(90deg,#FF9F43,#FECA57)":"linear-gradient(90deg,#FF6B81,#FDA7DF)",width:`${pct}%`}}/>
+                  </div>
+                </div>
+                <span style={{fontSize:14,fontWeight:800,color:isStrong?"#00D2A0":"#FF6B81"}}>{pct}%</span>
+              </div>;
+            })}
+          </div>}
+          {/* Engagement time today */}
+          <div style={{marginTop:14,padding:14,borderRadius:18,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",boxShadow:"var(--shadow-btn)"}}>
+            <div style={{color:"#fff",fontWeight:800,fontSize:14}}>⏱️ Active Time Today: {engageMins} min</div>
+            <div style={{display:"flex",gap:4,marginTop:6}}>
+              {ENGAGE_TIERS.map(t=><div key={t.mins} style={{flex:1,padding:"4px",borderRadius:8,background:engageMins>=t.mins?"#FECA57":"rgba(255,255,255,0.15)",textAlign:"center"}}>
+                <div style={{fontSize:9,fontWeight:700,color:engageMins>=t.mins?"#2D3436":"rgba(255,255,255,0.5)"}}>{t.label}</div>
+              </div>)}
+            </div>
+          </div>
+          {/* Points summary */}
+          <div style={{marginTop:14,display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+            <div style={{padding:14,borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",textAlign:"center"}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#A4B0BE"}}>TOTAL POINTS</div>
+              <div style={{fontSize:28,fontWeight:800,color:"#FF9F43"}}>{prof?.totalEarned||0}</div>
+            </div>
+            <div style={{padding:14,borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",textAlign:"center"}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#A4B0BE"}}>AVAILABLE</div>
+              <div style={{fontSize:28,fontWeight:800,color:"#00D2A0"}}>{prof?.points||0}</div>
+            </div>
+          </div>
+          {/* Custom rewards progress */}
+          {customRewards.length>0&&<div style={{marginTop:14}}>
+            <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>🎁 Reward Progress</div>
+            {customRewards.map((r,i)=>{const pct=Math.min(100,Math.round(((prof?.points||0)/r.pts)*100));return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:16,marginBottom:6,boxShadow:"var(--shadow-card)"}}>
+              <span style={{fontSize:24}}>{r.emoji}</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:700,fontSize:12}}>{r.name}</div>
+                <div style={{height:8,borderRadius:4,background:"#F0F4FF",marginTop:4,overflow:"hidden"}}>
+                  <div style={{height:"100%",borderRadius:4,background:pct>=100?"linear-gradient(90deg,#00D2A0,#55EFC4)":"linear-gradient(90deg,#FF9F43,#FECA57)",width:`${pct}%`}}/>
+                </div>
+              </div>
+              <span style={{fontSize:11,fontWeight:800,color:pct>=100?"#00D2A0":"#A4B0BE"}}>{prof?.points||0}/{r.pts}</span>
+            </div>;})}
+          </div>}
+        </div>;
+      })()}
+    </div>}
+    </div>
+    {TeacherBubble}<style>{CSS}</style>
+  </div>;
+
+  // ═══ STUDY PLAN SCREEN (Kid View) ═══
+  if(scr==="studyplan")return<div style={{fontFamily:"var(--font)",height:"100dvh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <SubHead title="My Study Plan 📋" onBack={goHome} points={prof?.points||0}/>
+    <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"12px 16px 160px",minHeight:0}}>
+      {studyPlan.length===0?<div style={{textAlign:"center",padding:40}}>
+        <span style={{fontSize:64}}>📋</span>
+        <h3 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",marginTop:12}}>No study plan yet!</h3>
+        <p style={{fontSize:13,color:"#A4B0BE",fontWeight:600,marginTop:6}}>Ask your parents to create one for you</p>
+      </div>:
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {studyPlan.map((task,i)=>{
+          const topic=STUDY_TOPICS.find(t=>t.id===task.topicId);
+          const isDone=task.completed;
+          return<button key={i} data-r="tile" onClick={()=>{sfxTap();
+            // Route to the appropriate screen based on topic
+            if(task.topicId==="numbers"){setScr("learn");setLearnTab("numbers");}
+            else if(task.topicId==="alphabet"){setScr("learn");setLearnTab("abc");}
+            else if(task.topicId==="shapes"){setScr("learn");setLearnTab("shapes");}
+            else if(task.topicId==="colors"){setScr("learn");setLearnTab("colors");}
+            else if(task.topicId==="phonics"){setScr("phonics");}
+            else if(task.topicId==="math"){setScr("quizzone");setQuizTab("math");}
+            else if(task.topicId==="writing"){setScr("quizzone");setQuizTab("write");}
+          }} style={{
+            display:"flex",alignItems:"center",gap:14,padding:"18px 16px",borderRadius:22,border:"none",cursor:"pointer",
+            background:isDone?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#fff",
+            boxShadow:isDone?"0 4px 14px rgba(0,210,160,0.2)":"var(--shadow-card)",
+            transition:"all 0.25s"
+          }}>
+            <span style={{fontSize:32}}>{isDone?"✅":topic?.emoji||"📚"}</span>
+            <div style={{flex:1,textAlign:"left"}}>
+              <div style={{fontWeight:800,fontSize:16,color:isDone?"#fff":"var(--dark)"}}>{topic?.name||task.topicId} — {task.subId}</div>
+              <div style={{fontSize:11,fontWeight:600,color:isDone?"rgba(255,255,255,0.8)":"#A4B0BE",marginTop:2}}>{isDone?"Completed! 🎉":"Tap to start"}</div>
+            </div>
+            <div style={{padding:"6px 12px",borderRadius:12,background:isDone?"rgba(255,255,255,0.2)":"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:11,fontWeight:800}}>
+              {isDone?"Done":"Go →"}
+            </div>
+          </button>;
+        })}
+        {/* Engagement time tracker */}
+        <div style={{padding:16,borderRadius:22,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",marginTop:8,boxShadow:"0 4px 14px rgba(108,92,231,0.2)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div>
+              <div style={{color:"#fff",fontWeight:800,fontSize:14}}>⏱️ Active Time Today</div>
+              <div style={{color:"rgba(255,255,255,0.8)",fontSize:24,fontWeight:800,marginTop:4}}>{engageMins} min</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              {ENGAGE_TIERS.map(t=><div key={t.mins} style={{fontSize:10,fontWeight:700,color:engageMins>=t.mins?"#FECA57":"rgba(255,255,255,0.4)",marginBottom:2}}>
+                {engageMins>=t.mins?"✅":"○"} {t.label} → +{t.pts}pts
+              </div>)}
+            </div>
+          </div>
+          <div style={{height:8,borderRadius:4,background:"rgba(255,255,255,0.2)",marginTop:8,overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:4,background:"#FECA57",width:`${Math.min(100,(engageMins/60)*100)}%`,transition:"width 1s"}}/>
+          </div>
+        </div>
+      </div>}
+    </div>
+    
+    {/* ═══ PIN MODAL ═══ */}
+    {showPinModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"var(--shadow-float)"}}>
+        <span style={{fontSize:48}}>🔒</span>
+        <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
+        <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
+        <div style={{display:"flex",gap:8,justifyContent:"center",margin:"16px 0"}}>
+          {[1,2,3,4].map(i=><div key={i} style={{width:44,height:44,borderRadius:12,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9",boxShadow:"var(--shadow-card)"}}>{pinInput.length>=i?"●":"○"}</div>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:240,margin:"0 auto"}}>
+          {[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
+            sfxTap();
+            if(n==="⌫"){setPinInput(p=>p.slice(0,-1));}
+            else{const np=pinInput+n;setPinInput(np);
+              if(np.length===4){if(np===parentPin){setShowPinModal(false);setPinInput("");setScr("parent");setParentMode(true);}else{setPinInput("");}}
+            }
+          }} style={{padding:"14px",borderRadius:14,border:"none",background:n==="⌫"?"#FEE2E2":"#F0F4FF",fontSize:n==="⌫"?18:22,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"#FF6B81":"var(--dark)",boxShadow:"var(--shadow-card)"}}>{n}</button>)}
+        </div>
+        <p style={{fontSize:10,color:"#A4B0BE",marginTop:10}}>Default PIN: 1234</p>
+      </div>
+    </div>}
+
     {BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
@@ -3455,7 +3775,7 @@ export default function App(){
         {key:"sentence",icon:"💬",label:"Sentence"},
         {key:"speak",icon:"🎤",label:"Speak"},
       ].map(m=><button key={m.key} onClick={()=>toggleLearnMode(m.key)} style={{
-        display:"flex",alignItems:"center",gap:3,padding:"6px 12px",borderRadius:12,
+        display:"flex",alignItems:"center",gap:5,padding:"10px 16px",borderRadius:16,
         border:"none",
         background:learnModes[m.key]?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#F0F4FF",
         color:learnModes[m.key]?"#fff":"#A4B0BE",
@@ -3467,7 +3787,7 @@ export default function App(){
     <div style={{display:"flex",gap:5,padding:"6px 10px",background:"#fff",borderBottom:"none",flexShrink:0}}>
       {[{id:"numbers",label:"🔢 Numbers"},{id:"abc",label:"🔤 ABC"},{id:"shapes",label:"🔷 Shapes"},{id:"colors",label:"🎨 Colors"}].map(t=>
         <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setLearnTab(t.id);}}
-          style={{flex:1,padding:"10px 4px",borderRadius:14,border:"none",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
+          style={{flex:1,padding:"12px 6px",borderRadius:16,border:"none",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
             background:learnTab===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",color:learnTab===t.id?"#fff":"#A4B0BE",transition:"all 0.25s",boxShadow:learnTab===t.id?"var(--shadow-btn)":"none"
           }}>{t.label}</button>
       )}
@@ -3479,7 +3799,7 @@ export default function App(){
         <div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:0.5,marginBottom:5}}>📊 Pick a range:</div>
         <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
-          padding:"6px 12px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
+          padding:"10px 16px",borderRadius:16,border:"2px solid",whiteSpace:"nowrap",minWidth:52,textAlign:"center",
           borderColor:numRange===r?"#6C5CE7":"#DFE6E9",background:numRange===r?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",boxShadow:numRange===r?"var(--shadow-btn)":"none",
           color:numRange===r?"#fff":"#8E8CA3",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"
         }}>{r}</button>)}
@@ -3581,7 +3901,7 @@ export default function App(){
           if(t.id==="math"&&!mathProblem)genMath();
           if(t.id==="letters"&&matchPairs.length===0)startMatch();
           if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}
-        }} style={{flex:1,padding:"10px 4px",borderRadius:14,border:"none",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"var(--font)",
+        }} style={{flex:1,padding:"12px 6px",borderRadius:16,border:"none",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"var(--font)",
           background:quizTab===t.id?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#F0F4FF",color:quizTab===t.id?"#fff":"#A4B0BE",boxShadow:quizTab===t.id?"var(--shadow-btn)":"none",transition:"all 0.2s"
         }}>{t.label}</button>
       )}
@@ -3631,13 +3951,13 @@ export default function App(){
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
-            padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",
+            padding:"10px 16px",borderRadius:16,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",minWidth:52,textAlign:"center",
             borderColor:mathRange===r?"#54A0FF":"#DFE6E9",background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#fff",boxShadow:mathRange===r?"var(--shadow-btn)":"none",color:mathRange===r?"#fff":"#8E8CA3"
           }}>{r}</button>)}
           </div>
           <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
-            padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
+            padding:"10px 16px",borderRadius:16,border:"2px solid",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",minWidth:48,textAlign:"center",
             borderColor:mathOp===o.id?"#FF9F43":"#DFE6E9",background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#fff",boxShadow:mathOp===o.id?"var(--shadow-btn)":"none",color:mathOp===o.id?"#fff":"#8E8CA3"
           }}>{o.label}</button>)}
           </div>
@@ -3728,7 +4048,7 @@ export default function App(){
       <div style={{display:"flex",gap:6,marginBottom:8}}>
         {[{id:"numbers",label:"🔢 Numbers"},{id:"letters",label:"🔤 Letters"}].map(m=>
           <button key={m.id} onClick={()=>{setWriteMode(m.id);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);setTimeout(()=>{initCanvas();if(m.id==="numbers")speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75});else speak(`Write ${writeCase==="caps"?writeChar:writeChar.toLowerCase()}.`,{rate:0.75});},300);}} style={{
-            flex:1,padding:"8px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
+            flex:1,padding:"12px",borderRadius:16,border:"2px solid",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
             borderColor:writeMode===m.id?"#FF8C42":"#E8E0D8",background:writeMode===m.id?"#FF8C42":"#FFFBF5",color:writeMode===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
         )}
@@ -3737,7 +4057,7 @@ export default function App(){
       {writeMode==="letters"&&<div style={{display:"flex",gap:6,marginBottom:8}}>
         {[{id:"caps",label:"ABC Capital"},{id:"small",label:"abc Small"}].map(m=>
           <button key={m.id} onClick={()=>{setWriteCase(m.id);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);const ch=m.id==="caps"?writeChar.toUpperCase():writeChar.toLowerCase();setTimeout(()=>{initCanvas();speak(`Write ${ch}.`,{rate:0.75});},300);}} style={{
-            flex:1,padding:"7px",borderRadius:10,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
+            flex:1,padding:"11px",borderRadius:16,border:"2px solid",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
             borderColor:writeCase===m.id?"#FF8C42":"#E8E0D8",background:writeCase===m.id?"#FF8C42":"#FFFBF5",color:writeCase===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
         )}
@@ -3836,13 +4156,13 @@ export default function App(){
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
-            padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",
+            padding:"10px 16px",borderRadius:16,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",minWidth:52,textAlign:"center",
             borderColor:mathRange===r?"#54A0FF":"#DFE6E9",background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#fff",boxShadow:mathRange===r?"var(--shadow-btn)":"none",color:mathRange===r?"#fff":"#8E8CA3",fontFamily:"var(--font)"
           }}>{r}</button>)}
         </div>
         <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
-            padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
+            padding:"10px 16px",borderRadius:16,border:"2px solid",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",minWidth:48,textAlign:"center",
             borderColor:mathOp===o.id?"#FF9F43":"#DFE6E9",background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#fff",boxShadow:mathOp===o.id?"var(--shadow-btn)":"none",color:mathOp===o.id?"#fff":"#8E8CA3",fontFamily:"var(--font)"
           }}>{o.label}</button>)}
         </div>
@@ -4061,7 +4381,7 @@ export default function App(){
       }}><span style={{fontSize:14}}>{m.icon}</span>{m.label}{phModes[m.key]?<span style={{fontSize:10}}>✓</span>:null}</button>)}
       </div>
     </div>
-    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#fff",borderBottom:"none",flexShrink:0}}>{Object.entries(WCATS).map(([k,d])=><button key={k} data-r="pill" onClick={()=>{sfxTap();setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?"transparent":"#DFE6E9",background:phCat===k?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",boxShadow:phCat===k?"0 3px 12px rgba(108,92,231,0.2)":"none",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"var(--font)",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} data-r="word" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:"none",background:done?`linear-gradient(135deg,${cc},${cc}DD)`:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:done?`0 4px 14px ${cc}30`:"var(--shadow-card)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"var(--shadow-card)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{w.img}</span><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,marginTop:4,color:done?"#fff":"#2D3436"}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#fff",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:140,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#fff",borderBottom:"none",flexShrink:0}}>{Object.entries(WCATS).map(([k,d])=><button key={k} data-r="pill" onClick={()=>{sfxTap();setPhCat(k);setTeacherMood("happy");}} style={{padding:"10px 18px",borderRadius:20,border:"2px solid",borderColor:phCat===k?"transparent":"#DFE6E9",background:phCat===k?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",boxShadow:phCat===k?"0 3px 12px rgba(108,92,231,0.2)":"none",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"var(--font)",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} data-r="word" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:"none",background:done?`linear-gradient(135deg,${cc},${cc}DD)`:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:done?`0 4px 14px ${cc}30`:"var(--shadow-card)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"var(--shadow-card)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{w.img}</span><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,marginTop:4,color:done?"#fff":"#2D3436"}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#fff",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:140,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
@@ -4279,7 +4599,7 @@ export default function App(){
       {/* Range filter + spelling toggle */}
       <div style={{display:"flex",gap:5,padding:"8px 10px",flexWrap:"wrap",flexShrink:0}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
-          padding:"6px 12px",borderRadius:12,border:"2px solid",whiteSpace:"nowrap",
+          padding:"10px 16px",borderRadius:16,border:"2px solid",whiteSpace:"nowrap",minWidth:52,textAlign:"center",
           borderColor:numRange===r?"#FF8C42":"#E8E0D8",
           background:numRange===r?"#FF8C42":"#FFFBF5",
           color:numRange===r?"#fff":"#8E8CA3",fontSize:11,fontWeight:700,
