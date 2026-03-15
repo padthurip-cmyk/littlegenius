@@ -1138,6 +1138,54 @@ sight:{emoji:"👁️",color:"#FF8C42",words:[
   ]},};
 
 const REWARDS=[{id:1,name:"Sticker Pack",emoji:"🌟",cost:50,desc:"5 shiny stickers!"},{id:2,name:"Ice Cream",emoji:"🍦",cost:100,desc:"A yummy treat!"},{id:3,name:"Toy Car",emoji:"🚗",cost:200,desc:"Vroom vroom!"},{id:4,name:"Burger Meal",emoji:"🍔",cost:150,desc:"Burger + fries!"},{id:5,name:"Teddy Bear",emoji:"🧸",cost:300,desc:"Soft & cuddly!"},{id:6,name:"Lego Set",emoji:"🧩",cost:500,desc:"Build anything!"},{id:7,name:"Book",emoji:"📚",cost:75,desc:"A new story!"},{id:8,name:"Candy Bag",emoji:"🍬",cost:50,desc:"Sweet treats!"},{id:9,name:"Movie Night",emoji:"🎬",cost:400,desc:"Pick a movie!"},{id:10,name:"Pizza Party",emoji:"🍕",cost:350,desc:"Yum yum!"},{id:11,name:"Art Kit",emoji:"🖍️",cost:200,desc:"Color & draw!"},{id:12,name:"Bike Ride",emoji:"🚲",cost:250,desc:"Outdoor fun!"}];
+
+// ═══ ENGAGEMENT SYSTEM (Khan Academy Kids + ABCmouse + Duolingo patterns) ═══
+const BADGES=[
+  {id:"first_step",name:"First Step",emoji:"🌱",desc:"Complete your first lesson",check:p=>p.totalEarned>=5},
+  {id:"number_10",name:"Number Whiz",emoji:"🔢",desc:"Learn 10 numbers",check:p=>(p.completed?.numbers||[]).length>=10},
+  {id:"abc_master",name:"ABC Master",emoji:"🔤",desc:"Learn 10 letters",check:p=>(p.completed?.alphabet||[]).length>=10},
+  {id:"word_smith",name:"Word Smith",emoji:"📖",desc:"Learn 20 words",check:p=>(p.completed?.phonics||[]).length>=20},
+  {id:"shape_star",name:"Shape Star",emoji:"🔷",desc:"Learn all 12 shapes",check:p=>(p.completed?.shapes||[]).length>=12},
+  {id:"color_pro",name:"Color Pro",emoji:"🎨",desc:"Learn all 13 colors",check:p=>(p.completed?.colors||[]).length>=13},
+  {id:"streak_3",name:"On Fire!",emoji:"🔥",desc:"3-day streak",check:p=>(p.streak||0)>=3},
+  {id:"streak_7",name:"Week Warrior",emoji:"⚡",desc:"7-day streak",check:p=>(p.streak||0)>=7},
+  {id:"points_100",name:"Century Club",emoji:"💯",desc:"Earn 100 points",check:p=>p.totalEarned>=100},
+  {id:"points_500",name:"Super Star",emoji:"🌟",desc:"Earn 500 points",check:p=>p.totalEarned>=500},
+  {id:"explorer",name:"Explorer",emoji:"🧭",desc:"Try all 6 sections",check:p=>(p.sectionsVisited||[]).length>=6},
+  {id:"champion",name:"Champion",emoji:"🏆",desc:"Earn 1000 points",check:p=>p.totalEarned>=1000},
+];
+const XP_LEVELS=[
+  {level:1,name:"Seedling",emoji:"🌱",xpNeeded:0},
+  {level:2,name:"Sprout",emoji:"🌿",xpNeeded:50},
+  {level:3,name:"Sapling",emoji:"🌳",xpNeeded:150},
+  {level:4,name:"Flower",emoji:"🌸",xpNeeded:300},
+  {level:5,name:"Star",emoji:"⭐",xpNeeded:500},
+  {level:6,name:"Rocket",emoji:"🚀",xpNeeded:800},
+  {level:7,name:"Crown",emoji:"👑",xpNeeded:1200},
+  {level:8,name:"Legend",emoji:"🏆",xpNeeded:2000},
+];
+const getLevel=(xp)=>{let l=XP_LEVELS[0];for(const lv of XP_LEVELS)if((xp||0)>=lv.xpNeeded)l=lv;return l;};
+const getNextLevel=(xp)=>{for(const lv of XP_LEVELS)if((xp||0)<lv.xpNeeded)return lv;return null;};
+const getLevelProgress=(xp)=>{const cur=getLevel(xp);const next=getNextLevel(xp);if(!next)return 100;const range=next.xpNeeded-cur.xpNeeded;const prog=(xp||0)-cur.xpNeeded;return Math.min(100,Math.round(prog/range*100));};
+const DAILY_GOALS=[
+  {id:"learn3",label:"Learn 3 new things",target:3,emoji:"📚"},
+  {id:"quiz5",label:"Answer 5 quiz questions",target:5,emoji:"🎯"},
+  {id:"perfect",label:"Get a perfect score",target:1,emoji:"⭐"},
+];
+const checkStreak=(prof)=>{
+  const now=new Date();const today=now.toDateString();
+  const lastActive=prof?.lastActiveDate;
+  if(!lastActive)return{streak:1,isNewDay:true};
+  const last=new Date(lastActive);
+  const yesterday=new Date(now);yesterday.setDate(yesterday.getDate()-1);
+  if(last.toDateString()===today)return{streak:prof.streak||1,isNewDay:false};
+  if(last.toDateString()===yesterday.toDateString())return{streak:(prof.streak||0)+1,isNewDay:true};
+  return{streak:1,isNewDay:true};
+};
+const playTapSound=()=>{try{const a=new AudioContext();const o=a.createOscillator();const g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;o.type="sine";g.gain.value=0.08;o.start();g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.1);o.stop(a.currentTime+0.1);}catch(e){}};
+const playSuccessSound=()=>{try{const a=new AudioContext();[523,659,784].forEach((f,i)=>{const o=a.createOscillator();const g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=f;o.type="sine";g.gain.value=0.06;o.start(a.currentTime+i*0.12);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+i*0.12+0.2);o.stop(a.currentTime+i*0.12+0.2);});}catch(e){}};
+const playLevelUpSound=()=>{try{const a=new AudioContext();[523,659,784,1047].forEach((f,i)=>{const o=a.createOscillator();const g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=f;o.type="triangle";g.gain.value=0.07;o.start(a.currentTime+i*0.15);g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+i*0.15+0.3);o.stop(a.currentTime+i*0.15+0.3);});}catch(e){}};
+
 const STORIES = [
   {id:1,title:"The Lost Kitten",emoji:"🐱",level:"easy",
     text:"A small kitten sat under a big tree. It was cold and wet from the rain. A kind girl named Mia saw the kitten. She picked it up gently. She took it home and gave it warm milk. Now the kitten has a cozy bed and a best friend!",
@@ -1886,8 +1934,8 @@ const Stars=({count,size=26})=><div style={{display:"flex",gap:4,justifyContent:
 const Mascot=({mood="happy",msg=""})=>{const f={happy:"😊",excited:"🤩",thinking:"🤔",listening:"👂",cheering:"🥳",speaking:"🗣️",sad:"🥺"};return<div style={{display:"flex",alignItems:"flex-end",gap:10,margin:"4px 0"}}><div style={{fontSize:26,animation:"mascotB 2s ease-in-out infinite",flexShrink:0}}>{f[mood]||"😊"}</div>{msg&&<div style={{background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:"18px 18px 18px 4px",padding:"6px 12px",fontSize:11,fontWeight:600,color:"#3E4152",boxShadow:"var(--clay-sm)",animation:"bubPop 0.3s cubic-bezier(0.34,1.56,0.64,1)",maxWidth:260,fontFamily:"'Fredoka',sans-serif",lineHeight:1.4}}>{msg}</div>}</div>;};
 const SoundWave=()=><div style={{display:"flex",justifyContent:"center",gap:3,marginTop:14}}>{[1,2,3,4,5,6,7].map(i=><div key={i} style={{width:4,background:"#EF4444",borderRadius:4,animation:`sndWave 0.8s ease-in-out ${i*0.08}s infinite`}}/>)}</div>;
 const ProgressRing=({pct,size=70,color="#22C55E"})=>{const r=(size-10)/2;const c=2*Math.PI*r;return<svg width={size} height={size} style={{transform:"rotate(-90deg)"}}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={10}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={10} strokeDasharray={c} strokeDashoffset={c-((pct||0)/100)*c} strokeLinecap="round" style={{transition:"stroke-dashoffset 1s ease-out"}}/></svg>;};
-const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",background:"linear-gradient(135deg,#FFF7ED,#FFECD2)",borderBottom:"none",position:"sticky",top:0,zIndex:50,boxShadow:"0 4px 15px rgba(174,144,120,0.15), inset 0 -1px 3px rgba(174,144,120,0.08)"}}><button onClick={onBack} style={{padding:"10px 18px",borderRadius:18,border:"none",background:"#FFF0E0",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",color:"#FF8C42",boxShadow:"var(--clay-sm)",transition:"all 0.2s"}}>← Back</button><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:800,color:"#2D2B3D",textShadow:"0 1px 2px rgba(255,255,255,0.8)"}}>{title}</span><div style={{display:"flex",alignItems:"center",gap:4,padding:"8px 16px",borderRadius:20,background:"linear-gradient(135deg,#FFF0E0,#FFE8D0)",fontSize:14,fontWeight:800,color:"#FF8C42",boxShadow:"var(--clay-sm)"}}><span>⭐</span>{points||0}</div></div>;
-const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"4px 10px",borderRadius:12,fontSize:9,fontWeight:800,fontFamily:"'Fredoka',sans-serif",background:act?"linear-gradient(135deg,#FF8C42,#FFB066)":done?"#34D399":"linear-gradient(145deg,#F5F0EB,#E8E3DE)",color:(act||done)?"#fff":"#aaa",transition:"all 0.3s",transform:act?"scale(1.08)":"scale(1)",boxShadow:act?"var(--clay-sm)":done?"var(--clay-sm)":"inset 2px 2px 4px rgba(174,144,120,0.1), inset -1px -1px 3px rgba(255,255,255,0.5)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
+const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",background:"linear-gradient(135deg,#FFF7ED,#FFECD2)",borderBottom:"none",position:"sticky",top:0,zIndex:50,boxShadow:"0 2px 8px rgba(174,144,120,0.08)"}}><button onClick={onBack} style={{padding:"10px 18px",borderRadius:18,border:"none",background:"#FFF0E0",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",color:"#FF8C42",boxShadow:"var(--clay-sm)",transition:"all 0.2s"}}>← Back</button><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:800,color:"#2D2B3D",textShadow:"0 1px 2px rgba(255,255,255,0.8)"}}>{title}</span><div style={{display:"flex",alignItems:"center",gap:4,padding:"8px 16px",borderRadius:20,background:"linear-gradient(135deg,#FFF0E0,#FFE8D0)",fontSize:14,fontWeight:800,color:"#FF8C42",boxShadow:"var(--clay-sm)"}}><span>⭐</span>{points||0}</div></div>;
+const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"4px 10px",borderRadius:12,fontSize:9,fontWeight:800,fontFamily:"'Fredoka',sans-serif",background:act?"linear-gradient(135deg,#FF8C42,#FFB066)":done?"#34D399":"linear-gradient(145deg,#F5F0EB,#E8E3DE)",color:(act||done)?"#fff":"#aaa",transition:"all 0.3s",transform:act?"scale(1.08)":"scale(1)",boxShadow:act?"var(--clay-sm)":done?"var(--clay-sm)":"inset 1px 1px 3px rgba(174,144,120,0.06), inset -1px -1px 2px rgba(255,255,255,0.4)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
 const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected})=>{
   const[typed,setTyped]=useState("");
   return <div data-panda="mic-area" style={{textAlign:"center",padding:14,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:24,border:"none",boxShadow:"var(--clay-shadow)"}}>
@@ -1912,7 +1960,7 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected})=>{
     {isListening&&<SoundWave/>}
     <div style={{display:"flex",gap:6,marginTop:8}}>
       <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type here..."
-        style={{flex:1,padding:"8px 12px",borderRadius:14,border:"none",fontSize:13,fontWeight:600,fontFamily:"'Fredoka',sans-serif",outline:"none",boxSizing:"border-box",background:"#FFF7ED",boxShadow:"inset 3px 3px 8px rgba(174,144,120,0.15), inset -2px -2px 6px rgba(255,255,255,0.7)"}}
+        style={{flex:1,padding:"8px 12px",borderRadius:14,border:"none",fontSize:13,fontWeight:600,fontFamily:"'Fredoka',sans-serif",outline:"none",boxSizing:"border-box",background:"#FFF7ED",boxShadow:"inset 2px 2px 5px rgba(174,144,120,0.08), inset -1px -1px 3px rgba(255,255,255,0.5)"}}
         onKeyDown={e=>{if(e.key==="Enter"&&typed.trim())onType(typed.trim().toLowerCase());}}
       />
       <button onClick={()=>{if(typed.trim())onType(typed.trim().toLowerCase());}}
@@ -1925,7 +1973,7 @@ const ResultBox=({acc,result,expected,onRetry,onDone,color,kidName,currentPoints
   const pass=acc>=50; // 50% = pass for kids
   const nextReward=REWARDS.filter(r=>r.cost>(currentPoints||0)).sort((a,b)=>a.cost-b.cost)[0];
   const ptsNeeded=nextReward?(nextReward.cost-(currentPoints||0)):0;
-  return<div data-panda="result-box" style={{padding:14,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:24,boxShadow:"var(--clay-big)",animation:"resBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>
+  return<div data-panda="result-box" style={{padding:14,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:24,boxShadow:"var(--clay-shadow)",animation:"resBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>
     {/* Stars + Score row */}
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
       <Stars count={s}/>
@@ -2196,7 +2244,14 @@ export default function App(){
   const[matchPairs,setMatchPairs]=useState([]); // match game pairs
   const[matchLeft,setMatchLeft]=useState(null);const[matchIdx,setMatchIdx]=useState(0);const[matchWrong,setMatchWrong]=useState(null);const[matchCorrect,setMatchCorrect]=useState(null);const[matchOpts,setMatchOpts]=useState([]);
   const[matchScore,setMatchScore]=useState(0);const[matchDone,setMatchDone]=useState([]);const[drawPts,setDrawPts]=useState(0);const drawPtsRef=useRef(0);const[writeOk,setWriteOk]=useState(false);const writeOkRef=useRef(false);const[writeScore,setWriteScore]=useState(null);
-  const cRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);const[rwdMsg,setRwdMsg]=useState(null);
+  const cRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);
+  const[dailyLessons,setDailyLessons]=useState(0);
+  const[dailyQuizzes,setDailyQuizzes]=useState(0);
+  const[dailyPerfect,setDailyPerfect]=useState(0);
+  const[showStreak,setShowStreak]=useState(false);
+  const[showBadge,setShowBadge]=useState(null);
+  const[showLevelUp,setShowLevelUp]=useState(null);
+  const[showParentDash,setShowParentDash]=useState(false);const[rwdMsg,setRwdMsg]=useState(null);
   const[speakMode,setSpeakMode]=useState(true); // toggle for speech practice
   const[countdown,setCountdown]=useState(0); // 3,2,1 countdown
   const[activeSpellIdx,setActiveSpellIdx]=useState(-1); // which letter is being spelled
@@ -3145,7 +3200,7 @@ export default function App(){
     <div style={{textAlign:"center",zIndex:2,animation:"splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1)"}}>
       <h1 style={{fontSize:46,fontWeight:900,color:"#FF8C42",margin:0,letterSpacing:-1,textShadow:"3px 3px 0px rgba(174,144,120,0.15), -1px -1px 0px rgba(255,255,255,0.9)"}}>Little Genius</h1>
       <p style={{color:"#8E8CA3",fontSize:14,fontWeight:700,letterSpacing:3,textTransform:"uppercase",marginTop:8}}>Learn • Play • Grow</p>
-      <button style={{marginTop:32,padding:"16px 44px",borderRadius:24,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"8px 8px 20px rgba(174,144,120,0.3), -4px -4px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,0.4), inset -1px -1px 3px rgba(174,144,120,0.1)",animation:"clayPulse 2.5s ease-in-out infinite"}}>Tap to Start! 🐼</button>
+      <button style={{marginTop:32,padding:"16px 44px",borderRadius:24,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"3px 3px 8px rgba(174,144,120,0.12), -2px -2px 5px rgba(255,255,255,0.5), inset 1px 1px 2px rgba(255,255,255,0.35)",animation:"clayPulse 2.5s ease-in-out infinite"}}>Tap to Start! 🐼</button>
     </div>
     {TeacherBubble}<style>{CSS}</style>
   </div>;
@@ -3153,7 +3208,7 @@ export default function App(){
 
   if(scr==="onboard")return<div style={{height:"100dvh",overflow:"auto",background:"linear-gradient(160deg,#FFF7ED 0%,#FFECD2 40%,#FFF0E0 70%,#FFE4C8 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",fontFamily:"'Fredoka',sans-serif"}}>
     <Particles count={6} emojis={["🌸","🦋","⭐","🌈"]}/>
-    <div style={{background:"linear-gradient(145deg,#FFFFFF,#FFF7ED)",borderRadius:32,padding:"32px 24px",maxWidth:420,width:"100%",boxShadow:"12px 12px 30px rgba(174,144,120,0.25), -6px -6px 18px rgba(255,255,255,0.95), inset 3px 3px 6px rgba(255,255,255,0.8), inset -2px -2px 5px rgba(174,144,120,0.1)",zIndex:2,animation:"slideUp 0.5s ease-out"}}>
+    <div style={{background:"linear-gradient(145deg,#FFFFFF,#FFF7ED)",borderRadius:32,padding:"32px 24px",maxWidth:420,width:"100%",boxShadow:"4px 4px 14px rgba(174,144,120,0.10), -3px -3px 8px rgba(255,255,255,0.6), inset 2px 2px 3px rgba(255,255,255,0.5)",zIndex:2,animation:"slideUp 0.5s ease-out"}}>
     {obSt===0?<>
       {/* Step 1: Name + Age */}
       <div style={{textAlign:"center",marginBottom:20}}>
@@ -3162,7 +3217,7 @@ export default function App(){
         <p style={{fontSize:13,color:"#8E8CA3",fontWeight:600}}>Let's set up your profile</p>
       </div>
       <label style={{fontSize:12,fontWeight:800,color:"#FF8C42",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:8}}>What's your name?</label>
-      <input value={obN} onChange={e=>setObN(e.target.value)} placeholder="Type your name..." style={{width:"100%",padding:"14px 16px",border:"none",borderRadius:18,fontSize:17,fontWeight:700,fontFamily:"'Fredoka',sans-serif",outline:"none",boxSizing:"border-box",background:"#FFF0E0",transition:"all 0.3s",boxShadow:"inset 4px 4px 10px rgba(174,144,120,0.15), inset -3px -3px 8px rgba(255,255,255,0.7)"}}/>
+      <input value={obN} onChange={e=>setObN(e.target.value)} placeholder="Type your name..." style={{width:"100%",padding:"14px 16px",border:"none",borderRadius:18,fontSize:17,fontWeight:700,fontFamily:"'Fredoka',sans-serif",outline:"none",boxSizing:"border-box",background:"#FFF0E0",transition:"all 0.3s",boxShadow:"inset 2px 2px 5px rgba(174,144,120,0.08), inset -1px -1px 3px rgba(255,255,255,0.5)"}}/>
       <label style={{fontSize:12,fontWeight:800,color:"#FF8C42",textTransform:"uppercase",letterSpacing:1.5,display:"block",margin:"20px 0 10px"}}>How old are you?</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8}}>
         {[3,4,5,6,7,8].map(a=><button key={a} onClick={()=>setObA(a)} style={{
@@ -3172,10 +3227,10 @@ export default function App(){
           color:obA===a?"#fff":"#1C1C2B",fontSize:20,fontWeight:900,
           fontFamily:"'Fredoka',sans-serif",cursor:"pointer",
           transition:"all 0.2s",transform:obA===a?"scale(1.08)":"scale(1)",
-          boxShadow:obA===a?"6px 6px 14px rgba(174,144,120,0.3), -3px -3px 8px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,0.4)":"var(--clay-sm)"
+          boxShadow:obA===a?"3px 3px 7px rgba(174,144,120,0.10), -2px -2px 5px rgba(255,255,255,0.5), inset 1px 1px 2px rgba(255,255,255,0.35)":"var(--clay-sm)"
         }}>{a}</button>)}
       </div>
-      <button onClick={()=>{setObSt(1);speak("Cool name! Now pick your style!",{rate:0.8,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",marginTop:24,boxShadow:"8px 8px 20px rgba(174,144,120,0.25), -4px -4px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,0.4)",letterSpacing:0.5}}>Next →</button>
+      <button onClick={()=>{setObSt(1);speak("Cool name! Now pick your style!",{rate:0.8,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",marginTop:24,boxShadow:"3px 3px 8px rgba(174,144,120,0.10), -2px -2px 5px rgba(255,255,255,0.5), inset 1px 1px 2px rgba(255,255,255,0.35)",letterSpacing:0.5}}>Next →</button>
     </>:
     <>
       {/* Step 2: Gender + Avatar */}
@@ -3206,12 +3261,12 @@ export default function App(){
           fontSize:34,cursor:"pointer",transition:"all 0.25s",
           transform:obAv===i?"scale(1.12)":"scale(1)",
           display:"flex",alignItems:"center",justifyContent:"center",
-          boxShadow:obAv===i?"6px 6px 14px rgba(174,144,120,0.25), -3px -3px 8px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,0.5)":"var(--clay-sm)"
+          boxShadow:obAv===i?"3px 3px 7px rgba(174,144,120,0.10), -2px -2px 5px rgba(255,255,255,0.5), inset 1px 1px 2px rgba(255,255,255,0.35)":"var(--clay-sm)"
         }}>{av}</button>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
         <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:16,border:"none",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",color:"#8E8CA3"}}>← Back</button>
-        <button onClick={()=>{rec.warmUp();save({name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()});speak("Yay! Let's look around together!",{rate:0.85,pitch:1.0});setTeacherMood("star");setScr("home");setTimeout(()=>doHomeTour(),2000);}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",boxShadow:"8px 8px 20px rgba(174,144,120,0.25), -4px -4px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,0.4)"}}>Let's Go! 🚀</button>
+        <button onClick={()=>{rec.warmUp();save({name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()});speak("Yay! Let's look around together!",{rate:0.85,pitch:1.0});setTeacherMood("star");setScr("home");setTimeout(()=>doHomeTour(),2000);}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",boxShadow:"3px 3px 8px rgba(174,144,120,0.10), -2px -2px 5px rgba(255,255,255,0.5), inset 1px 1px 2px rgba(255,255,255,0.35)"}}>Let's Go! 🚀</button>
       </div>
     </>}
     </div>
@@ -3221,7 +3276,7 @@ export default function App(){
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
   const showNav=["home","learn","quizzone","phonics","stories","rewards","settings"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
-  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,display:"flex",background:"linear-gradient(180deg,#FFF7ED,#FFECD2)",borderTop:"none",zIndex:90,fontFamily:"'Fredoka',sans-serif",boxShadow:"0 -6px 24px rgba(174,144,120,0.2), 0 -2px 8px rgba(255,255,255,0.5), inset 0 2px 4px rgba(255,255,255,0.7)",borderRadius:"22px 22px 0 0"}}>
+  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,display:"flex",background:"linear-gradient(180deg,#FFF7ED,#FFECD2)",borderTop:"none",zIndex:90,fontFamily:"'Fredoka',sans-serif",boxShadow:"0 -2px 10px rgba(174,144,120,0.08), inset 0 1px 3px rgba(255,255,255,0.4)",borderRadius:"22px 22px 0 0"}}>
     {[
       {id:"home",icon:"🏠",label:"Home"},
       {id:"learn",icon:"📚",label:"Learn"},
@@ -3243,13 +3298,29 @@ export default function App(){
     </button>)}
   </div>:null;
 
+  // Streak check on home
+  if(scr==="home"&&prof&&!showStreak&&prof.lastActiveDate!==new Date().toDateString()){
+    const sk=checkStreak(prof);
+    if(sk.isNewDay){
+      const np={...prof,streak:sk.streak,lastActiveDate:new Date().toDateString()};
+      save(np);setShowStreak(true);
+      setTimeout(()=>setShowStreak(false),3000);
+      // Check for new badges
+      const newBadges=BADGES.filter(b=>b.check(np)&&!(np.badges||[]).includes(b.id));
+      if(newBadges.length>0){
+        const nb={...np,badges:[...(np.badges||[]),...newBadges.map(b=>b.id)]};
+        save(nb);
+        setTimeout(()=>{setShowBadge(newBadges[0]);playSuccessSound();setTimeout(()=>setShowBadge(null),3500);},3200);
+      }
+    }
+  }
   if(scr==="home")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"linear-gradient(165deg,#FFF7ED 0%,#FFECD2 50%,#FFF0E0 100%)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
     {/* ═══ TOP BAR ═══ */}
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px",flexShrink:0,background:"linear-gradient(135deg,#FF8C42 0%,#FFB066 50%,#FF9F5A 100%)",borderRadius:"0 0 28px 28px",boxShadow:"8px 8px 24px rgba(174,144,120,0.25), -4px -4px 12px rgba(255,200,150,0.3), inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -1px 3px rgba(174,100,50,0.15)"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px",flexShrink:0,background:"linear-gradient(135deg,#FF8C42 0%,#FFB066 50%,#FF9F5A 100%)",borderRadius:"0 0 28px 28px",boxShadow:"0 4px 12px rgba(174,144,120,0.10), inset 0 1px 2px rgba(255,255,255,0.3)"}}>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:50,height:50,borderRadius:"50%",background:"linear-gradient(145deg,#FFFFFF,#FFF0E0)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"4px 4px 10px rgba(174,100,50,0.25), -2px -2px 6px rgba(255,255,255,0.6), inset 1px 1px 3px rgba(255,255,255,0.7)"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
+        <div style={{width:50,height:50,borderRadius:"50%",background:"linear-gradient(145deg,#FFFFFF,#FFF0E0)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"2px 2px 5px rgba(174,100,50,0.10), -1px -1px 3px rgba(255,255,255,0.4)"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
         <div>
           <div style={{color:"#fff",fontWeight:800,fontSize:22,lineHeight:1,textShadow:"0 1px 3px rgba(0,0,0,.1)"}}>{prof?.name||"Buddy"}</div>
           <div style={{color:"rgba(255,255,255,.85)",fontSize:13,fontWeight:600}}>Age {prof?.age||4}</div>
@@ -3264,8 +3335,39 @@ export default function App(){
     </div>
 
     {/* ═══ GREETING ═══ */}
-    <div style={{padding:"14px 18px 8px",textAlign:"center"}}>
+    <div style={{padding:"14px 18px 4px",textAlign:"center"}}>
       <h2 style={{fontSize:22,fontWeight:800,color:"#2D2B3D",margin:0}}>What shall we learn? 🎯</h2>
+    </div>
+    {/* ═══ STREAK + LEVEL + DAILY GOALS BAR ═══ */}
+    <div style={{padding:"0 16px 6px",display:"flex",gap:8,alignItems:"center"}}>
+      {/* Streak */}
+      <div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:16,background:"linear-gradient(135deg,#FFF0E0,#FFE4C8)",boxShadow:"var(--clay-sm)",minWidth:60}}>
+        <span style={{fontSize:16}}>{(prof?.streak||0)>=3?"🔥":"📅"}</span>
+        <span style={{fontFamily:"'Fredoka',sans-serif",fontSize:14,fontWeight:800,color:(prof?.streak||0)>=3?"#EF4444":"#FF8C42"}}>{prof?.streak||0}</span>
+        <span style={{fontSize:9,fontWeight:700,color:"#8E8CA3"}}>day{(prof?.streak||1)!==1?"s":""}</span>
+      </div>
+      {/* Level + XP bar */}
+      {(()=>{const lv=getLevel(prof?.totalEarned);const prog=getLevelProgress(prof?.totalEarned);const next=getNextLevel(prof?.totalEarned);return<div style={{flex:1,padding:"5px 12px",borderRadius:16,background:"linear-gradient(135deg,#FFF0E0,#FFE4C8)",boxShadow:"var(--clay-sm)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:2}}>
+          <span style={{fontSize:11,fontWeight:800,color:"#FF8C42"}}>{lv.emoji} Lv.{lv.level} {lv.name}</span>
+          {next&&<span style={{fontSize:9,fontWeight:700,color:"#8E8CA3"}}>{prof?.totalEarned||0}/{next.xpNeeded} XP</span>}
+        </div>
+        <div style={{height:6,borderRadius:3,background:"#EDE5DC",overflow:"hidden",boxShadow:"inset 1px 1px 2px rgba(174,144,120,0.1)"}}>
+          <div style={{height:"100%",borderRadius:3,background:"linear-gradient(90deg,#FF8C42,#FFB066)",width:`${prog}%`,transition:"width 0.5s ease-out"}}/>
+        </div>
+      </div>;})()}
+      {/* Daily goal mini */}
+      <div onClick={()=>setShowParentDash(true)} style={{padding:"6px 10px",borderRadius:16,background:"linear-gradient(135deg,#FFF0E0,#FFE4C8)",boxShadow:"var(--clay-sm)",cursor:"pointer",textAlign:"center"}}>
+        <span style={{fontSize:14}}>📊</span>
+        <div style={{fontSize:8,fontWeight:700,color:"#8E8CA3"}}>Stats</div>
+      </div>
+    </div>
+    {/* Daily goals row */}
+    <div style={{padding:"0 16px 8px",display:"flex",gap:6}}>
+      {DAILY_GOALS.map(g=>{const val=g.id==="learn3"?dailyLessons:g.id==="quiz5"?dailyQuizzes:dailyPerfect;const done=val>=g.target;return<div key={g.id} style={{flex:1,padding:"5px 8px",borderRadius:12,background:done?"linear-gradient(135deg,#D1FAE5,#A7F3D0)":"linear-gradient(145deg,#FFFFFF,#FFF7ED)",boxShadow:"var(--clay-sm)",textAlign:"center"}}>
+        <span style={{fontSize:12}}>{done?"✅":g.emoji}</span>
+        <div style={{fontSize:8,fontWeight:700,color:done?"#059669":"#8E8CA3"}}>{val}/{g.target}</div>
+      </div>;})}
     </div>
 
     {/* ═══ TILES GRID ═══ */}
@@ -3278,12 +3380,12 @@ export default function App(){
           {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",accent:"#F59E0B"},
           {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",accent:"#FF6B6B"},
           {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",accent:"#8B5CF6"},
-        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
+        ].map((m,i)=><button key={m.id} data-clay="tile" data-tile={m.id} onClick={()=>{playTapSound();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);if(prof&&!(prof.sectionsVisited||[]).includes(m.id)){const np={...prof,sectionsVisited:[...(prof.sectionsVisited||[]),m.id]};save(np);}}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"20px 18px",borderRadius:22,cursor:"pointer",
           fontFamily:"'Fredoka',sans-serif",background:"linear-gradient(145deg,#FFFFFF,#FFF7ED)",
           border:"none",
-          boxShadow:`8px 8px 20px rgba(174,144,120,0.2), -4px -4px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,0.7), inset -1px -1px 3px rgba(174,144,120,0.08), 0 0 0 2px ${m.accent}22`,
+          boxShadow:`3px 3px 8px rgba(174,144,120,0.10), -2px -2px 6px rgba(255,255,255,0.6), inset 1px 1px 2px rgba(255,255,255,0.4), 0 0 0 2px ${m.accent}22`,
           animation:`clayPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both`,
           textAlign:"left",
           transition:"all 0.2s"
@@ -3296,6 +3398,98 @@ export default function App(){
         </button>)}
       </div>
     </div>
+    
+    {/* ═══ STREAK POPUP ═══ */}
+    {showStreak&&<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.4)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",animation:"fadeIn 0.3s ease"}} onClick={()=>setShowStreak(false)}>
+      <div style={{background:"linear-gradient(145deg,#FFFFFF,#FFF7ED)",borderRadius:28,padding:"32px 28px",maxWidth:300,textAlign:"center",boxShadow:"var(--clay-big)",animation:"splashPop 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>
+        <div style={{fontSize:64,animation:"numPulse 1s ease-in-out infinite"}}>{(prof?.streak||0)>=7?"⚡":(prof?.streak||0)>=3?"🔥":"📅"}</div>
+        <h2 style={{fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#FF8C42",margin:"8px 0 4px"}}>{prof?.streak||1} Day Streak!</h2>
+        <p style={{fontSize:13,color:"#8E8CA3",fontWeight:600}}>{(prof?.streak||0)>=7?"You're on fire! Amazing!":"Keep it up, champion!"}</p>
+        <div style={{marginTop:12,padding:"8px 20px",borderRadius:16,background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontWeight:800,fontSize:14,display:"inline-block",boxShadow:"var(--clay-sm)"}}>Let's Go! 🚀</div>
+      </div>
+    </div>}
+    {/* ═══ BADGE POPUP ═══ */}
+    {showBadge&&<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",animation:"fadeIn 0.3s ease"}} onClick={()=>setShowBadge(null)}>
+      <div style={{background:"linear-gradient(145deg,#FFFFFF,#FFF7ED)",borderRadius:28,padding:"32px 28px",maxWidth:300,textAlign:"center",boxShadow:"var(--clay-big)",animation:"splashPop 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>
+        <div style={{fontSize:56,animation:"numPulse 1s ease-in-out infinite"}}>{showBadge.emoji}</div>
+        <h2 style={{fontFamily:"'Fredoka',sans-serif",fontSize:22,fontWeight:800,color:"#FF8C42",margin:"8px 0 4px"}}>New Badge!</h2>
+        <h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,color:"#2D2B3D"}}>{showBadge.name}</h3>
+        <p style={{fontSize:12,color:"#8E8CA3",fontWeight:600,marginTop:4}}>{showBadge.desc}</p>
+        <div style={{marginTop:14,padding:"8px 20px",borderRadius:16,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#fff",fontWeight:800,fontSize:14,display:"inline-block",boxShadow:"var(--clay-sm)"}}>Awesome! 🎉</div>
+      </div>
+    </div>}
+    {/* ═══ LEVEL UP POPUP ═══ */}
+    {showLevelUp&&<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",animation:"fadeIn 0.3s ease"}} onClick={()=>setShowLevelUp(null)}>
+      <div style={{background:"linear-gradient(145deg,#FFFFFF,#FFF7ED)",borderRadius:28,padding:"32px 28px",maxWidth:300,textAlign:"center",boxShadow:"var(--clay-big)",animation:"splashPop 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>
+        <div style={{fontSize:56,animation:"numPulse 0.8s ease-in-out infinite"}}>{showLevelUp.emoji}</div>
+        <h2 style={{fontFamily:"'Fredoka',sans-serif",fontSize:22,fontWeight:800,color:"#A855F7",margin:"8px 0 4px"}}>Level Up!</h2>
+        <h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:20,fontWeight:700,color:"#2D2B3D"}}>Level {showLevelUp.level}: {showLevelUp.name}</h3>
+        <div style={{marginTop:14,padding:"8px 20px",borderRadius:16,background:"linear-gradient(135deg,#A855F7,#7C3AED)",color:"#fff",fontWeight:800,fontSize:14,display:"inline-block",boxShadow:"var(--clay-sm)"}}>Amazing! 🚀</div>
+      </div>
+    </div>}
+    {/* ═══ PARENT DASHBOARD ═══ */}
+    {showParentDash&&<div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"flex-end",justifyContent:"center",animation:"fadeIn 0.2s ease"}} onClick={()=>setShowParentDash(false)}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"linear-gradient(145deg,#FFFFFF,#FFF7ED)",borderRadius:"28px 28px 0 0",padding:"24px 20px 32px",width:"100%",maxWidth:520,maxHeight:"80vh",overflowY:"auto",boxShadow:"var(--clay-big)",animation:"slideUp 0.3s ease-out"}}>
+        <div style={{textAlign:"center",marginBottom:16}}>
+          <div style={{width:40,height:4,borderRadius:2,background:"#D4D5D9",margin:"0 auto 12px"}}/>
+          <h2 style={{fontFamily:"'Fredoka',sans-serif",fontSize:20,fontWeight:800,color:"#2D2B3D"}}>📊 Progress Report</h2>
+          <p style={{fontSize:12,color:"#8E8CA3",fontWeight:600}}>{prof?.name||"Buddy"}'s learning journey</p>
+        </div>
+        {/* Level + XP */}
+        {(()=>{const lv=getLevel(prof?.totalEarned);const prog=getLevelProgress(prof?.totalEarned);const next=getNextLevel(prof?.totalEarned);return<div style={{padding:16,background:"linear-gradient(135deg,#FFF0E0,#FFE4C8)",borderRadius:20,marginBottom:12,boxShadow:"var(--clay-sm)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <span style={{fontSize:36}}>{lv.emoji}</span>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:800,color:"#FF8C42"}}>Level {lv.level}: {lv.name}</div>
+              <div style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{prof?.totalEarned||0} XP earned total</div>
+              <div style={{height:8,borderRadius:4,background:"#EDE5DC",marginTop:4,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#FF8C42,#FFB066)",width:`${prog}%`}}/>
+              </div>
+              {next&&<div style={{fontSize:10,color:"#8E8CA3",fontWeight:600,marginTop:2}}>{next.xpNeeded-(prof?.totalEarned||0)} XP to Level {next.level}</div>}
+            </div>
+          </div>
+        </div>;})()}
+        {/* Stats grid */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:12}}>
+          {[
+            {n:prof?.streak||0,l:"Day Streak",e:"🔥",c:"#EF4444"},
+            {n:(prof?.completed?.numbers||[]).length,l:"Numbers",e:"🔢",c:"#FF8C42"},
+            {n:(prof?.completed?.alphabet||[]).length,l:"Letters",e:"🔤",c:"#3B82F6"},
+            {n:(prof?.completed?.phonics||[]).length,l:"Words",e:"📖",c:"#34D399"},
+            {n:(prof?.completed?.shapes||[]).length,l:"Shapes",e:"🔷",c:"#A855F7"},
+            {n:(prof?.completed?.colors||[]).length,l:"Colors",e:"🎨",c:"#F59E0B"},
+          ].map((s,i)=><div key={i} style={{padding:12,borderRadius:16,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",textAlign:"center",boxShadow:"var(--clay-sm)"}}>
+            <span style={{fontSize:20}}>{s.e}</span>
+            <div style={{fontFamily:"'Fredoka',sans-serif",fontSize:22,fontWeight:800,color:s.c}}>{s.n}</div>
+            <div style={{fontSize:9,fontWeight:700,color:"#8E8CA3"}}>{s.l}</div>
+          </div>)}
+        </div>
+        {/* Badges */}
+        <h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:800,color:"#2D2B3D",marginBottom:8}}>🏅 Badges ({(prof?.badges||[]).length}/{BADGES.length})</h3>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:12}}>
+          {BADGES.map(b=>{const earned=(prof?.badges||[]).includes(b.id);return<div key={b.id} style={{padding:10,borderRadius:14,background:earned?"linear-gradient(135deg,#FFF0E0,#FFE4C8)":"#F5F0EB",textAlign:"center",boxShadow:earned?"var(--clay-sm)":"none",opacity:earned?1:0.4}}>
+            <span style={{fontSize:24,filter:earned?"none":"grayscale(1)"}}>{b.emoji}</span>
+            <div style={{fontSize:8,fontWeight:700,color:earned?"#FF8C42":"#aaa",marginTop:2}}>{b.name}</div>
+          </div>;})}
+        </div>
+        {/* Daily goals */}
+        <h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:800,color:"#2D2B3D",marginBottom:8}}>🎯 Today's Goals</h3>
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {DAILY_GOALS.map(g=>{const val=g.id==="learn3"?dailyLessons:g.id==="quiz5"?dailyQuizzes:dailyPerfect;const pct=Math.min(100,Math.round(val/g.target*100));return<div key={g.id} style={{padding:"10px 14px",borderRadius:14,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",boxShadow:"var(--clay-sm)",display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:20}}>{pct>=100?"✅":g.emoji}</span>
+            <div style={{flex:1}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#2D2B3D"}}>{g.label}</div>
+              <div style={{height:6,borderRadius:3,background:"#EDE5DC",marginTop:3,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:3,background:pct>=100?"#22C55E":"linear-gradient(90deg,#FF8C42,#FFB066)",width:`${pct}%`,transition:"width 0.3s"}}/>
+              </div>
+            </div>
+            <span style={{fontSize:11,fontWeight:800,color:pct>=100?"#22C55E":"#8E8CA3"}}>{val}/{g.target}</span>
+          </div>;})}
+        </div>
+        <button onClick={()=>setShowParentDash(false)} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:15,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",marginTop:16,boxShadow:"var(--clay-sm)"}}>Close</button>
+      </div>
+    </div>}
+
     {BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
@@ -3309,7 +3503,7 @@ export default function App(){
       </div>
 
       {/* Phonemes */}
-      {phs&&(nStep==="saying_phonics"||nStep==="idle")&&<div style={{marginTop:6,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,padding:8,animation:"slideUp 0.4s ease-out"}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{phs.map((ph,i)=>{const d=gPh(ph);const act=aPhI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:44,background:act?color:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${color}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      {phs&&(nStep==="saying_phonics"||nStep==="idle")&&<div style={{marginTop:6,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,padding:8,animation:"slideUp 0.4s ease-out"}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{phs.map((ph,i)=>{const d=gPh(ph);const act=aPhI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:44,background:act?color:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${color}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
 
       {/* Play controls */}
       <div style={{marginTop:12}}>
@@ -3318,7 +3512,7 @@ export default function App(){
             {/* Speech Toggle */}
             <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,flex:1}}>
               <span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span>
-              <button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s",boxShadow:"inset 2px 2px 4px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.5)"}}>
+              <button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s",boxShadow:"inset 1px 1px 3px rgba(0,0,0,0.06), inset -1px -1px 2px rgba(255,255,255,0.4)"}}>
                 <div style={{width:18,height:18,borderRadius:9,background:"#FFF0E0",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
               </button>
               <span style={{fontSize:11,color:speakMode?"#22C55E":"#8E8CA3",fontWeight:600}}>{speakMode?"Speak ON":"Speak OFF"}</span>
@@ -3416,7 +3610,7 @@ export default function App(){
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="Learn 📚" onBack={goHome} points={prof?.points||0}/>
     {/* Teaching mode toggles */}
-    <div style={{display:"flex",gap:6,padding:"8px 14px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",flexWrap:"wrap",boxShadow:"inset 0 -2px 6px rgba(174,144,120,0.08)"}}>
+    <div style={{display:"flex",gap:6,padding:"8px 14px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",flexWrap:"wrap",boxShadow:"inset 0 -1px 3px rgba(174,144,120,0.04)"}}>
       {[
         {key:"spelling",icon:"🔤",label:"Spell"},
         {key:"phonics",icon:"🔡",label:"Sounds"},
@@ -3432,11 +3626,11 @@ export default function App(){
       }}><span style={{fontSize:12}}>{m.icon}</span>{m.label}{learnModes[m.key]&&<span style={{fontSize:8}}>✓</span>}</button>)}
     </div>
     {/* Tab bar */}
-    <div style={{display:"flex",gap:6,padding:"8px 12px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",boxShadow:"inset 0 -2px 6px rgba(174,144,120,0.08)"}}>
+    <div style={{display:"flex",gap:6,padding:"8px 12px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",boxShadow:"inset 0 -1px 3px rgba(174,144,120,0.04)"}}>
       {[{id:"numbers",label:"🔢 Numbers"},{id:"abc",label:"🔤 ABC"},{id:"shapes",label:"🔷 Shapes"},{id:"colors",label:"🎨 Colors"}].map(t=>
         <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setLearnTab(t.id);}}
           style={{flex:1,padding:"10px 4px",borderRadius:14,border:"none",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
-            background:learnTab===t.id?"linear-gradient(135deg,#FF8C42,#FFB066)":"linear-gradient(145deg,#F5F0EB,#E8E3DE)",color:learnTab===t.id?"#fff":"#8E8CA3",transition:"all 0.25s",boxShadow:learnTab===t.id?"var(--clay-sm)":"inset 2px 2px 4px rgba(174,144,120,0.1), inset -1px -1px 3px rgba(255,255,255,0.5)"
+            background:learnTab===t.id?"linear-gradient(135deg,#FF8C42,#FFB066)":"linear-gradient(145deg,#F5F0EB,#E8E3DE)",color:learnTab===t.id?"#fff":"#8E8CA3",transition:"all 0.25s",boxShadow:learnTab===t.id?"var(--clay-sm)":"inset 1px 1px 3px rgba(174,144,120,0.06), inset -1px -1px 2px rgba(255,255,255,0.4)"
           }}>{t.label}</button>
       )}
     </div>
@@ -3460,8 +3654,8 @@ export default function App(){
         </div>
       </div>
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>{(()=>{const{min,max}=getNumRange();const count=max-min+1;const cols=count<=10?3:count<=20?4:5;return<div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:count<=10?12:8}}>
-        {Array.from({length:count}).map((_,i)=>{const n=min+i;const done=isDone("numbers",n);return<button key={n} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{
-          position:"relative",padding:count<=10?"18px 8px":count<=20?"12px 6px":"8px 4px",borderRadius:18,
+        {Array.from({length:count}).map((_,i)=>{const n=min+i;const done=isDone("numbers",n);return<button key={n} data-clay="num" onClick={()=>{playTapSound();stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{
+          position:"relative",padding:count<=10?"20px 10px":count<=20?"16px 8px":"12px 6px",borderRadius:18,
           border:`2px solid ${done?nClr(n)+"44":"#E8E0D8"}`,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
           fontFamily:"'Fredoka',sans-serif",background:done?`linear-gradient(135deg,${nClr(n)}08,${nClr(n)}15)`:"#fff",
           boxShadow:"var(--clay-sm)",...glowStyle("num-explore-"+n)
@@ -3475,8 +3669,8 @@ export default function App(){
     {learnTab==="abc"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
-          {ALPHA_LETTERS.map((l,i)=>{const done=isDone("alphabet",l);return<button key={l} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");pRef.current=true;setScr("alphabet");setSelLetter(l);playLetter(l);}} style={{
-            position:"relative",padding:"14px 4px",borderRadius:18,
+          {ALPHA_LETTERS.map((l,i)=>{const done=isDone("alphabet",l);return<button key={l} data-clay="letter" onClick={()=>{playTapSound();stop();prevScrRef.current="learn";movePandaTo("bottomRight");pRef.current=true;setScr("alphabet");setSelLetter(l);playLetter(l);}} style={{
+            position:"relative",padding:"16px 6px",borderRadius:20,
             border:`2px solid ${done?ALPHA_COLORS[i%13]+"44":"#E8E0D8"}`,cursor:"pointer",
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
             fontFamily:"'Fredoka',sans-serif",
@@ -3494,8 +3688,8 @@ export default function App(){
     {learnTab==="shapes"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-          {SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{
-            position:"relative",padding:"16px 6px",borderRadius:18,
+          {SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} data-clay="shape" onClick={()=>{playTapSound();stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{
+            position:"relative",padding:"18px 8px",borderRadius:20,
             border:`2px solid ${done?"#A855F744":"#E8E0D8"}`,cursor:"pointer",
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
             fontFamily:"'Fredoka',sans-serif",
@@ -3513,7 +3707,7 @@ export default function App(){
     {learnTab==="colors"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"6px 10px"}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-          {COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={()=>{stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{
+          {COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} data-clay="color" onClick={()=>{playTapSound();stop();prevScrRef.current="learn";movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{
             position:"relative",padding:"14px 6px",borderRadius:18,
             border:`2px solid ${done?c.hex+"44":"#E8E0D8"}`,cursor:"pointer",
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
@@ -3521,7 +3715,7 @@ export default function App(){
             background:done?`linear-gradient(135deg,${c.hex}05,${c.hex}10)`:"#fff",
             boxShadow:"var(--clay-sm)"
           }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
-            <div style={{width:42,height:42,borderRadius:14,background:c.hex,boxShadow:`4px 4px 10px ${c.hex}33, -2px -2px 6px rgba(255,255,255,0.5), inset 2px 2px 4px rgba(255,255,255,0.3)`}}/>
+            <div style={{width:42,height:42,borderRadius:14,background:c.hex,boxShadow:`2px 2px 6px ${c.hex}22, inset 1px 1px 2px rgba(255,255,255,0.3)`}}/>
             <span style={{fontSize:12,fontWeight:700,textTransform:"capitalize",color:"#2D2B3D"}}>{c.name}</span>
           </button>;})}
         </div>
@@ -3536,7 +3730,7 @@ export default function App(){
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="Quiz Zone 🎯" onBack={goHome} points={prof?.points||0}/>
     {/* Tab bar */}
-    <div style={{display:"flex",gap:5,padding:"8px 12px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",boxShadow:"inset 0 -2px 6px rgba(174,144,120,0.08)"}}>
+    <div style={{display:"flex",gap:5,padding:"8px 12px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",boxShadow:"inset 0 -1px 3px rgba(174,144,120,0.04)"}}>
       {[{id:"numquiz",label:"🔢 Numbers"},{id:"math",label:"➕ Math"},{id:"letters",label:"🔤 Letters"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
           stop();movePandaTo("bottomRight");setTeacherMood("happy");setQuizTab(t.id);
@@ -3545,7 +3739,7 @@ export default function App(){
           if(t.id==="letters"&&matchPairs.length===0)startMatch();
           if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}
         }} style={{flex:1,padding:"10px 4px",borderRadius:14,border:"none",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
-          background:quizTab===t.id?"linear-gradient(135deg,#FF8C42,#FFB066)":"linear-gradient(145deg,#F5F0EB,#E8E3DE)",color:quizTab===t.id?"#fff":"#8E8CA3",boxShadow:quizTab===t.id?"var(--clay-sm)":"inset 2px 2px 4px rgba(174,144,120,0.1), inset -1px -1px 3px rgba(255,255,255,0.5)",transition:"all 0.2s"
+          background:quizTab===t.id?"linear-gradient(135deg,#FF8C42,#FFB066)":"linear-gradient(145deg,#F5F0EB,#E8E3DE)",color:quizTab===t.id?"#fff":"#8E8CA3",boxShadow:quizTab===t.id?"var(--clay-sm)":"inset 1px 1px 3px rgba(174,144,120,0.06), inset -1px -1px 2px rgba(255,255,255,0.4)",transition:"all 0.2s"
         }}>{t.label}</button>
       )}
     </div>
@@ -3553,7 +3747,7 @@ export default function App(){
     {/* ═══ NUMBER QUIZ ═══ */}
     {quizTab==="numquiz"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflowY:"auto",overflowX:"hidden"}}>
       {/* Range filter */}
-      <div style={{padding:"8px 14px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",boxShadow:"inset 0 -2px 6px rgba(174,144,120,0.08)"}}>
+      <div style={{padding:"8px 14px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",boxShadow:"inset 0 -1px 3px rgba(174,144,120,0.04)"}}>
         <div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:0.5,marginBottom:5}}>📊 Pick a range:</div>
         <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
         {["1-10","1-20","11-20","21-50","51-100","1-100"].map(r=><button key={r} onClick={()=>{setQuizRange(r);quizUsedRef.current=[];setQuizScore(0);setQuizStreak(0);setQuizTotal(0);newQuiz(r);}} style={{
@@ -3562,7 +3756,7 @@ export default function App(){
         }}>{r}</button>)}
         </div>
       </div>
-      <div style={{padding:"12px 16px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",display:"flex",alignItems:"center",gap:10,borderBottom:"none",boxShadow:"inset 0 -2px 6px rgba(174,144,120,0.08)"}}>
+      <div style={{padding:"12px 16px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",display:"flex",alignItems:"center",gap:10,borderBottom:"none",boxShadow:"inset 0 -1px 3px rgba(174,144,120,0.04)"}}>
         {quizNum?<>
           <button onClick={repeatQuiz} style={{padding:"10px 16px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#FF8C42,#FFB066)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",boxShadow:"var(--clay-sm)"}}>🔊 Hear</button>
           <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:"#E67A30"}}>Which number? 👂</div></div>
@@ -3574,8 +3768,8 @@ export default function App(){
           {quizOpts.map((n,i)=>{
             const isCorrect=quizFb?.ok&&quizFb?.n===n;
             const isWrong=quizFb&&!quizFb.ok&&quizFb.n===n;
-            return<button key={n} onClick={()=>onQuizTap(n)} style={{
-              padding:"22px 8px",borderRadius:20,border:"3px solid",cursor:"pointer",
+            return<button key={n} data-clay="quiz" onClick={()=>{playTapSound();onQuizTap(n);}} style={{
+              padding:"26px 10px",borderRadius:22,border:"3px solid",cursor:"pointer",
               borderColor:isCorrect?"#4ADE80":isWrong?"#F87171":"transparent",
               background:isCorrect?"#F0FDF4":isWrong?"#FEF2F2":"#fff",
               fontFamily:"'Fredoka',sans-serif",fontSize:32,fontWeight:800,
@@ -3621,8 +3815,8 @@ export default function App(){
           {mathChoices.map((c,i)=>{
             const isRight=mathFb&&c===mathProblem.answer;
             const isWrong=mathFb==="wrong"&&c===mathAnswer;
-            return<button key={c+"-"+i} onClick={()=>onMathTap(c)} style={{
-              padding:"18px 10px",borderRadius:18,border:"3px solid",cursor:"pointer",
+            return<button key={c+"-"+i} data-clay="quiz" onClick={()=>{playTapSound();onMathTap(c);}} style={{
+              padding:"22px 12px",borderRadius:20,border:"3px solid",cursor:"pointer",
               borderColor:isRight?"#4ADE80":isWrong?"#F87171":"transparent",
               background:isRight?"#F0FDF4":isWrong?"#FEF2F2":"#fff",
               fontFamily:"'Fredoka',sans-serif",fontSize:26,fontWeight:800,
@@ -3674,14 +3868,14 @@ export default function App(){
           const isWrong=matchWrong===l;
           const isCorrect=matchCorrect===l||matchCorrect===l.toUpperCase()||matchCorrect===l.toLowerCase();
           const displayLetter=matchMode==="findCaps"?l.toUpperCase():matchMode==="voiceQuiz"?l.toUpperCase():l.toLowerCase();
-          return<button key={"m"+l+matchIdx+matchMode} onClick={()=>onMatchTap(l)} style={{
+          return<button key={"m"+l+matchIdx+matchMode} data-clay="quiz" onClick={()=>onMatchTap(l)} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
             borderColor:isWrong?"#F87171":isCorrect?"#4ADE80":"#FF8C42",
             background:isWrong?"#FEF2F2":isCorrect?"#FFF5EB":"#fff",
             fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
             color:isWrong?"#F87171":isCorrect?"#4ADE80":"#2D2B3D",fontFamily:"'Fredoka',sans-serif",
             transform:isCorrect?"scale(1.2)":isWrong?"scale(0.9)":"scale(1)",
-            transition:"all 0.2s",boxShadow:isCorrect?"0 6px 24px rgba(74,222,128,.3)":isWrong?"0 4px 16px rgba(248,113,113,.2)":"0 2px 10px rgba(99,102,241,.12)"
+            transition:"all 0.2s",boxShadow:isCorrect?"var(--clay-sm), 0 0 10px rgba(74,222,128,.2)":isWrong?"var(--clay-sm), 0 0 8px rgba(248,113,113,.15)":"var(--clay-sm)"
           }}>{displayLetter}</button>;
         })}
       </div>}
@@ -3694,7 +3888,7 @@ export default function App(){
         {[{id:"numbers",label:"🔢 Numbers"},{id:"letters",label:"🔤 Letters"}].map(m=>
           <button key={m.id} onClick={()=>{setWriteMode(m.id);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);setTimeout(()=>{initCanvas();if(m.id==="numbers")speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75});else speak(`Write ${writeCase==="caps"?writeChar:writeChar.toLowerCase()}.`,{rate:0.75});},300);}} style={{
             flex:1,padding:"8px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
-            borderColor:writeMode===m.id?"#FF8C42":"#E8E0D8",background:writeMode===m.id?"#FF8C42":"#FFFBF5",color:writeMode===m.id?"#fff":"#8E8CA3"
+            borderColor:writeMode===m.id?"#FF8C42":"transparent",background:writeMode===m.id?"linear-gradient(135deg,#FF8C42,#FFB066)":"linear-gradient(145deg,#FFFFFF,#F5F0EB)",boxShadow:"var(--clay-sm)",color:writeMode===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
         )}
       </div>
@@ -3703,7 +3897,7 @@ export default function App(){
         {[{id:"caps",label:"ABC Capital"},{id:"small",label:"abc Small"}].map(m=>
           <button key={m.id} onClick={()=>{setWriteCase(m.id);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);const ch=m.id==="caps"?writeChar.toUpperCase():writeChar.toLowerCase();setTimeout(()=>{initCanvas();speak(`Write ${ch}.`,{rate:0.75});},300);}} style={{
             flex:1,padding:"7px",borderRadius:10,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Fredoka',sans-serif",
-            borderColor:writeCase===m.id?"#FF8C42":"#E8E0D8",background:writeCase===m.id?"#FF8C42":"#FFFBF5",color:writeCase===m.id?"#fff":"#8E8CA3"
+            borderColor:writeCase===m.id?"#FF8C42":"transparent",background:writeCase===m.id?"linear-gradient(135deg,#FF8C42,#FFB066)":"linear-gradient(145deg,#FFFFFF,#F5F0EB)",boxShadow:"var(--clay-sm)",color:writeCase===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
         )}
       </div>}
@@ -3782,7 +3976,7 @@ export default function App(){
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"8px 14px"}}>{(()=>{const{min,max}=getNumRange();const count=max-min+1;const cols=count<=10?3:count<=20?4:5;return<div style={{display:"grid",gridTemplateColumns:`repeat(${cols},1fr)`,gap:count<=10?14:count<=20?10:8}}>
         {Array.from({length:count}).map((_,i)=>{const n=min+i;const done=isDone("numbers",n);return<button key={n} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelNum(n);setNStep("idle");setTimeout(()=>playNum(n),100);}} style={{
           position:"relative",
-          padding:count<=10?"18px 8px":count<=20?"12px 6px":"8px 4px",
+          padding:count<=10?"20px 10px":count<=20?"16px 8px":"12px 6px",
           borderRadius:18,
           border:`2px solid ${done?nClr(n)+"44":"#E8E0D8"}`,
           cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
@@ -4025,7 +4219,7 @@ export default function App(){
       }}><span style={{fontSize:14}}>{m.icon}</span>{m.label}{phModes[m.key]?<span style={{fontSize:10}}>✓</span>:null}</button>)}
       </div>
     </div>
-    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF0E0",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>{setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?"#FF8C42":"#EDE5DC",background:phCat===k?"#FF8C42":"#fff",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?"#FF8C4244":"#EDE5DC"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"var(--clay-sm)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF0E0",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} data-clay="pill" onClick={()=>{playTapSound();setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?"#FF8C42":"#EDE5DC",background:phCat===k?"#FF8C42":"#fff",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} data-clay="word" onClick={(e)=>{playTapSound();stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?"#FF8C4244":"#EDE5DC"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"var(--clay-sm)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
@@ -4038,9 +4232,9 @@ export default function App(){
         {shStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10,...glowStyle("shape-sentence")}}><p style={{color:"#2D2B3D",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {sh.sentence}</p></div>}
       </div>}
       <div style={{textAlign:"center",marginTop:4}}><span style={{fontSize:30}}>{sh.emoji}</span><div style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{sh.name}</div>{sh.sides>0&&<span style={{fontSize:12,fontWeight:700,background:"#FFF0E0",color:"#FF8C42",padding:"4px 12px",borderRadius:10}}>{sh.sides} sides</span>}</div>
-      {sh.ph&&(shStep==="saying_phonics"||shStep==="idle")&&<div style={{marginTop:6,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,padding:8}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{sh.ph.map((ph,i)=>{const d=gPh(ph);const act=shAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:44,background:act?shColor:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      {sh.ph&&(shStep==="saying_phonics"||shStep==="idle")&&<div style={{marginTop:6,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,padding:8}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{sh.ph.map((ph,i)=>{const d=gPh(ph);const act=shAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:44,background:act?shColor:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
       <div style={{marginTop:12}}>
-        {shStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s",boxShadow:"inset 2px 2px 4px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.5)"}}><div style={{width:18,height:18,borderRadius:9,background:"#FFF0E0",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playShape(sh)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${shColor},${shColor}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
+        {shStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s",boxShadow:"inset 1px 1px 3px rgba(0,0,0,0.06), inset -1px -1px 2px rgba(255,255,255,0.4)"}}><div style={{width:18,height:18,borderRadius:9,background:"#FFF0E0",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playShape(sh)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${shColor},${shColor}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
         {shStep==="saying_word"&&<Mascot mood="speaking" msg={`This is a ${sh.name}! 🔊`}/>}
         {shStep==="spelling"&&<div data-panda="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:18}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{sh.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-panda={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"'Fredoka',sans-serif",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?shColor:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)",transition:"all 0.3s"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#FF8C42",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"'Fredoka',sans-serif",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#FF8C42",background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,transition:"all 0.2s",cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:14}}><p style={{fontSize:13,fontWeight:700,color:"#FF8C42"}}>👀 Watch and listen!</p></div>}</div></div>}
         {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
@@ -4052,7 +4246,7 @@ export default function App(){
     </div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ SHAPES GRID ═══
-  if(scr==="shapes")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflowY:"auto",overflowX:"hidden",background:"linear-gradient(165deg,#FFF7ED 0%,#FFECD2 50%,#FFF0E0 100%)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"var(--clay-sm)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none"}}>{s.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="shapes")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflowY:"auto",overflowX:"hidden",background:"linear-gradient(165deg,#FFF7ED 0%,#FFECD2 50%,#FFF0E0 100%)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} data-clay="shape" onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:`2px solid ${done?"#A855F744":"#E8E8E8"}`,background:done?"linear-gradient(135deg,#A855F705,#A855F710)":"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:"var(--clay-sm)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none"}}>{s.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize"}}>{s.name}</span><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
 
   // ═══ COLORS ═══
@@ -4066,9 +4260,9 @@ export default function App(){
         {coStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10,...glowStyle("color-sentence")}}><p style={{color:"#2D2B3D",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {co.sentence}</p></div>}
       </div>}
       <div style={{textAlign:"center",marginTop:4}}><div style={{width:50,height:50,borderRadius:16,background:co.hex,margin:"0 auto 8px",boxShadow:`0 8px 24px ${co.hex}44`}}/><div style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{co.name}</div><div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>{co.things.map((t,j)=><span key={j} style={{fontSize:11,fontWeight:700,background:"#FFF0E0",color:"#FF8C42",padding:"4px 10px",borderRadius:8}}>{t}</span>)}</div></div>
-      {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:6,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,padding:8}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:44,background:act?co.hex:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:6,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,padding:8}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",minWidth:44,background:act?co.hex:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"'Fredoka',sans-serif"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
       <div style={{marginTop:12}}>
-        {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s",boxShadow:"inset 2px 2px 4px rgba(0,0,0,0.1), inset -1px -1px 2px rgba(255,255,255,0.5)"}}><div style={{width:18,height:18,borderRadius:9,background:"#FFF0E0",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
+        {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:16,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s",boxShadow:"inset 1px 1px 3px rgba(0,0,0,0.06), inset -1px -1px 2px rgba(255,255,255,0.4)"}}><div style={{width:18,height:18,borderRadius:9,background:"#FFF0E0",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
         {coStep==="saying_word"&&<Mascot mood="speaking" msg={`This color is ${co.name}! 🔊`}/>}
         {coStep==="spelling"&&<div data-panda="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:18}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{co.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-panda={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"'Fredoka',sans-serif",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?co.hex:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)",transition:"all 0.3s"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#FF8C42",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"'Fredoka',sans-serif",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":co.hex,background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,transition:"all 0.2s",cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:14}}><p style={{fontSize:13,fontWeight:700,color:"#FF8C42"}}>👀 Watch and listen!</p></div>}</div></div>}
         {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
@@ -4201,7 +4395,7 @@ export default function App(){
           const isWrong=matchWrong===l;
           const isCorrect=matchCorrect===l||matchCorrect===l.toUpperCase()||matchCorrect===l.toLowerCase();
           const displayLetter=matchMode==="findCaps"?l.toUpperCase():matchMode==="voiceQuiz"?l.toUpperCase():l.toLowerCase();
-          return<button key={"m"+l+matchIdx+matchMode} onClick={()=>onMatchTap(l)} style={{
+          return<button key={"m"+l+matchIdx+matchMode} data-clay="quiz" onClick={()=>onMatchTap(l)} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
             borderColor:isWrong?"#F87171":isCorrect?"#4ADE80":"#FF8C42",
             background:isWrong?"#FEF2F2":isCorrect?"#FFF5EB":"#fff",
@@ -4211,7 +4405,7 @@ export default function App(){
             transform:isCorrect?"scale(1.2)":isWrong?"scale(0.9)":"scale(1)",
             transition:"all 0.2s",
             animation:`gridPop 0.3s ease ${i*0.06}s both`,
-            boxShadow:isCorrect?"0 6px 24px rgba(74,222,128,.3)":isWrong?"0 4px 16px rgba(248,113,113,.2)":"0 2px 10px rgba(99,102,241,.12)"
+            boxShadow:isCorrect?"var(--clay-sm), 0 0 10px rgba(74,222,128,.2)":isWrong?"var(--clay-sm), 0 0 8px rgba(248,113,113,.15)":"var(--clay-sm)"
           }}>{displayLetter}</button>;
         })}
       </div>}
@@ -4224,7 +4418,7 @@ export default function App(){
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="Basics 🧩" onBack={goHome} points={prof?.points||0}/>
     {/* 4 Tab bar */}
-    <div style={{display:"flex",gap:6,padding:"8px 12px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",boxShadow:"inset 0 -2px 6px rgba(174,144,120,0.08)"}}>
+    <div style={{display:"flex",gap:6,padding:"8px 12px",background:"linear-gradient(135deg,#FFF5EB,#FFECD2)",borderBottom:"none",boxShadow:"inset 0 -1px 3px rgba(174,144,120,0.04)"}}>
       {[{id:"explore",label:"🔢 Numbers"},{id:"quiz",label:"🎯 Quiz"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
           stop();movePandaTo("bottomRight");setTeacherMood("happy");setBasicsTab(t.id);
@@ -4296,7 +4490,7 @@ export default function App(){
           {quizOpts.map((n,i)=>{
             const isCorrect=quizFb?.ok&&quizFb?.n===n;
             const isWrong=quizFb&&!quizFb.ok&&quizFb.n===n;
-            return<button key={n} onClick={()=>onQuizTap(n)} style={{
+            return<button key={n} data-clay="quiz" onClick={()=>{playTapSound();onQuizTap(n);}} style={{
               padding:"28px 10px",borderRadius:22,
               border:"3px solid",cursor:quizFb?"default":"pointer",
               borderColor:isCorrect?"#4ADE80":isWrong?"#F87171":"#E8E0D8",
@@ -4474,10 +4668,10 @@ export default function App(){
   </div>;
 
     // ═══ REWARDS ═══
-  if(scr==="rewards")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"linear-gradient(165deg,#FFF7ED 0%,#FFECD2 50%,#FFF0E0 100%)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#fff",borderRadius:20,boxShadow:"var(--clay-shadow)",fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:24,display:"flex",alignItems:"center",gap:14,boxShadow:"8px 8px 24px rgba(174,144,120,0.25), -4px -4px 12px rgba(255,255,200,0.4), inset 2px 2px 4px rgba(255,255,255,0.4), inset -1px -1px 3px rgba(174,120,50,0.15)"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#2D2B3D",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#8E8CA3",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} onClick={()=>can&&buyR(r)} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:"none",background:can?"linear-gradient(145deg,#FFFFFF,#FFF7ED)":"linear-gradient(145deg,#F5F0EB,#EBE6E0)",cursor:can?"pointer":"default",fontFamily:"'Fredoka',sans-serif",opacity:can?1:0.4,boxShadow:can?"var(--clay-shadow)":"var(--clay-sm)",animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",boxShadow:can?"var(--clay-sm)":"none",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:18,border:"none",marginBottom:8,boxShadow:"var(--clay-sm)"}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="rewards")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"linear-gradient(165deg,#FFF7ED 0%,#FFECD2 50%,#FFF0E0 100%)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#fff",borderRadius:20,boxShadow:"var(--clay-shadow)",fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FBBF24,#F59E0B)",borderRadius:24,display:"flex",alignItems:"center",gap:14,boxShadow:"3px 3px 8px rgba(174,144,120,0.10), -2px -2px 5px rgba(255,255,200,0.3), inset 1px 1px 2px rgba(255,255,255,0.3)"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#2D2B3D",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#8E8CA3",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} data-clay="reward" onClick={()=>{if(can){playTapSound();buyR(r);}}} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:"none",background:can?"linear-gradient(145deg,#FFFFFF,#FFF7ED)":"linear-gradient(145deg,#F5F0EB,#EBE6E0)",cursor:can?"pointer":"default",fontFamily:"'Fredoka',sans-serif",opacity:can?1:0.4,boxShadow:can?"var(--clay-shadow)":"var(--clay-sm)",animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#60B246,#4CAF50)":"#D4D5D9",boxShadow:can?"var(--clay-sm)":"none",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"'Fredoka',sans-serif",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:18,border:"none",marginBottom:8,boxShadow:"var(--clay-sm)"}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SETTINGS ═══
-  if(scr==="settings")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"linear-gradient(165deg,#FFF7ED 0%,#FFECD2 50%,#FFF0E0 100%)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:26,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:28,boxShadow:"var(--clay-big)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"'Fredoka',sans-serif",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#8E8CA3",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#FF8C42"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:22,padding:18,textAlign:"center",border:"none",boxShadow:"var(--clay-shadow)"}}><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",color:"#FF8C42",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",marginTop:14,boxShadow:"var(--clay-sm)"}}>🔄 Change Profile</button>
+  if(scr==="settings")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"auto",background:"linear-gradient(165deg,#FFF7ED 0%,#FFECD2 50%,#FFF0E0 100%)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:26,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:28,boxShadow:"var(--clay-shadow)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"'Fredoka',sans-serif",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#8E8CA3",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#FF8C42"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:22,padding:18,textAlign:"center",border:"none",boxShadow:"var(--clay-shadow)"}}><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",color:"#FF8C42",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",marginTop:14,boxShadow:"var(--clay-sm)"}}>🔄 Change Profile</button>
 {/* Voice Settings */}
 <div style={{marginTop:16,padding:16,background:"linear-gradient(145deg,#FFF5EB,#FFE8D0)",borderRadius:22,border:"none",boxShadow:"var(--clay-sm)"}}>
 <div style={{fontSize:13,fontWeight:800,color:"#FF8C42",marginBottom:8}}>🔊 Voice Settings</div>
@@ -4499,14 +4693,14 @@ const CSS=`
 @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap');
 :root{
   --bg:#FFF7ED;--card:#FFF5EB;--card2:#FFF0E0;--primary:#FF8C42;--orange:#FF8C42;--green:#4ADE80;--red:#F87171;--dark:#2D2B3D;--gray:#8E8CA3;--light:#E8E5F0;--blue:#60A5FA;--purple:#FFB066;--pink:#F9A8D4;--cyan:#22D3EE;
-  --clay-shadow: 8px 8px 20px rgba(174,144,120,0.25), -4px -4px 12px rgba(255,255,255,0.9), inset 2px 2px 4px rgba(255,255,255,0.7), inset -1px -1px 3px rgba(174,144,120,0.12);
-  --clay-sm: 4px 4px 10px rgba(174,144,120,0.2), -2px -2px 8px rgba(255,255,255,0.85), inset 1px 1px 3px rgba(255,255,255,0.6), inset -1px -1px 2px rgba(174,144,120,0.1);
-  --clay-pressed: 2px 2px 6px rgba(174,144,120,0.2), -1px -1px 4px rgba(255,255,255,0.7), inset 3px 3px 8px rgba(174,144,120,0.18), inset -2px -2px 4px rgba(255,255,255,0.5);
-  --clay-big: 12px 12px 30px rgba(174,144,120,0.3), -6px -6px 18px rgba(255,255,255,0.95), inset 3px 3px 6px rgba(255,255,255,0.8), inset -2px -2px 5px rgba(174,144,120,0.15);
-  --clay-float: 6px 6px 16px rgba(174,144,120,0.22), -3px -3px 10px rgba(255,255,255,0.88), inset 2px 2px 5px rgba(255,255,255,0.65), inset -1px -1px 3px rgba(174,144,120,0.1);
-  --clay-btn: 5px 5px 12px rgba(174,144,120,0.22), -3px -3px 8px rgba(255,255,255,0.85), inset 2px 2px 4px rgba(255,255,255,0.5), inset -1px -1px 2px rgba(174,144,120,0.1);
-  --clay-inset: inset 4px 4px 10px rgba(174,144,120,0.2), inset -3px -3px 8px rgba(255,255,255,0.7);
-  --clay-nav: 0 -4px 20px rgba(174,144,120,0.2), 0 -2px 8px rgba(255,255,255,0.5), inset 0 2px 4px rgba(255,255,255,0.6);
+  --clay-shadow: 3px 3px 8px rgba(174,144,120,0.10), -2px -2px 6px rgba(255,255,255,0.7), inset 1px 1px 2px rgba(255,255,255,0.5);
+  --clay-sm: 2px 2px 5px rgba(174,144,120,0.08), -1px -1px 4px rgba(255,255,255,0.6), inset 1px 1px 2px rgba(255,255,255,0.4);
+  --clay-pressed: inset 2px 2px 5px rgba(174,144,120,0.12), inset -1px -1px 3px rgba(255,255,255,0.4);
+  --clay-big: 4px 4px 12px rgba(174,144,120,0.12), -3px -3px 8px rgba(255,255,255,0.75), inset 2px 2px 3px rgba(255,255,255,0.6);
+  --clay-float: 3px 3px 8px rgba(174,144,120,0.09), -2px -2px 5px rgba(255,255,255,0.65), inset 1px 1px 2px rgba(255,255,255,0.45);
+  --clay-btn: 2px 2px 6px rgba(174,144,120,0.10), -1px -1px 4px rgba(255,255,255,0.6), inset 1px 1px 2px rgba(255,255,255,0.4);
+  --clay-inset: inset 2px 2px 5px rgba(174,144,120,0.10), inset -1px -1px 4px rgba(255,255,255,0.5);
+  --clay-nav: 0 -2px 10px rgba(174,144,120,0.08), inset 0 1px 3px rgba(255,255,255,0.5);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{background:linear-gradient(145deg,#FFF7ED 0%,#FFECD2 50%,#FFF0E0 100%)!important;overflow-x:hidden;color:var(--dark);}
@@ -4515,8 +4709,80 @@ button:active{transform:scale(0.97)!important;box-shadow:var(--clay-pressed)!imp
 @keyframes clayBounce{0%{transform:scale(0.92)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
 @keyframes clayPop{0%{transform:scale(0) rotate(-3deg);opacity:0;box-shadow:none}60%{transform:scale(1.06) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
 @keyframes clayFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-@keyframes clayPulse{0%,100%{box-shadow:var(--clay-shadow)}50%{box-shadow:var(--clay-big)}}
+@keyframes clayPulse{0%,100%{box-shadow:var(--clay-shadow);transform:scale(1)}50%{box-shadow:var(--clay-big);transform:scale(1.02)}}
 @keyframes clayShine{0%{background-position:200% center}100%{background-position:-200% center}}
+
+/* ═══ ENGAGEMENT SYSTEM ANIMATIONS ═══ */
+@keyframes streakGlow{0%,100%{text-shadow:0 0 8px rgba(239,68,68,0.3)}50%{text-shadow:0 0 16px rgba(239,68,68,0.6)}}
+@keyframes badgeShine{0%{transform:scale(1) rotate(0)}25%{transform:scale(1.1) rotate(-5deg)}50%{transform:scale(1.15) rotate(5deg)}75%{transform:scale(1.1) rotate(-3deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes levelGlow{0%,100%{box-shadow:var(--clay-sm)}50%{box-shadow:var(--clay-sm), 0 0 20px rgba(168,85,247,0.2)}}
+@keyframes progressFill{from{width:0}to{width:var(--fill-width,50%)}}
+
+/* ═══ REACTIVE MICRO-INTERACTIONS ═══ */
+@keyframes wiggle{0%{transform:rotate(0)}15%{transform:rotate(-4deg)}30%{transform:rotate(3deg)}45%{transform:rotate(-2deg)}60%{transform:rotate(1deg)}75%{transform:rotate(0)}}
+@keyframes jelly{0%{transform:scale(1,1)}30%{transform:scale(1.1,0.9)}40%{transform:scale(0.95,1.05)}50%{transform:scale(1.03,0.97)}65%{transform:scale(1,1)}100%{transform:scale(1,1)}}
+@keyframes popUp{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1.05)}}
+@keyframes tapBounce{0%{transform:scale(1)}30%{transform:scale(0.92)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes glowPulse{0%,100%{box-shadow:var(--clay-sm)}50%{box-shadow:var(--clay-sm), 0 0 12px rgba(255,140,66,0.25)}}
+@keyframes hoverFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes emojiDance{0%{transform:scale(1) rotate(0)}25%{transform:scale(1.15) rotate(-5deg)}50%{transform:scale(1.1) rotate(5deg)}75%{transform:scale(1.15) rotate(-3deg)}100%{transform:scale(1) rotate(0)}}
+
+/* NUMBER GRID — wobble + color glow on hover */
+[data-clay="num"]{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)!important;}
+[data-clay="num"]:hover{transform:scale(1.08) translateY(-3px)!important;box-shadow:var(--clay-sm), 0 0 14px rgba(255,140,66,0.2)!important;z-index:2!important;}
+[data-clay="num"]:active{transform:scale(0.95)!important;box-shadow:var(--clay-pressed)!important;}
+[data-clay="num"]:hover span:first-child{animation:jelly 0.6s ease!important;}
+
+/* LETTER GRID — bounce + tilt on hover */
+[data-clay="letter"]{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)!important;}
+[data-clay="letter"]:hover{transform:scale(1.1) rotate(-2deg)!important;box-shadow:var(--clay-sm), 0 0 12px rgba(78,205,196,0.2)!important;z-index:2!important;}
+[data-clay="letter"]:active{transform:scale(0.93) rotate(1deg)!important;box-shadow:var(--clay-pressed)!important;}
+[data-clay="letter"]:hover span:first-child{animation:wiggle 0.5s ease!important;}
+
+/* SHAPE GRID — float + pulse on hover */
+[data-clay="shape"]{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)!important;}
+[data-clay="shape"]:hover{transform:scale(1.06) translateY(-4px)!important;box-shadow:var(--clay-sm), 0 0 16px rgba(168,85,247,0.15)!important;z-index:2!important;}
+[data-clay="shape"]:active{transform:scale(0.95)!important;box-shadow:var(--clay-pressed)!important;}
+[data-clay="shape"]:hover span:first-child{animation:emojiDance 0.6s ease!important;display:inline-block!important;}
+
+/* COLOR GRID — glow with own color on hover */
+[data-clay="color"]{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)!important;}
+[data-clay="color"]:hover{transform:scale(1.07) translateY(-3px)!important;box-shadow:var(--clay-sm), 0 0 18px rgba(255,140,66,0.15)!important;z-index:2!important;}
+[data-clay="color"]:active{transform:scale(0.94)!important;box-shadow:var(--clay-pressed)!important;}
+[data-clay="color"]:hover div:first-child{animation:jelly 0.5s ease!important;}
+
+/* QUIZ OPTIONS — spring bounce on hover */
+[data-clay="quiz"]{transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)!important;}
+[data-clay="quiz"]:hover{transform:scale(1.08)!important;box-shadow:var(--clay-sm), 0 0 10px rgba(255,140,66,0.15)!important;}
+[data-clay="quiz"]:active{animation:tapBounce 0.35s ease!important;}
+
+/* HOME TILES — lift + glow on hover */
+[data-clay="tile"]{transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1)!important;}
+[data-clay="tile"]:hover{transform:scale(1.03) translateY(-4px)!important;box-shadow:3px 3px 10px rgba(174,144,120,0.12), -2px -2px 6px rgba(255,255,255,0.7), inset 1px 1px 2px rgba(255,255,255,0.4), 0 0 16px rgba(255,140,66,0.12)!important;}
+[data-clay="tile"]:active{transform:scale(0.97)!important;box-shadow:var(--clay-pressed)!important;}
+[data-clay="tile"]:hover span:first-child{animation:emojiDance 0.5s ease!important;display:inline-block!important;}
+
+/* PHONICS WORDS — pop + emoji dance on hover */
+[data-clay="word"]{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)!important;}
+[data-clay="word"]:hover{transform:scale(1.05) translateY(-3px)!important;box-shadow:var(--clay-sm), 0 0 14px rgba(52,211,153,0.15)!important;z-index:2!important;}
+[data-clay="word"]:active{transform:scale(0.94)!important;box-shadow:var(--clay-pressed)!important;}
+[data-clay="word"]:hover span:first-child{animation:emojiDance 0.6s ease!important;display:inline-block!important;}
+
+/* REWARD CARDS — coin wobble on hover */
+[data-clay="reward"]{transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)!important;}
+[data-clay="reward"]:hover:not(:disabled){transform:scale(1.04) translateY(-3px)!important;box-shadow:var(--clay-sm), 0 0 12px rgba(251,191,36,0.15)!important;}
+[data-clay="reward"]:active:not(:disabled){transform:scale(0.96)!important;box-shadow:var(--clay-pressed)!important;}
+
+/* PILL BUTTONS — bounce on hover */
+[data-clay="pill"]{transition:all 0.2s cubic-bezier(0.34,1.56,0.64,1)!important;}
+[data-clay="pill"]:hover{transform:scale(1.06)!important;box-shadow:var(--clay-sm), 0 0 8px rgba(255,140,66,0.1)!important;}
+[data-clay="pill"]:active{transform:scale(0.94)!important;}
+
+/* GLOBAL INTERACTIVE RIPPLE for all clay elements on touch */
+@media (hover:none){
+  [data-clay]:active{animation:tapBounce 0.3s ease!important;}
+}
+
 /* Animations */
 @keyframes fadeIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}} @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @keyframes splashPop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
@@ -4570,7 +4836,7 @@ button:active{transform:scale(0.97)!important;box-shadow:var(--clay-pressed)!imp
 @keyframes tipW{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
 @keyframes readyP{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
 @keyframes gridPop{0%{transform:scale(0) rotate(-5deg);opacity:0}60%{transform:scale(1.05) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
-@keyframes clayPop{0%{transform:scale(0) rotate(-3deg);opacity:0;box-shadow:none}50%{transform:scale(1.06) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1;box-shadow:var(--clay-shadow)}}
+@keyframes clayPop{0%{transform:scale(0) rotate(-3deg);opacity:0}50%{transform:scale(1.06) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
 @keyframes cardFloat{0%,100%{transform:translateY(0)}25%{transform:translateY(-4px)}75%{transform:translateY(-6px)}}
 @keyframes cardBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
 @keyframes numBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.06)}}
