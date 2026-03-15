@@ -3221,7 +3221,7 @@ export default function App(){
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
   const showNav=["home","learn","quizzone","phonics","stories","rewards","settings"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
-  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,display:"flex",background:"#fff",borderTop:"2px solid #E5E5E5",zIndex:90,fontFamily:"'Fredoka',sans-serif"}}>
+  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,display:"flex",background:"#fff",borderTop:"1px solid #EDE5DC",zIndex:90,fontFamily:"'Fredoka',sans-serif",boxShadow:"0 -2px 12px rgba(0,0,0,.05)"}}>
     {[
       {id:"home",icon:"🏠",label:"Home"},
       {id:"learn",icon:"📚",label:"Learn"},
@@ -3231,79 +3231,66 @@ export default function App(){
     ].map(t=><button key={t.id} onClick={()=>{stop();if(t.id==="home")goHome();else{movePandaTo("bottomRight");rec.warmUp();setTeacherMood("star");setScr(t.id);}}} style={{
       flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,
       padding:"8px 4px 10px",border:"none",cursor:"pointer",
-      background:scr===t.id?"#DDF4FF":"#fff",
-      borderTop:scr===t.id?"3px solid #1CB0F6":"3px solid transparent",
+      background:scr===t.id?"#FFF5EB":"#fff",
+      borderTop:scr===t.id?"3px solid #FF8C42":"3px solid transparent",
       transition:"all 0.2s"
     }}>
       <span style={{fontSize:22,filter:scr===t.id?"none":"grayscale(0.5) opacity(0.5)"}}>{t.icon}</span>
-      <span style={{fontSize:10,fontWeight:700,color:scr===t.id?"#1CB0F6":"#AFAFAF"}}>{t.label}</span>
+      <span style={{fontSize:10,fontWeight:700,color:scr===t.id?"#FF8C42":"#8E8CA3"}}>{t.label}</span>
     </button>)}
   </div>:null;
 
-  if(scr==="home")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
+  if(scr==="home")return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflow:"hidden",background:"#FFFBF5",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
-    {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#58CC02"}}>{ptAnim}</div>}
+    {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
     {/* ═══ TOP BAR ═══ */}
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 16px",flexShrink:0,background:"#fff",borderBottom:"2px solid #E5E5E5"}}>
-      <div style={{display:"flex",alignItems:"center",gap:10}}>
-        <div style={{width:42,height:42,borderRadius:"50%",background:"linear-gradient(135deg,#58CC02,#89E219)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,border:"3px solid #46A302",boxShadow:"0 2px 8px rgba(88,204,2,.3)"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",flexShrink:0,background:"linear-gradient(135deg,#FF8C42,#FFB066)",borderRadius:"0 0 24px 24px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <div style={{width:48,height:48,borderRadius:"50%",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"0 2px 8px rgba(0,0,0,.15)"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
         <div>
-          <div style={{color:"#4B4B4B",fontWeight:800,fontSize:17,lineHeight:1}}>{prof?.name||"Buddy"}</div>
-          <div style={{color:"#AFAFAF",fontSize:11,fontWeight:600}}>Age {prof?.age||4}</div>
+          <div style={{color:"#fff",fontWeight:800,fontSize:22,lineHeight:1,textShadow:"0 1px 3px rgba(0,0,0,.1)"}}>{prof?.name||"Buddy"}</div>
+          <div style={{color:"rgba(255,255,255,.85)",fontSize:13,fontWeight:600}}>Age {prof?.age||4}</div>
         </div>
       </div>
-      <div style={{display:"flex",alignItems:"center",gap:6}}>
-        <div style={{display:"flex",alignItems:"center",gap:3,padding:"5px 10px",borderRadius:12,border:"2px solid #E5E5E5",background:"#fff"}}>
-          <span style={{fontSize:14}}>🔥</span>
-          <span style={{color:"#FF9600",fontWeight:800,fontSize:14}}>{prof?.totalEarned?Math.min(99,Math.floor(prof.totalEarned/10)):0}</span>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:3,padding:"5px 10px",borderRadius:12,border:"2px solid #E5E5E5",background:"#fff"}}>
-          <span style={{fontSize:14}}>💎</span>
-          <span style={{color:"#1CB0F6",fontWeight:800,fontSize:14}}>{prof?.points||0}</span>
+      <div style={{display:"flex",alignItems:"center",gap:8}}>
+        <div style={{padding:"6px 12px",borderRadius:14,background:"rgba(255,255,255,.25)",display:"flex",alignItems:"center",gap:4}}>
+          <span style={{fontSize:16}}>⭐</span>
+          <span style={{color:"#fff",fontWeight:800,fontSize:16}}>{prof?.points||0}</span>
         </div>
       </div>
     </div>
 
-    {/* ═══ LEARNING PATH ═══ */}
-    <div id="home-tiles" style={{flex:1,overflowY:"auto",overflowX:"hidden",background:"#fff",padding:"20px 24px 100px",position:"relative"}}>
-      {/* Connecting line */}
-      <div style={{position:"absolute",left:"50%",top:30,bottom:100,width:4,background:"#E5E5E5",borderRadius:2,transform:"translateX(-50%)",zIndex:0}}/>
+    {/* ═══ GREETING ═══ */}
+    <div style={{padding:"14px 18px 8px",textAlign:"center"}}>
+      <h2 style={{fontSize:22,fontWeight:800,color:"#2D2B3D",margin:0}}>What shall we learn? 🎯</h2>
+    </div>
 
-      {[
-        {id:"learn",icon:"📚",title:"Learn",sub:"Numbers, ABC, Shapes & Colors",color:"#58CC02",border:"#46A302",prog:Math.round((getProgress("numbers")+getProgress("shapes")+getProgress("colors"))/3)},
-        {id:"phonics",icon:"🔊",title:"Phonics",sub:"800+ Words & Sounds",color:"#CE82FF",border:"#A855F7",prog:getProgress("phonics")},
-        {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Numbers, Math, Letters & Writing",color:"#1CB0F6",border:"#1899D6",prog:0},
-        {id:"stories",icon:"📖",title:"Stories",sub:"Read & Answer Questions",color:"#FF9600",border:"#E68A00",prog:0},
-        {id:"rewards",icon:"🎁",title:"Rewards",sub:`${prof?.points||0} gems to spend!`,color:"#FF4B4B",border:"#EA2B2B",prog:0},
-      ].map((m,i)=>{
-        const isLeft=i%2===0;
-        return<div key={m.id} style={{display:"flex",justifyContent:isLeft?"flex-start":"flex-end",position:"relative",zIndex:1,marginBottom:8}}>
-          {/* Node circle on the center line */}
-          <div style={{position:"absolute",left:"50%",top:20,transform:"translateX(-50%)",width:20,height:20,borderRadius:"50%",background:m.color,border:`3px solid ${m.border}`,zIndex:2}}/>
-
-          <button data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
-            width:"42%",padding:"16px 14px",borderRadius:16,cursor:"pointer",
-            fontFamily:"'Fredoka',sans-serif",background:m.color,
-            border:"none",borderBottom:`4px solid ${m.border}`,
-            animation:`gridPop 0.3s ease ${i*0.06}s both`,
-            textAlign:"left",position:"relative"
-          }}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{fontSize:28,filter:"drop-shadow(0 1px 2px rgba(0,0,0,.15))"}}>{m.icon}</span>
-              <div>
-                <div style={{color:"#fff",fontWeight:800,fontSize:15,textShadow:"0 1px 2px rgba(0,0,0,.1)"}}>{m.title}</div>
-                <div style={{color:"rgba(255,255,255,.8)",fontSize:10,fontWeight:500,marginTop:1}}>{m.sub}</div>
-              </div>
-            </div>
-            {m.prog>0&&<div style={{marginTop:8,height:6,background:"rgba(0,0,0,.15)",borderRadius:3,overflow:"hidden"}}>
-              <div style={{height:"100%",background:"#fff",borderRadius:3,width:`${m.prog}%`}}/>
-            </div>}
-          </button>
-        </div>;})}
+    {/* ═══ TILES GRID ═══ */}
+    <div id="home-tiles" style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"4px 16px 100px"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14}}>
+        {[
+          {id:"learn",icon:"📚",title:"Learn",sub:"Numbers, ABC, Shapes & Colors",bg:"linear-gradient(135deg,#6366F1,#818CF8)",shadow:"rgba(99,102,241,.25)"},
+          {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",bg:"linear-gradient(135deg,#34D399,#6EE7B7)",shadow:"rgba(52,211,153,.25)"},
+          {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Test Your Skills!",bg:"linear-gradient(135deg,#FF8C42,#FFB066)",shadow:"rgba(255,140,66,.25)"},
+          {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",bg:"linear-gradient(135deg,#3B82F6,#60A5FA)",shadow:"rgba(59,130,246,.25)"},
+          {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",bg:"linear-gradient(135deg,#F59E0B,#FBBF24)",shadow:"rgba(245,158,11,.25)"},
+          {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",bg:"linear-gradient(135deg,#8B5CF6,#A78BFA)",shadow:"rgba(139,92,246,.25)"},
+        ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
+          display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",
+          padding:"22px 12px",borderRadius:22,border:"none",cursor:"pointer",
+          fontFamily:"'Fredoka',sans-serif",background:m.bg,
+          boxShadow:`0 6px 20px ${m.shadow}`,
+          animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,
+          textAlign:"center",minHeight:120
+        }}>
+          <span style={{fontSize:36,filter:"drop-shadow(0 2px 4px rgba(0,0,0,.1))",marginBottom:6}}>{m.icon}</span>
+          <div style={{color:"#fff",fontWeight:800,fontSize:18,textShadow:"0 1px 3px rgba(0,0,0,.1)"}}>{m.title}</div>
+          <div style={{color:"rgba(255,255,255,.85)",fontSize:11,fontWeight:600,marginTop:3,lineHeight:1.2}}>{m.sub}</div>
+        </button>)}
+      </div>
     </div>
     {BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
-
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
   if((scr==="numbers"||scr==="learn")&&selNum){const w=NW[selNum];const scene=getScene(selNum);const color=nClr(selNum);const phs=NPH[selNum];return<div style={{fontFamily:"'Fredoka',sans-serif",height:"100dvh",overflowY:"auto",overflowX:"hidden",background:"#fff",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"'Fredoka',sans-serif",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={`Number ${selNum}`} onBack={()=>{stop();pRef.current=false;setSelNum(null);setNStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
