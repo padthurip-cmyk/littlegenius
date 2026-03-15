@@ -3269,23 +3269,26 @@ export default function App(){
     <div id="home-tiles" style={{flex:1,overflowY:"auto",overflowX:"hidden",padding:"4px 16px 100px"}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14}}>
         {[
-          {id:"learn",icon:"📚",title:"Learn",sub:"Numbers, ABC, Shapes & Colors",bg:"linear-gradient(135deg,#FF8C42,#FFB066)",shadow:"rgba(99,102,241,.25)"},
-          {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",bg:"linear-gradient(135deg,#34D399,#6EE7B7)",shadow:"rgba(52,211,153,.25)"},
-          {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Test Your Skills!",bg:"linear-gradient(135deg,#FF8C42,#FFB066)",shadow:"rgba(255,140,66,.25)"},
-          {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",bg:"linear-gradient(135deg,#3B82F6,#60A5FA)",shadow:"rgba(59,130,246,.25)"},
-          {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",bg:"linear-gradient(135deg,#F59E0B,#FBBF24)",shadow:"rgba(245,158,11,.25)"},
-          {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",bg:"linear-gradient(135deg,#FF8C42,#FFB066)",shadow:"rgba(139,92,246,.25)"},
+          {id:"learn",icon:"📚",title:"Learn",sub:"Numbers, ABC, Shapes & Colors",accent:"#FF8C42"},
+          {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",accent:"#34D399"},
+          {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Test Your Skills!",accent:"#3B82F6"},
+          {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",accent:"#F59E0B"},
+          {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",accent:"#FF6B6B"},
+          {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",accent:"#8B5CF6"},
         ].map((m,i)=><button key={m.id} data-tile={m.id} onClick={()=>{stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");setScr(m.id);}} style={{
-          display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",
-          padding:"22px 12px",borderRadius:22,border:"none",cursor:"pointer",
-          fontFamily:"'Fredoka',sans-serif",background:m.bg,
-          boxShadow:`0 6px 20px ${m.shadow}`,
+          display:"flex",alignItems:"center",gap:14,
+          padding:"18px 16px",borderRadius:18,cursor:"pointer",
+          fontFamily:"'Fredoka',sans-serif",background:"#fff",
+          border:`3px solid ${m.accent}`,
+          boxShadow:"0 2px 10px rgba(0,0,0,.06)",
           animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,
-          textAlign:"center",minHeight:120
+          textAlign:"left"
         }}>
-          <span style={{fontSize:36,filter:"drop-shadow(0 2px 4px rgba(0,0,0,.1))",marginBottom:6}}>{m.icon}</span>
-          <div style={{color:"#fff",fontWeight:800,fontSize:18,textShadow:"0 1px 3px rgba(0,0,0,.1)"}}>{m.title}</div>
-          <div style={{color:"rgba(255,255,255,.85)",fontSize:11,fontWeight:600,marginTop:3,lineHeight:1.2}}>{m.sub}</div>
+          <span style={{fontSize:32,flexShrink:0}}>{m.icon}</span>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{color:"#2D2B3D",fontWeight:900,fontSize:18}}>{m.title}</div>
+            <div style={{color:"#8E8CA3",fontSize:11,fontWeight:600,marginTop:2}}>{m.sub}</div>
+          </div>
         </button>)}
       </div>
     </div>
