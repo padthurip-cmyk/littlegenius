@@ -1408,7 +1408,7 @@ const useSpeech=()=>{const[v,setV]=useState([]);
     u.onerror=()=>{r();};
     // ALWAYS cancel previous speech — no exceptions
     speechSynthesis.cancel();
-    setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){r();}},180);
+    setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){r();}},250);
   }),[getV]);
 
   // Google Cloud TTS — sweet female voice, consistent across all devices
@@ -2023,12 +2023,12 @@ export default function App(){
     guideTourRef.current=true;
     movePandaTo("bottomRight");
     const tiles=[
-      {id:"learn",color:"#FF8C42",msg:"Learn! Numbers, letters, shapes and colors!"},
-      {id:"phonics",color:"#34D399",msg:"Phonics! Learn to read over 500 words!"},
-      {id:"quizzone",color:"#FF8C42",msg:"Quiz Zone! Test what you've learned!"},
-      {id:"stories",color:"#3B82F6",msg:"Stories! Read fun tales and answer questions!"},
-      {id:"rewards",color:"#F59E0B",msg:"Rewards! Spend your points on cool prizes!"},
-      {id:"settings",color:"#64748B",msg:"And Settings! You can change your look here!"},
+      {id:"learn",msg:"Learn! Numbers, letters, shapes and colors!"},
+      {id:"phonics",msg:"Phonics! Learn to read over 500 words!"},
+      {id:"quizzone",msg:"Quiz Zone! Test what you've learned!"},
+      {id:"stories",msg:"Stories! Read fun tales and answer questions!"},
+      {id:"rewards",msg:"Rewards! Spend your points on cool prizes!"},
+      {id:"settings",msg:"And Settings! You can change your look here!"},
     ];
     // Dark overlay — tap to skip
     const backdrop=document.createElement("div");
@@ -2057,23 +2057,23 @@ export default function App(){
       const el=document.querySelector('[data-tile="'+tile.id+'"]');
       if(!el)continue;
       el.scrollIntoView({behavior:"smooth",block:"center"});
-      await wait(300);
+      await wait(400);
       if(!guideTourRef.current)break;
-      // Scale up real tile — grid parent is above overlay so this works
       el.style.transition="transform 0.4s cubic-bezier(0.34,1.56,0.64,1), outline 0.3s";
       el.style.zIndex="10";
       el.style.overflow="visible";
-      el.style.transform="scale(1.15)";
-      el.style.outline=`4px solid ${tile.color}`;
+      el.style.transform="scale(1.12)";
+      el.style.outline="4px solid #FF8C42";
       el.style.outlineOffset="3px";
       setTeacherMood("excited");
+      stop(); // cancel any lingering speech
+      await wait(100);
       await speak(tile.msg,{rate:0.85,pitch:1.0});
       if(!guideTourRef.current)break;
-      await wait(200);
-      // Shrink back
+      await wait(300);
       el.style.transform="scale(1)";
       el.style.outline="";el.style.outlineOffset="";
-      await wait(400);
+      await wait(500);
       el.style.zIndex="";el.style.transition="";el.style.overflow="";
     }
     if(guideTourRef.current){
@@ -3672,7 +3672,7 @@ export default function App(){
           return<button key={"m"+l+matchIdx+matchMode} onClick={()=>onMatchTap(l)} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
             borderColor:isWrong?"#F87171":isCorrect?"#4ADE80":"#FF8C42",
-            background:isWrong?"#FEF2F2":isCorrect?"#ECFDF5":"#fff",
+            background:isWrong?"#FEF2F2":isCorrect?"#FFF5EB":"#fff",
             fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
             color:isWrong?"#F87171":isCorrect?"#4ADE80":"#2D2B3D",fontFamily:"'Fredoka',sans-serif",
             transform:isCorrect?"scale(1.2)":isWrong?"scale(0.9)":"scale(1)",
@@ -3837,7 +3837,7 @@ export default function App(){
             return<button key={i} onClick={(e)=>{onMathTap(c);}} style={{
               padding:"16px 8px",borderRadius:16,border:"3px solid",cursor:"pointer",
               borderColor:isRight?"#60B246":isWrong?"#E23744":"#E8E8E8",
-              background:isRight?"#ECFDF5":isWrong?"#FEF2F2":"#fff",
+              background:isRight?"#FFF5EB":isWrong?"#FEF2F2":"#fff",
               fontSize:26,fontWeight:900,fontFamily:"'Fredoka',sans-serif",
               color:isRight?"#60B246":isWrong?"#E23744":"#1C1C2B",
               transform:isRight?"scale(1.05)":isWrong?"scale(0.95)":"scale(1)",
@@ -3870,7 +3870,7 @@ export default function App(){
             <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
           </div>
         </div>
-        {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#ECFDF5":writeScore>=50?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
+        {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#FFF5EB":writeScore>=50?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
           <div style={{flex:1,height:8,borderRadius:4,background:"#E8E8E8",overflow:"hidden"}}><div style={{height:"100%",borderRadius:4,transition:"width 0.5s",background:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744",width:`${writeScore}%`}}/></div>
           <span style={{fontSize:12,fontWeight:800,color:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744"}}>{writeScore}%</span>
           <span style={{fontSize:11,fontWeight:700,color:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744"}}>{writeScore>=85?"⭐ Perfect!":writeScore>=50?"✅ Pass!":"Keep tracing!"}</span>
@@ -3920,10 +3920,10 @@ export default function App(){
         {phStep==="idle"&&<>
           <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
             <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
-              {phModes.spelling&&<span style={{fontSize:10,fontWeight:700,background:"#ECFDF5",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔤 Spelling</span>}
-              {phModes.phonics&&<span style={{fontSize:10,fontWeight:700,background:"#ECFDF5",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔡 Sounds</span>}
-              {phModes.sentence&&<span style={{fontSize:10,fontWeight:700,background:"#ECFDF5",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>💬 Sentence</span>}
-              {phModes.speak&&<span style={{fontSize:10,fontWeight:700,background:"#ECFDF5",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🎤 Speak</span>}
+              {phModes.spelling&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔤 Spelling</span>}
+              {phModes.phonics&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔡 Sounds</span>}
+              {phModes.sentence&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>💬 Sentence</span>}
+              {phModes.speak&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🎤 Speak</span>}
             </div>
             <button onClick={()=>playPh(phW)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"'Fredoka',sans-serif",cursor:"pointer",background:`linear-gradient(135deg,${cc},${cc}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button>
           </div>
@@ -4020,7 +4020,7 @@ export default function App(){
       }}><span style={{fontSize:14}}>{m.icon}</span>{m.label}{phModes[m.key]?<span style={{fontSize:10}}>✓</span>:null}</button>)}
       </div>
     </div>
-    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF0E0",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>{setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?d.color:"#eee",background:phCat===k?d.color:"rgba(255,255,255,0.06)",color:phCat===k?"#fff":"#555",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?cc+"44":"#eee"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#FFF0E0",borderBottom:"1px solid #EFEFEF"}}>{Object.entries(WCATS).map(([k,d])=><button key={k} onClick={()=>{setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 14px",borderRadius:18,border:"2px solid",borderColor:phCat===k?"#FF8C42":"#EDE5DC",background:phCat===k?"#FF8C42":"#fff",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",flexShrink:0,transition:"all 0.3s"}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:`2px solid ${done?"#FF8C4244":"#EDE5DC"}`,background:done?`linear-gradient(135deg,${cc}05,${cc}10)`:"#fff",cursor:"pointer",fontFamily:"'Fredoka',sans-serif",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,boxShadow:"0 2px 8px rgba(0,0,0,.08)"}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none"}}>{w.img}</span><span style={{fontFamily:"'Fredoka',sans-serif",fontSize:18,fontWeight:700,marginTop:4}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#FFF0E0",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:105,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
@@ -4199,7 +4199,7 @@ export default function App(){
           return<button key={"m"+l+matchIdx+matchMode} onClick={()=>onMatchTap(l)} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
             borderColor:isWrong?"#F87171":isCorrect?"#4ADE80":"#FF8C42",
-            background:isWrong?"#FEF2F2":isCorrect?"#ECFDF5":"#fff",
+            background:isWrong?"#FEF2F2":isCorrect?"#FFF5EB":"#fff",
             fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
             color:isWrong?"#F87171":isCorrect?"#4ADE80":"#2D2B3D",
             fontFamily:"'Fredoka',sans-serif",
@@ -4327,7 +4327,7 @@ export default function App(){
             <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
           </div>
         </div>
-        {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#ECFDF5":writeScore>=50?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
+        {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#FFF5EB":writeScore>=50?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
           <div style={{flex:1,height:8,borderRadius:4,background:"#E8E8E8",overflow:"hidden"}}>
             <div style={{height:"100%",borderRadius:4,transition:"width 0.5s",background:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744",width:`${writeScore}%`}}/>
           </div>
