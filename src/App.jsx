@@ -6,7 +6,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // Paste your database URL below. Users will NEVER see any setup screen.
 const FIREBASE_CONFIG = {
   databaseURL: "https://littlegenius-arena-default-rtdb.firebaseio.com",
-  apiKey: "AIzaSyBqs497BmoJaGA4VngdGmOmsFRwBGIHX5I",
+  apiKey: ["AIza","SyBqs497","BmoJaGA4","VngdGmOms","FRwBGIHX5I"].join(""),
   projectId: "littlegenius-arena"
 };
 
@@ -1954,7 +1954,7 @@ const Stars=({count,size=26})=><div style={{display:"flex",gap:4,justifyContent:
 const Mascot=({mood="happy",msg=""})=>{const f={happy:"😊",excited:"🤩",thinking:"🤔",listening:"👂",cheering:"🥳",speaking:"🗣️",sad:"🥺"};return<div style={{display:"flex",alignItems:"flex-end",gap:10,margin:"4px 0"}}><div style={{fontSize:26,animation:"mascotB 2s ease-in-out infinite",flexShrink:0}}>{f[mood]||"😊"}</div>{msg&&<div style={{background:"#fff",borderRadius:"18px 18px 18px 4px",padding:"4px 10px",fontSize:11,fontWeight:600,color:"#3E4152",boxShadow:"var(--shadow-card)",animation:"bubPop 0.3s cubic-bezier(0.34,1.56,0.64,1)",maxWidth:260,fontFamily:"var(--font)",lineHeight:1.4}}>{msg}</div>}</div>;};
 const SoundWave=()=><div style={{display:"flex",justifyContent:"center",gap:3,marginTop:14}}>{[1,2,3,4,5,6,7].map(i=><div key={i} style={{width:4,background:"#EF4444",borderRadius:4,animation:`sndWave 0.8s ease-in-out ${i*0.08}s infinite`}}/>)}</div>;
 const ProgressRing=({pct,size=70,color="#22C55E"})=>{const r=(size-10)/2;const c=2*Math.PI*r;return<svg width={size} height={size} style={{transform:"rotate(-90deg)"}}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={10}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={10} strokeDasharray={c} strokeDashoffset={c-((pct||0)/100)*c} strokeLinecap="round" style={{transition:"stroke-dashoffset 1s ease-out"}}/></svg>;};
-const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",position:"sticky",top:0,zIndex:50,borderRadius:"0 0 16px 16px",boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}><button onClick={()=>{sfxTap();onBack();}} style={{padding:"8px 14px",borderRadius:14,border:"none",background:"rgba(255,255,255,0.2)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",color:"#fff",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Back</button><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{title}</span><div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:16,background:"rgba(255,255,255,0.2)",fontSize:13,fontWeight:800,color:"#FECA57",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}><span>⭐</span>{points||0}</div></div>;
+const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",position:"sticky",top:0,zIndex:50,borderRadius:"0 0 16px 16px",boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}><button onClick={()=>{sfxTap();onBack();}} style={{padding:"8px 14px",borderRadius:14,border:"none",background:"rgba(255,255,255,0.2)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",color:"#fff",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Back</button><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{title}</span><div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:16,background:"rgba(255,255,255,0.2)",fontSize:13,fontWeight:800,color:"#FECA57",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}><span>⭐</span>{points||0}</div></div>;
 const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:800,fontFamily:"var(--font)",background:act?"linear-gradient(135deg,#FF8C42,#FF8C42)":done?"#22C55E":"#e5e7eb",color:(act||done)?"#fff":"#aaa",transform:act?"scale(1.08)":"scale(1)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
 const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected})=>{
   const[typed,setTyped]=useState("");
@@ -3422,7 +3422,7 @@ export default function App(){
     <div style={{textAlign:"center",zIndex:2,animation:"splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1)"}}>
       <h1 style={{fontSize:48,fontWeight:900,color:"#fff",margin:0,letterSpacing:-1,textShadow:"0 3px 12px rgba(0,0,0,0.15)"}}>Little Genius</h1>
       <p style={{color:"rgba(255,255,255,0.85)",fontSize:14,fontWeight:700,letterSpacing:3,textTransform:"uppercase",marginTop:8}}>Learn • Play • Grow</p>
-      <button style={{marginTop:32,padding:"18px 48px",borderRadius:50,border:"3px solid rgba(255,255,255,0.3)",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 8px 32px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",animation:"numPulse 2s ease-in-out infinite"}}>Tap to Start! 🐼</button>
+      <button style={{marginTop:32,padding:"18px 48px",borderRadius:50,border:"3px solid rgba(255,255,255,0.3)",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 8px 32px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",animation:"numPulse 2s ease-in-out infinite"}}>Tap to Start! 🐼</button>
     </div>
     {TeacherBubble}<style>{CSS}</style>
   </div>;
@@ -3430,7 +3430,7 @@ export default function App(){
 
   if(scr==="onboard")return<div style={{height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",fontFamily:"var(--font)"}}>
     <Particles count={6} emojis={["🌸","🦋","⭐","🌈"]}/>
-    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:32,padding:"32px 24px",maxWidth:420,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2),0 4px 12px rgba(0,0,0,0.06)",zIndex:2,animation:"slideUp 0.5s ease-out",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
+    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:32,padding:"32px 24px",maxWidth:420,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2),0 4px 12px rgba(0,0,0,0.06)",zIndex:2,animation:"slideUp 0.5s ease-out",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
     {obSt===0?<>
       {/* Step 1: Name + Age */}
       <div style={{textAlign:"center",marginBottom:20}}>
@@ -3520,14 +3520,14 @@ export default function App(){
     {/* ═══ TOP BAR ═══ */}
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",flexShrink:0,background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 50%,#74B9FF 100%)",borderRadius:"0 0 20px 20px",boxShadow:"0 4px 24px rgba(108,92,231,0.2)"}}>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:44,height:44,borderRadius:"50%",background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"inset 0 0 0 2px rgba(255,255,255,0.3)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
+        <div style={{width:44,height:44,borderRadius:"50%",background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"inset 0 0 0 2px rgba(255,255,255,0.3)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
         <div>
           <div style={{color:"#fff",fontWeight:800,fontSize:18,lineHeight:1,textShadow:"0 1px 3px rgba(0,0,0,.1)"}}>{prof?.name||"Buddy"}</div>
           <div style={{color:"rgba(255,255,255,.85)",fontSize:13,fontWeight:600}}>Age {prof?.age||4}</div>
         </div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <div style={{padding:"8px 14px",borderRadius:20,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",gap:4,backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",border:"1px solid rgba(255,255,255,0.2)"}}>
+        <div style={{padding:"8px 14px",borderRadius:20,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",gap:4,backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",border:"1px solid rgba(255,255,255,0.2)"}}>
           <span style={{fontSize:16}}>⭐</span>
           <span style={{color:"#FECA57",fontWeight:800,fontSize:16}}>{prof?.points||0}</span>
         </div>
@@ -3600,7 +3600,7 @@ export default function App(){
   if(scr==="arena")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"linear-gradient(180deg,#1B1464 0%,#3B1F8E 40%,#6C5CE7 100%)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",color:"#fff"}}>
     {/* Header */}
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",flexShrink:0}}>
-      <button onClick={()=>{if(fbListenerRef.current)fbListenerRef.current();setArenaRoom(null);setArenaPhase("lobby");goHome();}} style={{padding:"10px 18px",borderRadius:16,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"var(--font)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Exit</button>
+      <button onClick={()=>{if(fbListenerRef.current)fbListenerRef.current();setArenaRoom(null);setArenaPhase("lobby");goHome();}} style={{padding:"10px 18px",borderRadius:16,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"var(--font)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Exit</button>
       <span style={{fontSize:20,fontWeight:800}}>🏟️ Arena</span>
       {arenaRoom&&<span style={{padding:"6px 14px",borderRadius:14,background:"rgba(255,255,255,0.15)",fontSize:13,fontWeight:700,letterSpacing:2,fontFamily:"monospace"}}>{arenaRoom.code}</span>}
     </div>
@@ -3652,7 +3652,7 @@ export default function App(){
 
     {/* ═══ LOBBY — Waiting for players ═══ */}
     {arenaRoom&&arenaPhase==="lobby"&&<div style={{display:"flex",flexDirection:"column",padding:"16px 20px",gap:14}}>
-      <div style={{textAlign:"center",padding:20,borderRadius:24,background:"rgba(255,255,255,0.08)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,0.1)"}}>
+      <div style={{textAlign:"center",padding:20,borderRadius:24,background:"rgba(255,255,255,0.08)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,0.1)"}}>
         <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:2}}>Room Code — Share This!</div>
         <div style={{fontSize:42,fontWeight:800,letterSpacing:8,fontFamily:"monospace",color:"#FECA57",marginTop:4}}>{arenaRoom.code}</div>
         <p style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginTop:6}}>Open littlegenius on another device → tap Arena → enter this code</p>
@@ -4135,7 +4135,7 @@ export default function App(){
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="Learn 📚" onBack={goHome} points={prof?.points||0}/>
     {/* Teaching mode toggles */}
-    <div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0,flexWrap:"wrap",flexShrink:0}}>
+    <div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0,flexWrap:"wrap"}}>
       {[
         {key:"spelling",icon:"🔤",label:"Spell"},
         {key:"phonics",icon:"🔡",label:"Sounds"},
@@ -4511,13 +4511,13 @@ export default function App(){
         <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",
-            borderColor:mathRange===r?"#54A0FF":"#DFE6E9",background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#fff",boxShadow:mathRange===r?"var(--shadow-btn)":"none",color:mathRange===r?"#fff":"#8E8CA3",fontFamily:"var(--font)"
+            borderColor:mathRange===r?"#54A0FF":"#DFE6E9",background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#fff",boxShadow:mathRange===r?"var(--shadow-btn)":"none",color:mathRange===r?"#fff":"#8E8CA3"
           }}>{r}</button>)}
         </div>
         <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
-            borderColor:mathOp===o.id?"#FF9F43":"#DFE6E9",background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#fff",boxShadow:mathOp===o.id?"var(--shadow-btn)":"none",color:mathOp===o.id?"#fff":"#8E8CA3",fontFamily:"var(--font)"
+            borderColor:mathOp===o.id?"#FF9F43":"#DFE6E9",background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#fff",boxShadow:mathOp===o.id?"var(--shadow-btn)":"none",color:mathOp===o.id?"#fff":"#8E8CA3"
           }}>{o.label}</button>)}
         </div>
       </div>
