@@ -1773,7 +1773,7 @@ const BellaChar=({mood,size=110,speaking=false,joyMode=false,shake="",mouthOpen=
 
   return<svg width={s} height={s} viewBox="0 0 80 90" style={{overflow:"visible"}}>
     <defs><style>{`
-      @keyframes oFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+      @keyframes oFloat{0%{transform:translateY(0) rotate(0deg)}15%{transform:translateY(-5px) rotate(-2deg)}30%{transform:translateY(-2px) rotate(1deg)}50%{transform:translateY(-6px) rotate(-1deg)}70%{transform:translateY(-3px) rotate(2deg)}85%{transform:translateY(-5px) rotate(-1deg)}100%{transform:translateY(0) rotate(0deg)}}
       @keyframes oBlink{0%,90%,94%,100%{ry:5}92%{ry:0.5}}
       @keyframes oWave{0%,100%{transform:rotate(0deg)}20%{transform:rotate(-20deg)}40%{transform:rotate(15deg)}60%{transform:rotate(-12deg)}80%{transform:rotate(8deg)}}
       @keyframes oEarTuft{0%,100%{transform:rotate(0deg)}50%{transform:rotate(5deg)}}
@@ -1820,12 +1820,12 @@ const BellaChar=({mood,size=110,speaking=false,joyMode=false,shake="",mouthOpen=
         <circle cx="43" cy="77" r="1.5" fill="#FF9F43"/><circle cx="47" cy="76" r="1.5" fill="#FF9F43"/><circle cx="51" cy="77" r="1.5" fill="#FF9F43"/>
       </g>
       {/* Left wing */}
-      <g style={{transformOrigin:"22px 52px",animation:W||C?"oWingFlap .5s ease-in-out infinite":speaking?"oWingFlap 2s ease-in-out infinite":"none"}}>
+      <g style={{transformOrigin:"22px 52px",animation:W||C?"oWingFlap .4s ease-in-out infinite":speaking?"oWingFlap 1.5s ease-in-out infinite":"oWingFlap 3s ease-in-out infinite"}}>
         <ellipse cx={T?28:22} cy={T?42:55} rx="8" ry="13" fill="#A0704C" transform={T?"rotate(40,28,42)":"rotate(15,22,55)"}/>
         <ellipse cx={T?28:22} cy={T?42:55} rx="5" ry="9" fill="#8B5E3C" transform={T?"rotate(40,28,42)":"rotate(15,22,55)"}/>
       </g>
       {/* Right wing */}
-      <g style={{transformOrigin:"58px 52px",animation:W?"oWave 1.2s ease-in-out infinite":C?"oWingFlap .5s ease-in-out infinite":"none"}}>
+      <g style={{transformOrigin:"58px 52px",animation:W?"oWave 1.2s ease-in-out infinite":C?"oWingFlap .4s ease-in-out infinite":"oWingFlap 3s ease-in-out 0.5s infinite"}}>
         <ellipse cx={W?60:58} cy={W?40:55} rx="8" ry="13" fill="#A0704C" transform={W?"rotate(-30,60,40)":"rotate(-15,58,55)"}/>
         <ellipse cx={W?60:58} cy={W?40:55} rx="5" ry="9" fill="#8B5E3C" transform={W?"rotate(-30,60,40)":"rotate(-15,58,55)"}/>
       </g>
@@ -1863,9 +1863,9 @@ const BellaChar=({mood,size=110,speaking=false,joyMode=false,shake="",mouthOpen=
         {/* Mouth — below beak, opens when speaking */}
         {speaking?
           <ellipse cx="40" cy={40+mo*0.5} rx={2+mo*1.5} ry={0.5+mo*2} fill={mo>0.3?"#D93B4B":"none"} stroke="#D93B4B" strokeWidth={mo>0.3?".4":".8"} style={{transition:"rx 0.12s ease, ry 0.12s ease"}}/>:
-          (E||S)?<path d="M 37,40 Q 40,43 43,40" fill="none" stroke="#D93B4B" strokeWidth=".8" strokeLinecap="round"/>:
+          (E||S)?<path d="M 36,39 Q 40,44 44,39" fill="#D93B4B" stroke="#C0313F" strokeWidth=".4" strokeLinecap="round"/>:
           SAD?<path d="M 38,41 Q 40,38 42,41" fill="none" stroke="#888" strokeWidth=".8" strokeLinecap="round"/>:
-          null
+          <path d="M 37,39 Q 40,42 43,39" fill="none" stroke="#C0313F" strokeWidth=".8" strokeLinecap="round"/>
         }
         {/* Blush */}
         <ellipse cx="23" cy="33" rx="3" ry="1.8" fill="#FFB4B4" opacity=".35" style={{animation:"oBlush 3s ease-in-out infinite"}}/>
@@ -3103,6 +3103,7 @@ export default function App(){
     setMathChoices(shuffle([...choices]));
     setMathFb(null);setMathAnswer(null);
     const opWord=op==="+"?"plus":op==="-"?"minus":"times";
+    const opName=op==="+"?"addition":op==="-"?"subtraction":"multiplication";
     speak(`What is ${a} ${opWord} ${b}?`,{rate:0.8,pitch:1.0});
   };
   const onMathTap=async(choice)=>{
@@ -3283,9 +3284,9 @@ export default function App(){
     const shuffled=[...opts].sort(()=>Math.random()-0.5);
     setQuizNum(n);setQuizOpts(shuffled);setQuizFb(null);
     movePandaTo("bottomRight");
-    setTimeout(()=>speak(`${NW[n]||n}`,{rate:0.75,pitch:1.0}),300);
+    setTimeout(()=>speak(`Find number ${NW[n]||n}!`,{rate:0.8,pitch:1.0}),300);
   };
-  const repeatQuiz=()=>{if(quizNum)speak(`${NW[quizNum]||quizNum}`,{rate:0.75,pitch:1.0});};
+  const repeatQuiz=()=>{if(quizNum)speak(`Find number ${NW[quizNum]||quizNum}!`,{rate:0.8,pitch:1.0});};
   const onQuizTap=async(tapped)=>{
     if(quizFb)return;
     setQuizTotal(t=>t+1);
@@ -3293,7 +3294,7 @@ export default function App(){
       setQuizFb({ok:true,n:tapped});setQuizScore(s=>s+1);setQuizStreak(s=>s+1);
       headYes();
       if(!isDone("quiz",quizNum))awardPoints(3,"quiz",quizNum);
-      const cheers=["Yes!","Awesome!","Yay!","Right!","Super!"];
+      const cheers=["Yes! That's "+NW[quizNum]+"!","Awesome! "+quizNum+" is correct!","Yay! You found "+NW[quizNum]+"!","Right! Great job!","Super! That's the one!"];
       speak(cheers[Math.floor(Math.random()*cheers.length)],{rate:1.0,pitch:1.1});
       boom();
       await wait(1200);
@@ -3306,7 +3307,7 @@ export default function App(){
       await wait(1000);
       setQuizFb(null);
       movePandaTo("bottomRight");
-      speak(`${NW[quizNum]||quizNum}`,{rate:0.75,pitch:1.0});
+      speak(`Find number ${NW[quizNum]||quizNum}!`,{rate:0.8,pitch:1.0});
     }
   };
   // Drawing pad
@@ -3546,11 +3547,10 @@ export default function App(){
   // ═══ SCREENS ═══
 
   if(scr==="splash")return<div onClick={async()=>{
-    rec.warmUp();
     // Speak welcome and WAIT for it to finish
-    await speak("Welcome to Little Genius!",{rate:0.85,pitch:1.0});
     welcomeSpoken.current=true;
-    await wait(300);
+    speak("Welcome to Little Genius!",{rate:0.9,pitch:1.1});
+    await wait(1500);
     stop();
     setOllieSize(95);
     if(prof){
@@ -3580,7 +3580,7 @@ export default function App(){
 
   if(scr==="onboard")return<div style={{height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",fontFamily:"var(--font)"}}>
     <Particles count={6} emojis={["🌸","🦋","⭐","🌈"]}/>
-    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:32,padding:"32px 24px",maxWidth:420,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2),0 4px 12px rgba(0,0,0,0.06)",zIndex:2,animation:"slideUp 0.5s ease-out",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
+    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:28,padding:"24px 18px",maxWidth:400,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2),0 4px 12px rgba(0,0,0,0.06)",zIndex:2,animation:"slideUp 0.5s ease-out",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
     {obSt===0?<>
       {/* Step 1: Name + Age */}
       <div style={{textAlign:"center",marginBottom:20}}>
@@ -3610,9 +3610,9 @@ export default function App(){
         <p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,marginTop:4}}>Choose your character</p>
       </div>
       <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:6}}>I am a...</label>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,marginBottom:20}}>
-        {[{g:"boy",e:"👦",c:"#FF8C42"},{g:"girl",e:"👧",c:"#EC4899"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{
-          padding:20,borderRadius:20,border:"3px solid",
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
+        {[{g:"boy",e:"👦",c:"#6C5CE7"},{g:"girl",e:"👧",c:"#E84393"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{
+          padding:16,borderRadius:18,border:"3px solid",
           borderColor:obG===x.g?x.c:"#E8E8E8",
           background:obG===x.g?(x.g==="boy"?"#FFF5EB":"#FDF2F8"):"#fff",
           cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:8,transform:obG===x.g?"scale(1.04)":"scale(1)",
@@ -3623,15 +3623,16 @@ export default function App(){
         </button>)}
       </div>
       <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:10}}>Pick an avatar</label>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:"100%",overflow:"hidden"}}>
         {AVATARS[obG].map((av,i)=><button key={i} onClick={()=>setObAv(i)} style={{
-          padding:14,borderRadius:18,border:"3px solid",
-          borderColor:obAv===i?"#FF8C42":"#E8E8E8",
-          background:obAv===i?"#FFF5EB":"#F8F9FB",
-          fontSize:34,cursor:"pointer",
-          transform:obAv===i?"scale(1.12)":"scale(1)",
+          padding:10,borderRadius:16,border:"3px solid",
+          borderColor:obAv===i?"#6C5CE7":"#E8E8E8",
+          background:obAv===i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F8F9FB",
+          fontSize:28,cursor:"pointer",
+          transform:obAv===i?"scale(1.05)":"scale(1)",
           display:"flex",alignItems:"center",justifyContent:"center",
-          boxShadow:obAv===i?"0 4px 12px rgba(252,128,25,.2)":"none"
+          boxShadow:obAv===i?"0 4px 12px rgba(108,92,231,.2)":"none",
+          minWidth:0,overflow:"hidden"
         }}>{av}</button>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
@@ -3647,18 +3648,19 @@ export default function App(){
         <p style={{fontSize:13,color:"#8E8CA3",fontWeight:600}}>I can show you around the app!</p>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
-        <button onClick={()=>{sfxTap();rec.warmUp();
+        <button onClick={()=>{sfxTap();
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
-          save(newP);speak("Let me show you around!",{rate:0.85,pitch:1.0});setTeacherMood("star");
-          if(!quizAnswers){setScr("questionnaire");setQStep(0);setQAnswers([]);}else{setScr("home");setTimeout(()=>doHomeTour(),1500);}
+          save(newP);speak("Let's get to know you first!",{rate:0.85,pitch:1.0});setTeacherMood("star");
+          setScr("questionnaire");setQStep(0);setQAnswers([]);
+          localStorage.setItem("lg_want_tour","yes");
         }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(0,210,160,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
           <span style={{fontSize:32}}>👍</span>
           Yes, show me!
         </button>
-        <button onClick={()=>{sfxTap();rec.warmUp();
+        <button onClick={()=>{sfxTap();
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
-          save(newP);speak("Alright, let's jump right in!",{rate:0.85,pitch:1.0});setTeacherMood("star");
-          if(!quizAnswers){setScr("questionnaire");setQStep(0);setQAnswers([]);}else{setScr("home");}
+          save(newP);speak("Let's go!",{rate:0.85,pitch:1.0});setTeacherMood("star");
+          setScr("home");
         }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(255,159,67,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
           <span style={{fontSize:32}}>🚀</span>
           Skip, let's go!
@@ -3679,7 +3681,7 @@ export default function App(){
       {id:"quizzone",icon:"🎯",label:"Quiz"},
       {id:"stories",icon:"📖",label:"Stories"},
       {id:"settings",icon:"👤",label:"Profile"},
-    ].map(t=><button key={t.id} onClick={()=>{sfxTap();stop();if(t.id==="home")goHome();else{movePandaTo("bottomRight");rec.warmUp();setTeacherMood("star");setScr(t.id);}}} style={{
+    ].map(t=><button key={t.id} onClick={()=>{sfxTap();stop();if(t.id==="home")goHome();else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
       flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,
       padding:"6px 4px 8px",border:"none",cursor:"pointer",
       background:scr===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"transparent",
@@ -3693,7 +3695,7 @@ export default function App(){
 
   // ═══ QUESTIONNAIRE (first-time only) ═══
   if(scr==="questionnaire")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:32,padding:"28px 22px",maxWidth:420,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
+    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:28,padding:"24px 18px",maxWidth:400,border:"1px solid rgba(255,255,255,0.8)",width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
       <div style={{fontSize:48}}>🦉</div>
       <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Quick Questions!</h2>
       <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:16}}>Question {qStep+1} of {QUESTIONNAIRE.length} — Help Ollie customize your learning!</p>
@@ -3705,12 +3707,13 @@ export default function App(){
           sfxTap();
           const newA=[...qAnswers,opt];setQAnswers(newA);
           if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
-          else{saveQuizAnswers(newA);setScr("home");setTeacherMood("star");}
+          else{saveQuizAnswers(newA);setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
         }} style={{
           padding:"14px 18px",borderRadius:18,border:"none",cursor:"pointer",fontFamily:"var(--font)",
           fontSize:14,fontWeight:700,textAlign:"left",
           background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
-          color:"#fff",boxShadow:"0 3px 12px rgba(0,0,0,0.1)",
+          color:"#fff",boxShadow:["0 6px 20px rgba(108,92,231,0.25)","0 6px 20px rgba(0,210,160,0.25)","0 6px 20px rgba(255,159,67,0.25)","0 6px 20px rgba(84,160,255,0.25)"][i%4],
+          borderRadius:22,
           transition:"all 0.2s"
         }}>{opt}</button>)}
       </div>
@@ -3815,7 +3818,10 @@ export default function App(){
             }
             return base.sort((a,b)=>a.priority-b.priority);
           })(),
-        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");if(m.id==="parent"){setShowPinModal(true);}else{setScr(m.id);}}} style={{
+        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");
+            const tileMsg={learn:"Let's learn something new!",phonics:"Let's practice reading words!",quizzone:"Quiz time! Let's test your skills!",arena:"Arena time! Let's play together!",studyplan:"Let's check your study plan!",stories:"Story time! Let's read!",rewards:"Let's see your rewards!",settings:"Settings time!"};
+            if(m.id==="parent"){setShowPinModal(true);}
+            else{if(tileMsg[m.id])speak(tileMsg[m.id],{rate:0.85,pitch:1.0});setScr(m.id);}}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"12px 10px",borderRadius:16,cursor:"pointer",
           fontFamily:"var(--font)",background:m.grad,
@@ -4461,7 +4467,9 @@ export default function App(){
     {/* Tab bar */}
     <div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0}}>
       {[{id:"numbers",label:"🔢 Numbers"},{id:"abc",label:"🔤 ABC"},{id:"shapes",label:"🔷 Shapes"},{id:"colors",label:"🎨 Colors"}].map(t=>
-        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setLearnTab(t.id);}}
+        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setLearnTab(t.id);
+            const tabMsg={numbers:"Let's learn numbers!",abc:"Let's explore the alphabet!",shapes:"Let's discover shapes!",colors:"Let's learn colors!"};
+            speak(tabMsg[t.id]||"Let's learn!",{rate:0.85,pitch:1.0});}}
           style={{flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
             background:learnTab===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",color:learnTab===t.id?"#fff":"#A4B0BE",boxShadow:learnTab===t.id?"var(--shadow-btn)":"none"
           }}>{t.label}</button>
@@ -4565,10 +4573,10 @@ export default function App(){
       {[{id:"numquiz",label:"🔢 Numbers"},{id:"math",label:"➕ Math"},{id:"letters",label:"🔤 Letters"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
           stop();movePandaTo("bottomRight");setTeacherMood("happy");setQuizTab(t.id);
-          if(t.id==="numquiz"&&!quizNum)newQuiz();
-          if(t.id==="math"&&!mathProblem)genMath();
-          if(t.id==="letters"&&matchPairs.length===0)startMatch();
-          if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}
+          if(t.id==="numquiz"){speak("Let's find numbers! Listen carefully!",{rate:0.85,pitch:1.0});if(!quizNum)setTimeout(()=>newQuiz(),800);}
+          if(t.id==="math"){speak("Let's do math!",{rate:0.85,pitch:1.0});if(!mathProblem)setTimeout(()=>genMath(),800);}
+          if(t.id==="letters"){speak("Let's match letters!",{rate:0.85,pitch:1.0});if(matchPairs.length===0)setTimeout(()=>startMatch(),800);}
+          if(t.id==="write"){speak("Let's practice writing!",{rate:0.85,pitch:1.0});setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},1200);}
         }} style={{flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"var(--font)",
           background:quizTab===t.id?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#F0F4FF",color:quizTab===t.id?"#fff":"#A4B0BE",boxShadow:quizTab===t.id?"var(--shadow-btn)":"none"}}>{t.label}</button>
       )}
@@ -4622,7 +4630,10 @@ export default function App(){
           }}>{r}</button>)}
           </div>
           <div style={{display:"flex",gap:4}}>
-          {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
+          {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);
+              const opMsg={"+":"Let's do addition!","-":"Let's do subtraction!","×":"Let's do multiplication!","mix":"Mix it up!"};
+              speak(opMsg[o.id]||"Let's go!",{rate:0.85,pitch:1.0});
+              setTimeout(()=>genMath(mathRange,o.id),800);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
             background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#F0F4FF",boxShadow:mathOp===o.id?"0 3px 12px rgba(255,159,67,0.25)":"none",color:mathOp===o.id?"#fff":"#636E72"
           }}>{o.label}</button>)}
@@ -4823,7 +4834,10 @@ export default function App(){
           }}>{r}</button>)}
         </div>
         <div style={{display:"flex",gap:4}}>
-          {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
+          {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);
+              const opMsg={"+":"Let's do addition!","-":"Let's do subtraction!","×":"Let's do multiplication!","mix":"Mix it up!"};
+              speak(opMsg[o.id]||"Let's go!",{rate:0.85,pitch:1.0});
+              setTimeout(()=>genMath(mathRange,o.id),800);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
             background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#F0F4FF",boxShadow:mathOp===o.id?"0 3px 12px rgba(255,159,67,0.25)":"none",color:mathOp===o.id?"#fff":"#636E72"
           }}>{o.label}</button>)}
