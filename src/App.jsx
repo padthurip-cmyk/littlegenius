@@ -2274,6 +2274,7 @@ export default function App(){
   const[arenaPhase,setArenaPhase]=useState("lobby");
   const[arenaAnswered,setArenaAnswered]=useState(false);
   const[arenaFb,setArenaFb]=useState(null);
+  const[arenaPaused,setArenaPaused]=useState(false);
   const[arenaDiff,setArenaDiff]=useState("easy");
   const[arenaRounds,setArenaRounds]=useState(10);
   const[fbReady,setFbReady]=useState(false);const fbConfig=FIREBASE_CONFIG;
@@ -2300,62 +2301,90 @@ export default function App(){
   const fbRef=(path)=>window.firebase?.database?.()?.ref?.(path);
   const fbWrite=(path,data)=>{const r=fbRef(path);if(r)return r.set(data);};
   const fbUpdate=(path,data)=>{const r=fbRef(path);if(r)return r.update(data);};
-  const fbListen=(path,cb)=>{const r=fbRef(path);if(r){r.on("value",snap=>{const v=snap.val();if(v)cb(v);});return()=>r.off("value");}return()=>{};};
+  const fbListen=(path,cb,onDelete)=>{const r=fbRef(path);if(r){r.on("value",snap=>{const v=snap.val();if(v)cb(v);else if(onDelete)onDelete();});return()=>r.off("value");}return()=>{};};
+  const lastRoundRef=useRef(0);
 
   // Create room → write to Firebase
+  // Room deleted handler — kicks everyone back
+  const onRoomDeleted=()=>{
+    setArenaRoom(null);setArenaPhase("lobby");arenaRoomRef.current=null;lastRoundRef.current=0;
+    setArenaAnswered(false);setArenaFb(null);setArenaPaused(false);
+    if(fbListenerRef.current){fbListenerRef.current();fbListenerRef.current=null;}
+  };
+  // Room data handler
+  const onRoomData=(data)=>{
+    const players=data.players?Object.values(data.players):[];
+    const merged={...data,players};
+    arenaRoomRef.current=merged;
+    setArenaRoom(merged);
+    if(data.state==="paused"){setArenaPaused(true);setArenaPhase("playing");return;}
+    setArenaPaused(false);
+    if(data.round && data.round !== lastRoundRef.current && data.state==="playing"){
+      lastRoundRef.current=data.round;
+      setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
+    } else if(data.state==="result"){setArenaPhase("result");}
+    else if(data.state==="gameover"){setArenaPhase("gameover");}
+    else if(data.state==="waiting"){setArenaPhase("lobby");}
+  };
+
   const arenaCreateRoom=()=>{
     if(!fbReady)return;
     const roomCode=genRoomCode();
     const me={id:arenaId,name:arenaName||prof?.name||"Player 1",avatar:ARENA_AVATARS[0],color:ARENA_COLORS[0],isHost:true};
     const room={code:roomCode,players:{[arenaId]:me},hostId:arenaId,state:"waiting",question:null,turnIdx:0,turnPlayerId:arenaId,scores:{[arenaId]:0},round:0,maxRounds:arenaRounds,diff:arenaDiff,createdAt:Date.now()};
     fbWrite("rooms/"+roomCode,room).then(()=>{
-      setArenaRoom({...room,players:[me]});setArenaPhase("lobby");
-      // Start listening to room
-      const unsub=fbListen("rooms/"+roomCode,(data)=>{
-        const players=data.players?Object.values(data.players):[];
-        const merged={...data,players};
-        arenaRoomRef.current=merged;
-        setArenaRoom(merged);
-        // Sync phase from state
-        if(data.state==="playing"&&data.question){setArenaPhase("playing");if(!arenaAnswered)setArenaSec(prev=>prev>0?prev:6);}
-        if(data.state==="result")setArenaPhase("result");
-        if(data.state==="gameover")setArenaPhase("gameover");
-      });
+      setArenaRoom({...room,players:[me]});setArenaPhase("lobby");setFbError("");
+      const unsub=fbListen("rooms/"+roomCode,onRoomData,onRoomDeleted);
       fbListenerRef.current=unsub;
     }).catch(e=>setFbError("Create failed: "+e.message));
   };
 
   // Join room → read + add self to Firebase
   const arenaJoinRoom=(joinCode)=>{
-    if(!fbReady)return;
+    if(!fbReady){setFbError("Connecting... try again in a moment");return;}
     const c=joinCode.toUpperCase().trim();if(c.length!==6)return;
-    const ref=fbRef("rooms/"+c);if(!ref)return;
+    setFbError("");
+    const ref=fbRef("rooms/"+c);if(!ref){setFbError("Connection error");return;}
     ref.once("value").then(snap=>{
       const room=snap.val();
-      if(!room){setFbError("Room not found!");return;}
+      if(!room){setFbError("Room not found! Check the code and try again.");return;}
+      if(room.state==="gameover"){setFbError("This game has ended. Ask host to create a new room.");return;}
       const existingPlayers=room.players?Object.values(room.players):[];
-      if(existingPlayers.length>=4){setFbError("Room is full!");return;}
-      if(existingPlayers.find(p=>p.id===arenaId)){
-        // Already in room — just listen
-      } else {
+      if(existingPlayers.length>=4){setFbError("Room is full! (4/4 players)");return;}
+      if(!existingPlayers.find(p=>p.id===arenaId)){
         const pi=existingPlayers.length;
         const me={id:arenaId,name:arenaName||prof?.name||"Player",avatar:ARENA_AVATARS[pi%4],color:ARENA_COLORS[pi%4],isHost:false};
         fbUpdate("rooms/"+c+"/players/"+arenaId,me);
         fbUpdate("rooms/"+c+"/scores/"+arenaId,0);
       }
-      // Start listening
-      const unsub=fbListen("rooms/"+c,(data)=>{
-        const players=data.players?Object.values(data.players):[];
-        const merged={...data,players};
-        arenaRoomRef.current=merged;
-        setArenaRoom(merged);
-        if(data.state==="playing"&&data.question){setArenaPhase("playing");}
-        if(data.state==="result")setArenaPhase("result");
-        if(data.state==="gameover")setArenaPhase("gameover");
-      });
+      if(fbListenerRef.current)fbListenerRef.current();
+      const unsub=fbListen("rooms/"+c,onRoomData,onRoomDeleted);
       fbListenerRef.current=unsub;
-      setArenaPhase("lobby");
-    }).catch(e=>setFbError("Join failed: "+e.message));
+      setArenaPhase("lobby");setFbError("");
+    }).catch(e=>{setFbError("Join failed: "+e.message+". Check your internet connection.");});
+  };
+
+  // Host pauses/resumes
+  const arenaTogglePause=()=>{
+    const rm=arenaRoomRef.current||arenaRoom;
+    if(!rm||rm.hostId!==arenaId)return;
+    sfxTap();
+    if(arenaPaused){
+      fbUpdate("rooms/"+rm.code,{state:"playing",turnStartedAt:Date.now()});
+      setArenaPaused(false);setArenaSec(6);
+    } else {
+      fbUpdate("rooms/"+rm.code,{state:"paused"});
+      setArenaPaused(true);
+    }
+  };
+  // Host resets — deletes room, kicks everyone
+  const arenaResetGame=()=>{
+    const rm=arenaRoomRef.current||arenaRoom;
+    if(!rm)return;
+    sfxTap();
+    if(fbListenerRef.current){fbListenerRef.current();fbListenerRef.current=null;}
+    fbWrite("rooms/"+rm.code,null); // Delete room — triggers onRoomDeleted for all listeners
+    onRoomDeleted();
   };
 
   // Host starts round → write question to Firebase
@@ -2365,9 +2394,11 @@ export default function App(){
     const q=genArenaQ(rm.diff||"easy");
     const players=rm.players||[];
     const firstPlayer=players[0];
+    const nextRound=(rm.round||0)+1;
+    lastRoundRef.current=nextRound;
     fbUpdate("rooms/"+rm.code,{
       question:q,turnIdx:0,turnPlayerId:firstPlayer?.id||arenaId,
-      round:(rm.round||0)+1,state:"playing",answerBy:null,turnStartedAt:Date.now()
+      round:nextRound,state:"playing",answerBy:null,turnStartedAt:Date.now()
     });
     setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
   };
@@ -2419,9 +2450,9 @@ export default function App(){
     }
   };
 
-  // Timer countdown
+  // Timer countdown (stops when paused)
   useEffect(()=>{
-    if(arenaPhase!=="playing"||arenaSec<=0)return;
+    if(arenaPhase!=="playing"||arenaSec<=0||arenaPaused)return;
     const iv=setInterval(()=>{
       setArenaSec(prev=>{
         if(prev<=1){
@@ -2433,14 +2464,14 @@ export default function App(){
       });
     },1000);
     return()=>clearInterval(iv);
-  },[arenaPhase,arenaSec,arenaAnswered]);
+  },[arenaPhase,arenaSec,arenaAnswered,arenaPaused]);
 
-  // Reset timer when turn changes
+  // Reset timer when turn or round changes
   useEffect(()=>{
-    if(arenaPhase==="playing"&&arenaRoom?.turnPlayerId){
+    if(arenaPhase==="playing"){
       setArenaSec(6);setArenaAnswered(false);setArenaFb(null);
     }
-  },[arenaRoom?.turnPlayerId,arenaRoom?.turnIdx]);
+  },[arenaRoom?.turnPlayerId,arenaRoom?.turnIdx,arenaRoom?.round]);
 
   // Cleanup Firebase listener
   useEffect(()=>()=>{if(fbListenerRef.current)fbListenerRef.current();},[]);
@@ -3600,7 +3631,21 @@ export default function App(){
   if(scr==="arena")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"linear-gradient(180deg,#1B1464 0%,#3B1F8E 40%,#6C5CE7 100%)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",color:"#fff"}}>
     {/* Header */}
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",flexShrink:0}}>
-      <button onClick={()=>{if(fbListenerRef.current)fbListenerRef.current();setArenaRoom(null);setArenaPhase("lobby");goHome();}} style={{padding:"10px 18px",borderRadius:16,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"var(--font)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Exit</button>
+      <button onClick={()=>{
+        sfxTap();
+        if(fbListenerRef.current){fbListenerRef.current();fbListenerRef.current=null;}
+        if(arenaRoom){
+          if(arenaRoom.hostId===arenaId){
+            // Host exits → delete room, kick everyone
+            fbWrite("rooms/"+arenaRoom.code,null);
+          } else {
+            // Non-host exits → just remove self
+            fbWrite("rooms/"+arenaRoom.code+"/players/"+arenaId,null);
+            fbWrite("rooms/"+arenaRoom.code+"/scores/"+arenaId,null);
+          }
+        }
+        onRoomDeleted();goHome();
+      }} style={{padding:"10px 18px",borderRadius:16,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"var(--font)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Exit</button>
       <span style={{fontSize:20,fontWeight:800}}>🏟️ Arena</span>
       {arenaRoom&&<span style={{padding:"6px 14px",borderRadius:14,background:"rgba(255,255,255,0.15)",fontSize:13,fontWeight:700,letterSpacing:2,fontFamily:"monospace"}}>{arenaRoom.code}</span>}
     </div>
@@ -3675,13 +3720,31 @@ export default function App(){
       </div>
 
       {arenaRoom.hostId===arenaId&&(arenaRoom.players?.length||0)>=1&&<button onClick={()=>{sfxTap();arenaStartRound();}} style={{padding:"18px",borderRadius:22,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 24px rgba(254,202,87,0.3)",marginTop:8}}>Start Game! 🚀</button>}
+      {arenaRoom.hostId===arenaId&&<button onClick={()=>{sfxTap();if(window.confirm("Close room? All players will be disconnected.")){arenaResetGame();}}} style={{padding:"12px",borderRadius:16,border:"none",background:"rgba(255,107,129,0.15)",color:"#FF6B81",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",marginTop:6,width:"100%"}}>Close Room 🚪</button>}
       {arenaRoom.hostId!==arenaId&&<div style={{textAlign:"center",padding:16,fontSize:14,color:"rgba(255,255,255,0.5)"}}>Waiting for host to start...</div>}
     </div>}
 
     {/* ═══ PLAYING — Question + Timer + Options ═══ */}
-    {arenaRoom&&arenaPhase==="playing"&&arenaRoom.question&&<div style={{display:"flex",flexDirection:"column",padding:"12px 18px",gap:10}}>
+    {arenaRoom&&arenaPhase==="playing"&&arenaRoom.question&&<div style={{display:"flex",flexDirection:"column",padding:"12px 18px",gap:10,position:"relative"}}>
+      {/* Paused overlay */}
+      {arenaPaused&&<div style={{position:"absolute",inset:0,background:"rgba(27,20,100,0.92)",zIndex:20,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",borderRadius:16,gap:12}}>
+        <span style={{fontSize:64}}>⏸️</span>
+        <h2 style={{fontSize:24,fontWeight:800,color:"#fff"}}>Game Paused</h2>
+        <p style={{fontSize:13,color:"rgba(255,255,255,0.6)"}}>
+          {arenaRoom.hostId===arenaId?"Tap Resume to continue":"Waiting for host to resume..."}
+        </p>
+        {arenaRoom.hostId===arenaId&&<div style={{display:"flex",gap:10,marginTop:8}}>
+          <button onClick={arenaTogglePause} style={{padding:"14px 28px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>▶️ Resume</button>
+          <button onClick={()=>{if(window.confirm("Reset game? All players will be disconnected.")){arenaResetGame();}}} style={{padding:"14px 28px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF6B81,#EE5A6F)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Reset</button>
+        </div>}
+      </div>}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <span style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>Round {arenaRoom.round}/{arenaRoom.maxRounds}</span>
+        {/* Host controls: Pause + Reset */}
+        {arenaRoom.hostId===arenaId&&!arenaPaused&&<div style={{display:"flex",gap:6}}>
+          <button onClick={arenaTogglePause} style={{padding:"6px 12px",borderRadius:12,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>⏸️</button>
+          <button onClick={()=>{if(window.confirm("Reset game? Everyone will be disconnected.")){arenaResetGame();}}} style={{padding:"6px 12px",borderRadius:12,border:"none",background:"rgba(255,107,129,0.3)",color:"#FF6B81",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>🔄</button>
+        </div>}
         <div style={{display:"flex",gap:6}}>
           {(arenaRoom.players||[]).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:12,background:arenaRoom.turnPlayerId===p.id?"#FECA57":"rgba(255,255,255,0.1)",color:arenaRoom.turnPlayerId===p.id?"#1B1464":"#fff"}}>
             <span style={{fontSize:14}}>{ARENA_AVATARS[i%4]}</span>
@@ -3766,8 +3829,16 @@ export default function App(){
         </div>)}
       </div>
       <div style={{display:"flex",gap:10,marginTop:10}}>
-        <button onClick={()=>{sfxTap();if(arenaRoom.hostId===arenaId){fbUpdate("rooms/"+arenaRoom.code,{round:0,state:"waiting",question:null,scores:Object.fromEntries((arenaRoom.players||[]).map(p=>[p.id,0]))});}setArenaPhase("lobby");}} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Play Again 🔄</button>
-        <button onClick={()=>{if(fbListenerRef.current)fbListenerRef.current();if(arenaRoom?.code)fbWrite("rooms/"+arenaRoom.code,null);setArenaRoom(null);setArenaPhase("lobby");goHome();}} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Exit 👋</button>
+        <button onClick={()=>{sfxTap();lastRoundRef.current=0;if(arenaRoom.hostId===arenaId){fbUpdate("rooms/"+arenaRoom.code,{round:0,state:"waiting",question:null,scores:Object.fromEntries((arenaRoom.players||[]).map(p=>[p.id,0]))});}setArenaPhase("lobby");}} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Play Again 🔄</button>
+        <button onClick={()=>{
+          sfxTap();
+          if(fbListenerRef.current){fbListenerRef.current();fbListenerRef.current=null;}
+          if(arenaRoom){
+            if(arenaRoom.hostId===arenaId){fbWrite("rooms/"+arenaRoom.code,null);}
+            else{fbWrite("rooms/"+arenaRoom.code+"/players/"+arenaId,null);fbWrite("rooms/"+arenaRoom.code+"/scores/"+arenaId,null);}
+          }
+          onRoomDeleted();goHome();
+        }} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Exit 👋</button>
       </div>
     </div>}
 
