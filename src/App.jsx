@@ -2275,6 +2275,7 @@ export default function App(){
   const[arenaAnswered,setArenaAnswered]=useState(false);
   const[arenaFb,setArenaFb]=useState(null);
   const[arenaPaused,setArenaPaused]=useState(false);
+  const[arenaMsg,setArenaMsg]=useState("");
   const[arenaDiff,setArenaDiff]=useState("easy");
   const[arenaRounds,setArenaRounds]=useState(10);
   const[fbReady,setFbReady]=useState(false);const fbConfig=FIREBASE_CONFIG;
@@ -2322,9 +2323,38 @@ export default function App(){
     if(data.round && data.round !== lastRoundRef.current && data.state==="playing"){
       lastRoundRef.current=data.round;
       setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
-    } else if(data.state==="result"){setArenaPhase("result");}
-    else if(data.state==="gameover"){setArenaPhase("gameover");}
-    else if(data.state==="waiting"){setArenaPhase("lobby");}
+      // Panda announces whose turn
+      const tp=players.find(p=>p.id===data.turnPlayerId);
+      if(tp){
+        const isMe=tp.id===arenaId;
+        setArenaMsg(isMe?"🎯 It's YOUR turn! Go go go!":"🐼 It's "+tp.name+"'s turn!");
+        setTeacherMood(isMe?"star":"happy");
+      }
+    } else if(data.state==="result"){
+      setArenaPhase("result");
+      // Panda celebrates or encourages
+      const winner=players.find(p=>p.id===data.answerBy);
+      if(winner){
+        const pts=data.scores?.[winner.id]||0;
+        if(winner.id===arenaId){
+          setArenaMsg("🎉 Great job! You have "+pts+" point"+(pts!==1?"s":"")+"! Keep going!");
+          setTeacherMood("star");
+        } else {
+          setArenaMsg("👏 "+winner.name+" got it right with "+pts+" point"+(pts!==1?"s":"")+"!");
+          setTeacherMood("happy");
+        }
+      } else {
+        setArenaMsg("😅 Nobody got it! Let's try the next one!");
+        setTeacherMood("thinking");
+      }
+    }
+    else if(data.state==="gameover"){
+      setArenaPhase("gameover");
+      const sorted=players.sort((a,b)=>(data.scores?.[b.id]||0)-(data.scores?.[a.id]||0));
+      if(sorted[0]?.id===arenaId){setArenaMsg("🏆 You WON! Amazing!");setTeacherMood("star");}
+      else{setArenaMsg("🏆 "+sorted[0]?.name+" wins! Great game everyone!");setTeacherMood("happy");}
+    }
+    else if(data.state==="waiting"){setArenaPhase("lobby");setArenaMsg("");}
   };
 
   const arenaCreateRoom=()=>{
@@ -2354,8 +2384,7 @@ export default function App(){
       if(!existingPlayers.find(p=>p.id===arenaId)){
         const pi=existingPlayers.length;
         const me={id:arenaId,name:arenaName||prof?.name||"Player",avatar:ARENA_AVATARS[pi%4],color:ARENA_COLORS[pi%4],isHost:false};
-        fbUpdate("rooms/"+c+"/players/"+arenaId,me);
-        fbUpdate("rooms/"+c+"/scores/"+arenaId,0);
+        fbUpdate("rooms/"+c,{["players/"+arenaId]:me,["scores/"+arenaId]:0});
       }
       if(fbListenerRef.current)fbListenerRef.current();
       const unsub=fbListen("rooms/"+c,onRoomData,onRoomDeleted);
@@ -2415,14 +2444,28 @@ export default function App(){
     if(correct){
       sfxWin();
       const newScore=(rm.scores?.[arenaId]||0)+1;
-      const updates={["scores/"+arenaId]:newScore,state:"result",answerBy:arenaId};
-      fbUpdate("rooms/"+rm.code,updates);
-      // Host auto-advances
-      if(rm.hostId===arenaId){
+      const roomCode=rm.code;
+      const maxR=rm.maxRounds||10;
+      const currentRound=rm.round||0;
+      const isHost=rm.hostId===arenaId;
+      fbUpdate("rooms/"+roomCode,{["scores/"+arenaId]:newScore,state:"result",answerBy:arenaId});
+      // Host auto-advances after delay
+      if(isHost){
         setTimeout(()=>{
-          const cur=arenaRoomRef.current||rm;
-          if((cur.round||0)>=cur.maxRounds){fbUpdate("rooms/"+rm.code,{state:"gameover"});}
-          else{arenaStartRound();}
+          if(currentRound>=maxR){fbUpdate("rooms/"+roomCode,{state:"gameover"});}
+          else{
+            // Generate next question directly here to avoid stale closure
+            const q=genArenaQ(rm.diff||"easy");
+            const players=rm.players||[];
+            const fp=players[0];
+            const nr=currentRound+1;
+            lastRoundRef.current=nr;
+            fbUpdate("rooms/"+roomCode,{
+              question:q,turnIdx:0,turnPlayerId:fp?.id||arenaId,
+              round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now()
+            });
+            setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
+          }
         },2500);
       }
     } else {
@@ -2432,18 +2475,35 @@ export default function App(){
       if(nextIdx===0){
         // All missed
         setTimeout(()=>{
-          fbUpdate("rooms/"+rm.code,{state:"result",answerBy:null});
-          if(rm.hostId===arenaId){
+          const roomCode=rm.code;
+          const maxR=rm.maxRounds||10;
+          const currentRound=rm.round||0;
+          const isHost=rm.hostId===arenaId;
+          fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null});
+          if(isHost){
             setTimeout(()=>{
-              const cur=arenaRoomRef.current||rm;
-              if((cur.round||0)>=cur.maxRounds){fbUpdate("rooms/"+rm.code,{state:"gameover"});}
-              else{arenaStartRound();}
+              if(currentRound>=maxR){fbUpdate("rooms/"+roomCode,{state:"gameover"});}
+              else{
+                const q=genArenaQ(rm.diff||"easy");
+                const players=rm.players||[];
+                const fp=players[0];
+                const nr=currentRound+1;
+                lastRoundRef.current=nr;
+                fbUpdate("rooms/"+roomCode,{
+                  question:q,turnIdx:0,turnPlayerId:fp?.id||arenaId,
+                  round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now()
+                });
+                setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
+              }
             },2000);
           }
         },1000);
       } else {
+        const roomCode2=rm.code;const nextPid=players[nextIdx]?.id;
+        const nextName=players[nextIdx]?.name||"next player";
+        setArenaMsg("❌ Wrong! "+nextName+"'s turn now!");setTeacherMood("thinking");
         setTimeout(()=>{
-          fbUpdate("rooms/"+rm.code,{turnIdx:nextIdx,turnPlayerId:players[nextIdx]?.id,turnStartedAt:Date.now()});
+          fbUpdate("rooms/"+roomCode2,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now()});
           setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
         },1200);
       }
@@ -3640,8 +3700,7 @@ export default function App(){
             fbWrite("rooms/"+arenaRoom.code,null);
           } else {
             // Non-host exits → just remove self
-            fbWrite("rooms/"+arenaRoom.code+"/players/"+arenaId,null);
-            fbWrite("rooms/"+arenaRoom.code+"/scores/"+arenaId,null);
+            fbUpdate("rooms/"+arenaRoom.code,{["players/"+arenaId]:null,["scores/"+arenaId]:null});
           }
         }
         onRoomDeleted();goHome();
@@ -3722,6 +3781,12 @@ export default function App(){
       {arenaRoom.hostId===arenaId&&(arenaRoom.players?.length||0)>=1&&<button onClick={()=>{sfxTap();arenaStartRound();}} style={{padding:"18px",borderRadius:22,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 24px rgba(254,202,87,0.3)",marginTop:8}}>Start Game! 🚀</button>}
       {arenaRoom.hostId===arenaId&&<button onClick={()=>{sfxTap();if(window.confirm("Close room? All players will be disconnected.")){arenaResetGame();}}} style={{padding:"12px",borderRadius:16,border:"none",background:"rgba(255,107,129,0.15)",color:"#FF6B81",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",marginTop:6,width:"100%"}}>Close Room 🚪</button>}
       {arenaRoom.hostId!==arenaId&&<div style={{textAlign:"center",padding:16,fontSize:14,color:"rgba(255,255,255,0.5)"}}>Waiting for host to start...</div>}
+    </div>}
+
+    {/* Panda message bubble */}
+    {arenaMsg&&(arenaPhase==="playing"||arenaPhase==="result")&&<div style={{padding:"8px 16px",margin:"0 18px",borderRadius:16,background:"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+      <span style={{fontSize:28}}>🐼</span>
+      <span style={{fontSize:13,fontWeight:700,color:"#fff",flex:1}}>{arenaMsg}</span>
     </div>}
 
     {/* ═══ PLAYING — Question + Timer + Options ═══ */}
@@ -3835,7 +3900,7 @@ export default function App(){
           if(fbListenerRef.current){fbListenerRef.current();fbListenerRef.current=null;}
           if(arenaRoom){
             if(arenaRoom.hostId===arenaId){fbWrite("rooms/"+arenaRoom.code,null);}
-            else{fbWrite("rooms/"+arenaRoom.code+"/players/"+arenaId,null);fbWrite("rooms/"+arenaRoom.code+"/scores/"+arenaId,null);}
+            else{fbUpdate("rooms/"+arenaRoom.code,{["players/"+arenaId]:null,["scores/"+arenaId]:null});}
           }
           onRoomDeleted();goHome();
         }} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Exit 👋</button>
