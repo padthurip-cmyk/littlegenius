@@ -2067,7 +2067,7 @@ const ResultBox=({acc,result,expected,onRetry,onDone,color,kidName,currentPoints
     {p>0&&<div style={{fontSize:18,fontWeight:900,color:"#22C55E",fontFamily:"var(--font)",textAlign:"center",margin:"4px 0"}}>+{p} points! 💰</div>}
     {/* Reward hint */}
     {nextReward&&ptsNeeded<=50&&<div style={{padding:"6px 10px",background:"rgba(251,191,36,0.15)",borderRadius:12,textAlign:"center",margin:"4px 0"}}>
-      <span style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:0.5}}>{ptsNeeded} more for {nextReward.emoji} {nextReward.name}!</span>
+      <span style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1}}>{ptsNeeded} more for {nextReward.emoji} {nextReward.name}!</span>
     </div>}
     {/* Buttons */}
     <div style={{display:"flex",gap:8,marginTop:8}}>
@@ -4475,8 +4475,8 @@ export default function App(){
         <div style={{display:"flex",gap:4,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
           padding:"5px 10px",borderRadius:10,border:"2px solid",whiteSpace:"nowrap",
-          borderColor:numRange===r?"#6C5CE7":"#DFE6E9",background:numRange===r?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",boxShadow:numRange===r?"var(--shadow-btn)":"none",
-          color:numRange===r?"#fff":"#8E8CA3",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"
+          background:numRange===r?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",boxShadow:numRange===r?"0 3px 12px rgba(108,92,231,0.25)":"none",
+          color:numRange===r?"#fff":"#636E72",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"
         }}>{r}</button>)}
         </div>
         <div style={{display:"flex",alignItems:"center",gap:4,padding:"2px 6px",background:"#F0F4FF",borderRadius:8,marginTop:3}}>
@@ -4599,10 +4599,10 @@ export default function App(){
             const isCorrect=quizFb?.ok&&quizFb?.n===n;
             const isWrong=quizFb&&!quizFb.ok&&quizFb.n===n;
             return<button key={n} data-r="quiz" onClick={()=>{sfxTap();onQuizTap(n);}} style={{
-              padding:"26px 10px",borderRadius:24,border:"none",cursor:"pointer",
-              background:isCorrect?"linear-gradient(135deg,#00D2A0,#00B894)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":nGrad(n),
-              fontFamily:"var(--font)",fontSize:32,fontWeight:800,
-              color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.15)",
+              padding:"28px 12px",borderRadius:26,border:"none",cursor:"pointer",
+              background:isCorrect?"linear-gradient(135deg,#00D2A0,#00B894)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
+              fontFamily:"var(--font)",fontSize:34,fontWeight:800,
+              color:"#fff",textShadow:"0 2px 6px rgba(0,0,0,0.2)",
               transform:isCorrect?"scale(1.1)":isWrong?"scale(0.95)":"scale(1)",boxShadow:isCorrect?"0 6px 20px rgba(0,210,160,0.3)":isWrong?"0 4px 16px rgba(255,107,129,0.3)":`0 4px 14px ${nClr(n)}30`
             }}>{n}</button>;
           })}
@@ -4618,25 +4618,25 @@ export default function App(){
           <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",
-            borderColor:mathRange===r?"#54A0FF":"#DFE6E9",background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#fff",boxShadow:mathRange===r?"var(--shadow-btn)":"none",color:mathRange===r?"#fff":"#8E8CA3"
+            background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#F0F4FF",boxShadow:mathRange===r?"0 3px 12px rgba(84,160,255,0.25)":"none",color:mathRange===r?"#fff":"#636E72"
           }}>{r}</button>)}
           </div>
           <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
-            borderColor:mathOp===o.id?"#FF9F43":"#DFE6E9",background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#fff",boxShadow:mathOp===o.id?"var(--shadow-btn)":"none",color:mathOp===o.id?"#fff":"#8E8CA3"
+            background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#F0F4FF",boxShadow:mathOp===o.id?"0 3px 12px rgba(255,159,67,0.25)":"none",color:mathOp===o.id?"#fff":"#636E72"
           }}>{o.label}</button>)}
           </div>
         </div>
       </div>
       {mathProblem?<div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <span style={{fontSize:14,fontWeight:800,color:"#6C5CE7"}}>🏆 {mathScore}/{mathTotal}</span>
+          <span style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14}}>🏆 {mathScore}/{mathTotal}</span>
           <button onClick={()=>genMath()} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
         </div>
-        <div style={{background:"#fff",borderRadius:20,padding:14,textAlign:"center",marginBottom:12}}>
+        <div style={{background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",borderRadius:22,padding:18,textAlign:"center",marginBottom:14,boxShadow:"0 4px 16px rgba(108,92,231,0.2)"}}>
           <div style={{fontFamily:"var(--font)",fontSize:30,fontWeight:900,color:"#fff",marginTop:4,textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>
-            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#FECA57",textShadow:"0 0 12px rgba(254,202,87,0.5)"}}>?</span>
+            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#FECA57",textShadow:"0 0 16px rgba(254,202,87,0.6)",fontSize:"inherit"}}>?</span>
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
@@ -4644,10 +4644,10 @@ export default function App(){
             const isRight=mathFb&&c===mathProblem.answer;
             const isWrong=mathFb==="wrong"&&c===mathAnswer;
             return<button key={c+"-"+i} data-r="quiz" onClick={()=>{sfxTap();onMathTap(c);}} style={{
-              padding:"22px 12px",borderRadius:24,border:"none",cursor:"pointer",
-              background:isRight?"linear-gradient(135deg,#00D2A0,#00B894)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":"linear-gradient(135deg,#54A0FF,#74B9FF)",
-              fontFamily:"var(--font)",fontSize:26,fontWeight:800,
-              color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.1)",boxShadow:isRight?"0 4px 16px rgba(0,210,160,0.25)":isWrong?"0 4px 16px rgba(255,107,129,0.25)":"0 4px 14px rgba(84,160,255,0.25)"
+              padding:"24px 14px",borderRadius:26,border:"none",cursor:"pointer",
+              background:isRight?"linear-gradient(135deg,#00D2A0,#00B894)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
+              fontFamily:"var(--font)",fontSize:28,fontWeight:800,
+              color:"#fff",textShadow:"0 2px 6px rgba(0,0,0,0.2)",boxShadow:isRight?"0 4px 16px rgba(0,210,160,0.3)":isWrong?"0 4px 16px rgba(255,107,129,0.3)":["0 4px 14px rgba(108,92,231,0.25)","0 4px 14px rgba(255,159,67,0.25)","0 4px 14px rgba(0,210,160,0.25)","0 4px 14px rgba(84,160,255,0.25)"][i%4]
             }}>{c}</button>;
           })}
         </div>
@@ -4681,7 +4681,7 @@ export default function App(){
               {matchMode==="findCaps"?(matchPairs[matchIdx]?.cap||"").toLowerCase():(matchPairs[matchIdx]?.cap||"")}
             </div>
           }
-          <div style={{fontSize:14,fontWeight:800,color:"#6C5CE7",marginTop:4}}>🏆 {matchScore}/8</div>
+          <div style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14,marginTop:4}}>🏆 {matchScore}/8</div>
         </>:<>
           <div style={{fontSize:36}}>🎉</div>
           <div style={{fontSize:18,fontWeight:800,color:"#6C5CE7"}}>All Done! {matchScore}/{matchPairs.length} correct</div>
@@ -4696,7 +4696,7 @@ export default function App(){
           return<button key={"m"+l+matchIdx+matchMode} data-r="quiz" onClick={()=>{sfxTap();onMatchTap(l);}} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
             borderColor:isWrong?"#FF6B81":isCorrect?"#00D2A0":"transparent",
-            background:isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":"linear-gradient(135deg,#6C5CE7,#A29BFE)",
+            background:isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#00CEC9,#81ECEC)","linear-gradient(135deg,#E84393,#FD79A8)"][i%4],
             fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
             color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.15)",fontFamily:"var(--font)",
             transform:isCorrect?"scale(1.2)":isWrong?"scale(0.9)":"scale(1)",boxShadow:isCorrect?"0 6px 20px rgba(0,210,160,.3)":isWrong?"0 4px 16px rgba(255,107,129,.25)":"0 4px 14px rgba(108,92,231,.2)"
@@ -4819,23 +4819,23 @@ export default function App(){
         <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",
-            borderColor:mathRange===r?"#54A0FF":"#DFE6E9",background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#fff",boxShadow:mathRange===r?"var(--shadow-btn)":"none",color:mathRange===r?"#fff":"#8E8CA3"
+            background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#F0F4FF",boxShadow:mathRange===r?"0 3px 12px rgba(84,160,255,0.25)":"none",color:mathRange===r?"#fff":"#636E72"
           }}>{r}</button>)}
         </div>
         <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);genMath(mathRange,o.id);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
-            borderColor:mathOp===o.id?"#FF9F43":"#DFE6E9",background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#fff",boxShadow:mathOp===o.id?"var(--shadow-btn)":"none",color:mathOp===o.id?"#fff":"#8E8CA3"
+            background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#F0F4FF",boxShadow:mathOp===o.id?"0 3px 12px rgba(255,159,67,0.25)":"none",color:mathOp===o.id?"#fff":"#636E72"
           }}>{o.label}</button>)}
         </div>
       </div>
       {mathProblem?<div data-owl="math-problem">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <span style={{fontSize:14,fontWeight:800,color:"#6C5CE7"}}>🏆 {mathScore}/{mathTotal}</span>
+          <span style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14}}>🏆 {mathScore}/{mathTotal}</span>
           <button onClick={genMath} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
         </div>
         {/* Visual problem with emojis */}
-        <div style={{background:"#fff",borderRadius:20,padding:14,textAlign:"center",marginBottom:12}}>
+        <div style={{background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",borderRadius:22,padding:18,textAlign:"center",marginBottom:14,boxShadow:"0 4px 16px rgba(108,92,231,0.2)"}}>
           <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center",marginBottom:6}}>
             {Array.from({length:Math.min(mathProblem.a,15)}).map((_,i)=>
               <span key={"a"+i} style={{fontSize:26,animation:`gridPop 0.2s ease ${i*0.04}s both`}}>{getMathEmoji(0)}</span>
@@ -4848,7 +4848,7 @@ export default function App(){
             )}
           </div>
           <div style={{fontFamily:"var(--font)",fontSize:30,fontWeight:900,color:"#fff",marginTop:4,textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>
-            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#FECA57",textShadow:"0 0 12px rgba(254,202,87,0.5)"}}>?</span>
+            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#FECA57",textShadow:"0 0 16px rgba(254,202,87,0.6)",fontSize:"inherit"}}>?</span>
           </div>
         </div>
         {/* 4 answer choices */}
@@ -4866,7 +4866,7 @@ export default function App(){
           })}
         </div>
         {mathFb==="wrong"&&<div style={{marginTop:10,padding:10,background:"#fff",borderRadius:14,textAlign:"center"}}>
-          <span style={{fontSize:14,fontWeight:800,color:"#6C5CE7"}}>{mathProblem.a} {mathProblem.op} {mathProblem.b} = {mathProblem.answer}</span>
+          <span style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14}}>{mathProblem.a} {mathProblem.op} {mathProblem.b} = {mathProblem.answer}</span>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,justifyContent:"center",marginTop:4}}>
             {Array.from({length:Math.min(mathProblem.answer,20)}).map((_,i)=>
               <span key={"r"+i} style={{fontSize:18}}>{getMathEmoji(2)}</span>
@@ -5198,7 +5198,7 @@ export default function App(){
               {matchMode==="findCaps"?(matchPairs[matchIdx]?.cap||"").toLowerCase():(matchPairs[matchIdx]?.cap||"")}
             </div>
           }
-          <div style={{fontSize:14,fontWeight:800,color:"#6C5CE7",marginTop:4}}>🏆 {matchScore}/8</div>
+          <div style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14,marginTop:4}}>🏆 {matchScore}/8</div>
         </>:<>
           <div style={{fontSize:36}}>🎉</div>
           <div style={{fontSize:18,fontWeight:800,color:"#6C5CE7"}}>All Done! {matchScore}/{matchPairs.length} correct</div>
@@ -5214,7 +5214,7 @@ export default function App(){
           return<button key={"m"+l+matchIdx+matchMode} data-r="quiz" onClick={()=>{sfxTap();onMatchTap(l);}} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
             borderColor:isWrong?"#FF6B81":isCorrect?"#00D2A0":"transparent",
-            background:isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":"linear-gradient(135deg,#6C5CE7,#A29BFE)",
+            background:isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#00CEC9,#81ECEC)","linear-gradient(135deg,#E84393,#FD79A8)"][i%4],
             fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
             color:isWrong?"#F87171":isCorrect?"#4ADE80":"#2D2B3D",
             fontFamily:"var(--font)",
