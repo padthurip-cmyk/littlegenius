@@ -15,7 +15,7 @@ const FIREBASE_CONFIG = {
    Each number has a LIVING animated scene matching its sentence
    ═══════════════════════════════════════════════════════════════ */
 
-const AVATARS={boy:["🦸‍♂️","🧑‍🚀","🦊","🐻","🦁","🐯","🐸","🐵"],girl:["🦸‍♀️","👸","🦄","🐱","🐰","🦋","🐼","🐨"]};
+const AVATARS={boy:["🦸‍♂️","🧑‍🚀","🦊","🐻","🦁","🐯","🐸","🐵"],girl:["🦸‍♀️","👸","🦄","🐱","🐰","🦋","🦉","🐨"]};
 const AGE_CFG={3:{max:10,diff:"Beginner"},4:{max:20,diff:"Beginner"},5:{max:50,diff:"Explorer"},6:{max:75,diff:"Explorer"},7:{max:100,diff:"Champion"},8:{max:100,diff:"Champion"}};
 const NW=["","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty","twenty one","twenty two","twenty three","twenty four","twenty five","twenty six","twenty seven","twenty eight","twenty nine","thirty","thirty one","thirty two","thirty three","thirty four","thirty five","thirty six","thirty seven","thirty eight","thirty nine","forty","forty one","forty two","forty three","forty four","forty five","forty six","forty seven","forty eight","forty nine","fifty","fifty one","fifty two","fifty three","fifty four","fifty five","fifty six","fifty seven","fifty eight","fifty nine","sixty","sixty one","sixty two","sixty three","sixty four","sixty five","sixty six","sixty seven","sixty eight","sixty nine","seventy","seventy one","seventy two","seventy three","seventy four","seventy five","seventy six","seventy seven","seventy eight","seventy nine","eighty","eighty one","eighty two","eighty three","eighty four","eighty five","eighty six","eighty seven","eighty eight","eighty nine","ninety","ninety one","ninety two","ninety three","ninety four","ninety five","ninety six","ninety seven","ninety eight","ninety nine","one hundred"];
 const NPH={1:["w","u","n"],2:["t","oo"],3:["th","r","ee"],4:["f","or"],5:["f","igh","v"],6:["s","i","x"],7:["s","e","v","e","n"],8:["ai","t"],9:["n","igh","n"],10:["t","e","n"],11:["e","l","e","v","e","n"],12:["t","w","e","l","v"],13:["th","ir","t","ee","n"],14:["f","or","t","ee","n"],15:["f","i","f","t","ee","n"],16:["s","i","x","t","ee","n"],17:["s","e","v","e","n","t","ee","n"],18:["ai","t","ee","n"],19:["n","igh","n","t","ee","n"],20:["t","w","e","n","t","ee"]};
@@ -296,7 +296,7 @@ const WCATS={
     {word:"parrot",ph:["p","a","r","u","t"],img:"🦜",sentence:"The parrot can talk!"},
     {word:"rabbit",ph:["r","a","b","i","t"],img:"🐰",sentence:"The rabbit hops around!"},
     {word:"turtle",ph:["t","ur","t","l"],img:"🐢",sentence:"The turtle has a shell!"},
-    {word:"panda",ph:["p","a","n","d","a"],img:"🐼",sentence:"The panda eats bamboo!"},
+    {word:"owl",ph:["p","a","n","d","a"],img:"🦉",sentence:"The owl eats bamboo!"},
     {word:"penguin",ph:["p","e","n","g","w","i","n"],img:"🐧",sentence:"Penguins love the cold!"},
     {word:"elephant",ph:["e","l","e","f","a","n","t"],img:"🐘",sentence:"The elephant has a long trunk!"},
     {word:"giraffe",ph:["j","i","r","a","f"],img:"🦒",sentence:"The giraffe has a long neck!"},
@@ -1198,16 +1198,44 @@ const ENGAGE_TIERS=[{mins:10,pts:5,label:"10 min"},{mins:20,pts:10,label:"20 min
 
 // ═══ MULTIPLAYER ARENA SYSTEM ═══
 const ARENA_COLORS=["#6C5CE7","#00D2A0","#FF9F43","#FF6B81"];
-const ARENA_AVATARS=["🦁","🐼","🦊","🐸"];
+const ARENA_AVATARS=["🦁","🦉","🦊","🐸"];
 const genRoomCode=()=>{const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let r="";for(let i=0;i<6;i++)r+=c[Math.floor(Math.random()*c.length)];return r;};
 const genPlayerId=()=>"P"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const ARENA_Q_TYPES=[
-  {type:"number",gen:(diff)=>{const n=diff==="easy"?Math.ceil(Math.random()*10):diff==="medium"?Math.ceil(Math.random()*50):Math.ceil(Math.random()*100);const opts=new Set([n]);while(opts.size<4){let o=n+Math.floor(Math.random()*11)-5;if(o<1)o=Math.ceil(Math.random()*10);opts.add(o);}return{q:`What number is "${NW[n]||n}"?`,answer:n,options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔢"};}},
-  {type:"math",gen:(diff)=>{const mx=diff==="easy"?10:diff==="medium"?20:50;const a=Math.ceil(Math.random()*mx);const b=Math.ceil(Math.random()*(mx/2));const ops=["+","-"];const op=ops[Math.floor(Math.random()*ops.length)];const ans=op==="+"?a+b:Math.max(a,b)-Math.min(a,b);const qa=op==="-"?Math.max(a,b):a;const qb=op==="-"?Math.min(a,b):b;const opts=new Set([ans]);while(opts.size<4){let o=ans+Math.floor(Math.random()*11)-5;if(o<0)o=Math.ceil(Math.random()*10);opts.add(o);}return{q:`${qa} ${op} ${qb} = ?`,answer:ans,options:[...opts].sort(()=>Math.random()-0.5),emoji:"➕"};}},
-  {type:"letter",gen:()=>{const i=Math.floor(Math.random()*26);const L=ALPHA_LETTERS[i];const opts=new Set([L.toLowerCase()]);while(opts.size<4)opts.add(ALPHA_LETTERS[Math.floor(Math.random()*26)].toLowerCase());return{q:`Find the lowercase of "${L}"`,answer:L.toLowerCase(),options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔤"};}},
-  {type:"shape",gen:()=>{const s=SHAPES[Math.floor(Math.random()*SHAPES.length)];const opts=new Set([s.name]);while(opts.size<4)opts.add(SHAPES[Math.floor(Math.random()*SHAPES.length)].name);return{q:`Which shape is ${s.emoji}?`,answer:s.name,options:[...opts].sort(()=>Math.random()-0.5),emoji:s.emoji};}},
+  // Number identification
+  {type:"number_id",gen:(diff)=>{const n=diff==="easy"?Math.ceil(Math.random()*10):diff==="medium"?Math.ceil(Math.random()*50):Math.ceil(Math.random()*100);const opts=new Set([n]);while(opts.size<4){let o=n+Math.floor(Math.random()*7)-3;if(o<1)o=Math.ceil(Math.random()*10);opts.add(o);}return{q:`What number is "${NW[n]||n}"?`,answer:n,options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔢",cat:"Numbers"};}},
+  // Number word spelling
+  {type:"number_word",gen:(diff)=>{const mx=diff==="easy"?10:diff==="medium"?20:50;const n=Math.ceil(Math.random()*mx);const correct=NW[n]||String(n);const opts=new Set([correct]);const nearby=[n-1,n+1,n+2,n-2].filter(x=>x>0&&NW[x]);nearby.forEach(x=>opts.add(NW[x]));while(opts.size<4){const r=Math.ceil(Math.random()*mx);if(NW[r])opts.add(NW[r]);}return{q:`How do you spell the number ${n}?`,answer:correct,options:[...opts].sort(()=>Math.random()-0.5),emoji:"✏️",cat:"Numbers"};}},
+  // Math — Addition
+  {type:"math_add",gen:(diff)=>{const mx=diff==="easy"?10:diff==="medium"?20:50;const a=Math.ceil(Math.random()*mx);const b=Math.ceil(Math.random()*(mx/2));const ans=a+b;const opts=new Set([ans]);while(opts.size<4){let o=ans+Math.floor(Math.random()*7)-3;if(o<0)o=Math.ceil(Math.random()*5);opts.add(o);}return{q:`${a} + ${b} = ?`,answer:ans,options:[...opts].sort(()=>Math.random()-0.5),emoji:"➕",cat:"Math"};}},
+  // Math — Subtraction
+  {type:"math_sub",gen:(diff)=>{const mx=diff==="easy"?10:diff==="medium"?20:50;const a=Math.ceil(Math.random()*mx);const b=Math.ceil(Math.random()*Math.min(a,mx/2));const ans=a-b;const opts=new Set([ans]);while(opts.size<4){let o=ans+Math.floor(Math.random()*7)-3;if(o<0)o=Math.ceil(Math.random()*5);opts.add(o);}return{q:`${a} − ${b} = ?`,answer:ans,options:[...opts].sort(()=>Math.random()-0.5),emoji:"➖",cat:"Math"};}},
+  // Alphabet — uppercase to lowercase
+  {type:"alpha_case",gen:()=>{const i=Math.floor(Math.random()*26);const L=ALPHA_LETTERS[i];const opts=new Set([L.toLowerCase()]);while(opts.size<4)opts.add(ALPHA_LETTERS[Math.floor(Math.random()*26)].toLowerCase());return{q:`What is the lowercase of "${L}"?`,answer:L.toLowerCase(),options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔤",cat:"Alphabet"};}},
+  // Alphabet — letter order
+  {type:"alpha_next",gen:()=>{const i=Math.floor(Math.random()*25);const L=ALPHA_LETTERS[i];const next=ALPHA_LETTERS[i+1];const opts=new Set([next]);while(opts.size<4)opts.add(ALPHA_LETTERS[Math.floor(Math.random()*26)]);return{q:`What letter comes after "${L}"?`,answer:next,options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔡",cat:"Alphabet"};}},
+  // Shapes
+  {type:"shape_id",gen:()=>{const s=SHAPES[Math.floor(Math.random()*SHAPES.length)];const opts=new Set([s.name]);while(opts.size<4)opts.add(SHAPES[Math.floor(Math.random()*SHAPES.length)].name);return{q:`Which shape is ${s.emoji}?`,answer:s.name,options:[...opts].sort(()=>Math.random()-0.5),emoji:s.emoji,cat:"Shapes"};}},
+  // Colors
+  {type:"color_id",gen:()=>{const c=COLORSDATA[Math.floor(Math.random()*COLORSDATA.length)];const opts=new Set([c.name]);while(opts.size<4)opts.add(COLORSDATA[Math.floor(Math.random()*COLORSDATA.length)].name);return{q:`What color is ${c.emoji} (${c.things?.[0]||c.name})?`,answer:c.name,options:[...opts].sort(()=>Math.random()-0.5),emoji:c.emoji||"🎨",cat:"Colors"};}},
+  // Phonics — word identification
+  {type:"phonics",gen:()=>{const cats=Object.keys(WCATS);const cat=cats[Math.floor(Math.random()*cats.length)];const words=WCATS[cat]?.words||[];if(words.length<4)return{q:"What sound does 🐱 make?",answer:"meow",options:["meow","woof","moo","baa"].sort(()=>Math.random()-0.5),emoji:"🐱",cat:"Phonics"};const w=words[Math.floor(Math.random()*words.length)];const opts=new Set([w.word]);while(opts.size<4){const rw=words[Math.floor(Math.random()*words.length)];opts.add(rw.word);}return{q:`What is this? ${w.img}`,answer:w.word,options:[...opts].sort(()=>Math.random()-0.5),emoji:w.img,cat:"Phonics"};}},
+  // Counting
+  {type:"counting",gen:(diff)=>{const n=diff==="easy"?Math.ceil(Math.random()*5):diff==="medium"?Math.ceil(Math.random()*10):Math.ceil(Math.random()*15);const emoji=["🍎","🌟","🐟","🦋","🎈"][Math.floor(Math.random()*5)];const opts=new Set([n]);while(opts.size<4){let o=n+Math.floor(Math.random()*5)-2;if(o<1)o=Math.ceil(Math.random()*3);opts.add(o);}return{q:`Count: ${emoji.repeat(n)}`,answer:n,options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔢",cat:"Counting"};}},
 ];
 const genArenaQ=(diff="easy")=>{const t=ARENA_Q_TYPES[Math.floor(Math.random()*ARENA_Q_TYPES.length)];return t.gen(diff);};
+
+
+// ═══ FIRST-TIME QUESTIONNAIRE ═══
+const QUESTIONNAIRE=[
+  {q:"What does your child need most?",opts:["Numbers & Counting","Letters & Reading","Both equally","Fun & Games"]},
+  {q:"How old is your child?",opts:["3-4 years","4-5 years","5-6 years","6-7 years"]},
+  {q:"Can they recognize numbers 1-10?",opts:["Yes, easily","Some of them","Not yet","Not sure"]},
+  {q:"Can they recognize alphabet letters?",opts:["Yes, most","Some letters","Not yet","Not sure"]},
+  {q:"What learning style works best?",opts:["Visual (pictures)","Audio (sounds)","Hands-on (writing)","Mix of all"]},
+  {q:"How much time per day?",opts:["10-15 minutes","15-30 minutes","30-60 minutes","No limit"]},
+  {q:"What excites them most?",opts:["Animals & Nature","Space & Science","Art & Colors","Sports & Games"]},
+];
 
 const STORIES = [
   {id:1,title:"The Lost Kitten",emoji:"🐱",level:"easy",
@@ -1358,7 +1386,7 @@ L:{ph:"lll",examples:[{w:"Lion",e:"🦁"},{w:"Lamp",e:"💡"},{w:"Lemon",e:"🍋
 M:{ph:"mmm",examples:[{w:"Monkey",e:"🐒"},{w:"Moon",e:"🌙"},{w:"Mango",e:"🥭"},{w:"Music",e:"🎵"},{w:"Mountain",e:"⛰️"}]},
 N:{ph:"nnn",examples:[{w:"Nest",e:"🪹"},{w:"Nose",e:"👃"},{w:"Nut",e:"🥜"},{w:"Night",e:"🌙"},{w:"Notebook",e:"📓"}]},
 O:{ph:"ohhh",examples:[{w:"Orange",e:"🍊"},{w:"Owl",e:"🦉"},{w:"Octopus",e:"🐙"},{w:"Ocean",e:"🌊"},{w:"Onion",e:"🧅"}]},
-P:{ph:"puh",examples:[{w:"Penguin",e:"🐧"},{w:"Pizza",e:"🍕"},{w:"Parrot",e:"🦜"},{w:"Piano",e:"🎹"},{w:"Panda",e:"🐼"}]},
+P:{ph:"puh",examples:[{w:"Penguin",e:"🐧"},{w:"Pizza",e:"🍕"},{w:"Parrot",e:"🦜"},{w:"Piano",e:"🎹"},{w:"Ollie",e:"🦉"}]},
 Q:{ph:"kwuh",examples:[{w:"Queen",e:"👸"},{w:"Quilt",e:"🛏️"},{w:"Question",e:"❓"},{w:"Quail",e:"🐦"},{w:"Quiet",e:"🤫"}]},
 R:{ph:"rrr",examples:[{w:"Rabbit",e:"🐰"},{w:"Rainbow",e:"🌈"},{w:"Rocket",e:"🚀"},{w:"Rose",e:"🌹"},{w:"Robot",e:"🤖"}]},
 S:{ph:"sss",examples:[{w:"Sun",e:"☀️"},{w:"Star",e:"⭐"},{w:"Snake",e:"🐍"},{w:"Ship",e:"🚢"},{w:"Strawberry",e:"🍓"}]},
@@ -1718,7 +1746,7 @@ const useStore=()=>{const[d,setD]=useState(null);const[ok,setOk]=useState(false)
 
 // ═══ VIRTUAL TEACHER ═══
 const TEACHER_MSGS={
-  welcome:["Hi! I'm Bella 🐼! 🌟","Ready to learn something amazing?","Let's have fun together!"],
+  welcome:["Hi! I'm Bella 🦉! 🌟","Ready to learn something amazing?","Let's have fun together!"],
   correct:["Wonderful job! ⭐","You're so smart! 🎉","That's perfect! Keep going!","Amazing work, superstar! 🌟","I'm so proud of you! 💪","Brilliant! You got it! ✨","Wow, you're a genius! 🧠"],
   wrong:["Almost there! Try again! 💪","Don't worry, let's try once more!","You can do it! I believe in you! 🌈","So close! Give it another go! ⭐"],
   encourage:["You're doing great! Keep it up!","I love how hard you're trying!","Every mistake helps you learn!","Practice makes perfect! 🎯"],
@@ -1958,7 +1986,7 @@ const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"c
 const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:800,fontFamily:"var(--font)",background:act?"linear-gradient(135deg,#FF8C42,#FF8C42)":done?"#22C55E":"#e5e7eb",color:(act||done)?"#fff":"#aaa",transform:act?"scale(1.08)":"scale(1)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
 const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected})=>{
   const[typed,setTyped]=useState("");
-  return <div data-panda="mic-area" style={{textAlign:"center",padding:12,background:"#fff",borderRadius:20,border:"2px solid #FF8C4211"}}>
+  return <div data-owl="mic-area" style={{textAlign:"center",padding:12,background:"#fff",borderRadius:20,border:"2px solid #FF8C4211"}}>
     <div style={{display:"flex",alignItems:"center",gap:12}}>
       <button onClick={onTapMic} style={{
         width:56,height:56,borderRadius:"50%",border:"none",cursor:"pointer",flexShrink:0,
@@ -1993,7 +2021,7 @@ const ResultBox=({acc,result,expected,onRetry,onDone,color,kidName,currentPoints
   const pass=acc>=50; // 50% = pass for kids
   const nextReward=REWARDS.filter(r=>r.cost>(currentPoints||0)).sort((a,b)=>a.cost-b.cost)[0];
   const ptsNeeded=nextReward?(nextReward.cost-(currentPoints||0)):0;
-  return<div data-panda="result-box" style={{padding:10,background:"#fff",borderRadius:18,boxShadow:"var(--shadow-float)",animation:"resBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>
+  return<div data-owl="result-box" style={{padding:10,background:"#fff",borderRadius:18,boxShadow:"var(--shadow-float)",animation:"resBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}>
     {/* Stars + Score row */}
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
       <Stars count={s}/>
@@ -2058,7 +2086,7 @@ export default function App(){
   // Shapes + Colors detail
   const[selShape,setSelShape]=useState(null);const[shStep,setShStep]=useState("idle");const[shAI,setShAI]=useState(-1);const[shRes,setShRes]=useState(null);const[shAcc,setShAcc]=useState(null);
   const[selColor,setSelColor]=useState(null);const[coStep,setCoStep]=useState("idle");const[coAI,setCoAI]=useState(-1);const[coRes,setCoRes]=useState(null);const[coAcc,setCoAcc]=useState(null);
-  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[isSpeaking,setIsSpeaking]=useState(false);const[pandaSize,setPandaSize]=useState(95);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
+  const[confetti,setConfetti]=useState(false);const[teacherMsg,setTeacherMsg]=useState("");const[teacherMood,setTeacherMood]=useState("waving");const[pandaPos,setPandaPos]=useState({x:20,y:80});const[isSpeaking,setIsSpeaking]=useState(false);const[owlSize,setOllieSize]=useState(95);const[joyFly,setJoyFly]=useState(false);const[headShake,setHeadShake]=useState("");const[guideTour,setGuideTour]=useState(false);
   const[mouthOpen,setMouthOpen]=useState(0); // 0.0 to 1.0 smooth
   const teacherIdleRef=useRef(null);
   const guideTourRef=useRef(false);
@@ -2153,10 +2181,10 @@ export default function App(){
   };
 
 
-  // Joy fly: panda does a quick loop around screen
+  // Joy fly: owl does a quick loop around screen
   const doJoyFly=()=>{
     setJoyFly(true);setTeacherMood("star");
-    const w=window.innerWidth,h=window.innerHeight,ps=pandaSize||95;
+    const w=window.innerWidth,h=window.innerHeight,ps=owlSize||95;
     const path=[{x:w/2-ps/2,y:20},{x:w-ps-10,y:h/3},{x:w/2-ps/2,y:h/2},{x:10,y:h/3},{x:w/2-ps/2,y:20}];
     let i=0;
     const step=()=>{
@@ -2169,7 +2197,7 @@ export default function App(){
   const flyTo=(e,mood)=>{
     if(!e?.currentTarget)return;
     const rect=e.currentTarget.getBoundingClientRect();
-    const ps=pandaSize||95;
+    const ps=owlSize||95;
     const x=Math.min(rect.right+6,window.innerWidth-ps);
     const y=Math.max(Math.min(rect.top+rect.height/2-ps/2,window.innerHeight-ps),0);
     setPandaPos({x,y});
@@ -2177,7 +2205,7 @@ export default function App(){
   };
   const movePandaTo=(position)=>{
     const w=window.innerWidth,h=window.innerHeight;
-    const ps=pandaSize||95;
+    const ps=owlSize||95;
     const positions={
       topRight:{x:w-ps-4,y:4},
       midRight:{x:w-ps-4,y:h/2-ps/2},
@@ -2191,10 +2219,10 @@ export default function App(){
   // Hover near a specific content element
   const hoverNear=(selector,side="right",mood)=>{
     setTimeout(()=>{
-      const el=document.querySelector(`[data-panda="${selector}"]`);
+      const el=document.querySelector(`[data-owl="${selector}"]`);
       if(!el){movePandaTo("bottomRight");return;}
       const r=el.getBoundingClientRect();
-      const ps=pandaSize||95;
+      const ps=owlSize||95;
       const w=window.innerWidth,h=window.innerHeight;
       let x,y;
       if(side==="right"){
@@ -2230,7 +2258,7 @@ export default function App(){
         // Cycle through idle moods naturally — no text
         const idleMoods=["happy","waving","proud","happy","excited","happy"];
         setTeacherMood(idleMoods[Math.floor(Math.random()*idleMoods.length)]);
-        // Return panda to its home position after speech ends
+        // Return owl to its home position after speech ends
         movePandaTo("bottomRight");
       },2500);
     };
@@ -2239,7 +2267,7 @@ export default function App(){
   useEffect(()=>{
     const moods={home:"waving",numbers:"excited",phonics:"happy",shapes:"excited",colors:"happy",alphabet:"star",basics:"pointing",rewards:"excited",stories:"happy",settings:"happy"};
     const m=moods[scr];if(m)setTeacherMood(m);
-    // Position panda based on screen
+    // Position owl based on screen
     const pos={home:"bottomRight",numbers:"bottomRight",phonics:"bottomRight",shapes:"bottomRight",colors:"bottomRight",alphabet:"bottomRight",basics:"bottomRight",rewards:"bottomRight",stories:"bottomRight",settings:"bottomRight",splash:"center",onboard:"bottomRight"};
     setTimeout(()=>movePandaTo(pos[scr]||"bottomRight"),100);
   },[scr]);
@@ -2265,6 +2293,10 @@ export default function App(){
   const[matchLeft,setMatchLeft]=useState(null);const[matchIdx,setMatchIdx]=useState(0);const[matchWrong,setMatchWrong]=useState(null);const[matchCorrect,setMatchCorrect]=useState(null);const[matchOpts,setMatchOpts]=useState([]);
   const[matchScore,setMatchScore]=useState(0);const[matchDone,setMatchDone]=useState([]);const[drawPts,setDrawPts]=useState(0);const drawPtsRef=useRef(0);const[writeOk,setWriteOk]=useState(false);const writeOkRef=useRef(false);const[writeScore,setWriteScore]=useState(null);
   const cRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);
+  const[quizAnswers,setQuizAnswers]=useState(()=>{try{const s=localStorage.getItem("lg_quiz_answers");return s?JSON.parse(s):null;}catch(e){return null;}});
+  const saveQuizAnswers=(a)=>{setQuizAnswers(a);localStorage.setItem("lg_quiz_answers",JSON.stringify(a));};
+  const[qStep,setQStep]=useState(0);
+  const[qAnswers,setQAnswers]=useState([]);
   // ═══ ARENA MULTIPLAYER STATE (Firebase Realtime DB) ═══
   const[arenaRoom,setArenaRoom]=useState(null);
   const[arenaId]=useState(()=>genPlayerId());
@@ -2276,11 +2308,11 @@ export default function App(){
   const[arenaFb,setArenaFb]=useState(null);
   const[arenaPaused,setArenaPaused]=useState(false);
   const[arenaMsg,setArenaMsg]=useState("");
-  // Panda speaks arena messages via TTS
+  // Ollie speaks arena messages via TTS
   useEffect(()=>{
     if(!arenaMsg||scr!=="arena")return;
     try{
-      const clean=arenaMsg.replace(/[🎯🐼🎉👏❌😅🏆]/g,"").trim();
+      const clean=arenaMsg.replace(/[🎯🦉🎉👏❌😅🏆]/g,"").trim();
       if(clean&&window.speechSynthesis){
         window.speechSynthesis.cancel();
         const u=new SpeechSynthesisUtterance(clean);
@@ -2338,18 +2370,18 @@ export default function App(){
       if(data.round !== lastRoundRef.current){
         lastRoundRef.current=data.round;
         setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
-        // Panda announces whose turn
+        // Ollie announces whose turn
         const tp=players.find(p=>p.id===data.turnPlayerId);
         if(tp){
           const isMe=tp.id===arenaId;
-          setArenaMsg(isMe?"🎯 It's YOUR turn! Go go go!":"🐼 It's "+tp.name+"'s turn!");
+          setArenaMsg(isMe?"🎯 It's YOUR turn! Go go go!":"🦉 It's "+tp.name+"'s turn!");
           setTeacherMood(isMe?"star":"happy");
         }
       }
       setArenaPhase("playing");
     } else if(data.state==="result"){
       setArenaPhase("result");
-      // Panda celebrates or encourages
+      // Ollie celebrates or encourages
       const winner=players.find(p=>p.id===data.answerBy);
       if(winner){
         const pts=data.scores?.[winner.id]||0;
@@ -2599,7 +2631,7 @@ export default function App(){
   const doWelcome=useCallback(()=>{
     if(welcomeSpoken.current)return;
     welcomeSpoken.current=true;
-    speak("Hey there! I'm Bella the panda! So happy to meet you! Let's learn and play together!",{rate:0.85,pitch:1.0});
+    speak("Hey there! I'm Bella the owl! So happy to meet you! Let's learn and play together!",{rate:0.85,pitch:1.0});
     setTeacherMood("waving");
   },[speak]);
 
@@ -2607,10 +2639,10 @@ export default function App(){
     if(!loaded||initDone.current)return;
     initDone.current=true;
     setTeacherMood("waving");
-    setPandaSize(100);
+    setOllieSize(100);
     setTimeout(()=>{
       const w=window.innerWidth,h=window.innerHeight;
-      // Position panda BELOW the button area, not on top of it
+      // Position owl BELOW the button area, not on top of it
       setPandaPos({x:w/2-60,y:h/2+120});
     },100);
   },[loaded]);
@@ -2650,7 +2682,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setPandaSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
+  const goHome=()=>{setJoyFly(false);setOllieSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -3432,35 +3464,35 @@ export default function App(){
   // ═══ DRAGGABLE VIRTUAL TEACHER (renders on all screens) ═══
   const dragRef=useRef(null);
   const dragStartRef=useRef(null);
-  const pandaDragStart=(e)=>{
+  const owlDragStart=(e)=>{
     const t=e.touches?e.touches[0]:e;
     dragStartRef.current={x:t.clientX-pandaPos.x,y:t.clientY-pandaPos.y};
     dragRef.current=true;
   };
-  const pandaDragMove=(e)=>{
+  const owlDragMove=(e)=>{
     if(!dragRef.current)return;
     e.preventDefault();
     const t=e.touches?e.touches[0]:e;
-    const x=Math.max(0,Math.min(t.clientX-dragStartRef.current.x,window.innerWidth-pandaSize));
-    const y=Math.max(0,Math.min(t.clientY-dragStartRef.current.y,window.innerHeight-pandaSize));
+    const x=Math.max(0,Math.min(t.clientX-dragStartRef.current.x,window.innerWidth-owlSize));
+    const y=Math.max(0,Math.min(t.clientY-dragStartRef.current.y,window.innerHeight-owlSize));
     setPandaPos({x,y});
   };
-  const pandaDragEnd=()=>{dragRef.current=false;};
+  const owlDragEnd=()=>{dragRef.current=false;};
   useEffect(()=>{
-    window.addEventListener("mousemove",pandaDragMove);
-    window.addEventListener("mouseup",pandaDragEnd);
-    window.addEventListener("touchmove",pandaDragMove,{passive:false});
-    window.addEventListener("touchend",pandaDragEnd);
+    window.addEventListener("mousemove",owlDragMove);
+    window.addEventListener("mouseup",owlDragEnd);
+    window.addEventListener("touchmove",owlDragMove,{passive:false});
+    window.addEventListener("touchend",owlDragEnd);
     return()=>{
-      window.removeEventListener("mousemove",pandaDragMove);
-      window.removeEventListener("mouseup",pandaDragEnd);
-      window.removeEventListener("touchmove",pandaDragMove);
-      window.removeEventListener("touchend",pandaDragEnd);
+      window.removeEventListener("mousemove",owlDragMove);
+      window.removeEventListener("mouseup",owlDragEnd);
+      window.removeEventListener("touchmove",owlDragMove);
+      window.removeEventListener("touchend",owlDragEnd);
     };
   });
 
-  // Panda tap reactions — fun interactive responses when kid taps the panda
-  const pandaTapReactions=[
+  // Ollie tap reactions — fun interactive responses when kid taps the owl
+  const owlTapReactions=[
     {mood:"excited",emoji:"😄",sound:"Hee hee!"},
     {mood:"star",emoji:"⭐",sound:"Yay!"},
     {mood:"waving",emoji:"👋",sound:"Hello!"},
@@ -3472,25 +3504,25 @@ export default function App(){
     {mood:"clapping",emoji:"🎊",sound:"Great job!"},
     {mood:"happy",emoji:"🤗",sound:"Hug!"},
   ];
-  const pandaTapRef=useRef(0);
-  const pandaTapTime=useRef(0);
-  const onPandaTap=()=>{
-    const reaction=pandaTapReactions[pandaTapRef.current%pandaTapReactions.length];
-    pandaTapRef.current++;
+  const owlTapRef=useRef(0);
+  const owlTapTime=useRef(0);
+  const onOllieTap=()=>{
+    const reaction=owlTapReactions[owlTapRef.current%owlTapReactions.length];
+    owlTapRef.current++;
     setTeacherMood(reaction.mood);
     
     speak(reaction.sound,{rate:1.0,pitch:1.1});
   };
 
   const TeacherBubble=<>{wrongFlash&&<div style={{position:"fixed",inset:0,background:"rgba(239,68,68,0.25)",zIndex:198,pointerEvents:"none",animation:"cWrongPulse 0.8s ease-out forwards"}}/>}<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:"none",transition:dragRef.current?"none":joyFly?"left 0.3s ease-out, top 0.3s ease-out":"left 1s cubic-bezier(0.4,0,0.2,1), top 1s cubic-bezier(0.4,0,0.2,1)",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.1))"}}>
-    {/* Panda — draggable + tappable */}
+    {/* Ollie — draggable + tappable */}
     <div
-      onMouseDown={(e)=>{pandaTapTime.current=Date.now();pandaDragStart(e);}}
-      onMouseUp={()=>{if(Date.now()-pandaTapTime.current<250)onPandaTap();}}
-      onTouchStart={(e)=>{pandaTapTime.current=Date.now();pandaDragStart(e);}}
-      onTouchEnd={()=>{if(Date.now()-pandaTapTime.current<250)onPandaTap();}}
+      onMouseDown={(e)=>{owlTapTime.current=Date.now();owlDragStart(e);}}
+      onMouseUp={()=>{if(Date.now()-owlTapTime.current<250)onOllieTap();}}
+      onTouchStart={(e)=>{owlTapTime.current=Date.now();owlDragStart(e);}}
+      onTouchEnd={()=>{if(Date.now()-owlTapTime.current<250)onOllieTap();}}
       style={{cursor:"pointer",pointerEvents:"auto",userSelect:"none",WebkitUserSelect:"none"}}>
-      <BellaChar mood={teacherMood} size={pandaSize} speaking={isSpeaking} joyMode={joyFly} shake={headShake} mouthOpen={mouthOpen}/>
+      <BellaChar mood={teacherMood} size={owlSize} speaking={isSpeaking} joyMode={joyFly} shake={headShake} mouthOpen={mouthOpen}/>
     </div>
   </div></>;
 
@@ -3499,11 +3531,11 @@ export default function App(){
   if(scr==="splash")return<div onClick={async()=>{
     rec.warmUp();
     // Speak welcome and WAIT for it to finish
-    await speak("Hey there! I'm Bella the panda! So happy to meet you!",{rate:0.85,pitch:1.0});
+    await speak("Hey there! I'm Bella the owl! So happy to meet you!",{rate:0.85,pitch:1.0});
     welcomeSpoken.current=true;
     await wait(400);
     stop(); // clean silence before transition
-    setPandaSize(95);
+    setOllieSize(95);
     if(prof){
       setScr("home");
       await wait(600);
@@ -3522,9 +3554,9 @@ export default function App(){
   }} style={{background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 30%,#74B9FF 60%,#55EFC4 100%)",backgroundSize:"300% 300%",animation:"gradientMove 6s ease infinite",position:"fixed",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",fontFamily:"var(--font)",cursor:"pointer"}}>
     <Particles count={15} emojis={["⭐","✨","🌟","💫"]}/>
     <div style={{textAlign:"center",zIndex:2,animation:"splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1)"}}>
-      <h1 style={{fontSize:48,fontWeight:900,color:"#fff",margin:0,letterSpacing:-1,textShadow:"0 3px 12px rgba(0,0,0,0.15)"}}>Little Genius</h1>
+      <h1 style={{fontSize:48,fontWeight:900,color:"#fff",margin:0,letterSpacing:-1,textShadow:"0 3px 12px rgba(0,0,0,0.15)"}}>Little Genius 🦉</h1>
       <p style={{color:"rgba(255,255,255,0.85)",fontSize:14,fontWeight:700,letterSpacing:3,textTransform:"uppercase",marginTop:8}}>Learn • Play • Grow</p>
-      <button style={{marginTop:32,padding:"18px 48px",borderRadius:50,border:"3px solid rgba(255,255,255,0.3)",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 8px 32px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",animation:"numPulse 2s ease-in-out infinite"}}>Tap to Start! 🐼</button>
+      <button style={{marginTop:32,padding:"18px 48px",borderRadius:50,border:"3px solid rgba(255,255,255,0.3)",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 8px 32px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",animation:"numPulse 2s ease-in-out infinite"}}>Tap to Start! 🦉</button>
     </div>
     {TeacherBubble}<style>{CSS}</style>
   </div>;
@@ -3616,6 +3648,44 @@ export default function App(){
     </button>)}
   </div>:null;
 
+
+  // ═══ QUESTIONNAIRE (first-time only) ═══
+  if(scr==="questionnaire")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:32,padding:"28px 22px",maxWidth:420,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
+      <div style={{fontSize:48}}>🦉</div>
+      <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Quick Questions!</h2>
+      <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:16}}>Help Ollie personalize your experience ({qStep+1}/{QUESTIONNAIRE.length})</p>
+      
+      <div style={{fontSize:16,fontWeight:700,color:"var(--dark)",marginBottom:14}}>{QUESTIONNAIRE[qStep]?.q}</div>
+      
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {QUESTIONNAIRE[qStep]?.opts.map((opt,i)=><button key={i} onClick={()=>{
+          sfxTap();
+          const newA=[...qAnswers,opt];setQAnswers(newA);
+          if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
+          else{saveQuizAnswers(newA);setScr("home");setTeacherMood("star");}
+        }} style={{
+          padding:"14px 18px",borderRadius:18,border:"none",cursor:"pointer",fontFamily:"var(--font)",
+          fontSize:14,fontWeight:700,textAlign:"left",
+          background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
+          color:"#fff",boxShadow:"0 3px 12px rgba(0,0,0,0.1)",
+          transition:"all 0.2s"
+        }}>{opt}</button>)}
+      </div>
+      
+      <button onClick={()=>{
+        sfxTap();
+        if(qStep<QUESTIONNAIRE.length-1){setQAnswers([...qAnswers,"skipped"]);setQStep(qStep+1);}
+        else{saveQuizAnswers([...qAnswers,"skipped"]);setScr("home");}
+      }} style={{marginTop:12,padding:"8px 16px",borderRadius:12,border:"none",background:"transparent",color:"#A4B0BE",fontSize:12,fontWeight:700,cursor:"pointer"}}>Skip →</button>
+      
+      {/* Progress dots */}
+      <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:14}}>
+        {QUESTIONNAIRE.map((_,i)=><div key={i} style={{width:i===qStep?20:8,height:8,borderRadius:4,background:i<qStep?"#00D2A0":i===qStep?"#6C5CE7":"#E0E0E0",transition:"all 0.3s"}}/>)}
+      </div>
+    </div>
+  </div>;
+
   if(scr==="home")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
@@ -3645,15 +3715,28 @@ export default function App(){
     <div id="home-tiles" style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",padding:"4px 16px 85px"}}>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14}}>
         {[
-          {id:"learn",icon:"📚",title:"Learn",sub:"Numbers, ABC, Shapes & Colors",accent:"#6C5CE7",grad:"linear-gradient(135deg,#6C5CE7,#A29BFE)"},
-          {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",accent:"#00D2A0",grad:"linear-gradient(135deg,#00D2A0,#55EFC4)"},
-          {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Test Your Skills!",accent:"#54A0FF",grad:"linear-gradient(135deg,#54A0FF,#74B9FF)"},
-          {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",accent:"#FF9F43",grad:"linear-gradient(135deg,#FF9F43,#FECA57)"},
-          {id:"arena",icon:"🏟️",title:"Arena",sub:"Multiplayer Quiz!",accent:"#E84393",grad:"linear-gradient(135deg,#E84393,#FD79A8)"},
-          {id:"studyplan",icon:"📋",title:"Study Plan",sub:studyPlan.length>0?`${studyPlan.length} tasks assigned`:"No plan yet",accent:"#FF9F43",grad:"linear-gradient(135deg,#FF9F43,#FECA57)"},
-          {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",accent:"#FF6B81",grad:"linear-gradient(135deg,#FF6B81,#FDA7DF)"},
-          {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",accent:"#00CEC9",grad:"linear-gradient(135deg,#00CEC9,#81ECEC)"},
-          {id:"parent",icon:"👨‍👩‍👧",title:"Parents",sub:"Control Center",accent:"#636E72",grad:"linear-gradient(135deg,#636E72,#B2BEC3)"},
+          // Dynamic tile order based on questionnaire
+          ...(()=>{
+            const base=[
+              {id:"learn",icon:"📚",title:"Learn",sub:"Numbers, ABC, Shapes & Colors",accent:"#6C5CE7",grad:"linear-gradient(135deg,#6C5CE7,#A29BFE)",priority:1},
+              {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",accent:"#00D2A0",grad:"linear-gradient(135deg,#00D2A0,#55EFC4)",priority:2},
+              {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Test Your Skills!",accent:"#54A0FF",grad:"linear-gradient(135deg,#54A0FF,#74B9FF)",priority:3},
+              {id:"arena",icon:"🏟️",title:"Arena",sub:"Multiplayer Quiz!",accent:"#E84393",grad:"linear-gradient(135deg,#E84393,#FD79A8)",priority:4},
+              {id:"studyplan",icon:"📋",title:"Study Plan",sub:studyPlan.length>0?`${studyPlan.length} tasks assigned`:"No plan yet",accent:"#FF9F43",grad:"linear-gradient(135deg,#FF9F43,#FECA57)",priority:5},
+              {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",accent:"#FF9F43",grad:"linear-gradient(135deg,#FF9F43,#FECA57)",priority:6},
+              {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",accent:"#FF6B81",grad:"linear-gradient(135deg,#FF6B81,#FDA7DF)",priority:7},
+              {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",accent:"#00CEC9",grad:"linear-gradient(135deg,#00CEC9,#81ECEC)",priority:8},
+              {id:"parent",icon:"👨‍👩‍👧",title:"Parents",sub:"Control Center",accent:"#636E72",grad:"linear-gradient(135deg,#636E72,#B2BEC3)",priority:9},
+            ];
+            // Reorder based on questionnaire answers
+            if(quizAnswers){
+              const focus=quizAnswers[0];
+              if(focus==="Numbers & Counting"){base.find(t=>t.id==="learn").priority=0;base.find(t=>t.id==="quizzone").priority=1;}
+              else if(focus==="Letters & Reading"){base.find(t=>t.id==="phonics").priority=0;base.find(t=>t.id==="learn").priority=1;}
+              else if(focus==="Fun & Games"){base.find(t=>t.id==="arena").priority=0;base.find(t=>t.id==="quizzone").priority=1;}
+            }
+            return base.sort((a,b)=>a.priority-b.priority);
+          })(),
         ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");if(m.id==="parent"){setShowPinModal(true);}else{setScr(m.id);}}} style={{
           display:"flex",alignItems:"center",gap:14,
           padding:"12px 10px",borderRadius:16,cursor:"pointer",
@@ -3794,9 +3877,9 @@ export default function App(){
       {arenaRoom.hostId!==arenaId&&<div style={{textAlign:"center",padding:16,fontSize:14,color:"rgba(255,255,255,0.5)"}}>Waiting for host to start...</div>}
     </div>}
 
-    {/* Panda message bubble */}
+    {/* Ollie message bubble */}
     {arenaMsg&&(arenaPhase==="playing"||arenaPhase==="result")&&<div style={{padding:"8px 16px",margin:"0 18px",borderRadius:16,background:"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-      <span style={{fontSize:28}}>🐼</span>
+      <span style={{fontSize:28}}>🦉</span>
       <span style={{fontSize:13,fontWeight:700,color:"#fff",flex:1}}>{arenaMsg}</span>
     </div>}
 
@@ -4668,7 +4751,7 @@ export default function App(){
           }}>{o.label}</button>)}
         </div>
       </div>
-      {mathProblem?<div data-panda="math-problem">
+      {mathProblem?<div data-owl="math-problem">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <span style={{fontSize:14,fontWeight:800,color:"#6C5CE7"}}>🏆 {mathScore}/{mathTotal}</span>
           <button onClick={genMath} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
@@ -4719,7 +4802,7 @@ export default function App(){
       </div>}
     </div>}
     {/* ═══ WRITE TAB ═══ */}
-    {numTab==="write"&&<div data-panda="write-canvas" style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    {numTab==="write"&&<div data-owl="write-canvas" style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       <div style={{flexShrink:0,background:"#fff",borderBottom:"3px solid #FF8C42",overflow:"hidden"}}>
         <div style={{position:"relative",padding:"8px 14px",backgroundImage:"repeating-linear-gradient(transparent,transparent 27px,#E8E8E8 27px,#E8E8E8 28px)",backgroundSize:"100% 28px",backgroundPosition:"0 8px"}}>
           <div style={{position:"absolute",left:30,top:0,bottom:0,width:2,background:"#FECACA"}}/>
@@ -4893,7 +4976,7 @@ export default function App(){
       <div style={{marginTop:12}}>
         {shStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playShape(sh)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${shColor},${shColor}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
         {shStep==="saying_word"&&<Mascot mood="speaking" msg={`This is a ${sh.name}! 🔊`}/>}
-        {shStep==="spelling"&&<div data-panda="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{sh.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-panda={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?shColor:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#FF8C42",background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>👀 Watch and listen!</p></div>}</div></div>}
+        {shStep==="spelling"&&<div data-owl="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{sh.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-owl={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?shColor:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#FF8C42",background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>👀 Watch and listen!</p></div>}</div></div>}
         {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {shStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {shStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?shColor:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
@@ -4921,7 +5004,7 @@ export default function App(){
       <div style={{marginTop:12}}>
         {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
         {coStep==="saying_word"&&<Mascot mood="speaking" msg={`This color is ${co.name}! 🔊`}/>}
-        {coStep==="spelling"&&<div data-panda="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{co.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-panda={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?co.hex:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":co.hex,background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>👀 Watch and listen!</p></div>}</div></div>}
+        {coStep==="spelling"&&<div data-owl="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{co.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-owl={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?co.hex:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":co.hex,background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>👀 Watch and listen!</p></div>}</div></div>}
         {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {coStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {coStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?co.hex:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
@@ -4949,7 +5032,7 @@ export default function App(){
     </div>
 
     {/* ═══ LETTER DETAIL OVERLAY ═══ */}
-    {selLetter&&<div data-panda="letter-detail" style={{position:"absolute",inset:0,background:"rgba(255,255,255,.97)",zIndex:30,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,animation:"fadeIn 0.3s",padding:20}}>
+    {selLetter&&<div data-owl="letter-detail" style={{position:"absolute",inset:0,background:"rgba(255,255,255,.97)",zIndex:30,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,animation:"fadeIn 0.3s",padding:20}}>
       <button onClick={closeLetter} style={{position:"absolute",top:12,right:16,padding:"8px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#fff",fontSize:13,fontWeight:800,cursor:"pointer"}}>✕ Close</button>
       <div style={{fontSize:80,fontFamily:"var(--font)",fontWeight:900,color:ALPHA_COLORS[ALPHA_LETTERS.indexOf(selLetter)%13],lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite",...glowStyle("letter-big")}}>{selLetter}{selLetter.toLowerCase()}</div>
       <div style={{fontSize:18,fontWeight:800,color:"#2D2B3D",marginTop:4,...glowStyle("letter-sound")}}>"{ALPHA_DATA[selLetter]?.ph}" sound</div>
@@ -5086,7 +5169,7 @@ export default function App(){
     </div>
 
     {/* ═══ EXPLORE: Simple number grid — tap to hear ═══ */}
-    {basicsTab==="explore"&&<div data-panda="explore-grid" style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column",minHeight:0,WebkitOverflowScrolling:"touch"}}>
+    {basicsTab==="explore"&&<div data-owl="explore-grid" style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column",minHeight:0,WebkitOverflowScrolling:"touch"}}>
       {/* Range filter + spelling toggle */}
       <div style={{display:"flex",gap:5,padding:"8px 10px",flexWrap:"wrap",flexShrink:0}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
@@ -5160,7 +5243,7 @@ export default function App(){
 
 
     {/* ═══ WRITE TAB: Split screen - top shows number, bottom is notepad ═══ */}
-    {basicsTab==="write"&&<div data-panda="write-canvas" style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+    {basicsTab==="write"&&<div data-owl="write-canvas" style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
       {/* ═══ TOP: Compact reference with ruled lines ═══ */}
       <div style={{flexShrink:0,background:"#fff",borderBottom:"3px solid #FF8C42",overflow:"hidden"}}>
         <div style={{position:"relative",padding:"8px 14px",
