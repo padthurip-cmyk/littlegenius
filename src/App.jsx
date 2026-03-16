@@ -1228,13 +1228,16 @@ const genArenaQ=(diff="easy")=>{const t=ARENA_Q_TYPES[Math.floor(Math.random()*A
 
 // ═══ FIRST-TIME QUESTIONNAIRE ═══
 const QUESTIONNAIRE=[
-  {q:"What does your child need most?",opts:["Numbers & Counting","Letters & Reading","Both equally","Fun & Games"]},
-  {q:"How old is your child?",opts:["3-4 years","4-5 years","5-6 years","6-7 years"]},
-  {q:"Can they recognize numbers 1-10?",opts:["Yes, easily","Some of them","Not yet","Not sure"]},
-  {q:"Can they recognize alphabet letters?",opts:["Yes, most","Some letters","Not yet","Not sure"]},
-  {q:"What learning style works best?",opts:["Visual (pictures)","Audio (sounds)","Hands-on (writing)","Mix of all"]},
-  {q:"How much time per day?",opts:["10-15 minutes","15-30 minutes","30-60 minutes","No limit"]},
-  {q:"What excites them most?",opts:["Animals & Nature","Space & Science","Art & Colors","Sports & Games"]},
+  {q:"What's the main goal?",opts:["Numbers & Counting","Letters & Reading","Both equally","Fun & Games"],key:"focus"},
+  {q:"Can they count to 10?",opts:["Yes, easily","Almost there","Just starting","Not yet"],key:"counting"},
+  {q:"Can they recognize A-Z?",opts:["Yes, all letters","Most letters","A few letters","Not yet"],key:"letters"},
+  {q:"Can they read simple words?",opts:["Yes, short words","Starting to","Not yet","Too young"],key:"reading"},
+  {q:"Can they do simple math?",opts:["2+3 = easy!","With help","Not yet","Too young"],key:"math"},
+  {q:"How do they learn best?",opts:["Watching (visual)","Listening (audio)","Doing (hands-on)","Mix of all"],key:"style"},
+  {q:"What topics interest them?",opts:["Animals & Nature","Colors & Shapes","Music & Sounds","Everything!"],key:"interest"},
+  {q:"How much daily screen time?",opts:["10-15 min","15-30 min","30-60 min","No limit"],key:"time"},
+  {q:"Want multiplayer quizzes?",opts:["Yes, with family","Yes, with friends","Maybe later","Not interested"],key:"arena"},
+  {q:"What motivates them?",opts:["Stars & Points","Praise & Cheers","Unlocking rewards","Just having fun"],key:"motivation"},
 ];
 
 const STORIES = [
@@ -2645,7 +2648,7 @@ export default function App(){
   const doWelcome=useCallback(()=>{
     if(welcomeSpoken.current)return;
     welcomeSpoken.current=true;
-    speak("Welcome to Little Genius! I'm Ollie the Owl, your learning buddy! Let's learn and play together!",{rate:0.85,pitch:1.0});
+    speak("Welcome to Little Genius!",{rate:0.85,pitch:1.0});
     setTeacherMood("waving");
   },[speak]);
 
@@ -3545,24 +3548,23 @@ export default function App(){
   if(scr==="splash")return<div onClick={async()=>{
     rec.warmUp();
     // Speak welcome and WAIT for it to finish
-    await speak("Welcome to Little Genius! I'm Ollie the Owl, your learning buddy!",{rate:0.85,pitch:1.0});
+    await speak("Welcome to Little Genius!",{rate:0.85,pitch:1.0});
     welcomeSpoken.current=true;
-    await wait(400);
-    stop(); // clean silence before transition
+    await wait(300);
+    stop();
     setOllieSize(95);
     if(prof){
       setScr("home");
       await wait(600);
       movePandaTo("bottomRight");
       await wait(400);
-      await speak("Hi "+(prof?.name||"friend")+"! So good to see you!",{rate:0.85,pitch:1.0});
-      setTimeout(()=>doHomeTour(),1500);
+      speak("Hi "+(prof?.name||"friend")+"! Let's learn something new!",{rate:0.85,pitch:1.0});
     } else {
-      setScr("onboard");
+      setScr("onboard");setObSt(0);
       await wait(600);
       movePandaTo("bottomRight");
       await wait(400);
-      speak("Ooh, you're new! What's your name?",{rate:0.85,pitch:1.0});
+      speak("Enter your name and age to get started!",{rate:0.85,pitch:1.0});
       setTeacherMood("happy");
     }
   }} style={{background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 30%,#74B9FF 60%,#55EFC4 100%)",backgroundSize:"300% 300%",animation:"gradientMove 6s ease infinite",position:"fixed",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",fontFamily:"var(--font)",cursor:"pointer"}}>
@@ -3599,9 +3601,9 @@ export default function App(){
           boxShadow:obA===a?"0 4px 12px rgba(252,128,25,.3)":"none"
         }}>{a}</button>)}
       </div>
-      <button onClick={()=>{setObSt(1);speak("Cool name! Now pick your style!",{rate:0.8,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,boxShadow:"var(--shadow-btn)",letterSpacing:0.5}}>Next →</button>
+      <button onClick={()=>{sfxTap();setObSt(1);speak("Great! Now select your style!",{rate:0.85,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,boxShadow:"var(--shadow-btn)",letterSpacing:0.5}}>Next →</button>
     </>:
-    <>
+    obSt===1?<>
       {/* Step 2: Gender + Avatar */}
       <div style={{textAlign:"center",marginBottom:16}}>
         <h2 style={{fontSize:24,fontWeight:900,color:"#2D2B3D",margin:0}}>Pick your look! ✨</h2>
@@ -3634,9 +3636,35 @@ export default function App(){
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
         <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:16,border:"2px solid #E8E0D8",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",color:"#8E8CA3"}}>← Back</button>
-        <button onClick={()=>{rec.warmUp();save({name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()});speak("Yay! Let's look around together!",{rate:0.85,pitch:1.0});setTeacherMood("star");setScr("home");setTimeout(()=>doHomeTour(),2000);}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",boxShadow:"var(--shadow-btn)"}}>Let's Go! 🚀</button>
+        <button onClick={()=>{sfxTap();setObSt(2);speak("Would you like a quick tour?",{rate:0.85,pitch:1.0});setTeacherMood("happy");}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",boxShadow:"var(--shadow-btn)"}}>Next →</button>
       </div>
-    </>}
+    </>:
+    obSt===2?<>
+      {/* Step 3: Tour Yes/No */}
+      <div style={{textAlign:"center",marginBottom:20}}>
+        <div style={{fontSize:56,animation:"mascotB 2s ease-in-out infinite"}}>🦉</div>
+        <h2 style={{fontSize:24,fontWeight:900,color:"#2D2B3D",margin:"8px 0 4px"}}>Need a tour?</h2>
+        <p style={{fontSize:13,color:"#8E8CA3",fontWeight:600}}>I can show you around the app!</p>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+        <button onClick={()=>{sfxTap();rec.warmUp();
+          const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
+          save(newP);speak("Let me show you around!",{rate:0.85,pitch:1.0});setTeacherMood("star");
+          if(!quizAnswers){setScr("questionnaire");setQStep(0);setQAnswers([]);}else{setScr("home");setTimeout(()=>doHomeTour(),1500);}
+        }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(0,210,160,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+          <span style={{fontSize:32}}>👍</span>
+          Yes, show me!
+        </button>
+        <button onClick={()=>{sfxTap();rec.warmUp();
+          const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
+          save(newP);speak("Alright, let's jump right in!",{rate:0.85,pitch:1.0});setTeacherMood("star");
+          if(!quizAnswers){setScr("questionnaire");setQStep(0);setQAnswers([]);}else{setScr("home");}
+        }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(255,159,67,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+          <span style={{fontSize:32}}>🚀</span>
+          Skip, let's go!
+        </button>
+      </div>
+    </>:null}
     </div>
     {TeacherBubble}<style>{CSS}</style>
   </div>;
@@ -3668,7 +3696,7 @@ export default function App(){
     <div style={{background:"rgba(255,255,255,0.95)",borderRadius:32,padding:"28px 22px",maxWidth:420,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
       <div style={{fontSize:48}}>🦉</div>
       <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Quick Questions!</h2>
-      <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:16}}>Help Ollie personalize your experience ({qStep+1}/{QUESTIONNAIRE.length})</p>
+      <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:16}}>Question {qStep+1} of {QUESTIONNAIRE.length} — Help Ollie customize your learning!</p>
       
       <div style={{fontSize:16,fontWeight:700,color:"var(--dark)",marginBottom:14}}>{QUESTIONNAIRE[qStep]?.q}</div>
       
@@ -3744,10 +3772,46 @@ export default function App(){
             ];
             // Reorder based on questionnaire answers
             if(quizAnswers){
-              const focus=quizAnswers[0];
-              if(focus==="Numbers & Counting"){base.find(t=>t.id==="learn").priority=0;base.find(t=>t.id==="quizzone").priority=1;}
-              else if(focus==="Letters & Reading"){base.find(t=>t.id==="phonics").priority=0;base.find(t=>t.id==="learn").priority=1;}
-              else if(focus==="Fun & Games"){base.find(t=>t.id==="arena").priority=0;base.find(t=>t.id==="quizzone").priority=1;}
+              const focus=quizAnswers[0]; // Q1: main goal
+              const counting=quizAnswers[1]; // Q2: count to 10
+              const letters=quizAnswers[2]; // Q3: recognize A-Z
+              const reading=quizAnswers[3]; // Q4: read words
+              const math=quizAnswers[4]; // Q5: simple math
+              const interest=quizAnswers[6]; // Q7: topics
+              const wantArena=quizAnswers[8]; // Q9: multiplayer
+
+              // Primary focus
+              if(focus==="Numbers & Counting"){
+                base.find(t=>t.id==="learn").priority=0;
+                base.find(t=>t.id==="quizzone").priority=1;
+              } else if(focus==="Letters & Reading"){
+                base.find(t=>t.id==="phonics").priority=0;
+                base.find(t=>t.id==="learn").priority=1;
+              } else if(focus==="Fun & Games"){
+                base.find(t=>t.id==="arena").priority=0;
+                base.find(t=>t.id==="quizzone").priority=1;
+              }
+
+              // Can't count yet → push Learn higher
+              if(counting==="Not yet"||counting==="Just starting"){
+                base.find(t=>t.id==="learn").priority=Math.min(base.find(t=>t.id==="learn").priority,0);
+              }
+              // Can't read yet → push Phonics higher
+              if(reading==="Not yet"||reading==="Too young"||letters==="Not yet"){
+                base.find(t=>t.id==="phonics").priority=Math.min(base.find(t=>t.id==="phonics").priority,1);
+              }
+              // Good at math → push Quiz Zone higher
+              if(math==="2+3 = easy!"){
+                base.find(t=>t.id==="quizzone").priority=Math.min(base.find(t=>t.id==="quizzone").priority,2);
+              }
+              // Wants arena → boost it
+              if(wantArena==="Yes, with family"||wantArena==="Yes, with friends"){
+                base.find(t=>t.id==="arena").priority=Math.min(base.find(t=>t.id==="arena").priority,2);
+              }
+              // Colors & Shapes interest → Learn first
+              if(interest==="Colors & Shapes"){
+                base.find(t=>t.id==="learn").priority=0;
+              }
             }
             return base.sort((a,b)=>a.priority-b.priority);
           })(),
