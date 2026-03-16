@@ -1,5 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
+
+// ═══ FIREBASE CONFIG — Set your project URL here (one-time developer setup) ═══
+// Go to firebase.google.com → Create project → Realtime Database → Test mode
+// Paste your database URL below. Users will NEVER see any setup screen.
+const FIREBASE_CONFIG = {
+  databaseURL: "https://littlegenius-arena-default-rtdb.firebaseio.com",
+  apiKey: "AIzaSyBqs497BmoJaGA4VngdGmOmsFRwBGIHX5I",
+  projectId: "littlegenius-arena"
+};
+
 /* ═══════════════════════════════════════════════════════════════
    🌟 LITTLE GENIUS v4 — Animated Scenes Edition
    Each number has a LIVING animated scene matching its sentence
@@ -2266,26 +2276,25 @@ export default function App(){
   const[arenaFb,setArenaFb]=useState(null);
   const[arenaDiff,setArenaDiff]=useState("easy");
   const[arenaRounds,setArenaRounds]=useState(10);
-  const[fbReady,setFbReady]=useState(false);
+  const[fbReady,setFbReady]=useState(false);const fbConfig=FIREBASE_CONFIG;
   const[fbError,setFbError]=useState("");
-  const[fbSetupMode,setFbSetupMode]=useState(false);
+  
   const fbListenerRef=useRef(null);
   const arenaRoomRef=useRef(null);
 
   // Firebase config from localStorage
-  const[fbConfig,setFbConfig]=useState(()=>{try{return JSON.parse(localStorage.getItem("lg_fb_config"))||null;}catch(e){return null;}});
-  const saveFbConfig=(cfg)=>{setFbConfig(cfg);localStorage.setItem("lg_fb_config",JSON.stringify(cfg));};
+  // Firebase config is hardcoded — no user setup needed
 
   // Initialize Firebase
   useEffect(()=>{
-    if(!fbConfig?.databaseURL||typeof window.firebase==="undefined")return;
+    if(!FIREBASE_CONFIG?.databaseURL||typeof window.firebase==="undefined")return;
     try{
       if(!window.firebase.apps?.length){
-        window.firebase.initializeApp({databaseURL:fbConfig.databaseURL,apiKey:fbConfig.apiKey||"AIzaSyDummy",projectId:fbConfig.projectId||"littlegenius"});
+        window.firebase.initializeApp(FIREBASE_CONFIG);
       }
       setFbReady(true);setFbError("");
     }catch(e){setFbError("Firebase init failed: "+e.message);}
-  },[fbConfig]);
+  },[]); // Init once on mount
 
   // Firebase helpers
   const fbRef=(path)=>window.firebase?.database?.()?.ref?.(path);
@@ -3591,63 +3600,21 @@ export default function App(){
   if(scr==="arena")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"linear-gradient(180deg,#1B1464 0%,#3B1F8E 40%,#6C5CE7 100%)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",color:"#fff"}}>
     {/* Header */}
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",flexShrink:0}}>
-      <button onClick={()=>{if(fbListenerRef.current)fbListenerRef.current();setArenaRoom(null);setArenaPhase("lobby");setFbSetupMode(false);goHome();}} style={{padding:"10px 18px",borderRadius:16,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"var(--font)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Exit</button>
+      <button onClick={()=>{if(fbListenerRef.current)fbListenerRef.current();setArenaRoom(null);setArenaPhase("lobby");goHome();}} style={{padding:"10px 18px",borderRadius:16,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"var(--font)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Exit</button>
       <span style={{fontSize:20,fontWeight:800}}>🏟️ Arena</span>
       {arenaRoom&&<span style={{padding:"6px 14px",borderRadius:14,background:"rgba(255,255,255,0.15)",fontSize:13,fontWeight:700,letterSpacing:2,fontFamily:"monospace"}}>{arenaRoom.code}</span>}
     </div>
 
     <div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0,WebkitOverflowScrolling:"touch"}}>
 
-    {/* ═══ FIREBASE SETUP (one-time) ═══ */}
-    {(!fbConfig||fbSetupMode)&&<div style={{padding:"20px 24px"}}>
-      <div style={{textAlign:"center",marginBottom:20}}>
-        <span style={{fontSize:56}}>🔧</span>
-        <h2 style={{fontSize:22,fontWeight:800,marginTop:8}}>Connect to Play Online</h2>
-        <p style={{fontSize:12,color:"rgba(255,255,255,0.6)",marginTop:4}}>One-time setup to enable cross-device multiplayer. Takes 2 minutes!</p>
-      </div>
-
-      {/* Step by step guide */}
-      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
-        {[
-          {n:"1",t:"Go to firebase.google.com",d:"Create free Google account if needed"},
-          {n:"2",t:'Click "Create a project"',d:"Name it anything (e.g. littlegenius)"},
-          {n:"3",t:"Open Realtime Database",d:'In sidebar → Build → Realtime Database → "Create Database"'},
-          {n:"4",t:'Select region → Start in "Test mode"',d:"This allows read/write for 30 days"},
-          {n:"5",t:"Copy the database URL",d:'It looks like: https://yourproject-default-rtdb.firebaseio.com'},
-        ].map(s=><div key={s.n} style={{display:"flex",gap:12,padding:"10px 14px",borderRadius:16,background:"rgba(255,255,255,0.06)"}}>
-          <div style={{width:28,height:28,borderRadius:14,background:"#FECA57",color:"#1B1464",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:14,flexShrink:0}}>{s.n}</div>
-          <div><div style={{fontWeight:700,fontSize:13}}>{s.t}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.5)"}}>{s.d}</div></div>
-        </div>)}
-      </div>
-
-      {/* Config input */}
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:4}}>DATABASE URL *</div>
-        <input id="fb-url" defaultValue={fbConfig?.databaseURL||""} placeholder="https://your-project.firebaseio.com" style={{width:"100%",padding:"14px 16px",borderRadius:16,border:"2px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",color:"#fff",fontSize:14,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}/>
-      </div>
-      <div style={{marginBottom:16}}>
-        <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:4}}>API KEY (optional)</div>
-        <input id="fb-key" defaultValue={fbConfig?.apiKey||""} placeholder="AIzaSy..." style={{width:"100%",padding:"12px 16px",borderRadius:16,border:"2px solid rgba(255,255,255,0.15)",background:"rgba(255,255,255,0.08)",color:"#fff",fontSize:13,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}/>
-      </div>
-      <button onClick={()=>{
-        const url=document.getElementById("fb-url")?.value?.trim();
-        const key=document.getElementById("fb-key")?.value?.trim();
-        if(!url||!url.includes("firebase")){setFbError("Please enter a valid Firebase URL");return;}
-        saveFbConfig({databaseURL:url,apiKey:key||"AIzaSyDummy",projectId:"littlegenius"});
-        setFbSetupMode(false);setFbError("");
-      }} style={{width:"100%",padding:"16px",borderRadius:20,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 24px rgba(254,202,87,0.3)"}}>Save & Connect 🔗</button>
-      {fbError&&<p style={{color:"#FF6B81",fontSize:12,fontWeight:700,textAlign:"center",marginTop:8}}>{fbError}</p>}
-      <p style={{fontSize:10,color:"rgba(255,255,255,0.3)",textAlign:"center",marginTop:8}}>Your config is stored locally and only used to connect to YOUR Firebase project.</p>
-    </div>}
-
+    
     {/* ═══ NO ROOM — Create or Join ═══ */}
-    {fbConfig&&!fbSetupMode&&!arenaRoom&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px 24px",gap:16}}>
+    {!arenaRoom&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px 24px",gap:16}}>
       <div style={{fontSize:72,animation:"floatY 2s ease-in-out infinite"}}>🏟️</div>
       <h2 style={{fontSize:24,fontWeight:800,textAlign:"center"}}>Multiplayer Quiz Arena</h2>
       <p style={{fontSize:12,color:"rgba(255,255,255,0.6)",textAlign:"center",maxWidth:280}}>Play from ANY device! Parent & child join from different phones using the same room code.</p>
       <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:12,background:fbReady?"rgba(0,210,160,0.2)":"rgba(255,107,129,0.2)"}}>
-        <span style={{fontSize:10,fontWeight:800,color:fbReady?"#55EFC4":"#FF6B81"}}>{fbReady?"🟢 Connected":"🔴 Not connected"}</span>
-        <button onClick={()=>setFbSetupMode(true)} style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.5)",background:"none",border:"none",cursor:"pointer",textDecoration:"underline"}}>Settings</button>
+        <span style={{fontSize:10,fontWeight:800,color:fbReady?"#55EFC4":"#FF6B81"}}>{fbReady?"🟢 Online":"🔴 Connecting..."}</span>
       </div>
 
       <input value={arenaName} onChange={e=>setArenaName(e.target.value)} placeholder={prof?.name||"Your name"} style={{width:"100%",maxWidth:300,padding:"14px 18px",borderRadius:18,border:"2px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"#fff",fontSize:16,fontWeight:700,fontFamily:"var(--font)",textAlign:"center",outline:"none"}}/>
