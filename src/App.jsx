@@ -1746,7 +1746,7 @@ const useStore=()=>{const[d,setD]=useState(null);const[ok,setOk]=useState(false)
 
 // ═══ VIRTUAL TEACHER ═══
 const TEACHER_MSGS={
-  welcome:["Hi! I'm Bella 🦉! 🌟","Ready to learn something amazing?","Let's have fun together!"],
+  welcome:["Hi! I'm Ollie 🦉! 🌟","Ready to learn something amazing?","Let's have fun together!"],
   correct:["Wonderful job! ⭐","You're so smart! 🎉","That's perfect! Keep going!","Amazing work, superstar! 🌟","I'm so proud of you! 💪","Brilliant! You got it! ✨","Wow, you're a genius! 🧠"],
   wrong:["Almost there! Try again! 💪","Don't worry, let's try once more!","You can do it! I believe in you! 🌈","So close! Give it another go! ⭐"],
   encourage:["You're doing great! Keep it up!","I love how hard you're trying!","Every mistake helps you learn!","Practice makes perfect! 🎯"],
@@ -1766,114 +1766,128 @@ const tMsg=(cat)=>{const msgs=TEACHER_MSGS[cat]||TEACHER_MSGS.encourage;return m
 const BellaChar=({mood,size=110,speaking=false,joyMode=false,shake="",mouthOpen=0})=>{
   const s=size;
   const W=mood==="waving",C=mood==="clapping",T=mood==="thinking",P=mood==="pointing",S=mood==="star",E=mood==="excited",PR=mood==="proud",H=mood==="happy",SAD=mood==="sad";
-  // mouthOpen: 0.0 (closed smile) to 1.0 (fully open) — driven by smooth sine wave externally
   const mo=Math.max(0,Math.min(1,mouthOpen));
-  // Smooth mouth: interpolate between smile and open mouth
-  const mouthRy=1+mo*3.5; // 1 (smile line) → 4.5 (open)
-  const mouthRx=3+mo*2;   // 3 → 5
 
-  return<svg width={s} height={s} viewBox="0 0 80 88" style={{overflow:"visible"}}>
+  return<svg width={s} height={s} viewBox="0 0 80 90" style={{overflow:"visible"}}>
     <defs><style>{`
-      @keyframes pFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
-      @keyframes pBlink{0%,90%,94%,100%{ry:3.5}92%{ry:0.3}}
-      @keyframes pWave{0%,100%{transform:rotate(0deg)}20%{transform:rotate(-25deg)}40%{transform:rotate(20deg)}60%{transform:rotate(-18deg)}80%{transform:rotate(12deg)}}
-      @keyframes pClapR{0%,100%{transform:translate(0,0)}50%{transform:translate(4px,-3px)}}
-      @keyframes pClapL{0%,100%{transform:translate(0,0)}50%{transform:translate(-4px,-3px)}}
-      @keyframes pEar{0%,100%{transform:rotate(0deg)}50%{transform:rotate(5deg)}}
-      @keyframes pSpark{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1.1)}}
-      @keyframes pTailWag{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(8deg)}}
-      @keyframes pBlush{0%,100%{opacity:.35}50%{opacity:.6}}
-      @keyframes pGentleNod{0%,100%{transform:rotate(0deg)}50%{transform:rotate(2deg)}}
-      @keyframes pLookAround{0%,100%{transform:rotate(0deg) translateX(0)}25%{transform:rotate(-3deg) translateX(-1px)}50%{transform:rotate(2deg) translateX(1px)}75%{transform:rotate(-2deg) translateX(-1px)}}
-      @keyframes pHiFive{0%{transform:scale(1)}40%{transform:scale(1.15)}100%{transform:scale(1)}}
-      @keyframes pJoySpin{0%{transform:rotate(0deg)}25%{transform:rotate(5deg)}50%{transform:rotate(-5deg)}75%{transform:rotate(3deg)}100%{transform:rotate(0deg)}}
-      @keyframes pHeadYes{0%{transform:rotate(0deg) translateY(0)}15%{transform:rotate(3deg) translateY(1.5px)}30%{transform:rotate(-1deg) translateY(-0.5px)}45%{transform:rotate(2deg) translateY(1px)}60%{transform:rotate(-0.5deg) translateY(0)}100%{transform:rotate(0deg) translateY(0)}}
-      @keyframes pHeadNo{0%{transform:rotate(0deg) translateX(0)}15%{transform:rotate(-4deg) translateX(-2px)}35%{transform:rotate(4deg) translateX(2px)}55%{transform:rotate(-3deg) translateX(-1.5px)}75%{transform:rotate(2deg) translateX(1px)}100%{transform:rotate(0deg) translateX(0)}}
-      @keyframes pSadBody{0%,100%{transform:translateY(0)}50%{transform:translateY(2px)}}
-      @keyframes pGentleArm{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-8deg)}}
+      @keyframes oFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+      @keyframes oBlink{0%,90%,94%,100%{ry:5}92%{ry:0.5}}
+      @keyframes oWave{0%,100%{transform:rotate(0deg)}20%{transform:rotate(-20deg)}40%{transform:rotate(15deg)}60%{transform:rotate(-12deg)}80%{transform:rotate(8deg)}}
+      @keyframes oEarTuft{0%,100%{transform:rotate(0deg)}50%{transform:rotate(5deg)}}
+      @keyframes oSpark{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1.1)}}
+      @keyframes oBlush{0%,100%{opacity:.3}50%{opacity:.55}}
+      @keyframes oNod{0%,100%{transform:rotate(0deg)}50%{transform:rotate(2deg)}}
+      @keyframes oLook{0%,100%{transform:rotate(0deg) translateX(0)}25%{transform:rotate(-2deg) translateX(-1px)}50%{transform:rotate(1deg) translateX(1px)}75%{transform:rotate(-1deg) translateX(0)}}
+      @keyframes oJoy{0%{transform:rotate(0deg)}25%{transform:rotate(4deg)}50%{transform:rotate(-4deg)}75%{transform:rotate(2deg)}100%{transform:rotate(0deg)}}
+      @keyframes oYes{0%{transform:rotate(0deg) translateY(0)}15%{transform:rotate(2deg) translateY(1.5px)}30%{transform:rotate(-1deg) translateY(-0.5px)}45%{transform:rotate(1deg) translateY(1px)}100%{transform:rotate(0deg)}}
+      @keyframes oNo{0%{transform:rotate(0deg) translateX(0)}15%{transform:rotate(-3deg) translateX(-2px)}35%{transform:rotate(3deg) translateX(2px)}55%{transform:rotate(-2deg) translateX(-1px)}100%{transform:rotate(0deg)}}
+      @keyframes oWingFlap{0%,100%{transform:rotate(0deg)}50%{transform:rotate(-12deg)}}
+      @keyframes oSadBob{0%,100%{transform:translateY(0)}50%{transform:translateY(2px)}}
     `}</style>
-      <radialGradient id="pf" cx="40%" cy="30%"><stop offset="0%" stopColor="#fff"/><stop offset="100%" stopColor="#EDEDED"/></radialGradient>
-      <radialGradient id="pp" cx="50%" cy="40%"><stop offset="0%" stopColor="#3a3a3a"/><stop offset="100%" stopColor="#111"/></radialGradient>
+      <radialGradient id="ob" cx="40%" cy="30%"><stop offset="0%" stopColor="#C68642"/><stop offset="100%" stopColor="#8B5E3C"/></radialGradient>
+      <radialGradient id="of" cx="50%" cy="35%"><stop offset="0%" stopColor="#F5DEB3"/><stop offset="100%" stopColor="#DEB887"/></radialGradient>
+      <radialGradient id="oh" cx="45%" cy="30%"><stop offset="0%" stopColor="#D2946B"/><stop offset="100%" stopColor="#A0704C"/></radialGradient>
     </defs>
-    <g style={{animation:SAD?"pSadBody 1.5s ease-in-out infinite":shake==="no"?"pSadBody 1.5s ease-in-out infinite":joyMode?"pJoySpin 0.8s ease-in-out infinite":"pFloat 4s ease-in-out infinite"}}>
+    <g style={{animation:SAD?"oSadBob 1.5s ease-in-out infinite":joyMode?"oJoy 0.8s ease-in-out infinite":"oFloat 4s ease-in-out infinite"}}>
       {/* Shadow */}
-      <ellipse cx="40" cy="84" rx="15" ry="2.5" fill="rgba(0,0,0,.06)"/>
-      {/* Tail */}
-      <g style={{transformOrigin:"54px 65px",animation:`pTailWag ${speaking?"0.8":"1.5"}s ease-in-out infinite`}}>
-        <ellipse cx="56" cy="64" rx="5" ry="4" fill="#333"/>
+      <ellipse cx="40" cy="86" rx="14" ry="2.5" fill="rgba(0,0,0,.06)"/>
+      {/* Tail feathers */}
+      <g style={{transformOrigin:"40px 72px"}}>
+        <ellipse cx="34" cy="72" rx="4" ry="6" fill="#8B5E3C" transform="rotate(-10,34,72)"/>
+        <ellipse cx="40" cy="73" rx="3.5" ry="6" fill="#A0704C"/>
+        <ellipse cx="46" cy="72" rx="4" ry="6" fill="#8B5E3C" transform="rotate(10,46,72)"/>
       </g>
       {/* Body */}
-      <ellipse cx="40" cy="56" rx="17" ry="17" fill="url(#pf)"/>
-      <ellipse cx="40" cy="58" rx="10" ry="11" fill="#F6F6F6"/>
-      {/* Belly dot */}
-      <ellipse cx="40" cy="62" rx="1.5" ry="1" fill="#E8E8E8"/>
-      {/* Legs */}
-      <ellipse cx="32" cy="71" rx="6" ry="4.5" fill="#333"/>
-      <ellipse cx="48" cy="71" rx="6" ry="4.5" fill="#333"/>
-      <circle cx="30" cy="73" r="1" fill="#FFB4B4"/><circle cx="32" cy="74" r="1" fill="#FFB4B4"/><circle cx="34" cy="73" r="1" fill="#FFB4B4"/>
-      <circle cx="46" cy="73" r="1" fill="#FFB4B4"/><circle cx="48" cy="74" r="1" fill="#FFB4B4"/><circle cx="50" cy="73" r="1" fill="#FFB4B4"/>
-      {/* Left arm */}
-      <g style={{transformOrigin:"24px 50px",animation:C?"pClapL .5s ease-in-out infinite":speaking?"pGentleArm 2.5s ease-in-out infinite":"none"}}>
-        <ellipse cx={T?30:speaking?24:22} cy={T?37:speaking?44:52} rx="6.5" ry="5" fill="#333" transform={T?"rotate(50,30,37)":speaking?"rotate(20,24,44)":"rotate(15,22,52)"}/>
-        {T&&<circle cx="31" cy="33" r="2.5" fill="#333"/>}
+      <ellipse cx="40" cy="58" rx="18" ry="20" fill="url(#ob)"/>
+      {/* Belly — cream/white oval */}
+      <ellipse cx="40" cy="62" rx="12" ry="14" fill="url(#of)"/>
+      {/* Belly feather pattern (V shapes) */}
+      <path d="M36,54 L38,57 L40,54" fill="none" stroke="#C68642" strokeWidth=".6" opacity=".4"/>
+      <path d="M40,54 L42,57 L44,54" fill="none" stroke="#C68642" strokeWidth=".6" opacity=".4"/>
+      <path d="M34,59 L36,62 L38,59" fill="none" stroke="#C68642" strokeWidth=".6" opacity=".3"/>
+      <path d="M38,59 L40,62 L42,59" fill="none" stroke="#C68642" strokeWidth=".6" opacity=".3"/>
+      <path d="M42,59 L44,62 L46,59" fill="none" stroke="#C68642" strokeWidth=".6" opacity=".3"/>
+      {/* Feet */}
+      <g>
+        <ellipse cx="33" cy="77" rx="5" ry="2.5" fill="#FF9F43"/>
+        <circle cx="29" cy="77" r="1.5" fill="#FF9F43"/><circle cx="33" cy="76" r="1.5" fill="#FF9F43"/><circle cx="37" cy="77" r="1.5" fill="#FF9F43"/>
       </g>
-      {/* Right arm */}
-      <g style={{transformOrigin:"56px 50px",animation:W?"pWave 1.2s ease-in-out infinite":C?"pClapR .5s ease-in-out infinite":"none"}}>
-        <ellipse cx={W?58:58} cy={W?36:52} rx="6.5" ry="5" fill="#333" transform={W?"rotate(-30,58,36)":"rotate(-15,58,52)"}/>
+      <g>
+        <ellipse cx="47" cy="77" rx="5" ry="2.5" fill="#FF9F43"/>
+        <circle cx="43" cy="77" r="1.5" fill="#FF9F43"/><circle cx="47" cy="76" r="1.5" fill="#FF9F43"/><circle cx="51" cy="77" r="1.5" fill="#FF9F43"/>
+      </g>
+      {/* Left wing */}
+      <g style={{transformOrigin:"22px 52px",animation:W||C?"oWingFlap .5s ease-in-out infinite":speaking?"oWingFlap 2s ease-in-out infinite":"none"}}>
+        <ellipse cx={T?28:22} cy={T?42:55} rx="8" ry="13" fill="#A0704C" transform={T?"rotate(40,28,42)":"rotate(15,22,55)"}/>
+        <ellipse cx={T?28:22} cy={T?42:55} rx="5" ry="9" fill="#8B5E3C" transform={T?"rotate(40,28,42)":"rotate(15,22,55)"}/>
+      </g>
+      {/* Right wing */}
+      <g style={{transformOrigin:"58px 52px",animation:W?"oWave 1.2s ease-in-out infinite":C?"oWingFlap .5s ease-in-out infinite":"none"}}>
+        <ellipse cx={W?60:58} cy={W?40:55} rx="8" ry="13" fill="#A0704C" transform={W?"rotate(-30,60,40)":"rotate(-15,58,55)"}/>
+        <ellipse cx={W?60:58} cy={W?40:55} rx="5" ry="9" fill="#8B5E3C" transform={W?"rotate(-30,60,40)":"rotate(-15,58,55)"}/>
       </g>
       {/* Head */}
-      <g style={{transformOrigin:"40px 26px",animation:shake==="yes"?"pHeadYes 1s ease-in-out infinite":shake==="no"?"pHeadNo 1.2s ease-in-out infinite":joyMode?"pJoySpin 0.8s ease-in-out infinite":speaking?"pGentleNod 2s ease-in-out infinite":"pLookAround 8s ease-in-out infinite"}}>
-        <ellipse cx="40" cy="26" rx="17" ry="15" fill="url(#pf)"/>
-        {/* Ears */}
-        <g style={{transformOrigin:"24px 13px",animation:(E||S||W)?"pEar .6s ease-in-out infinite":"none"}}>
-          <circle cx="24" cy="13" r="7.5" fill="#333"/><circle cx="24" cy="13" r="4" fill="#FFB4B4" opacity=".45"/>
+      <g style={{transformOrigin:"40px 28px",animation:shake==="yes"?"oYes 1s ease-in-out infinite":shake==="no"?"oNo 1.2s ease-in-out infinite":joyMode?"oJoy 0.8s ease-in-out infinite":speaking?"oNod 2s ease-in-out infinite":"oLook 8s ease-in-out infinite"}}>
+        <ellipse cx="40" cy="28" rx="20" ry="17" fill="url(#oh)"/>
+        {/* Face disc — lighter facial area (owl characteristic) */}
+        <ellipse cx="40" cy="30" rx="15" ry="13" fill="#F5DEB3"/>
+        <ellipse cx="40" cy="30" rx="14" ry="12" fill="#FAF0E6"/>
+        {/* Ear tufts */}
+        <g style={{transformOrigin:"22px 12px",animation:(E||S||W)?"oEarTuft .6s ease-in-out infinite":"none"}}>
+          <ellipse cx="23" cy="14" rx="4" ry="8" fill="#8B5E3C" transform="rotate(-15,23,14)"/>
+          <ellipse cx="24" cy="15" rx="2.5" ry="5" fill="#A0704C" transform="rotate(-15,24,15)"/>
         </g>
-        <g style={{transformOrigin:"56px 13px",animation:(E||S||W)?"pEar .6s ease-in-out .15s infinite":"none"}}>
-          <circle cx="56" cy="13" r="7.5" fill="#333"/><circle cx="56" cy="13" r="4" fill="#FFB4B4" opacity=".45"/>
+        <g style={{transformOrigin:"58px 12px",animation:(E||S||W)?"oEarTuft .6s ease-in-out .15s infinite":"none"}}>
+          <ellipse cx="57" cy="14" rx="4" ry="8" fill="#8B5E3C" transform="rotate(15,57,14)"/>
+          <ellipse cx="56" cy="15" rx="2.5" ry="5" fill="#A0704C" transform="rotate(15,56,15)"/>
         </g>
-        {/* Eye patches */}
-        <ellipse cx="32" cy="25" rx="8" ry="6.5" fill="url(#pp)" transform="rotate(-5,32,25)"/>
-        <ellipse cx="48" cy="25" rx="8" ry="6.5" fill="url(#pp)" transform="rotate(5,48,25)"/>
-        {/* Eyes */}
-        <ellipse cx="32" cy="25" rx="4" ry="3.8" fill="#fff"/>
-        <ellipse cx="48" cy="25" rx="4" ry="3.8" fill="#fff"/>
-        <ellipse style={{animation:"pBlink 4s ease-in-out infinite"}} cx={T?31:SAD?32:33} cy={SAD?26:25} rx="2.5" ry={SAD?3:3.5} fill="#111"/>
-        <ellipse style={{animation:"pBlink 4s ease-in-out infinite"}} cx={T?47:SAD?48:49} cy={SAD?26:25} rx="2.5" ry={SAD?3:3.5} fill="#111"/>
+        {/* Big owl eyes — white circles */}
+        <circle cx="32" cy="27" r="9" fill="#fff" stroke="#C68642" strokeWidth=".5"/>
+        <circle cx="48" cy="27" r="9" fill="#fff" stroke="#C68642" strokeWidth=".5"/>
+        {/* Iris */}
+        <ellipse style={{animation:"oBlink 4s ease-in-out infinite"}} cx={T?31:SAD?32:33} cy={SAD?28:27} rx="5" ry={SAD?4.5:5} fill="#4A2C1A"/>
+        <ellipse style={{animation:"oBlink 4s ease-in-out infinite"}} cx={T?47:SAD?48:49} cy={SAD?28:27} rx="5" ry={SAD?4.5:5} fill="#4A2C1A"/>
+        {/* Pupil */}
+        <circle cx={T?31:SAD?32:33} cy={SAD?27:26} r="2.5" fill="#111"/>
+        <circle cx={T?47:SAD?48:49} cy={SAD?27:26} r="2.5" fill="#111"/>
         {/* Eye sparkle */}
-        <circle cx={T?31.5:SAD?32.5:33.5} cy="23.5" r="1" fill="#fff"/><circle cx={T?47.5:SAD?48.5:49.5} cy="23.5" r="1" fill="#fff"/>
-        {(E||S)&&<><circle cx="34" cy="22.5" r=".6" fill="#fff"/><circle cx="50" cy="22.5" r=".6" fill="#fff"/></>}
+        <circle cx={T?32:SAD?33:34} cy="24.5" r="1.3" fill="#fff"/><circle cx={T?48:SAD?49:50} cy="24.5" r="1.3" fill="#fff"/>
+        {(E||S)&&<><circle cx="35" cy="23.5" r=".7" fill="#fff"/><circle cx="51" cy="23.5" r=".7" fill="#fff"/></>}
         {/* Sad tear */}
-        {SAD&&<ellipse cx="26" cy="29" rx="1.2" ry="2" fill="#60A5FA" opacity=".7" style={{animation:"pSpark 1.5s ease-in-out infinite"}}/>}
-        {/* Nose */}
-        <ellipse cx="40" cy="31" rx="3" ry="2.2" fill="#222"/><ellipse cx="39.5" cy="30.5" rx=".9" ry=".6" fill="#444"/>
-        {/* Mouth — smooth lip sync: always smiling, opens gently when speaking */}
+        {SAD&&<ellipse cx="24" cy="32" rx="1.2" ry="2" fill="#60A5FA" opacity=".7" style={{animation:"oSpark 1.5s ease-in-out infinite"}}/>}
+        {/* Beak */}
+        <path d="M 38,34 L 40,39 L 42,34 Z" fill="#FF9F43" stroke="#E88B30" strokeWidth=".3"/>
+        {/* Mouth — below beak, opens when speaking */}
         {speaking?
-          <ellipse cx="40" cy={35.5+mo*0.5} rx={mouthRx} ry={mouthRy} fill={mo>0.3?"#D93B4B":"none"} stroke="#D93B4B" strokeWidth={mo>0.3?".5":"1"} strokeLinecap="round" style={{transition:"rx 0.12s ease, ry 0.12s ease, cy 0.12s ease"}}/>:
-          (E||S)?<path d="M 34,34 Q 40,42 46,34" fill="#D93B4B" stroke="#222" strokeWidth=".5"/>:
-          SAD?<path d="M 35,38 Q 40,33 45,38" fill="none" stroke="#888" strokeWidth="1.2" strokeLinecap="round"/>:
-          shake==="no"?<path d="M 36,37 Q 40,34 44,37" fill="none" stroke="#222" strokeWidth=".9" strokeLinecap="round"/>:
-          <path d="M 35,35 Q 40,40 45,35" fill="none" stroke="#E23744" strokeWidth="1" strokeLinecap="round"/>
+          <ellipse cx="40" cy={40+mo*0.5} rx={2+mo*1.5} ry={0.5+mo*2} fill={mo>0.3?"#D93B4B":"none"} stroke="#D93B4B" strokeWidth={mo>0.3?".4":".8"} style={{transition:"rx 0.12s ease, ry 0.12s ease"}}/>:
+          (E||S)?<path d="M 37,40 Q 40,43 43,40" fill="none" stroke="#D93B4B" strokeWidth=".8" strokeLinecap="round"/>:
+          SAD?<path d="M 38,41 Q 40,38 42,41" fill="none" stroke="#888" strokeWidth=".8" strokeLinecap="round"/>:
+          null
         }
-        {/* Tongue peeks out when excited and not speaking */}
-        {(E||S)&&!speaking&&<ellipse cx="40" cy="39" rx="2" ry="1.5" fill="#FF8B8B"/>}
         {/* Blush */}
-        <ellipse cx="25" cy="31" rx="3.5" ry="2" fill="#FFB4B4" opacity=".4" style={{animation:"pBlush 3s ease-in-out infinite"}}/>
-        <ellipse cx="55" cy="31" rx="3.5" ry="2" fill="#FFB4B4" opacity=".4" style={{animation:"pBlush 3s ease-in-out .5s infinite"}}/>
-        {/* Hat */}
-        <ellipse cx="40" cy="13" rx="12" ry="3.5" fill="#FF8C42"/><ellipse cx="40" cy="11" rx="9" ry="5.5" fill="#FF8C42"/><circle cx="40" cy="6.5" r="2" fill="#FFB066"/>
+        <ellipse cx="23" cy="33" rx="3" ry="1.8" fill="#FFB4B4" opacity=".35" style={{animation:"oBlush 3s ease-in-out infinite"}}/>
+        <ellipse cx="57" cy="33" rx="3" ry="1.8" fill="#FFB4B4" opacity=".35" style={{animation:"oBlush 3s ease-in-out .5s infinite"}}/>
+        {/* Graduation cap / scholar hat */}
+        <rect x="28" y="11" width="24" height="3" rx="1" fill="#4A2C1A"/>
+        <rect x="32" y="6" width="16" height="6" rx="1.5" fill="#4A2C1A"/>
+        <circle cx="48" cy="8" r="1.5" fill="#FECA57"/>
+        <line x1="48" y1="8" x2="52" y2="13" stroke="#FECA57" strokeWidth=".8"/>
+        <circle cx="52" cy="14" r="1.2" fill="#FECA57"/>
       </g>
-      {/* Sparkle effects — subtle */}
-      {(S||E)&&[{x:5,y:8,e:"✨",d:0},{x:67,y:5,e:"⭐",d:.5},{x:68,y:42,e:"🌟",d:1}].map((p,i)=>
-        <text key={i} x={p.x} y={p.y} fontSize="7" style={{animation:`pSpark 1.2s ease-in-out ${p.d}s infinite`}}>{p.e}</text>
+      {/* Sparkle effects */}
+      {(S||E)&&[{x:3,y:10,e:"✨",d:0},{x:69,y:7,e:"⭐",d:.5},{x:70,y:45,e:"🌟",d:1}].map((p,i)=>
+        <text key={i} x={p.x} y={p.y} fontSize="7" style={{animation:`oSpark 1.2s ease-in-out ${p.d}s infinite`}}>{p.e}</text>
       )}
-      {PR&&[{x:6,y:11,e:"💕",d:0},{x:64,y:7,e:"💖",d:.5}].map((p,i)=>
-        <text key={i} x={p.x} y={p.y} fontSize="7" style={{animation:`pSpark 1.8s ease-in-out ${p.d}s infinite`}}>{p.e}</text>
+      {PR&&[{x:4,y:13,e:"💕",d:0},{x:66,y:9,e:"💖",d:.5}].map((p,i)=>
+        <text key={i} x={p.x} y={p.y} fontSize="7" style={{animation:`oSpark 1.8s ease-in-out ${p.d}s infinite`}}>{p.e}</text>
       )}
-      {C&&<text x="34" y="46" fontSize="8" style={{animation:"pSpark .5s ease-in-out infinite"}}>👏</text>}
-      {W&&<text x="64" y="30" fontSize="7" style={{animation:"pSpark .8s ease-in-out infinite"}}>✨</text>}
+      {C&&<text x="34" y="48" fontSize="8" style={{animation:"oSpark .5s ease-in-out infinite"}}>👏</text>}
+      {W&&<text x="66" y="33" fontSize="7" style={{animation:"oSpark .8s ease-in-out infinite"}}>✨</text>}
     </g>
   </svg>;
 };
+
+
 
 const Particles=({count=10,emojis=["⭐","✨","🌟","💫"]})=>{const items=useRef(Array.from({length:count},(_,i)=>({id:i,emoji:emojis[i%emojis.length],x:Math.random()*100,y:Math.random()*100,sz:12+Math.random()*14,dur:8+Math.random()*12,dl:-Math.random()*10,dr:20+Math.random()*40}))).current;return<div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0,overflow:"hidden"}}>{items.map(p=><div key={p.id} style={{position:"absolute",left:`${p.x}%`,top:`${p.y}%`,fontSize:p.sz,opacity:0.25,animation:`floatP ${p.dur}s ease-in-out ${p.dl}s infinite`,"--dr":`${p.dr}px`}}>{p.emoji}</div>)}</div>;};
 const Confetti=({active,type})=>{
@@ -2631,7 +2645,7 @@ export default function App(){
   const doWelcome=useCallback(()=>{
     if(welcomeSpoken.current)return;
     welcomeSpoken.current=true;
-    speak("Hey there! I'm Bella the owl! So happy to meet you! Let's learn and play together!",{rate:0.85,pitch:1.0});
+    speak("Welcome to Little Genius! I'm Ollie the Owl, your learning buddy! Let's learn and play together!",{rate:0.85,pitch:1.0});
     setTeacherMood("waving");
   },[speak]);
 
@@ -3531,7 +3545,7 @@ export default function App(){
   if(scr==="splash")return<div onClick={async()=>{
     rec.warmUp();
     // Speak welcome and WAIT for it to finish
-    await speak("Hey there! I'm Bella the owl! So happy to meet you!",{rate:0.85,pitch:1.0});
+    await speak("Welcome to Little Genius! I'm Ollie the Owl, your learning buddy!",{rate:0.85,pitch:1.0});
     welcomeSpoken.current=true;
     await wait(400);
     stop(); // clean silence before transition
@@ -5412,7 +5426,7 @@ export default function App(){
 <p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{ttsKey?"Using Google Cloud voice (same sweet voice on all devices!)":"Using your device's built-in voice. Add a Google Cloud API key for a consistent sweet voice everywhere."}</p>
 <input value={ttsKey} onChange={e=>saveTtsKey(e.target.value.trim())} placeholder="Paste Google Cloud API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E0D8",borderRadius:12,fontSize:12,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
 <div style={{display:"flex",gap:8,marginTop:8}}>
-<button onClick={()=>{speak("Hi! I'm Bella! This is how I sound!",{rate:0.92,pitch:1.05});}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:ttsKey?"linear-gradient(135deg,#FF8C42,#FFB066)":"#E8E8E8",color:ttsKey?"#fff":"#666",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Test Voice</button>
+<button onClick={()=>{speak("Hi! I'm Ollie! This is how I sound!",{rate:0.92,pitch:1.05});}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:ttsKey?"linear-gradient(135deg,#FF8C42,#FFB066)":"#E8E8E8",color:ttsKey?"#fff":"#666",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Test Voice</button>
 {ttsKey&&<button onClick={()=>saveTtsKey("")} style={{padding:"10px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#fff",color:"#E23744",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Remove</button>}
 </div>
 {ttsKey&&<p style={{fontSize:10,color:"#22C55E",fontWeight:700,marginTop:6}}>✅ Cloud voice active</p>}
