@@ -2276,6 +2276,19 @@ export default function App(){
   const[arenaFb,setArenaFb]=useState(null);
   const[arenaPaused,setArenaPaused]=useState(false);
   const[arenaMsg,setArenaMsg]=useState("");
+  // Panda speaks arena messages via TTS
+  useEffect(()=>{
+    if(!arenaMsg||scr!=="arena")return;
+    try{
+      const clean=arenaMsg.replace(/[🎯🐼🎉👏❌😅🏆]/g,"").trim();
+      if(clean&&window.speechSynthesis){
+        window.speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(clean);
+        u.rate=0.9;u.pitch=1.2;u.volume=0.8;
+        window.speechSynthesis.speak(u);
+      }
+    }catch(e){}
+  },[arenaMsg]);
   const[arenaDiff,setArenaDiff]=useState("easy");
   const[arenaRounds,setArenaRounds]=useState(10);
   const[fbReady,setFbReady]=useState(false);const fbConfig=FIREBASE_CONFIG;
@@ -2320,16 +2333,20 @@ export default function App(){
     setArenaRoom(merged);
     if(data.state==="paused"){setArenaPaused(true);setArenaPhase("playing");return;}
     setArenaPaused(false);
-    if(data.round && data.round !== lastRoundRef.current && data.state==="playing"){
-      lastRoundRef.current=data.round;
-      setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
-      // Panda announces whose turn
-      const tp=players.find(p=>p.id===data.turnPlayerId);
-      if(tp){
-        const isMe=tp.id===arenaId;
-        setArenaMsg(isMe?"🎯 It's YOUR turn! Go go go!":"🐼 It's "+tp.name+"'s turn!");
-        setTeacherMood(isMe?"star":"happy");
+    if(data.state==="playing"&&data.question){
+      // New round or resumed play
+      if(data.round !== lastRoundRef.current){
+        lastRoundRef.current=data.round;
+        setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
+        // Panda announces whose turn
+        const tp=players.find(p=>p.id===data.turnPlayerId);
+        if(tp){
+          const isMe=tp.id===arenaId;
+          setArenaMsg(isMe?"🎯 It's YOUR turn! Go go go!":"🐼 It's "+tp.name+"'s turn!");
+          setTeacherMood(isMe?"star":"happy");
+        }
       }
+      setArenaPhase("playing");
     } else if(data.state==="result"){
       setArenaPhase("result");
       // Panda celebrates or encourages
@@ -2439,78 +2456,72 @@ export default function App(){
     if(!rm?.question||!fbReady)return;
     setArenaAnswered(true);sfxTap();
     const correct=opt===rm.question.answer;
-    const fb={playerId:arenaId,correct,answer:opt};setArenaFb(fb);
+    setArenaFb({playerId:arenaId,correct,answer:opt});
+    const roomCode=rm.code;
 
     if(correct){
       sfxWin();
       const newScore=(rm.scores?.[arenaId]||0)+1;
-      const roomCode=rm.code;
-      const maxR=rm.maxRounds||10;
-      const currentRound=rm.round||0;
-      const isHost=rm.hostId===arenaId;
       fbUpdate("rooms/"+roomCode,{["scores/"+arenaId]:newScore,state:"result",answerBy:arenaId});
-      // Host auto-advances after delay
-      if(isHost){
-        setTimeout(()=>{
-          if(currentRound>=maxR){fbUpdate("rooms/"+roomCode,{state:"gameover"});}
-          else{
-            // Generate next question directly here to avoid stale closure
-            const q=genArenaQ(rm.diff||"easy");
-            const players=rm.players||[];
-            const fp=players[0];
-            const nr=currentRound+1;
-            lastRoundRef.current=nr;
-            fbUpdate("rooms/"+roomCode,{
-              question:q,turnIdx:0,turnPlayerId:fp?.id||arenaId,
-              round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now()
-            });
-            setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
-          }
-        },2500);
-      }
     } else {
       // Wrong → pass turn to next player
       const players=rm.players||[];
       const nextIdx=((rm.turnIdx||0)+1)%players.length;
       if(nextIdx===0){
-        // All missed
-        setTimeout(()=>{
-          const roomCode=rm.code;
-          const maxR=rm.maxRounds||10;
-          const currentRound=rm.round||0;
-          const isHost=rm.hostId===arenaId;
-          fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null});
-          if(isHost){
-            setTimeout(()=>{
-              if(currentRound>=maxR){fbUpdate("rooms/"+roomCode,{state:"gameover"});}
-              else{
-                const q=genArenaQ(rm.diff||"easy");
-                const players=rm.players||[];
-                const fp=players[0];
-                const nr=currentRound+1;
-                lastRoundRef.current=nr;
-                fbUpdate("rooms/"+roomCode,{
-                  question:q,turnIdx:0,turnPlayerId:fp?.id||arenaId,
-                  round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now()
-                });
-                setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
-              }
-            },2000);
-          }
-        },1000);
+        // All players missed — go to result
+        const nextName=players[0]?.name||"next player";
+        setArenaMsg("❌ Everyone missed! Answer was: "+rm.question.answer);setTeacherMood("thinking");
+        setTimeout(()=>{fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null});},800);
       } else {
-        const roomCode2=rm.code;const nextPid=players[nextIdx]?.id;
+        // Pass to next player
+        const nextPid=players[nextIdx]?.id;
         const nextName=players[nextIdx]?.name||"next player";
         setArenaMsg("❌ Wrong! "+nextName+"'s turn now!");setTeacherMood("thinking");
         setTimeout(()=>{
-          fbUpdate("rooms/"+roomCode2,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now()});
+          fbUpdate("rooms/"+roomCode,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now()});
           setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
-        },1200);
+        },1000);
       }
     }
   };
 
-  // Timer countdown (stops when paused)
+  // ═══ HOST AUTO-ADVANCE — Single effect that reliably advances the game ═══
+  const advanceTimerRef=useRef(null);
+  useEffect(()=>{
+    // Only the host auto-advances
+    const rm=arenaRoomRef.current||arenaRoom;
+    if(!rm||rm.hostId!==arenaId)return;
+    
+    if(arenaPhase==="result"){
+      // Clear any existing timer
+      if(advanceTimerRef.current)clearTimeout(advanceTimerRef.current);
+      // Auto-advance after 2.5s
+      advanceTimerRef.current=setTimeout(()=>{
+        const cur=arenaRoomRef.current||arenaRoom;
+        if(!cur||cur.state!=="result")return; // Already moved on
+        const currentRound=cur.round||0;
+        const maxR=cur.maxRounds||10;
+        const roomCode=cur.code;
+        if(currentRound>=maxR){
+          fbUpdate("rooms/"+roomCode,{state:"gameover"});
+        } else {
+          const q=genArenaQ(cur.diff||"easy");
+          const players=cur.players||[];
+          const fp=players[0];
+          const nr=currentRound+1;
+          lastRoundRef.current=nr;
+          fbUpdate("rooms/"+roomCode,{
+            question:q,turnIdx:0,turnPlayerId:fp?.id||arenaId,
+            round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now()
+          });
+          setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
+        }
+      },2500);
+    }
+    return()=>{if(advanceTimerRef.current)clearTimeout(advanceTimerRef.current);};
+  },[arenaPhase,arenaRoom?.round]);
+
+    // Timer countdown (stops when paused)
   useEffect(()=>{
     if(arenaPhase!=="playing"||arenaSec<=0||arenaPaused)return;
     const iv=setInterval(()=>{
