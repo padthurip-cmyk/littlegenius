@@ -2143,6 +2143,9 @@ export default function App(){
       {id:"rewards",msg:"Rewards! Spend your points on cool prizes!"},
       {id:"settings",msg:"And Settings! You can change your look here!"},
     ];
+    // Claymorphism highlight style for tour tiles
+    const clayOn="0 6px 24px rgba(255,140,66,0.45), 0 2px 8px rgba(255,140,66,0.3), inset 0 2px 4px rgba(255,255,255,0.35), inset 0 -2px 6px rgba(0,0,0,0.08), 0 0 0 3px rgba(255,159,67,0.5)";
+    const clayOff="";
     // Dark overlay — tap to skip
     const backdrop=document.createElement("div");
     backdrop.id="tour-overlay";
@@ -2155,7 +2158,7 @@ export default function App(){
       guideTourRef.current=false;stop();
       backdrop.style.opacity="0";setTimeout(()=>backdrop.remove(),300);
       const hp=document.getElementById("home-tiles");if(hp){hp.style.zIndex="";hp.style.position="";}
-      document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});
+      document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.overflow="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});
       setGuideTour(false);setTeacherMood("happy");
     };
     backdrop.onclick=cleanup;
@@ -2172,12 +2175,14 @@ export default function App(){
       el.scrollIntoView({behavior:"smooth",block:"center"});
       await wait(400);
       if(!guideTourRef.current)break;
-      el.style.transition="transform 0.4s cubic-bezier(0.34,1.56,0.64,1), outline 0.3s";
+      el.style.transition="transform 0.4s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.4s ease, filter 0.3s ease";
       el.style.zIndex="10";
       el.style.overflow="visible";
       el.style.transform="scale(1.12)";
-      el.style.outline="4px solid #FF8C42";
-      el.style.outlineOffset="3px";
+      el.style.boxShadow=clayOn;
+      el.style.borderRadius="22px";
+      el.style.filter="brightness(1.08)";
+      el.style.animation="tourClay 1.6s ease-in-out infinite";
       setTeacherMood("excited");
       stop(); // cancel any lingering speech
       await wait(100);
@@ -2185,7 +2190,10 @@ export default function App(){
       if(!guideTourRef.current)break;
       await wait(300);
       el.style.transform="scale(1)";
-      el.style.outline="";el.style.outlineOffset="";
+      el.style.boxShadow=clayOff;
+      el.style.filter="";
+      el.style.borderRadius="";
+      el.style.animation="";
       await wait(500);
       el.style.zIndex="";el.style.transition="";el.style.overflow="";
     }
@@ -2366,32 +2374,44 @@ export default function App(){
   const fbUpdate=(path,data)=>{const r=fbRef(path);if(r)return r.update(data);};
   const fbListen=(path,cb,onDelete)=>{const r=fbRef(path);if(r){r.on("value",snap=>{const v=snap.val();if(v)cb(v);else if(onDelete)onDelete();});return()=>r.off("value");}return()=>{};};
   const lastRoundRef=useRef(0);
+  const lastTurnRef=useRef("");
 
   // Create room → write to Firebase
   // Room deleted handler — kicks everyone back
   const onRoomDeleted=()=>{
-    setArenaRoom(null);setArenaPhase("lobby");arenaRoomRef.current=null;lastRoundRef.current=0;
+    setArenaRoom(null);setArenaPhase("lobby");arenaRoomRef.current=null;lastRoundRef.current=0;lastTurnRef.current="";
     setArenaAnswered(false);setArenaFb(null);setArenaPaused(false);
     if(fbListenerRef.current){fbListenerRef.current();fbListenerRef.current=null;}
   };
   // Room data handler
   const onRoomData=(data)=>{
-    const players=data.players?Object.values(data.players):[];
+    const playersObj=data.players||{};
+    const order=data.playerOrder||[];
+    // Always resolve players in deterministic order using playerOrder array
+    const players=order.filter(id=>playersObj[id]).map(id=>playersObj[id]);
+    // Append any players not yet in order (edge case: join before order updated)
+    Object.values(playersObj).forEach(p=>{if(!players.find(pp=>pp.id===p.id))players.push(p);});
     const merged={...data,players};
     arenaRoomRef.current=merged;
     setArenaRoom(merged);
     if(data.state==="paused"){setArenaPaused(true);setArenaPhase("playing");return;}
     setArenaPaused(false);
     if(data.state==="playing"&&data.question){
-      // New round or resumed play
-      if(data.round !== lastRoundRef.current){
-        lastRoundRef.current=data.round;
-        setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
+      const turnChanged=data.turnPlayerId!==lastTurnRef.current;
+      const roundChanged=data.round!==lastRoundRef.current;
+      if(roundChanged||turnChanged){
+        if(roundChanged){lastRoundRef.current=data.round;setArenaAnswered(false);setArenaFb(null);}
+        if(turnChanged){lastTurnRef.current=data.turnPlayerId;if(!roundChanged){setArenaAnswered(false);setArenaFb(null);}}
+        setArenaSec(6);
         // Ollie announces whose turn
         const tp=players.find(p=>p.id===data.turnPlayerId);
         if(tp){
           const isMe=tp.id===arenaId;
-          setArenaMsg(isMe?"🎯 It's YOUR turn! Go go go!":"🦉 It's "+tp.name+"'s turn!");
+          if(roundChanged){
+            setArenaMsg(isMe?"🎯 It's YOUR turn! Go go go!":"🦉 It's "+tp.name+"'s turn!");
+          } else {
+            setArenaMsg(isMe?"🎯 Your turn now! Quick!":"🦉 "+tp.name+"'s turn!");
+          }
           setTeacherMood(isMe?"star":"happy");
         }
       }
@@ -2427,7 +2447,7 @@ export default function App(){
     if(!fbReady)return;
     const roomCode=genRoomCode();
     const me={id:arenaId,name:arenaName||prof?.name||"Player 1",avatar:ARENA_AVATARS[0],color:ARENA_COLORS[0],isHost:true};
-    const room={code:roomCode,players:{[arenaId]:me},hostId:arenaId,state:"waiting",question:null,turnIdx:0,turnPlayerId:arenaId,scores:{[arenaId]:0},round:0,maxRounds:arenaRounds,diff:arenaDiff,createdAt:Date.now()};
+    const room={code:roomCode,players:{[arenaId]:me},playerOrder:[arenaId],hostId:arenaId,state:"waiting",question:null,turnIdx:0,turnPlayerId:arenaId,scores:{[arenaId]:0},round:0,maxRounds:arenaRounds,diff:arenaDiff,createdAt:Date.now()};
     fbWrite("rooms/"+roomCode,room).then(()=>{
       setArenaRoom({...room,players:[me]});setArenaPhase("lobby");setFbError("");
       const unsub=fbListen("rooms/"+roomCode,onRoomData,onRoomDeleted);
@@ -2446,11 +2466,13 @@ export default function App(){
       if(!room){setFbError("Room not found! Check the code and try again.");return;}
       if(room.state==="gameover"){setFbError("This game has ended. Ask host to create a new room.");return;}
       const existingPlayers=room.players?Object.values(room.players):[];
+      const existingOrder=room.playerOrder||Object.keys(room.players||{});
       if(existingPlayers.length>=4){setFbError("Room is full! (4/4 players)");return;}
       if(!existingPlayers.find(p=>p.id===arenaId)){
         const pi=existingPlayers.length;
         const me={id:arenaId,name:arenaName||prof?.name||"Player",avatar:ARENA_AVATARS[pi%4],color:ARENA_COLORS[pi%4],isHost:false};
-        fbUpdate("rooms/"+c,{["players/"+arenaId]:me,["scores/"+arenaId]:0});
+        const newOrder=existingOrder.includes(arenaId)?existingOrder:[...existingOrder,arenaId];
+        fbUpdate("rooms/"+c,{["players/"+arenaId]:me,["scores/"+arenaId]:0,playerOrder:newOrder});
       }
       if(fbListenerRef.current)fbListenerRef.current();
       const unsub=fbListen("rooms/"+c,onRoomData,onRoomDeleted);
@@ -2493,7 +2515,7 @@ export default function App(){
     lastRoundRef.current=nextRound;
     fbUpdate("rooms/"+rm.code,{
       question:q,turnIdx:0,turnPlayerId:firstPlayer?.id||arenaId,
-      round:nextRound,state:"playing",answerBy:null,turnStartedAt:Date.now()
+      round:nextRound,state:"playing",answerBy:null,turnStartedAt:Date.now(),lastAnswer:null
     });
     setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
   };
@@ -2504,7 +2526,7 @@ export default function App(){
     const rm=arenaRoomRef.current||arenaRoom;
     if(!rm?.question||!fbReady)return;
     setArenaAnswered(true);sfxTap();
-    const correct=opt===rm.question.answer;
+    const correct=opt!==null&&opt===rm.question.answer;
     setArenaFb({playerId:arenaId,correct,answer:opt});
     const roomCode=rm.code;
 
@@ -2513,41 +2535,73 @@ export default function App(){
       const newScore=(rm.scores?.[arenaId]||0)+1;
       fbUpdate("rooms/"+roomCode,{["scores/"+arenaId]:newScore,state:"result",answerBy:arenaId});
     } else {
-      // Wrong → pass turn to next player
-      const players=rm.players||[];
-      const nextIdx=((rm.turnIdx||0)+1)%players.length;
-      if(nextIdx===0){
-        // All players missed — go to result
-        const nextName=players[0]?.name||"next player";
-        setArenaMsg("❌ Everyone missed! Answer was: "+rm.question.answer);setTeacherMood("thinking");
-        setTimeout(()=>{fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null});},800);
-      } else {
-        // Pass to next player
-        const nextPid=players[nextIdx]?.id;
-        const nextName=players[nextIdx]?.name||"next player";
-        setArenaMsg("❌ Wrong! "+nextName+"'s turn now!");setTeacherMood("thinking");
-        setTimeout(()=>{
-          fbUpdate("rooms/"+roomCode,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now()});
-          setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
-        },1000);
+      // Wrong or timeout → write answer marker to Firebase so host can advance
+      // Only write if we are the turn player (prevents duplicate writes)
+      if(rm.turnPlayerId===arenaId){
+        fbUpdate("rooms/"+roomCode,{["lastAnswer"]:{playerId:arenaId,correct:false,turnIdx:rm.turnIdx,round:rm.round,ts:Date.now()}});
       }
+      setArenaMsg(opt===null?"⏰ Time's up!":"❌ Wrong answer!");setTeacherMood("thinking");
     }
   };
 
-  // ═══ HOST AUTO-ADVANCE — Single effect that reliably advances the game ═══
+  // ═══ HOST TURN ENGINE — Only host writes state changes (eliminates cross-device race conditions) ═══
   const advanceTimerRef=useRef(null);
+  const hostWatchdogRef=useRef(null);
+
+  // HOST: Watch for wrong answers via lastAnswer marker
   useEffect(()=>{
-    // Only the host auto-advances
+    const rm=arenaRoomRef.current||arenaRoom;
+    if(!rm||rm.hostId!==arenaId||rm.state!=="playing")return;
+    const la=rm.lastAnswer;
+    if(!la||la.round!==rm.round||la.turnIdx!==rm.turnIdx)return;
+    // A player answered wrong — host advances turn
+    const players=rm.players||[];
+    const nextIdx=((rm.turnIdx||0)+1)%players.length;
+    const roomCode=rm.code;
+    if(nextIdx===0){
+      // All players missed this round → show result
+      fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null,lastAnswer:null});
+    } else {
+      const nextPid=players[nextIdx]?.id;
+      fbUpdate("rooms/"+roomCode,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now(),lastAnswer:null});
+    }
+  },[arenaRoom?.lastAnswer?.ts]);
+
+  // HOST: Watchdog timer — if current turn player doesn't answer within 8s, force advance
+  useEffect(()=>{
+    if(hostWatchdogRef.current)clearTimeout(hostWatchdogRef.current);
+    const rm=arenaRoomRef.current||arenaRoom;
+    if(!rm||rm.hostId!==arenaId||rm.state!=="playing"||arenaPaused)return;
+    const turnStart=rm.turnStartedAt||Date.now();
+    const elapsed=Date.now()-turnStart;
+    const remaining=Math.max(100,8000-elapsed); // 8s total grace (6s visible + 2s network buffer)
+    hostWatchdogRef.current=setTimeout(()=>{
+      const cur=arenaRoomRef.current||arenaRoom;
+      if(!cur||cur.state!=="playing")return;
+      // Force advance: treat as wrong answer
+      const players=cur.players||[];
+      const nextIdx=((cur.turnIdx||0)+1)%players.length;
+      const roomCode=cur.code;
+      if(nextIdx===0){
+        fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null,lastAnswer:null});
+      } else {
+        const nextPid=players[nextIdx]?.id;
+        fbUpdate("rooms/"+roomCode,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now(),lastAnswer:null});
+      }
+    },remaining);
+    return()=>{if(hostWatchdogRef.current)clearTimeout(hostWatchdogRef.current);};
+  },[arenaRoom?.turnPlayerId,arenaRoom?.turnIdx,arenaRoom?.round,arenaPaused]);
+
+  // HOST: Auto-advance from result → next round (or gameover)
+  useEffect(()=>{
     const rm=arenaRoomRef.current||arenaRoom;
     if(!rm||rm.hostId!==arenaId)return;
     
     if(arenaPhase==="result"){
-      // Clear any existing timer
       if(advanceTimerRef.current)clearTimeout(advanceTimerRef.current);
-      // Auto-advance after 2.5s
       advanceTimerRef.current=setTimeout(()=>{
         const cur=arenaRoomRef.current||arenaRoom;
-        if(!cur||cur.state!=="result")return; // Already moved on
+        if(!cur||cur.state!=="result")return;
         const currentRound=cur.round||0;
         const maxR=cur.maxRounds||10;
         const roomCode=cur.code;
@@ -2561,7 +2615,7 @@ export default function App(){
           lastRoundRef.current=nr;
           fbUpdate("rooms/"+roomCode,{
             question:q,turnIdx:0,turnPlayerId:fp?.id||arenaId,
-            round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now()
+            round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now(),lastAnswer:null
           });
           setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
         }
@@ -2570,31 +2624,38 @@ export default function App(){
     return()=>{if(advanceTimerRef.current)clearTimeout(advanceTimerRef.current);};
   },[arenaPhase,arenaRoom?.round]);
 
-    // Timer countdown (stops when paused)
+  // ALL DEVICES: Visual countdown timer (display only — no game logic)
   useEffect(()=>{
-    if(arenaPhase!=="playing"||arenaSec<=0||arenaPaused)return;
+    if(arenaPhase!=="playing"||arenaPaused)return;
+    const rm=arenaRoomRef.current||arenaRoom;
+    if(!rm||!rm.turnStartedAt)return;
+    // Sync timer from Firebase turnStartedAt for cross-device accuracy
+    const calcSec=()=>Math.max(0,Math.ceil(6-(Date.now()-rm.turnStartedAt)/1000));
+    setArenaSec(calcSec());
     const iv=setInterval(()=>{
-      setArenaSec(prev=>{
-        if(prev<=1){
-          const rm=arenaRoomRef.current||arenaRoom;
-          if(!arenaAnswered&&rm&&rm.turnPlayerId===arenaId){arenaAnswer(null);}
-          return 0;
-        }
-        return prev-1;
-      });
-    },1000);
+      const s=calcSec();
+      setArenaSec(s);
+      // Turn player auto-submits wrong answer when their timer hits 0
+      if(s<=0&&!arenaAnswered&&rm.turnPlayerId===arenaId){
+        arenaAnswer(null);
+      }
+    },250); // 250ms for smoother countdown
     return()=>clearInterval(iv);
-  },[arenaPhase,arenaSec,arenaAnswered,arenaPaused]);
+  },[arenaRoom?.turnStartedAt,arenaPhase,arenaPaused,arenaAnswered]);
 
-  // Reset timer when turn or round changes
+  // Reset answer state when turn or round changes
   useEffect(()=>{
     if(arenaPhase==="playing"){
-      setArenaSec(6);setArenaAnswered(false);setArenaFb(null);
+      setArenaAnswered(false);setArenaFb(null);
     }
   },[arenaRoom?.turnPlayerId,arenaRoom?.turnIdx,arenaRoom?.round]);
 
   // Cleanup Firebase listener
-  useEffect(()=>()=>{if(fbListenerRef.current)fbListenerRef.current();},[]);
+  useEffect(()=>()=>{
+    if(fbListenerRef.current)fbListenerRef.current();
+    if(hostWatchdogRef.current)clearTimeout(hostWatchdogRef.current);
+    if(advanceTimerRef.current)clearTimeout(advanceTimerRef.current);
+  },[]);
   // ═══ PARENT SYSTEM STATE ═══
   const[parentMode,setParentMode]=useState(false);
   const[pinInput,setPinInput]=useState("");
@@ -2699,7 +2760,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setOllieSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";t.style.overflow="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
+  const goHome=()=>{setJoyFly(false);setOllieSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.overflow="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -3709,7 +3770,7 @@ export default function App(){
           if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
           else{saveQuizAnswers(newA);setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
         }} style={{
-          padding:"14px 18px",borderRadius:18,border:"none",cursor:"pointer",fontFamily:"var(--font)",
+          padding:"14px 18px",border:"none",cursor:"pointer",fontFamily:"var(--font)",
           fontSize:14,fontWeight:700,textAlign:"left",
           background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
           color:"#fff",boxShadow:["0 6px 20px rgba(108,92,231,0.25)","0 6px 20px rgba(0,210,160,0.25)","0 6px 20px rgba(255,159,67,0.25)","0 6px 20px rgba(84,160,255,0.25)"][i%4],
@@ -3818,7 +3879,7 @@ export default function App(){
             }
             return base.sort((a,b)=>a.priority-b.priority);
           })(),
-        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.outline="";t.style.outlineOffset="";t.style.transition="";});}rec.warmUp();setTeacherMood("star");
+        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});}rec.warmUp();setTeacherMood("star");
             const tileMsg={learn:"Let's learn something new!",phonics:"Let's practice reading words!",quizzone:"Quiz time! Let's test your skills!",arena:"Arena time! Let's play together!",studyplan:"Let's check your study plan!",stories:"Story time! Let's read!",rewards:"Let's see your rewards!",settings:"Settings time!"};
             if(m.id==="parent"){setShowPinModal(true);}
             else{if(tileMsg[m.id])speak(tileMsg[m.id],{rate:0.85,pitch:1.0});setScr(m.id);}}} style={{
@@ -4072,7 +4133,7 @@ export default function App(){
         </div>)}
       </div>
       <div style={{display:"flex",gap:10,marginTop:10}}>
-        <button onClick={()=>{sfxTap();lastRoundRef.current=0;if(arenaRoom.hostId===arenaId){fbUpdate("rooms/"+arenaRoom.code,{round:0,state:"waiting",question:null,scores:Object.fromEntries((arenaRoom.players||[]).map(p=>[p.id,0]))});}setArenaPhase("lobby");}} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Play Again 🔄</button>
+        <button onClick={()=>{sfxTap();lastRoundRef.current=0;lastTurnRef.current="";if(arenaRoom.hostId===arenaId){fbUpdate("rooms/"+arenaRoom.code,{round:0,state:"waiting",question:null,lastAnswer:null,scores:Object.fromEntries((arenaRoom.players||[]).map(p=>[p.id,0]))});}setArenaPhase("lobby");}} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Play Again 🔄</button>
         <button onClick={()=>{
           sfxTap();
           if(fbListenerRef.current){fbListenerRef.current();fbListenerRef.current=null;}
@@ -5549,7 +5610,6 @@ button:active{transform:scale(0.96);}
   [data-r]:hover{transform:scale(1.04) translateY(-2px);z-index:2;}
   [data-r]:active{transform:scale(0.96);}
 }
-} /* end hover:hover */
 @media(hover:none){
   [data-r]{cursor:pointer;-webkit-tap-highlight-color:transparent;}
   [data-r]:active{transform:scale(0.96);opacity:0.9;}
@@ -5616,6 +5676,7 @@ button:active{transform:scale(0.96);}
 @keyframes tipW{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
 @keyframes readyP{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
 @keyframes gridPop{0%{opacity:0;transform:scale(0.9)}100%{opacity:1;transform:scale(1)}}
+@keyframes tourClay{0%,100%{box-shadow:0 6px 24px rgba(255,140,66,0.45),0 2px 8px rgba(255,140,66,0.3),inset 0 2px 4px rgba(255,255,255,0.35),inset 0 -2px 6px rgba(0,0,0,0.08),0 0 0 3px rgba(255,159,67,0.5)}50%{box-shadow:0 8px 32px rgba(255,140,66,0.6),0 3px 12px rgba(255,140,66,0.4),inset 0 2px 4px rgba(255,255,255,0.4),inset 0 -2px 6px rgba(0,0,0,0.1),0 0 0 4px rgba(255,159,67,0.7)}}
 @keyframes cardFloat{0%,100%{transform:translateY(0)}25%{transform:translateY(-4px)}75%{transform:translateY(-6px)}}
 @keyframes cardBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
 @keyframes numBounce{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.06)}}
