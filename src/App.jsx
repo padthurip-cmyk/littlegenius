@@ -1641,7 +1641,8 @@ const useRec=()=>{
   const[on,setOn]=useState(false);
   const[txt,setTxt]=useState("");
   const[err,setErr]=useState("");
-  const[countdown,setCountdown]=useState(0); // 3,2,1,0
+  const[countdown,setCountdown]=useState(0);
+  const[vol,setVol]=useState(0);
   const supported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
   const cbRef=useRef(null);
   const recRef=useRef(null);
@@ -1650,6 +1651,10 @@ const useRec=()=>{
   const bestRef=useRef("");
   const altsRef=useRef([]);
   const deliveredRef=useRef(false);
+  const streamRef=useRef(null);
+  const ctxRef=useRef(null);
+  const rafRef=useRef(null);
+  const hadVoiceRef=useRef(false);
 
   const warmUp=useCallback(()=>{
     if(permRef.current)return;
@@ -1660,128 +1665,130 @@ const useRec=()=>{
     }
   },[]);
 
-  const start=useCallback((cb)=>{
+  const cleanup=useCallback(()=>{
+    cancelAnimationFrame(rafRef.current);
+    try{streamRef.current?.getTracks().forEach(t=>t.stop());}catch(e){}
+    try{ctxRef.current?.close();}catch(e){}
+    streamRef.current=null;ctxRef.current=null;
+    setVol(0);
+  },[]);
+
+  const start=useCallback(async(cb)=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){setErr("Speech not supported");return;}
-
-    // Clean up any previous session
+    if(!SR){setErr("Not supported");return;}
+    // Kill previous
     try{recRef.current?.abort();}catch(e){}
-    clearInterval(cdRef.current);
+    clearInterval(cdRef.current);cleanup();
     try{speechSynthesis.cancel();}catch(e){}
+    cbRef.current=cb;bestRef.current="";altsRef.current=[];
+    deliveredRef.current=false;hadVoiceRef.current=false;
+    setTxt("");setErr("");setOn(true);setCountdown(3);
 
-    cbRef.current=cb;
-    bestRef.current="";
-    altsRef.current=[];
-    deliveredRef.current=false;
-    setTxt("");setErr("");
+    // STEP 1: Grab raw mic FIRST — this guarantees we have audio
+    let stream;
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      streamRef.current=stream;
+    }catch(e){
+      setErr("Mic denied");setOn(false);setCountdown(0);return;
+    }
 
-    const go=()=>{
-      // Make sure TTS is done
-      if(speechSynthesis.speaking||speechSynthesis.pending){setTimeout(go,200);return;}
-
-      const r=new SR();
-      r.continuous=false;  // Single-shot: Android handles this best
-      r.interimResults=true;
-      r.lang="en-US";
-      r.maxAlternatives=5;
-      recRef.current=r;
-
-      // Collect ALL results as they come in
-      r.onresult=(e)=>{
-        let final="",interim="";
-        const newAlts=[];
-        for(let i=0;i<e.results.length;i++){
-          for(let a=0;a<e.results[i].length;a++){
-            const t=e.results[i][a].transcript.toLowerCase().trim();
-            if(t&&!newAlts.includes(t))newAlts.push(t);
-          }
-          if(e.results[i].isFinal)final+=e.results[i][0].transcript;
-          else interim+=e.results[i][0].transcript;
-        }
-        const current=(final||interim).toLowerCase().trim();
-        if(current){
-          bestRef.current=current;
-          altsRef.current=newAlts;
-          setTxt(current);
-        }
+    // STEP 2: Monitor volume so user sees their voice
+    try{
+      const ctx=new (window.AudioContext||window.webkitAudioContext)();
+      ctxRef.current=ctx;
+      const src=ctx.createMediaStreamSource(stream);
+      const an=ctx.createAnalyser();an.fftSize=256;an.smoothingTimeConstant=0.3;
+      src.connect(an);
+      const data=new Uint8Array(an.frequencyBinCount);
+      const tick=()=>{
+        an.getByteFrequencyData(data);
+        let sum=0;for(let i=0;i<data.length;i++)sum+=data[i];
+        const v=Math.min(1,(sum/data.length)/60);
+        setVol(v);
+        if(v>0.15)hadVoiceRef.current=true;
+        rafRef.current=requestAnimationFrame(tick);
       };
+      tick();
+    }catch(e){}
 
-      // THIS is where we deliver results — onend fires AFTER all results are in
-      r.onend=()=>{
-        clearInterval(cdRef.current);
-        setOn(false);setCountdown(0);
-        if(!deliveredRef.current&&bestRef.current){
-          deliveredRef.current=true;
-          cbRef.current?.(bestRef.current,altsRef.current);
-        } else if(!deliveredRef.current){
-          // Nothing heard — reset to idle, user taps again
-          setTxt("");setErr("");
-        }
-      };
+    // STEP 3: Wait for TTS to fully stop
+    await new Promise(r=>{
+      const check=()=>{if(!speechSynthesis.speaking&&!speechSynthesis.pending)r();else setTimeout(check,100);};
+      check();
+    });
+    await new Promise(r=>setTimeout(r,300));
 
-      r.onerror=(e)=>{
-        if(e.error==="not-allowed"){
-          clearInterval(cdRef.current);
-          setErr("Mic blocked — check browser settings");setOn(false);setCountdown(0);
-          return;
-        }
-        if(e.error==="no-speech"){
-          // Android fires this when silence detected — that's ok, onend will handle it
-          return;
-        }
-        // network error etc — let onend handle cleanup
-      };
+    // STEP 4: Start speech recognition ON TOP of the raw stream
+    const r=new SR();
+    r.continuous=false;
+    r.interimResults=true;
+    r.lang="en-US";
+    r.maxAlternatives=5;
+    recRef.current=r;
 
-      // Start recognition
-      try{
-        r.start();
-      }catch(e){
-        // Mic not ready — request permission and retry
-        navigator.mediaDevices?.getUserMedia({audio:true}).then(s=>{
-          s.getTracks().forEach(t=>t.stop());permRef.current=true;
-          try{r.start();}catch(e2){setErr("Mic error");setOn(false);setCountdown(0);}
-        }).catch(()=>{setErr("Mic denied");setOn(false);setCountdown(0);});
-        return;
+    r.onresult=(e)=>{
+      let final="",interim="";const newAlts=[];
+      for(let i=0;i<e.results.length;i++){
+        for(let a=0;a<e.results[i].length;a++){
+          const t=e.results[i][a].transcript.toLowerCase().trim();
+          if(t&&!newAlts.includes(t))newAlts.push(t);
+        }
+        if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+        else interim+=e.results[i][0].transcript;
       }
-
-      // We're recording!
-      setOn(true);setCountdown(3);
-
-      // Visual countdown: 3..2..1..0
-      let sec=3;
-      cdRef.current=setInterval(()=>{
-        sec--;
-        setCountdown(Math.max(0,sec));
-        if(sec<=0){
-          clearInterval(cdRef.current);
-          // Tell engine to stop — but DON'T abort!
-          // stop() lets it finish processing and fire onresult+onend
-          try{r.stop();}catch(e){}
-          // Safety: if onend hasn't fired in 3s, force deliver
-          setTimeout(()=>{
-            if(!deliveredRef.current){
-              setOn(false);setCountdown(0);
-              if(bestRef.current){
-                deliveredRef.current=true;
-                cbRef.current?.(bestRef.current,altsRef.current);
-              } else {
-                setTxt("");setErr("");
-              }
-            }
-          },3000);
-        }
-      },1000);
+      const current=(final||interim).toLowerCase().trim();
+      if(current){bestRef.current=current;altsRef.current=newAlts;setTxt(current);}
     };
 
-    // Small gap to ensure TTS audio has stopped
-    setTimeout(go,400);
-  },[]);
+    r.onend=()=>{
+      // Don't deliver here — let the countdown timer handle delivery
+    };
+    r.onerror=(e)=>{
+      if(e.error==="not-allowed"){
+        setErr("Mic blocked");setOn(false);setCountdown(0);cleanup();clearInterval(cdRef.current);
+      }
+      // For all other errors (no-speech, network) — just let countdown finish
+    };
+
+    try{r.start();}catch(e){
+      setErr("Start failed — reload page");setOn(false);setCountdown(0);cleanup();return;
+    }
+
+    // STEP 5: Countdown 3..2..1..DONE
+    let sec=3;
+    setCountdown(3);
+    cdRef.current=setInterval(()=>{
+      sec--;setCountdown(Math.max(0,sec));
+      if(sec<=0){
+        clearInterval(cdRef.current);
+        // Stop speech recognition gently
+        try{r.stop();}catch(e){}
+        // Wait 2 full seconds for Google to send back results
+        setTimeout(()=>{
+          cleanup();setOn(false);setCountdown(0);
+          if(!deliveredRef.current&&bestRef.current){
+            deliveredRef.current=true;
+            cbRef.current?.(bestRef.current,altsRef.current);
+          } else if(!deliveredRef.current){
+            // Nothing recognized
+            if(hadVoiceRef.current){
+              setTxt("");setErr("Heard your voice but couldn't recognize. Tap to try again!");
+            } else {
+              setTxt("");setErr("");
+              // Silent reset — just go back to idle button
+            }
+          }
+        },2000);
+      }
+    },1000);
+  },[cleanup]);
 
   const stop=useCallback(()=>{
-    clearInterval(cdRef.current);
+    clearInterval(cdRef.current);cleanup();
     try{recRef.current?.stop();}catch(e){}
     setOn(false);setCountdown(0);
-  },[]);
+  },[cleanup]);
 
   const quickListen=useCallback((ms=5000)=>{
     return new Promise((res)=>{
@@ -1797,7 +1804,7 @@ const useRec=()=>{
     });
   },[]);
 
-  return{start,stop,warmUp,quickListen,on,txt,err,countdown,supported};
+  return{start,stop,warmUp,quickListen,on,txt,err,countdown,vol,supported};
 };
 
 const useStore=()=>{const[d,setD]=useState(null);const[ok,setOk]=useState(false);useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4");if(r?.value)setD(JSON.parse(r.value));}catch(e){}setOk(true);})();},[]);const save=useCallback(async(nd)=>{setD(nd);try{await window.storage.set("lg4",JSON.stringify(nd));}catch(e){}},[]);return{data:d,save,loaded:ok};};
@@ -2058,9 +2065,10 @@ const SoundWave=()=><div style={{display:"flex",justifyContent:"center",gap:3,ma
 const ProgressRing=({pct,size=70,color="#22C55E"})=>{const r=(size-10)/2;const c=2*Math.PI*r;return<svg width={size} height={size} style={{transform:"rotate(-90deg)"}}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={10}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={10} strokeDasharray={c} strokeDashoffset={c-((pct||0)/100)*c} strokeLinecap="round" style={{transition:"stroke-dashoffset 1s ease-out"}}/></svg>;};
 const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",position:"sticky",top:0,zIndex:50,borderRadius:"0 0 16px 16px",boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}><button onClick={()=>{sfxTap();onBack();}} style={{padding:"8px 14px",borderRadius:14,border:"none",background:"rgba(255,255,255,0.2)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",color:"#fff",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Back</button><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{title}</span><div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:16,background:"rgba(255,255,255,0.2)",fontSize:13,fontWeight:800,color:"#FECA57",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}><span>⭐</span>{points||0}</div></div>;
 const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:800,fontFamily:"var(--font)",background:act?"linear-gradient(135deg,#FF8C42,#FF8C42)":done?"#22C55E":"#e5e7eb",color:(act||done)?"#fff":"#aaa",transform:act?"scale(1.08)":"scale(1)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
-const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,countdown})=>{
+const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,countdown,vol})=>{
   const[typed,setTyped]=useState("");
   const recording=isListening&&countdown>0;
+  const waiting=isListening&&countdown===0; // waiting for Google
   return <div data-owl="mic-area" style={{textAlign:"center",padding:14,background:"#fff",borderRadius:20,border:"2px solid #E8EAF6"}}>
     {/* What to say */}
     <div style={{padding:"8px 14px",background:"#FFF8E1",borderRadius:12,border:"2px solid #FFE082",marginBottom:12}}>
@@ -2068,29 +2076,41 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,count
       <div style={{fontSize:26,fontWeight:900,color:"#1A1A2E",marginTop:2,letterSpacing:2}}>"{expected?.toUpperCase()}"</div>
     </div>
     {/* Big tap button */}
-    <button onClick={()=>{if(!recording)onTapMic();}} style={{
-      width:recording?90:80,height:recording?90:80,borderRadius:"50%",border:"none",cursor:"pointer",margin:"0 auto 10px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-      background:recording?"#EF4444":"#4CAF50",
-      borderBottom:recording?"6px solid #B71C1C":"6px solid #2E7D32",
-      boxShadow:recording?"0 0 0 8px rgba(239,68,68,0.15)":"0 4px 16px rgba(76,175,80,0.3)",
-      transition:"all 0.2s ease"
+    <button onClick={()=>{if(!recording&&!waiting)onTapMic();}} disabled={recording||waiting} style={{
+      width:90,height:90,borderRadius:"50%",border:"none",cursor:recording||waiting?"default":"pointer",margin:"0 auto",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+      background:recording?"#EF4444":waiting?"#FF8A50":"#4CAF50",
+      borderBottom:recording?"6px solid #B71C1C":waiting?"6px solid #E65100":"6px solid #2E7D32",
+      boxShadow:recording?"0 0 0 "+(8+Math.round((vol||0)*12))+"px rgba(239,68,68,"+(0.1+(vol||0)*0.2)+")":"0 4px 16px rgba(76,175,80,0.25)",
+      transition:"box-shadow 0.1s ease"
     }}>
       {recording?<>
-        <span style={{fontSize:28,fontWeight:900,color:"#fff",lineHeight:1}}>{countdown}</span>
-        <span style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,0.8)"}}>recording</span>
+        <span style={{fontSize:32,fontWeight:900,color:"#fff",lineHeight:1}}>{countdown}</span>
+        <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.8)"}}>SPEAK!</span>
+      </>:waiting?<>
+        <span style={{fontSize:18,color:"#fff"}}>⏳</span>
+        <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.8)"}}>ANALYZING</span>
       </>:<>
-        <span style={{fontSize:32}}>🎤</span>
-        <span style={{fontSize:9,fontWeight:800,color:"#fff",marginTop:2}}>TAP</span>
+        <span style={{fontSize:36}}>🎤</span>
+        <span style={{fontSize:9,fontWeight:900,color:"#fff"}}>TAP</span>
       </>}
     </button>
+    {/* VOLUME BARS — proof your voice is heard */}
+    {recording&&<div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:30,margin:"10px 0 4px"}}>
+      {Array.from({length:12}).map((_,i)=>{
+        const h=Math.max(3,Math.min(26,((vol||0)*30)+Math.random()*2));
+        return<div key={i} style={{width:5,height:h,borderRadius:3,background:(vol||0)>0.1?"#4CAF50":"#E0E0E0",transition:"height 0.08s ease"}}/>;
+      })}
+    </div>}
+    {recording&&(vol||0)>0.1&&<p style={{fontSize:11,fontWeight:800,color:"#4CAF50",margin:"0 0 4px"}}>✅ Voice detected!</p>}
+    {recording&&(vol||0)<=0.1&&<p style={{fontSize:11,fontWeight:800,color:"#EF5350",margin:"0 0 4px"}}>🔇 Speak louder!</p>}
     {/* Status */}
-    {!recording&&!transcript&&!error&&<p style={{fontSize:13,fontWeight:800,color:"#78909C",margin:"0 0 8px"}}>Tap the mic, then say "{expected}"</p>}
-    {recording&&<p style={{fontSize:13,fontWeight:800,color:"#EF4444",margin:"0 0 8px",animation:"pulse 1s infinite"}}>🔴 Speak NOW!</p>}
-    {transcript&&!recording&&<div style={{padding:"8px 14px",background:"#E8F5E9",borderRadius:10,border:"2px solid #C8E6C9",marginBottom:8}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Heard: "{transcript}"</span></div>}
-    {error&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,marginBottom:8}}><span style={{fontSize:11,fontWeight:700,color:"#E65100"}}>{error}</span></div>}
-    {!recording&&!transcript&&<p style={{fontSize:11,fontWeight:700,color:"#B0BEC5",margin:"0 0 6px"}}>Didn't hear? Just tap again!</p>}
+    {!recording&&!waiting&&!transcript&&!error&&<p style={{fontSize:12,fontWeight:700,color:"#78909C",margin:"10px 0 4px"}}>Tap 🎤, then say "{expected}"</p>}
+    {waiting&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"10px 0 4px"}}>Processing...</p>}
+    {transcript&&!recording&&!waiting&&<div style={{padding:"8px 14px",background:"#E8F5E9",borderRadius:10,border:"2px solid #C8E6C9",margin:"10px 0 4px"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Heard: "{transcript}"</span></div>}
+    {error&&!recording&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,margin:"10px 0 4px"}}><span style={{fontSize:11,fontWeight:700,color:"#E65100"}}>{error}</span></div>}
+    {!recording&&!waiting&&!transcript&&<p style={{fontSize:10,fontWeight:600,color:"#B0BEC5",margin:"0 0 6px"}}>Didn't work? Tap 🎤 again</p>}
     {/* Type fallback */}
-    <div style={{display:"flex",gap:6,marginTop:4}}>
+    <div style={{display:"flex",gap:6,marginTop:6}}>
       <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type here..."
         style={{flex:1,padding:"8px 10px",borderRadius:10,border:"2px solid #E8EAF6",fontSize:13,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
         onKeyDown={e=>{if(e.key==="Enter"&&typed.trim())onType(typed.trim().toLowerCase());}}
@@ -4587,7 +4607,7 @@ export default function App(){
             </div>
           </div>
         )}
-        {nStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown}  onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]}/>}
+        {nStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]}/>}
         {nStep==="result"&&spRes!==null&&<ResultBox acc={spAcc} result={spRes} expected={w} onRetry={retryNum} onDone={()=>{setSpRes(null);const next=selNum>=(aCfg?.max||20)?1:selNum+1;setSelNum(next);setNStep("idle");setTimeout(()=>playNum(next),200);}} color={color} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5176,7 +5196,7 @@ export default function App(){
             </div>
           </div>
         )}
-        {phStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown}  onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""}/>}
+        {phStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""}/>}
         {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhRes(null);const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),200);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5222,7 +5242,7 @@ export default function App(){
         {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {shStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {shStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?shColor:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {shStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown}  onTapMic={()=>rec.start(handleShResult,selShape?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
+        {shStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>rec.start(handleShResult,selShape?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
         {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShRes(null);const idx=SHAPES.findIndex(x=>x.name===sh.name);const next=SHAPES[(idx+1)%SHAPES.length];setSelShape(next);setShStep("idle");setTimeout(()=>playShape(next),200);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5250,7 +5270,7 @@ export default function App(){
         {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {coStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {coStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?co.hex:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {coStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown}  onTapMic={()=>rec.start(handleCoResult,selColor?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
+        {coStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>rec.start(handleCoResult,selColor?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
         {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoRes(null);const idx=COLORSDATA.findIndex(x=>x.name===co.name);const next=COLORSDATA[(idx+1)%COLORSDATA.length];setSelColor(next);setCoStep("idle");setTimeout(()=>playColor(next),200);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
