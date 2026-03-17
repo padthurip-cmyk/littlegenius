@@ -237,11 +237,11 @@ const NumberHero = ({num, word, color, active, sentence}) => {
   const mainEmoji = scene.elements.find(e=>!e.isWall&&!e.isBox&&e.size>=40)?.emoji||"⭐";
   // Show exactly `num` objects (max 20 for layout)
   const count = Math.min(num, 20);
-  return <div style={{textAlign:"center",padding:"16px 10px 10px",background:"#fff",borderRadius:18,margin:"0 4px",position:"relative",overflow:"hidden",border:"2px solid #E8EAF6",borderBottom:"4px solid #D1C4E9"}}>
+  return <div style={{textAlign:"center",padding:"16px 10px 10px",background:"linear-gradient(180deg,#FFFBF5,#FFF5EB)",borderRadius:20,margin:"0 4px",position:"relative",overflow:"hidden"}}>
     {/* Giant number */}
-    <div style={{fontSize:100,fontWeight:900,fontFamily:"var(--font)",color:color,lineHeight:1,animation:active?"none":"numPulse 2s ease-in-out infinite",filter:`drop-shadow(0 3px 8px ${color}33)`}}>{num}</div>
+    <div style={{fontSize:100,fontWeight:900,fontFamily:"var(--font)",color:color,lineHeight:1,animation:active?"none":"numPulse 2s ease-in-out infinite",filter:`drop-shadow(0 4px 16px ${color}44)`}}>{num}</div>
     {/* Word */}
-    <div style={{fontSize:24,fontWeight:900,fontFamily:"var(--font)",color:"var(--dark)",textTransform:"capitalize",marginTop:2}}>{word}</div>
+    <div style={{fontSize:24,fontWeight:800,fontFamily:"var(--font)",color:"#2D2B3D",textTransform:"capitalize",marginTop:2}}>{word}</div>
     {/* Counting objects */}
     <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center",marginTop:10,minHeight:36}}>
       {Array.from({length:count}).map((_,i)=>
@@ -249,8 +249,8 @@ const NumberHero = ({num, word, color, active, sentence}) => {
       )}
     </div>
     {/* Sentence overlay when active */}
-    {active&&<div style={{marginTop:10,padding:"10px 14px",background:"#EDE7F6",borderRadius:14,animation:"slideUp 0.3s ease-out",border:"2px solid #D1C4E9"}}>
-      <p style={{fontSize:14,fontWeight:800,color:"var(--primary)",fontFamily:"var(--font)",margin:0}}>💬 {sentence}</p>
+    {active&&<div style={{marginTop:10,padding:"10px 14px",background:"rgba(99,102,241,0.1)",borderRadius:14,animation:"slideUp 0.3s ease-out"}}>
+      <p style={{fontSize:14,fontWeight:700,color:"#6C5CE7",fontFamily:"var(--font)",margin:0}}>💬 {sentence}</p>
     </div>}
   </div>;
 };
@@ -513,7 +513,7 @@ const WCATS={
     {word:"fireman",ph:["f","igh","er","m","a","n"],img:"👨‍🚒",sentence:"Firemen put out fires!"},
     {word:"dentist",ph:["d","e","n","t","i","s","t"],img:"🦷",sentence:"The dentist checks our teeth!"},
   ]},
-  clothes:{emoji:"👕",color:"var(--primary)",words:[
+  clothes:{emoji:"👕",color:"#6C5CE7",words:[
     {word:"hat",ph:["h","a","t"],img:"🎩",sentence:"I wear a hat on my head!"},
     {word:"shoe",ph:["sh","oo"],img:"👟",sentence:"I put shoes on my feet!"},
     {word:"sock",ph:["s","o","ck"],img:"🧦",sentence:"Socks keep my feet warm!"},
@@ -567,7 +567,7 @@ const WCATS={
     {word:"spaceship",ph:["s","p","ai","s","sh","i","p"],img:"🚀",sentence:"A spaceship goes to the stars!"},
     {word:"submarine",ph:["s","u","b","m","a","r","ee","n"],img:"🚢",sentence:"A submarine goes under water!"},
   ]},
-  school:{emoji:"🏫",color:"var(--primary)",words:[
+  school:{emoji:"🏫",color:"#6C5CE7",words:[
     {word:"book",ph:["b","oo","k"],img:"📚",sentence:"I read a book every day!"},
     {word:"pen",ph:["p","e","n"],img:"🖊️",sentence:"I write with my pen!"},
     {word:"bag",ph:["b","a","g"],img:"🎒",sentence:"My bag has all my things!"},
@@ -717,7 +717,7 @@ const WCATS={
     {word:"thankful",ph:["th","a","n","k","f","u","l"],img:"🙏",sentence:"I am thankful for my family!"},
     {word:"patient",ph:["p","ai","sh","e","n","t"],img:"⏳",sentence:"Be patient and wait your turn!"},
   ]},
-  things:{emoji:"🎒",color:"var(--primary)",words:[
+  things:{emoji:"🎒",color:"#6C5CE7",words:[
     {word:"cup",ph:["c","u","p"],img:"☕",sentence:"My cup is full of milk!"},
     {word:"bed",ph:["b","e","d"],img:"🛏️",sentence:"I sleep in my cozy bed!"},
     {word:"box",ph:["b","o","x"],img:"📦",sentence:"What is in the box?"},
@@ -825,7 +825,7 @@ const WCATS={
     {word:"note",ph:["n","oa","t"],img:"🎵",sentence:"Each note has a different sound!"},
     {word:"harmony",ph:["h","ar","m","o","n","ee"],img:"🎶",sentence:"Harmony is sounds blending together!"},
   ]},
-sight:{emoji:"👁️",color:"var(--primary)",words:[
+sight:{emoji:"👁️",color:"#6C5CE7",words:[
     {word:"the",ph:["th","e"],img:"👆",sentence:"The dog is happy!"},
     {word:"and",ph:["a","n","d"],img:"🤝",sentence:"Bread and jam taste good!"},
     {word:"is",ph:["i","z"],img:"✅",sentence:"My cat is very soft!"},
@@ -1448,7 +1448,7 @@ const NUM_TPL={
 
 // Helpers
 const wait=(ms)=>new Promise(r=>setTimeout(r,ms));
-const N_GRADIENTS=["linear-gradient(135deg,#FF6B6B,#EE5A5A)","linear-gradient(135deg,#54A0FF,#2E86DE)","linear-gradient(135deg,#FF9F43,#EE8520)","var(--green)","linear-gradient(135deg,#A29BFE,#6C5CE7)","linear-gradient(135deg,#FD79A8,#E84393)","linear-gradient(135deg,#FECA57,#F9CA24)","linear-gradient(135deg,#00CEC9,#00B5AD)","linear-gradient(135deg,#74B9FF,#0984E3)","linear-gradient(135deg,#FF6348,#EE5A24)"];
+const N_GRADIENTS=["linear-gradient(135deg,#FF6B6B,#EE5A5A)","linear-gradient(135deg,#54A0FF,#2E86DE)","linear-gradient(135deg,#FF9F43,#EE8520)","linear-gradient(135deg,#00D2A0,#00B894)","linear-gradient(135deg,#A29BFE,#6C5CE7)","linear-gradient(135deg,#FD79A8,#E84393)","linear-gradient(135deg,#FECA57,#F9CA24)","linear-gradient(135deg,#00CEC9,#00B5AD)","linear-gradient(135deg,#74B9FF,#0984E3)","linear-gradient(135deg,#FF6348,#EE5A24)"];
 const nGrad=(n)=>N_GRADIENTS[(n-1)%10];
 const nClr=(n)=>["#FF6B6B","#54A0FF","#FF9F43","#00D2A0","#A29BFE","#FD79A8","#FECA57","#00CEC9","#74B9FF","#FF6348"][(n-1)%10];
 // Normalize speech: "17" → "seventeen", strip filler words, fix common mishears
@@ -1996,10 +1996,10 @@ const Confetti=({active,type})=>{
   </div>;
 };
 const Stars=({count,size=26})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"8px 0"}}>{[1,2,3,4,5].map(i=><span key={i} style={{fontSize:size,opacity:i<=count?1:0.2,filter:i<=count?"drop-shadow(0 2px 8px rgba(251,191,36,0.5))":"none",animation:i<=count?`starPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.12}s both`:"none"}}>{i<=count?"⭐":"☆"}</span>)}</div>;
-const Mascot=({mood="happy",msg=""})=>{const f={happy:"😊",excited:"🤩",thinking:"🤔",listening:"👂",cheering:"🥳",speaking:"🗣️",sad:"🥺"};return<div style={{display:"flex",alignItems:"flex-end",gap:10,margin:"4px 0"}}><div style={{fontSize:26,animation:"mascotB 2s ease-in-out infinite",flexShrink:0}}>{f[mood]||"😊"}</div>{msg&&<div style={{background:"#fff",borderRadius:"18px 18px 18px 4px",padding:"4px 10px",fontSize:11,fontWeight:700,color:"#3E4152",border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9",animation:"bubPop 0.3s cubic-bezier(0.34,1.56,0.64,1)",maxWidth:260,fontFamily:"var(--font)",lineHeight:1.4}}>{msg}</div>}</div>;};
+const Mascot=({mood="happy",msg=""})=>{const f={happy:"😊",excited:"🤩",thinking:"🤔",listening:"👂",cheering:"🥳",speaking:"🗣️",sad:"🥺"};return<div style={{display:"flex",alignItems:"flex-end",gap:10,margin:"4px 0"}}><div style={{fontSize:26,animation:"mascotB 2s ease-in-out infinite",flexShrink:0}}>{f[mood]||"😊"}</div>{msg&&<div style={{background:"#fff",borderRadius:"18px 18px 18px 4px",padding:"4px 10px",fontSize:11,fontWeight:600,color:"#3E4152",boxShadow:"var(--shadow-card)",animation:"bubPop 0.3s cubic-bezier(0.34,1.56,0.64,1)",maxWidth:260,fontFamily:"var(--font)",lineHeight:1.4}}>{msg}</div>}</div>;};
 const SoundWave=()=><div style={{display:"flex",justifyContent:"center",gap:3,marginTop:14}}>{[1,2,3,4,5,6,7].map(i=><div key={i} style={{width:4,background:"#EF4444",borderRadius:4,animation:`sndWave 0.8s ease-in-out ${i*0.08}s infinite`}}/>)}</div>;
 const ProgressRing=({pct,size=70,color="#22C55E"})=>{const r=(size-10)/2;const c=2*Math.PI*r;return<svg width={size} height={size} style={{transform:"rotate(-90deg)"}}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={10}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={10} strokeDasharray={c} strokeDashoffset={c-((pct||0)/100)*c} strokeLinecap="round" style={{transition:"stroke-dashoffset 1s ease-out"}}/></svg>;};
-const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 12px",background:"#fff",position:"sticky",top:0,zIndex:50,borderBottom:"2px solid #E8EAF6",fontFamily:"var(--font)"}}><button onClick={()=>{sfxTap();onBack();}} style={{padding:"8px 14px",borderRadius:12,border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9",background:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",color:"var(--gray)"}}>← Back</button><span style={{fontFamily:"var(--font)",fontSize:17,fontWeight:900,color:"var(--dark)"}}>{title}</span><div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:12,background:"#FFF8E1",border:"2px solid #FFE082",fontSize:13,fontWeight:900,color:"#F57F17"}}><span>⭐</span>{points||0}</div></div>;
+const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",position:"sticky",top:0,zIndex:50,borderRadius:"0 0 16px 16px",boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}><button onClick={()=>{sfxTap();onBack();}} style={{padding:"8px 14px",borderRadius:14,border:"none",background:"rgba(255,255,255,0.2)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",color:"#fff",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Back</button><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{title}</span><div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:16,background:"rgba(255,255,255,0.2)",fontSize:13,fontWeight:800,color:"#FECA57",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}><span>⭐</span>{points||0}</div></div>;
 const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:800,fontFamily:"var(--font)",background:act?"linear-gradient(135deg,#FF8C42,#FF8C42)":done?"#22C55E":"#e5e7eb",color:(act||done)?"#fff":"#aaa",transform:act?"scale(1.08)":"scale(1)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
 const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected})=>{
   const[typed,setTyped]=useState("");
@@ -2018,18 +2018,18 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected})=>{
         <p style={{fontSize:12,fontWeight:800,color:isListening?"#DC2626":error?"#D97706":"#FF8C42",margin:0}}>
           {isListening?"🔴 Listening...":error||"Speak now!"}
         </p>
-        <p style={{fontSize:16,fontWeight:900,color:"var(--dark)",margin:"2px 0 0",letterSpacing:1}}>"{expected?.toUpperCase()}"</p>
-        {transcript&&<p style={{fontSize:11,fontWeight:800,color:"var(--green)",margin:"2px 0 0"}}>Heard: "{transcript}"</p>}
+        <p style={{fontSize:16,fontWeight:900,color:"#2D2B3D",margin:"2px 0 0",letterSpacing:1}}>"{expected?.toUpperCase()}"</p>
+        {transcript&&<p style={{fontSize:11,fontWeight:700,color:"#22C55E",margin:"2px 0 0"}}>Heard: "{transcript}"</p>}
       </div>
     </div>
     {isListening&&<SoundWave/>}
     <div style={{display:"flex",gap:6,marginTop:8}}>
       <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type here..."
-        style={{flex:1,padding:"7px 10px",borderRadius:10,border:"2px solid #E8E0D8",fontSize:13,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
+        style={{flex:1,padding:"7px 10px",borderRadius:10,border:"2px solid #E8E0D8",fontSize:13,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
         onKeyDown={e=>{if(e.key==="Enter"&&typed.trim())onType(typed.trim().toLowerCase());}}
       />
       <button onClick={()=>{if(typed.trim())onType(typed.trim().toLowerCase());}}
-        style={{padding:"7px 14px",borderRadius:10,background:"#FF8C42",color:"var(--dark)",border:"none",fontWeight:800,fontSize:12,cursor:"pointer"}}>Go</button>
+        style={{padding:"7px 14px",borderRadius:10,background:"#FF8C42",color:"#2D2B3D",border:"none",fontWeight:800,fontSize:12,cursor:"pointer"}}>Go</button>
     </div>
   </div>;
 };
@@ -2055,24 +2055,24 @@ const ResultBox=({acc,result,expected,onRetry,onDone,color,kidName,currentPoints
     {/* HEARD vs EXPECTED - clear split box */}
     <div style={{display:"flex",gap:6,margin:"6px 0"}}>
       <div style={{flex:1,padding:"8px 10px",borderRadius:14,background:pass?"#F0FDF4":"#FEF2F2",border:`2px solid ${pass?"#22C55E33":"#EF444433"}`,textAlign:"center"}}>
-        <div style={{fontSize:9,fontWeight:800,color:"var(--gray)",textTransform:"uppercase",letterSpacing:1}}>You said</div>
+        <div style={{fontSize:9,fontWeight:800,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1}}>You said</div>
         <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:pass?"#16A34A":"#DC2626",marginTop:2}}>"{result}"</div>
       </div>
       <div style={{flex:1,padding:"8px 10px",borderRadius:14,background:"#fff",border:"2px solid #FF8C4233",textAlign:"center"}}>
-        <div style={{fontSize:9,fontWeight:800,color:"var(--gray)",textTransform:"uppercase",letterSpacing:1}}>Correct</div>
-        <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--primary)",marginTop:2}}>"{expected}"</div>
+        <div style={{fontSize:9,fontWeight:800,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1}}>Correct</div>
+        <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"#6C5CE7",marginTop:2}}>"{expected}"</div>
       </div>
     </div>
     {/* Points */}
-    {p>0&&<div style={{fontSize:18,fontWeight:900,color:"var(--green)",fontFamily:"var(--font)",textAlign:"center",margin:"4px 0"}}>+{p} points! 💰</div>}
+    {p>0&&<div style={{fontSize:18,fontWeight:900,color:"#22C55E",fontFamily:"var(--font)",textAlign:"center",margin:"4px 0"}}>+{p} points! 💰</div>}
     {/* Reward hint */}
     {nextReward&&ptsNeeded<=50&&<div style={{padding:"6px 10px",background:"rgba(251,191,36,0.15)",borderRadius:12,textAlign:"center",margin:"4px 0"}}>
-      <span style={{fontSize:12,fontWeight:800,color:"var(--primary)",textTransform:"uppercase",letterSpacing:1}}>{ptsNeeded} more for {nextReward.emoji} {nextReward.name}!</span>
+      <span style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1}}>{ptsNeeded} more for {nextReward.emoji} {nextReward.name}!</span>
     </div>}
     {/* Buttons */}
     <div style={{display:"flex",gap:8,marginTop:8}}>
-      {!pass&&<button onClick={onRetry} style={{flex:1,padding:10,borderRadius:14,border:"none",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"var(--dark)",fontSize:13,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer"}}>🔄 Try Again</button>}
-      <button onClick={onDone} style={{flex:1,padding:10,borderRadius:14,border:"none",background:`linear-gradient(135deg,${color||"#22C55E"},${color||"#16A34A"})`,color:"var(--dark)",fontSize:13,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer"}}>{pass?"🎉 Next!":"✅ Done"}</button>
+      {!pass&&<button onClick={onRetry} style={{flex:1,padding:10,borderRadius:14,border:"none",background:"linear-gradient(135deg,#F59E0B,#D97706)",color:"#2D2B3D",fontSize:13,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer"}}>🔄 Try Again</button>}
+      <button onClick={onDone} style={{flex:1,padding:10,borderRadius:14,border:"none",background:`linear-gradient(135deg,${color||"#22C55E"},${color||"#16A34A"})`,color:"#2D2B3D",fontSize:13,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer"}}>{pass?"🎉 Next!":"✅ Done"}</button>
     </div>
   </div>;
 };
@@ -3628,94 +3628,85 @@ export default function App(){
       speak("Enter your name and age to get started!",{rate:0.85,pitch:1.0});
       setTeacherMood("happy");
     }
-  }} style={{background:"#7C4DFF",position:"fixed",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",fontFamily:"var(--font)",cursor:"pointer"}}>
-    {/* Decorative background shapes */}
-    <div style={{position:"absolute",inset:0,overflow:"hidden",pointerEvents:"none"}}>
-      <div style={{position:"absolute",top:"-10%",right:"-15%",width:"55vw",height:"55vw",borderRadius:"50%",background:"rgba(255,255,255,0.06)",animation:"splashFloat 8s ease-in-out infinite"}}/>
-      <div style={{position:"absolute",bottom:"-8%",left:"-12%",width:"45vw",height:"45vw",borderRadius:"50%",background:"rgba(255,255,255,0.04)",animation:"splashFloat 10s ease-in-out 2s infinite"}}/>
-      <div style={{position:"absolute",top:"20%",left:"10%",width:"20vw",height:"20vw",borderRadius:"50%",background:"rgba(255,255,255,0.03)",animation:"splashFloat 6s ease-in-out 1s infinite"}}/>
-      {/* Floating emoji decorations */}
-      {["⭐","🌟","✨","💫","🦉","📚"].map((e,i)=><div key={i} style={{position:"absolute",fontSize:20+Math.random()*16,left:`${10+i*15}%`,top:`${15+Math.sin(i)*25}%`,opacity:0.15,animation:`floatP ${7+i*1.5}s ease-in-out ${i*0.8}s infinite`,"--dr":`${15+i*5}px`}}>{e}</div>)}
-    </div>
+  }} style={{background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 30%,#74B9FF 60%,#55EFC4 100%)",backgroundSize:"300% 300%",animation:"gradientMove 6s ease infinite",position:"fixed",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",fontFamily:"var(--font)",cursor:"pointer"}}>
+    <Particles count={15} emojis={["⭐","✨","🌟","💫"]}/>
     <div style={{textAlign:"center",zIndex:2,animation:"splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1)"}}>
-      {/* Mascot circle */}
-      <div style={{width:120,height:120,borderRadius:"50%",background:"rgba(255,255,255,0.15)",margin:"0 auto 20px",display:"flex",alignItems:"center",justifyContent:"center",border:"3px solid rgba(255,255,255,0.2)",animation:"mascotB 3s ease-in-out infinite"}}>
-        <span style={{fontSize:64}}>🦉</span>
-      </div>
-      <h1 style={{fontSize:40,fontWeight:900,color:"#fff",margin:0,letterSpacing:-0.5,textShadow:"0 2px 8px rgba(0,0,0,0.15)"}}>Little Genius</h1>
-      <p style={{color:"rgba(255,255,255,0.7)",fontSize:14,fontWeight:800,letterSpacing:4,textTransform:"uppercase",marginTop:8}}>Learn • Play • Grow</p>
-      <button style={{marginTop:36,padding:"16px 52px",borderRadius:16,border:"none",background:"#FFCA28",color:"#1A1A2E",fontSize:18,fontWeight:900,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 0 #F57F17, 0 6px 20px rgba(0,0,0,0.15)",animation:"numPulse 2.5s ease-in-out infinite",borderBottom:"4px solid #F57F17",letterSpacing:0.5}}>Tap to Start!</button>
+      <h1 style={{fontSize:48,fontWeight:900,color:"#fff",margin:0,letterSpacing:-1,textShadow:"0 3px 12px rgba(0,0,0,0.15)"}}>Little Genius 🦉</h1>
+      <p style={{color:"rgba(255,255,255,0.85)",fontSize:14,fontWeight:700,letterSpacing:3,textTransform:"uppercase",marginTop:8}}>Learn • Play • Grow</p>
+      <button style={{marginTop:32,padding:"18px 48px",borderRadius:50,border:"3px solid rgba(255,255,255,0.3)",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 8px 32px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",animation:"numPulse 2s ease-in-out infinite"}}>Tap to Start! 🦉</button>
     </div>
     {TeacherBubble}<style>{CSS}</style>
   </div>;
 
 
-  if(scr==="onboard")return<div style={{height:"100vh",overflow:"auto",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",fontFamily:"var(--font)"}}>
-    <div style={{background:"#fff",borderRadius:24,padding:"28px 22px",maxWidth:400,width:"100%",border:"2px solid #E8EAF6",borderBottom:"4px solid #D1C4E9",zIndex:2,animation:"slideUp 0.5s ease-out"}}>
+  if(scr==="onboard")return<div style={{height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",fontFamily:"var(--font)"}}>
+    <Particles count={6} emojis={["🌸","🦋","⭐","🌈"]}/>
+    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:28,padding:"24px 18px",maxWidth:400,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2),0 4px 12px rgba(0,0,0,0.06)",zIndex:2,animation:"slideUp 0.5s ease-out",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
     {obSt===0?<>
       {/* Step 1: Name + Age */}
       <div style={{textAlign:"center",marginBottom:20}}>
-        <div style={{width:80,height:80,borderRadius:"50%",background:"#F3E5F5",margin:"0 auto 12px",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:44,animation:"mascotB 2s ease-in-out infinite"}}>👋</span></div>
-        <h2 style={{fontSize:26,fontWeight:900,color:"var(--dark)",margin:"0 0 4px"}}>Hello there!</h2>
-        <p style={{fontSize:13,color:"var(--gray)",fontWeight:800}}>Let's set up your profile</p>
+        <div style={{textAlign:"center",fontSize:56,animation:"mascotB 2s ease-in-out infinite"}}>👋</div>
+        <h2 style={{fontSize:28,fontWeight:900,color:"#2D2B3D",margin:"8px 0 4px"}}>Hello there!</h2>
+        <p style={{fontSize:13,color:"#8E8CA3",fontWeight:600}}>Let's set up your profile</p>
       </div>
-      <label style={{fontSize:11,fontWeight:900,color:"var(--primary)",textTransform:"uppercase",letterSpacing:2,display:"block",marginBottom:8}}>What's your name?</label>
-      <input value={obN} onChange={e=>setObN(e.target.value)} placeholder="Type your name..." style={{width:"100%",padding:"14px 16px",border:"2px solid #E8EAF6",borderRadius:14,fontSize:17,fontWeight:800,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#FAFAFE",borderBottom:"3px solid #D1C4E9"}}/>
-      <label style={{fontSize:11,fontWeight:900,color:"var(--primary)",textTransform:"uppercase",letterSpacing:2,display:"block",margin:"20px 0 10px"}}>How old are you?</label>
+      <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:8}}>What's your name?</label>
+      <input value={obN} onChange={e=>setObN(e.target.value)} placeholder="Type your name..." style={{width:"100%",padding:"14px 16px",border:"2px solid #DFE6E9",borderRadius:18,fontSize:17,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#F8FAFF"}}/>
+      <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",margin:"20px 0 10px"}}>How old are you?</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8}}>
         {[3,4,5,6,7,8].map(a=><button key={a} onClick={()=>setObA(a)} style={{
-          padding:"14px 0",borderRadius:14,border:"2px solid",
-          borderColor:obA===a?"var(--primary)":"#E8EAF6",
-          borderBottom:obA===a?"4px solid var(--primary-bottom)":"3px solid #D1C4E9",
-          background:obA===a?"var(--primary)":"#fff",
-          color:obA===a?"#fff":"var(--dark)",fontSize:20,fontWeight:900,
-          fontFamily:"var(--font)",cursor:"pointer",
+          padding:"14px 0",borderRadius:16,border:"3px solid",
+          borderColor:obA===a?"#6C5CE7":"#DFE6E9",
+          background:obA===a?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",
+          color:obA===a?"#fff":"#1C1C2B",fontSize:20,fontWeight:900,
+          fontFamily:"var(--font)",cursor:"pointer",transform:obA===a?"scale(1.08)":"scale(1)",
+          boxShadow:obA===a?"0 4px 12px rgba(252,128,25,.3)":"none"
         }}>{a}</button>)}
       </div>
-      <button onClick={()=>{sfxTap();setObSt(1);speak("Great! Now select your style!",{rate:0.85,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:16,border:"none",background:"var(--primary)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,borderBottom:"4px solid var(--primary-bottom)",letterSpacing:0.5}}>Next →</button>
+      <button onClick={()=>{sfxTap();setObSt(1);speak("Great! Now select your style!",{rate:0.85,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,boxShadow:"var(--shadow-btn)",letterSpacing:0.5}}>Next →</button>
     </>:
     obSt===1?<>
       {/* Step 2: Gender + Avatar */}
       <div style={{textAlign:"center",marginBottom:16}}>
-        <h2 style={{fontSize:24,fontWeight:900,color:"var(--dark)",margin:0}}>Pick your look!</h2>
-        <p style={{fontSize:13,color:"var(--gray)",fontWeight:800,marginTop:4}}>Choose your character</p>
+        <h2 style={{fontSize:24,fontWeight:900,color:"#2D2B3D",margin:0}}>Pick your look! ✨</h2>
+        <p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,marginTop:4}}>Choose your character</p>
       </div>
-      <label style={{fontSize:11,fontWeight:900,color:"var(--primary)",textTransform:"uppercase",letterSpacing:2,display:"block",marginBottom:8}}>I am a...</label>
+      <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:6}}>I am a...</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
-        {[{g:"boy",e:"👦",c:"var(--blue)"},{g:"girl",e:"👧",c:"var(--pink)"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{
-          padding:16,borderRadius:16,border:"2px solid",
-          borderColor:obG===x.g?x.c:"#E8EAF6",
-          borderBottom:obG===x.g?`4px solid ${x.g==="boy"?"var(--blue-bottom)":"var(--pink-bottom)"}`:"3px solid #D1C4E9",
-          background:obG===x.g?(x.g==="boy"?"#E3F2FD":"#FCE4EC"):"#fff",
-          cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:6,
+        {[{g:"boy",e:"👦",c:"#6C5CE7"},{g:"girl",e:"👧",c:"#E84393"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{
+          padding:16,borderRadius:18,border:"3px solid",
+          borderColor:obG===x.g?x.c:"#E8E8E8",
+          background:obG===x.g?(x.g==="boy"?"#FFF5EB":"#FDF2F8"):"#fff",
+          cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:8,transform:obG===x.g?"scale(1.04)":"scale(1)",
+          boxShadow:obG===x.g?`0 4px 16px ${x.c}33`:"none"
         }}>
-          <span style={{fontSize:40}}>{x.e}</span>
-          <span style={{fontWeight:800,fontSize:14,color:obG===x.g?"var(--dark)":"var(--gray)"}}>{x.g.charAt(0).toUpperCase()+x.g.slice(1)}</span>
+          <span style={{fontSize:44}}>{x.e}</span>
+          <span style={{fontWeight:800,fontSize:15,color:obG===x.g?x.c:"#8E8CA3"}}>{x.g.charAt(0).toUpperCase()+x.g.slice(1)}</span>
         </button>)}
       </div>
-      <label style={{fontSize:11,fontWeight:900,color:"var(--primary)",textTransform:"uppercase",letterSpacing:2,display:"block",marginBottom:10}}>Pick an avatar</label>
+      <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:10}}>Pick an avatar</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:"100%",overflow:"hidden"}}>
         {AVATARS[obG].map((av,i)=><button key={i} onClick={()=>setObAv(i)} style={{
-          padding:10,borderRadius:14,border:"2px solid",
-          borderColor:obAv===i?"var(--primary)":"#E8EAF6",
-          borderBottom:obAv===i?"4px solid var(--primary-bottom)":"3px solid #D1C4E9",
-          background:obAv===i?"#EDE7F6":"#fff",
+          padding:10,borderRadius:16,border:"3px solid",
+          borderColor:obAv===i?"#6C5CE7":"#E8E8E8",
+          background:obAv===i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F8F9FB",
           fontSize:28,cursor:"pointer",
+          transform:obAv===i?"scale(1.05)":"scale(1)",
           display:"flex",alignItems:"center",justifyContent:"center",
+          boxShadow:obAv===i?"0 4px 12px rgba(108,92,231,.2)":"none",
           minWidth:0,overflow:"hidden"
         }}>{av}</button>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
-        <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:14,border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",color:"var(--gray)"}}>← Back</button>
-        <button onClick={()=>{sfxTap();setObSt(2);speak("Would you like a quick tour?",{rate:0.85,pitch:1.0});setTeacherMood("happy");}} style={{padding:14,borderRadius:16,border:"none",background:"var(--primary)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",borderBottom:"4px solid var(--primary-bottom)"}}>Next →</button>
+        <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:16,border:"2px solid #E8E0D8",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",color:"#8E8CA3"}}>← Back</button>
+        <button onClick={()=>{sfxTap();setObSt(2);speak("Would you like a quick tour?",{rate:0.85,pitch:1.0});setTeacherMood("happy");}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",boxShadow:"var(--shadow-btn)"}}>Next →</button>
       </div>
     </>:
     obSt===2?<>
       {/* Step 3: Tour Yes/No */}
       <div style={{textAlign:"center",marginBottom:20}}>
-        <div style={{width:80,height:80,borderRadius:"50%",background:"#FFF8E1",margin:"0 auto 12px",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:44,animation:"mascotB 2s ease-in-out infinite"}}>🦉</span></div>
-        <h2 style={{fontSize:24,fontWeight:900,color:"var(--dark)",margin:"0 0 4px"}}>Need a tour?</h2>
-        <p style={{fontSize:13,color:"var(--gray)",fontWeight:800}}>I can show you around the app!</p>
+        <div style={{fontSize:56,animation:"mascotB 2s ease-in-out infinite"}}>🦉</div>
+        <h2 style={{fontSize:24,fontWeight:900,color:"#2D2B3D",margin:"8px 0 4px"}}>Need a tour?</h2>
+        <p style={{fontSize:13,color:"#8E8CA3",fontWeight:600}}>I can show you around the app!</p>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
         <button onClick={()=>{sfxTap();
@@ -3723,17 +3714,17 @@ export default function App(){
           save(newP);speak("Let's get to know you first!",{rate:0.85,pitch:1.0});setTeacherMood("star");
           setScr("questionnaire");setQStep(0);setQAnswers([]);
           localStorage.setItem("lg_want_tour","yes");
-        }} style={{padding:18,borderRadius:16,border:"none",background:"var(--green)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",borderBottom:"4px solid var(--green-bottom)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-          <span style={{fontSize:28}}>👍</span>
-          Yes!
+        }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(0,210,160,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+          <span style={{fontSize:32}}>👍</span>
+          Yes, show me!
         </button>
         <button onClick={()=>{sfxTap();
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
           save(newP);speak("Let's go!",{rate:0.85,pitch:1.0});setTeacherMood("star");
           setScr("home");
-        }} style={{padding:18,borderRadius:16,border:"none",background:"var(--orange)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",borderBottom:"4px solid var(--orange-bottom)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-          <span style={{fontSize:28}}>🚀</span>
-          Skip!
+        }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(255,159,67,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+          <span style={{fontSize:32}}>🚀</span>
+          Skip, let's go!
         </button>
       </div>
     </>:null}
@@ -3744,187 +3735,158 @@ export default function App(){
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
   const showNav=["home","learn","quizzone","phonics","stories","rewards","settings","studyplan"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
-  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:520,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",borderTop:"2px solid #E8EAF6",padding:"6px 8px 10px"}}>
+  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
     {[
-      {id:"home",icon:<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3L21 10.5V20C21 20.55 20.55 21 20 21H4C3.45 21 3 20.55 3 20V10.5Z" fill={scr==="home"?"var(--primary)":"#B0BEC5"} stroke={scr==="home"?"var(--primary)":"#B0BEC5"} strokeWidth="2" strokeLinejoin="round"/><path d="M9 21V14H15V21" fill="#fff" stroke="#fff" strokeWidth="1.5"/></svg>,label:"Home"},
-      {id:"learn",icon:<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" fill={scr==="learn"?"var(--green)":"#B0BEC5"}/><path d="M7 8H17M7 12H14M7 16H11" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>,label:"Learn"},
-      {id:"quizzone",icon:<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill={scr==="quizzone"?"var(--orange)":"#B0BEC5"}/><path d="M12 6L14 10L18 10.5L15 13.5L16 18L12 15.5L8 18L9 13.5L6 10.5L10 10L12 6Z" fill="#fff"/></svg>,label:"Quiz"},
-      {id:"stories",icon:<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 4C4 3.45 4.45 3 5 3H12C12.55 3 13 3.45 13 4V20C13 20.55 12.55 21 12 21H5C4.45 21 4 20.55 4 20V4Z" fill={scr==="stories"?"var(--blue)":"#B0BEC5"}/><path d="M13 5H19C19.55 5 20 5.45 20 6V18C20 18.55 19.55 19 19 19H13V5Z" fill={scr==="stories"?"var(--blue-light)":"#CFD8DC"}/></svg>,label:"Stories"},
-      {id:"settings",icon:<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="10" r="4" fill={scr==="settings"?"var(--primary)":"#B0BEC5"}/><path d="M4 20C4 16.5 7.5 14 12 14C16.5 14 20 16.5 20 20" stroke={scr==="settings"?"var(--primary)":"#B0BEC5"} strokeWidth="2.5" strokeLinecap="round"/></svg>,label:"Profile"},
+      {id:"home",icon:"🏠",label:"Home"},
+      {id:"learn",icon:"📚",label:"Learn"},
+      {id:"quizzone",icon:"🎯",label:"Quiz"},
+      {id:"stories",icon:"📖",label:"Stories"},
+      {id:"settings",icon:"👤",label:"Profile"},
     ].map(t=><button key={t.id} onClick={()=>{sfxTap();stop();if(t.id==="home")goHome();else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
       flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,
-      padding:"4px 4px 2px",border:"none",cursor:"pointer",
-      background:"transparent",
-      borderRadius:12,
-      position:"relative"}}>
-      <div style={{padding:4}}>{t.icon}</div>
-      <span style={{fontSize:10,fontWeight:scr===t.id?900:700,color:scr===t.id?"var(--primary)":"#B0BEC5",letterSpacing:scr===t.id?0.3:0}}>{t.label}</span>
-      {scr===t.id&&<div style={{position:"absolute",top:-2,left:"50%",transform:"translateX(-50%)",width:32,height:3,borderRadius:2,background:"var(--primary)"}}/>}
+      padding:"6px 4px 8px",border:"none",cursor:"pointer",
+      background:scr===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"transparent",
+      borderRadius:20,
+      borderTop:"none"}}>
+      <span style={{fontSize:18,filter:scr===t.id?"none":"grayscale(0.4) opacity(0.5)"}}>{t.icon}</span>
+      <span style={{fontSize:9,fontWeight:700,color:scr===t.id?"#fff":"#A4B0BE"}}>{t.label}</span>
     </button>)}
   </div>:null;
 
 
   // ═══ QUESTIONNAIRE (first-time only) ═══
-  if(scr==="questionnaire")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-    <div style={{background:"#fff",borderRadius:24,padding:"24px 20px",maxWidth:400,border:"2px solid #E8EAF6",borderBottom:"4px solid #D1C4E9",width:"100%",textAlign:"center"}}>
-      <div style={{width:64,height:64,borderRadius:"50%",background:"#FFF8E1",margin:"0 auto 10px",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:36}}>🦉</span></div>
-      <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:900,color:"var(--dark)",margin:"0 0 4px"}}>Quick Questions!</h2>
-      <p style={{fontSize:12,color:"var(--gray)",fontWeight:800,marginBottom:16}}>Question {qStep+1} of {QUESTIONNAIRE.length}</p>
+  if(scr==="questionnaire")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:28,padding:"24px 18px",maxWidth:400,border:"1px solid rgba(255,255,255,0.8)",width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
+      <div style={{fontSize:48}}>🦉</div>
+      <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Quick Questions!</h2>
+      <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:16}}>Question {qStep+1} of {QUESTIONNAIRE.length} — Help Ollie customize your learning!</p>
       
-      <div style={{fontSize:15,fontWeight:800,color:"var(--dark)",marginBottom:14,lineHeight:1.4}}>{QUESTIONNAIRE[qStep]?.q}</div>
+      <div style={{fontSize:16,fontWeight:700,color:"var(--dark)",marginBottom:14}}>{QUESTIONNAIRE[qStep]?.q}</div>
       
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {QUESTIONNAIRE[qStep]?.opts.map((opt,i)=>{const colors=[{bg:"var(--primary)",bb:"var(--primary-bottom)"},{bg:"var(--green)",bb:"var(--green-bottom)"},{bg:"var(--orange)",bb:"var(--orange-bottom)"},{bg:"var(--blue)",bb:"var(--blue-bottom)"}];const c=colors[i%4];return<button key={i} onClick={()=>{
+        {QUESTIONNAIRE[qStep]?.opts.map((opt,i)=><button key={i} onClick={()=>{
           sfxTap();
           const newA=[...qAnswers,opt];setQAnswers(newA);
           if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
           else{saveQuizAnswers(newA);setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
         }} style={{
           padding:"14px 18px",border:"none",cursor:"pointer",fontFamily:"var(--font)",
-          fontSize:14,fontWeight:800,textAlign:"left",
-          background:c.bg,
-          color:"#fff",borderBottom:`4px solid ${c.bb}`,
-          borderRadius:14,
-          transition:"all 0.1s"
-        }}>{opt}</button>})}
+          fontSize:14,fontWeight:700,textAlign:"left",
+          background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
+          color:"#fff",boxShadow:["0 6px 20px rgba(108,92,231,0.25)","0 6px 20px rgba(0,210,160,0.25)","0 6px 20px rgba(255,159,67,0.25)","0 6px 20px rgba(84,160,255,0.25)"][i%4],
+          borderRadius:22,
+          transition:"all 0.2s"
+        }}>{opt}</button>)}
       </div>
       
       <button onClick={()=>{
         sfxTap();
         if(qStep<QUESTIONNAIRE.length-1){setQAnswers([...qAnswers,"skipped"]);setQStep(qStep+1);}
         else{saveQuizAnswers([...qAnswers,"skipped"]);setScr("home");}
-      }} style={{marginTop:14,padding:"8px 16px",borderRadius:10,border:"none",background:"transparent",color:"var(--gray)",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip →</button>
+      }} style={{marginTop:12,padding:"8px 16px",borderRadius:12,border:"none",background:"transparent",color:"#A4B0BE",fontSize:12,fontWeight:700,cursor:"pointer"}}>Skip →</button>
       
-      {/* Progress bar */}
-      <div style={{margin:"14px auto 0",maxWidth:200,height:8,borderRadius:4,background:"#E8EAF6",overflow:"hidden"}}>
-        <div style={{height:"100%",borderRadius:4,background:"var(--green)",width:`${((qStep+1)/QUESTIONNAIRE.length)*100}%`,transition:"width 0.3s ease"}}/>
+      {/* Progress dots */}
+      <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:14}}>
+        {QUESTIONNAIRE.map((_,i)=><div key={i} style={{width:i===qStep?20:8,height:8,borderRadius:4,background:i<qStep?"#00D2A0":i===qStep?"#6C5CE7":"#E0E0E0",transition:"all 0.3s"}}/>)}
       </div>
     </div>
   </div>;
 
   if(scr==="home")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
-    {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"var(--green)"}}>{ptAnim}</div>}
-    {/* ═══ TOP BAR — Clean white with color accents ═══ */}
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 16px",flexShrink:0,background:"#fff",borderBottom:"2px solid #E8EAF6"}}>
+    {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
+    {/* ═══ TOP BAR ═══ */}
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",flexShrink:0,background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 50%,#74B9FF 100%)",borderRadius:"0 0 20px 20px",boxShadow:"0 4px 24px rgba(108,92,231,0.2)"}}>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
-        <div style={{width:46,height:46,borderRadius:14,background:"#EDE7F6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,border:"2px solid #D1C4E9",borderBottom:"3px solid #D1C4E9"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
+        <div style={{width:44,height:44,borderRadius:"50%",background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"inset 0 0 0 2px rgba(255,255,255,0.3)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
         <div>
-          <div style={{color:"var(--dark)",fontWeight:900,fontSize:17,lineHeight:1.2}}>{prof?.name||"Buddy"}</div>
-          <div style={{color:"var(--gray)",fontSize:12,fontWeight:800}}>Age {prof?.age||4}</div>
+          <div style={{color:"#fff",fontWeight:800,fontSize:18,lineHeight:1,textShadow:"0 1px 3px rgba(0,0,0,.1)"}}>{prof?.name||"Buddy"}</div>
+          <div style={{color:"rgba(255,255,255,.85)",fontSize:13,fontWeight:600}}>Age {prof?.age||4}</div>
         </div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        {/* Streak */}
-        <div style={{padding:"7px 12px",borderRadius:12,background:"#FFF3E0",display:"flex",alignItems:"center",gap:4,border:"2px solid #FFE0B2",borderBottom:"3px solid #FFE0B2"}}>
-          <span style={{fontSize:16}}>🔥</span>
-          <span style={{color:"#E65100",fontWeight:900,fontSize:14}}>{prof?.streak||0}</span>
-        </div>
-        {/* Points */}
-        <div style={{padding:"7px 12px",borderRadius:12,background:"#FFF8E1",display:"flex",alignItems:"center",gap:4,border:"2px solid #FFE082",borderBottom:"3px solid #FFE082"}}>
+        <div style={{padding:"8px 14px",borderRadius:20,background:"rgba(255,255,255,.15)",display:"flex",alignItems:"center",gap:4,backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",border:"1px solid rgba(255,255,255,0.2)"}}>
           <span style={{fontSize:16}}>⭐</span>
-          <span style={{color:"#F57F17",fontWeight:900,fontSize:14}}>{prof?.points||0}</span>
+          <span style={{color:"#FECA57",fontWeight:800,fontSize:16}}>{prof?.points||0}</span>
         </div>
       </div>
     </div>
 
-    {/* ═══ GREETING ═══ */}
-    <div style={{padding:"12px 16px 4px",textAlign:"left"}}>
-      <h2 style={{fontSize:22,fontWeight:900,color:"var(--dark)",margin:0}}>What shall we learn?</h2>
-      <p style={{fontSize:13,color:"var(--gray)",fontWeight:800,marginTop:2}}>Choose an activity to get started!</p>
-    </div>
+    {/* ═══ KHAN-STYLE HOME: Play Button + Library + Differentiators ═══ */}
+    <div id="home-tiles" style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",padding:"0 0 90px"}}>
 
-    {/* ═══ TILES GRID — 3D card system ═══ */}
-    <div id="home-tiles" style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",padding:"8px 16px 85px"}}>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
-        {[
-          // Dynamic tile order based on questionnaire
-          ...(()=>{
-            const base=[
-              {id:"learn",icon:"📚",title:"Learn",sub:"Numbers, ABC & more",accent:"#7C4DFF",iconBg:"#EDE7F6",borderC:"#D1C4E9",priority:1},
-              {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",accent:"#4CAF50",iconBg:"#E8F5E9",borderC:"#C8E6C9",priority:2},
-              {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"Test Your Skills!",accent:"#42A5F5",iconBg:"#E3F2FD",borderC:"#BBDEFB",priority:3},
-              {id:"arena",icon:"🏟️",title:"Arena",sub:"Multiplayer Quiz!",accent:"#EC407A",iconBg:"#FCE4EC",borderC:"#F8BBD0",priority:4},
-              {id:"studyplan",icon:"📋",title:"Study Plan",sub:studyPlan.length>0?`${studyPlan.length} tasks`:"No plan yet",accent:"#FF8A50",iconBg:"#FFF3E0",borderC:"#FFE0B2",priority:5},
-              {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",accent:"#FFCA28",iconBg:"#FFF8E1",borderC:"#FFE082",priority:6},
-              {id:"rewards",icon:"🎁",title:"Rewards",sub:"Spend Points",accent:"#EF5350",iconBg:"#FFEBEE",borderC:"#FFCDD2",priority:7},
-              {id:"settings",icon:"⚙️",title:"Settings",sub:"Profile & Voice",accent:"#26C6DA",iconBg:"#E0F7FA",borderC:"#B2EBF2",priority:8},
-              {id:"parent",icon:"🔒",title:"Parents",sub:"Control Center",accent:"#78909C",iconBg:"#ECEFF1",borderC:"#CFD8DC",priority:9},
-            ];
-            // Reorder based on questionnaire answers
-            if(quizAnswers){
-              const focus=quizAnswers[0]; // Q1: main goal
-              const counting=quizAnswers[1]; // Q2: count to 10
-              const letters=quizAnswers[2]; // Q3: recognize A-Z
-              const reading=quizAnswers[3]; // Q4: read words
-              const math=quizAnswers[4]; // Q5: simple math
-              const interest=quizAnswers[6]; // Q7: topics
-              const wantArena=quizAnswers[8]; // Q9: multiplayer
-
-              // Primary focus
-              if(focus==="Numbers & Counting"){
-                base.find(t=>t.id==="learn").priority=0;
-                base.find(t=>t.id==="quizzone").priority=1;
-              } else if(focus==="Letters & Reading"){
-                base.find(t=>t.id==="phonics").priority=0;
-                base.find(t=>t.id==="learn").priority=1;
-              } else if(focus==="Fun & Games"){
-                base.find(t=>t.id==="arena").priority=0;
-                base.find(t=>t.id==="quizzone").priority=1;
-              }
-
-              // Can't count yet → push Learn higher
-              if(counting==="Not yet"||counting==="Just starting"){
-                base.find(t=>t.id==="learn").priority=Math.min(base.find(t=>t.id==="learn").priority,0);
-              }
-              // Can't read yet → push Phonics higher
-              if(reading==="Not yet"||reading==="Too young"||letters==="Not yet"){
-                base.find(t=>t.id==="phonics").priority=Math.min(base.find(t=>t.id==="phonics").priority,1);
-              }
-              // Good at math → push Quiz Zone higher
-              if(math==="2+3 = easy!"){
-                base.find(t=>t.id==="quizzone").priority=Math.min(base.find(t=>t.id==="quizzone").priority,2);
-              }
-              // Wants arena → boost it
-              if(wantArena==="Yes, with family"||wantArena==="Yes, with friends"){
-                base.find(t=>t.id==="arena").priority=Math.min(base.find(t=>t.id==="arena").priority,2);
-              }
-              // Colors & Shapes interest → Learn first
-              if(interest==="Colors & Shapes"){
-                base.find(t=>t.id==="learn").priority=0;
-              }
-            }
-            return base.sort((a,b)=>a.priority-b.priority);
-          })(),
-        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");if(guideTourRef.current){guideTourRef.current=false;setGuideTour(false);const ov2=document.getElementById("tour-overlay");if(ov2)ov2.remove();document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});}rec.warmUp();setTeacherMood("star");
-            const tileMsg={learn:"Let's learn something new!",phonics:"Let's practice reading words!",quizzone:"Quiz time! Let's test your skills!",arena:"Arena time! Let's play together!",studyplan:"Let's check your study plan!",stories:"Story time! Let's read!",rewards:"Let's see your rewards!",settings:"Settings time!"};
-            if(m.id==="parent"){setShowPinModal(true);}
-            else{if(tileMsg[m.id])speak(tileMsg[m.id],{rate:0.85,pitch:1.0});setScr(m.id);}}} style={{
-          display:"flex",flexDirection:"column",alignItems:"center",gap:8,
-          padding:"16px 10px 14px",borderRadius:16,cursor:"pointer",
-          fontFamily:"var(--font)",background:"#fff",
-          border:`2px solid ${m.borderC}`,
-          borderBottom:`4px solid ${m.borderC}`,
-          animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`,
-          textAlign:"center"
-        }}>
-          {/* Icon container */}
-          <div style={{width:52,height:52,borderRadius:14,background:m.iconBg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,border:`2px solid ${m.borderC}`}}>{m.icon}</div>
-          <div>
-            <div style={{color:"var(--dark)",fontWeight:900,fontSize:15}}>{m.title}</div>
-            <div style={{color:"var(--gray)",fontSize:11,fontWeight:800,marginTop:2}}>{m.sub}</div>
+      {/* ═══ BIG PLAY BUTTON (Khan Academy Kids style) ═══ */}
+      <div style={{padding:"12px 16px 0"}}>
+        <button data-r="tile" onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setTeacherMood("star");
+          const subjects=["learn","phonics","quizzone"];const next=subjects[Math.floor(Math.random()*subjects.length)];
+          speak("Let's start learning with Ollie!",{rate:0.85,pitch:1.0});
+          if(next==="learn"){setLearnTab(["numbers","abc","shapes","colors"][Math.floor(Math.random()*4)]);}
+          setScr(next);
+        }} style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:20,border:"none",background:"var(--green)",borderBottom:"5px solid var(--green-dark)",cursor:"pointer",fontFamily:"var(--font)",textAlign:"left",animation:"continuePulse 3s ease-in-out infinite"}}>
+          <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid rgba(255,255,255,0.15)"}}>
+            <span style={{fontSize:20,fontWeight:900,color:"#fff"}}>▶</span>
           </div>
+          <div style={{flex:1}}><div style={{fontSize:18,fontWeight:800,color:"#fff"}}>Start Learning!</div><div style={{fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.8)",marginTop:2}}>Ollie picks the best lesson for you</div></div>
+          <span style={{fontSize:32}}>🦉</span>
+        </button>
+      </div>
+
+      {/* ═══ DIFFERENTIATORS: Arena + Parents ═══ */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,padding:"10px 16px 0"}}>
+        <button data-r="tile" data-tile="arena" onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setTeacherMood("star");speak("Arena time! Let's play together!",{rate:0.85,pitch:1.0});setScr("arena");}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,padding:"14px 10px",borderRadius:16,border:"2px solid var(--pink-light)",borderBottom:"4px solid var(--pink-light)",background:"#FCE4EC",cursor:"pointer",fontFamily:"var(--font)",animation:"gridPop 0.4s ease 0.08s both"}}>
+          <div style={{width:44,height:44,borderRadius:12,background:"var(--pink)",borderBottom:"3px solid var(--pink-dark)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:22}}>🏟️</span></div>
+          <div style={{fontWeight:800,fontSize:14,color:"var(--pink-dark)"}}>Arena</div>
+          <div style={{fontSize:10,fontWeight:600,color:"var(--pink)"}}>Play with Friends!</div>
+        </button>
+        <button data-r="tile" data-tile="parent" onClick={()=>{sfxTap();setShowPinModal(true);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,padding:"14px 10px",borderRadius:16,border:"2px solid var(--blue-light)",borderBottom:"4px solid var(--blue-light)",background:"#E3F2FD",cursor:"pointer",fontFamily:"var(--font)",animation:"gridPop 0.4s ease 0.12s both"}}>
+          <div style={{width:44,height:44,borderRadius:12,background:"var(--blue)",borderBottom:"3px solid var(--blue-dark)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:22}}>👨‍👩‍👧</span></div>
+          <div style={{fontWeight:800,fontSize:14,color:"var(--blue-dark)"}}>Parents</div>
+          <div style={{fontSize:10,fontWeight:600,color:"var(--blue)"}}>Dashboard & Plans</div>
+        </button>
+      </div>
+
+      {/* ═══ EXPLORE LIBRARY — All topics freely accessible (Khan style) ═══ */}
+      <div style={{padding:"12px 16px 0"}}>
+        <h3 style={{fontSize:16,fontWeight:800,color:"var(--dark)",margin:"0 0 8px"}}>Explore Library 📚</h3>
+        {[
+          {id:"learn",icon:"🔢",title:"Numbers",sub:"Count 1-100",bg:"#E8F5E9",bc:"#C8E6C9",tc:"#2E7D32",tab:"numbers",msg:"Let's learn numbers!"},
+          {id:"learn",icon:"🔤",title:"Alphabet",sub:"A to Z & Sounds",bg:"#E3F2FD",bc:"#BBDEFB",tc:"#1565C0",tab:"abc",msg:"Let's explore the alphabet!"},
+          {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",bg:"#FFF3E0",bc:"#FFE0B2",tc:"#E65100",tab:null,msg:"Let's practice reading words!"},
+          {id:"learn",icon:"🔷",title:"Shapes",sub:"Circles, Squares & more",bg:"#EDE7F6",bc:"#D1C4E9",tc:"#4527A0",tab:"shapes",msg:"Let's discover shapes!"},
+          {id:"learn",icon:"🎨",title:"Colors",sub:"Rainbow of Colors",bg:"#FCE4EC",bc:"#F8BBD0",tc:"#AD1457",tab:"colors",msg:"Let's learn colors!"},
+          {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"14 Question Types!",bg:"#E0F7FA",bc:"#B2EBF2",tc:"#006064",tab:null,msg:"Quiz time! Let's test your skills!"},
+          {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",bg:"#FFF8E1",bc:"#FFE082",tc:"#F57F17",tab:null,msg:"Story time! Let's read!"},
+        ].map((m,i)=><button key={m.title} data-r="tile" onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setTeacherMood("star");
+          speak(m.msg,{rate:0.85,pitch:1.0});if(m.tab){setLearnTab(m.tab);}setScr(m.id);
+        }} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 14px",borderRadius:14,border:`2px solid ${m.bc}`,borderBottom:`3px solid ${m.bc}`,background:m.bg,cursor:"pointer",fontFamily:"var(--font)",marginBottom:7,textAlign:"left",animation:`gridPop 0.3s ease ${0.04*i}s both`}}>
+          <div style={{width:42,height:42,borderRadius:12,background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,border:`2px solid ${m.bc}`,flexShrink:0}}>{m.icon}</div>
+          <div style={{flex:1}}><div style={{fontWeight:800,fontSize:14,color:m.tc}}>{m.title}</div><div style={{fontSize:11,fontWeight:600,color:"var(--gray)",marginTop:1}}>{m.sub}</div></div>
+          <span style={{fontSize:16,color:m.bc}}>›</span>
+        </button>)}
+      </div>
+
+      {/* ═══ QUICK ACCESS ═══ */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,padding:"4px 16px 12px"}}>
+        {[
+          {id:"studyplan",icon:"📋",title:"Study Plan",bg:"#FFF3E0",bc:"#FFE0B2",tc:"#E65100",msg:"Let's check your study plan!"},
+          {id:"rewards",icon:"🎁",title:"Rewards",bg:"#FFEBEE",bc:"#FFCDD2",tc:"#C62828",msg:"Let's see your rewards!"},
+          {id:"settings",icon:"⚙️",title:"Settings",bg:"#ECEFF1",bc:"#CFD8DC",tc:"#546E7A",msg:"Settings time!"},
+        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
+          speak(m.msg,{rate:0.85,pitch:1.0});setScr(m.id);
+        }} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"10px 4px",borderRadius:12,border:`2px solid ${m.bc}`,borderBottom:`3px solid ${m.bc}`,background:m.bg,cursor:"pointer",fontFamily:"var(--font)",animation:`gridPop 0.3s ease ${0.2+0.04*i}s both`}}>
+          <span style={{fontSize:18}}>{m.icon}</span>
+          <span style={{fontSize:10,fontWeight:800,color:m.tc}}>{m.title}</span>
         </button>)}
       </div>
     </div>
     {/* ═══ PIN MODAL ═══ */}
-    {showPinModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:24,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",border:"2px solid #E8EAF6",borderBottom:"4px solid #D1C4E9"}}>
-        <div style={{width:64,height:64,borderRadius:"50%",background:"#EDE7F6",margin:"0 auto 12px",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:36}}>🔒</span></div>
-        <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:900,margin:"0 0 4px",color:"var(--dark)"}}>Parent Access</h3>
-        <p style={{fontSize:12,color:"var(--gray)",fontWeight:800}}>Enter PIN to continue</p>
+    {showPinModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"var(--shadow-float)"}}>
+        <span style={{fontSize:48}}>🔒</span>
+        <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
+        <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
         <div style={{display:"flex",gap:8,justifyContent:"center",margin:"16px 0"}}>
-          {[1,2,3,4].map(i=><div key={i} style={{width:44,height:44,borderRadius:12,background:pinInput.length>=i?"var(--primary)":"#F5F5F5",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#D1C4E9",border:pinInput.length>=i?"2px solid var(--primary-bottom)":"2px solid #E8EAF6",borderBottom:pinInput.length>=i?"3px solid var(--primary-bottom)":"3px solid #D1C4E9"}}>{pinInput.length>=i?"●":"○"}</div>)}
+          {[1,2,3,4].map(i=><div key={i} style={{width:44,height:44,borderRadius:12,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9",boxShadow:"var(--shadow-card)"}}>{pinInput.length>=i?"●":"○"}</div>)}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:240,margin:"0 auto"}}>
           {[1,2,3,4,5,6,7,8,9,0,"⌫"].map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
@@ -3933,9 +3895,9 @@ export default function App(){
             else{const np=pinInput+n;setPinInput(np);
               if(np.length===4){if(np===parentPin){setShowPinModal(false);setPinInput("");setScr("parent");setParentMode(true);}else{setPinInput("");}}
             }
-          }} style={{padding:"14px",borderRadius:12,border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9",background:n==="⌫"?"#FFEBEE":"#fff",fontSize:n==="⌫"?18:22,fontWeight:900,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"var(--red)":"var(--dark)"}}>{n}</button>)}
+          }} style={{padding:"14px",borderRadius:14,border:"none",background:n==="⌫"?"#FEE2E2":"#F0F4FF",fontSize:n==="⌫"?18:22,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"#FF6B81":"var(--dark)",boxShadow:"var(--shadow-card)"}}>{n}</button>)}
         </div>
-        <p style={{fontSize:10,color:"var(--gray)",marginTop:10,fontWeight:800}}>Default PIN: 1234</p>
+        <p style={{fontSize:10,color:"#A4B0BE",marginTop:10}}>Default PIN: 1234</p>
       </div>
     </div>}
     {BottomNav}{TeacherBubble}<style>{CSS}</style>
@@ -3945,7 +3907,7 @@ export default function App(){
 
 
   // ═══ MULTIPLAYER ARENA (Firebase Universal) ═══
-  if(scr==="arena")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"#1A1A2E",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",color:"#fff"}}>
+  if(scr==="arena")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"linear-gradient(180deg,#1B1464 0%,#3B1F8E 40%,#6C5CE7 100%)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",color:"#fff"}}>
     {/* Header */}
     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",flexShrink:0}}>
       <button onClick={()=>{
@@ -3963,7 +3925,7 @@ export default function App(){
         onRoomDeleted();goHome();
       }} style={{padding:"10px 18px",borderRadius:16,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"var(--font)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Exit</button>
       <span style={{fontSize:20,fontWeight:800}}>🏟️ Arena</span>
-      {arenaRoom&&<span style={{padding:"6px 14px",borderRadius:14,background:"rgba(255,255,255,0.15)",fontSize:13,fontWeight:800,letterSpacing:2,fontFamily:"monospace"}}>{arenaRoom.code}</span>}
+      {arenaRoom&&<span style={{padding:"6px 14px",borderRadius:14,background:"rgba(255,255,255,0.15)",fontSize:13,fontWeight:700,letterSpacing:2,fontFamily:"monospace"}}>{arenaRoom.code}</span>}
     </div>
 
     <div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0,WebkitOverflowScrolling:"touch"}}>
@@ -3978,19 +3940,19 @@ export default function App(){
         <span style={{fontSize:10,fontWeight:800,color:fbReady?"#55EFC4":"#FF6B81"}}>{fbReady?"🟢 Online":"🔴 Connecting..."}</span>
       </div>
 
-      <input value={arenaName} onChange={e=>setArenaName(e.target.value)} placeholder={prof?.name||"Your name"} style={{width:"100%",maxWidth:300,padding:"14px 18px",borderRadius:18,border:"2px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"#fff",fontSize:16,fontWeight:800,fontFamily:"var(--font)",textAlign:"center",outline:"none"}}/>
+      <input value={arenaName} onChange={e=>setArenaName(e.target.value)} placeholder={prof?.name||"Your name"} style={{width:"100%",maxWidth:300,padding:"14px 18px",borderRadius:18,border:"2px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"#fff",fontSize:16,fontWeight:700,fontFamily:"var(--font)",textAlign:"center",outline:"none"}}/>
 
       <div style={{display:"flex",gap:8,width:"100%",maxWidth:300}}>
         <div style={{flex:1}}>
-          <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,0.5)",marginBottom:4}}>DIFFICULTY</div>
+          <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:4}}>DIFFICULTY</div>
           <div style={{display:"flex",gap:4}}>
-            {["easy","medium","hard"].map(d=><button key={d} onClick={()=>{sfxTap();setArenaDiff(d);}} style={{flex:1,padding:"6px 2px",borderRadius:10,border:"none",background:arenaDiff===d?"#FECA57":"rgba(255,255,255,0.1)",color:arenaDiff===d?"#1B1464":"rgba(255,255,255,0.6)",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",textTransform:"capitalize"}}>{d}</button>)}
+            {["easy","medium","hard"].map(d=><button key={d} onClick={()=>{sfxTap();setArenaDiff(d);}} style={{flex:1,padding:"6px 2px",borderRadius:10,border:"none",background:arenaDiff===d?"#FECA57":"rgba(255,255,255,0.1)",color:arenaDiff===d?"#1B1464":"rgba(255,255,255,0.6)",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",textTransform:"capitalize"}}>{d}</button>)}
           </div>
         </div>
         <div style={{flex:1}}>
-          <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,0.5)",marginBottom:4}}>ROUNDS</div>
+          <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.5)",marginBottom:4}}>ROUNDS</div>
           <div style={{display:"flex",gap:4}}>
-            {[5,10,20].map(r=><button key={r} onClick={()=>{sfxTap();setArenaRounds(r);}} style={{flex:1,padding:"6px 2px",borderRadius:10,border:"none",background:arenaRounds===r?"#FECA57":"rgba(255,255,255,0.1)",color:arenaRounds===r?"#1B1464":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>{r}</button>)}
+            {[5,10,20].map(r=><button key={r} onClick={()=>{sfxTap();setArenaRounds(r);}} style={{flex:1,padding:"6px 2px",borderRadius:10,border:"none",background:arenaRounds===r?"#FECA57":"rgba(255,255,255,0.1)",color:arenaRounds===r?"#1B1464":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>{r}</button>)}
           </div>
         </div>
       </div>
@@ -3999,23 +3961,23 @@ export default function App(){
 
       <div style={{display:"flex",alignItems:"center",gap:12,width:"100%",maxWidth:300}}>
         <div style={{flex:1,height:1,background:"rgba(255,255,255,0.2)"}}/>
-        <span style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:800}}>OR JOIN</span>
+        <span style={{fontSize:12,color:"rgba(255,255,255,0.5)",fontWeight:700}}>OR JOIN</span>
         <div style={{flex:1,height:1,background:"rgba(255,255,255,0.2)"}}/>
       </div>
 
       <div style={{display:"flex",gap:8,width:"100%",maxWidth:300}}>
         <input value={arenaJoinCode} onChange={e=>setArenaJoinCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g).slice(0,6))} placeholder="ROOM CODE" maxLength={6} style={{flex:1,padding:"14px 18px",borderRadius:18,border:"2px solid rgba(255,255,255,0.2)",background:"rgba(255,255,255,0.1)",color:"#fff",fontSize:18,fontWeight:800,fontFamily:"monospace",textAlign:"center",letterSpacing:4,outline:"none"}}/>
-        <button onClick={()=>{sfxTap();arenaJoinRoom(arenaJoinCode);}} disabled={arenaJoinCode.length!==6||!fbReady} style={{padding:"14px 24px",borderRadius:18,border:"none",background:arenaJoinCode.length===6&&fbReady?"var(--green)":"rgba(255,255,255,0.1)",color:arenaJoinCode.length===6&&fbReady?"#1B1464":"rgba(255,255,255,0.3)",fontSize:16,fontWeight:800,cursor:arenaJoinCode.length===6&&fbReady?"pointer":"default",fontFamily:"var(--font)"}}>Join</button>
+        <button onClick={()=>{sfxTap();arenaJoinRoom(arenaJoinCode);}} disabled={arenaJoinCode.length!==6||!fbReady} style={{padding:"14px 24px",borderRadius:18,border:"none",background:arenaJoinCode.length===6&&fbReady?"linear-gradient(135deg,#00D2A0,#55EFC4)":"rgba(255,255,255,0.1)",color:arenaJoinCode.length===6&&fbReady?"#1B1464":"rgba(255,255,255,0.3)",fontSize:16,fontWeight:800,cursor:arenaJoinCode.length===6&&fbReady?"pointer":"default",fontFamily:"var(--font)"}}>Join</button>
       </div>
-      {fbError&&<p style={{color:"var(--red)",fontSize:12,fontWeight:800,textAlign:"center"}}>{fbError}</p>}
+      {fbError&&<p style={{color:"#FF6B81",fontSize:12,fontWeight:700,textAlign:"center"}}>{fbError}</p>}
       <p style={{fontSize:10,color:"rgba(255,255,255,0.35)",textAlign:"center"}}>Works on any phone, tablet, or computer — just enter the same room code!</p>
     </div>}
 
     {/* ═══ LOBBY — Waiting for players ═══ */}
     {arenaRoom&&arenaPhase==="lobby"&&<div style={{display:"flex",flexDirection:"column",padding:"16px 20px",gap:14}}>
       <div style={{textAlign:"center",padding:20,borderRadius:24,background:"rgba(255,255,255,0.08)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",border:"1px solid rgba(255,255,255,0.1)"}}>
-        <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:2}}>Room Code — Share This!</div>
-        <div style={{fontSize:42,fontWeight:800,letterSpacing:8,fontFamily:"monospace",color:"var(--yellow)",marginTop:4}}>{arenaRoom.code}</div>
+        <div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.5)",textTransform:"uppercase",letterSpacing:2}}>Room Code — Share This!</div>
+        <div style={{fontSize:42,fontWeight:800,letterSpacing:8,fontFamily:"monospace",color:"#FECA57",marginTop:4}}>{arenaRoom.code}</div>
         <p style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginTop:6}}>Open littlegenius on another device → tap Arena → enter this code</p>
       </div>
 
@@ -4027,23 +3989,23 @@ export default function App(){
             <div style={{fontWeight:800,fontSize:16}}>{p.name}{p.id===arenaId?" (You)":""}</div>
             <div style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>{p.isHost?"👑 Host":"Player "+(i+1)}</div>
           </div>
-          <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,0.5)"}}>{i===0?"🎯 First":"⏳ Turn "+(i+1)}</div>
+          <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.5)"}}>{i===0?"🎯 First":"⏳ Turn "+(i+1)}</div>
         </div>)}
         {Array.from({length:4-(arenaRoom.players?.length||0)}).map((_,i)=><div key={"e"+i} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:20,background:"rgba(255,255,255,0.05)",border:"2px dashed rgba(255,255,255,0.15)"}}>
           <span style={{fontSize:32,opacity:0.3}}>👤</span>
-          <span style={{fontSize:14,color:"rgba(255,255,255,0.3)",fontWeight:700}}>Waiting for player...</span>
+          <span style={{fontSize:14,color:"rgba(255,255,255,0.3)",fontWeight:600}}>Waiting for player...</span>
         </div>)}
       </div>
 
       {arenaRoom.hostId===arenaId&&(arenaRoom.players?.length||0)>=1&&<button onClick={()=>{sfxTap();arenaStartRound();}} style={{padding:"18px",borderRadius:22,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 24px rgba(254,202,87,0.3)",marginTop:8}}>Start Game! 🚀</button>}
-      {arenaRoom.hostId===arenaId&&<button onClick={()=>{sfxTap();if(window.confirm("Close room? All players will be disconnected.")){arenaResetGame();}}} style={{padding:"12px",borderRadius:16,border:"none",background:"rgba(255,107,129,0.15)",color:"var(--red)",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",marginTop:6,width:"100%"}}>Close Room 🚪</button>}
+      {arenaRoom.hostId===arenaId&&<button onClick={()=>{sfxTap();if(window.confirm("Close room? All players will be disconnected.")){arenaResetGame();}}} style={{padding:"12px",borderRadius:16,border:"none",background:"rgba(255,107,129,0.15)",color:"#FF6B81",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",marginTop:6,width:"100%"}}>Close Room 🚪</button>}
       {arenaRoom.hostId!==arenaId&&<div style={{textAlign:"center",padding:16,fontSize:14,color:"rgba(255,255,255,0.5)"}}>Waiting for host to start...</div>}
     </div>}
 
     {/* Ollie message bubble */}
     {arenaMsg&&(arenaPhase==="playing"||arenaPhase==="result")&&<div style={{padding:"8px 16px",margin:"0 18px",borderRadius:16,background:"rgba(255,255,255,0.1)",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
       <span style={{fontSize:28}}>🦉</span>
-      <span style={{fontSize:13,fontWeight:800,color:"#fff",flex:1}}>{arenaMsg}</span>
+      <span style={{fontSize:13,fontWeight:700,color:"#fff",flex:1}}>{arenaMsg}</span>
     </div>}
 
     {/* ═══ PLAYING — Question + Timer + Options ═══ */}
@@ -4057,15 +4019,15 @@ export default function App(){
         </p>
         {arenaRoom.hostId===arenaId&&<div style={{display:"flex",gap:10,marginTop:8}}>
           <button onClick={arenaTogglePause} style={{padding:"14px 28px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>▶️ Resume</button>
-          <button onClick={()=>{if(window.confirm("Reset game? All players will be disconnected.")){arenaResetGame();}}} style={{padding:"14px 28px",borderRadius:18,border:"none",background:"var(--red)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Reset</button>
+          <button onClick={()=>{if(window.confirm("Reset game? All players will be disconnected.")){arenaResetGame();}}} style={{padding:"14px 28px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF6B81,#EE5A6F)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Reset</button>
         </div>}
       </div>}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
-        <span style={{fontSize:12,fontWeight:800,color:"rgba(255,255,255,0.6)"}}>Round {arenaRoom.round}/{arenaRoom.maxRounds}</span>
+        <span style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>Round {arenaRoom.round}/{arenaRoom.maxRounds}</span>
         {/* Host controls: Pause + Reset */}
         {arenaRoom.hostId===arenaId&&!arenaPaused&&<div style={{display:"flex",gap:6}}>
-          <button onClick={arenaTogglePause} style={{padding:"6px 12px",borderRadius:12,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>⏸️</button>
-          <button onClick={()=>{if(window.confirm("Reset game? Everyone will be disconnected.")){arenaResetGame();}}} style={{padding:"6px 12px",borderRadius:12,border:"none",background:"rgba(255,107,129,0.3)",color:"var(--red)",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄</button>
+          <button onClick={arenaTogglePause} style={{padding:"6px 12px",borderRadius:12,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>⏸️</button>
+          <button onClick={()=>{if(window.confirm("Reset game? Everyone will be disconnected.")){arenaResetGame();}}} style={{padding:"6px 12px",borderRadius:12,border:"none",background:"rgba(255,107,129,0.3)",color:"#FF6B81",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>🔄</button>
         </div>}
         <div style={{display:"flex",gap:6}}>
           {(arenaRoom.players||[]).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:12,background:arenaRoom.turnPlayerId===p.id?"#FECA57":"rgba(255,255,255,0.1)",color:arenaRoom.turnPlayerId===p.id?"#1B1464":"#fff"}}>
@@ -4106,7 +4068,7 @@ export default function App(){
             const isWrong=arenaFb&&arenaFb.answer===opt&&!arenaFb.correct;
             return<button key={String(opt)+i} disabled={!canAnswer} onClick={()=>canAnswer&&arenaAnswer(opt)} style={{
               padding:"22px 12px",borderRadius:22,border:"none",cursor:canAnswer?"pointer":"default",
-              background:isCorrect?"var(--green)":isWrong?"var(--red)":canAnswer?`linear-gradient(135deg,${ARENA_COLORS[i%4]},${ARENA_COLORS[i%4]}BB)`:"rgba(255,255,255,0.06)",
+              background:isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":canAnswer?`linear-gradient(135deg,${ARENA_COLORS[i%4]},${ARENA_COLORS[i%4]}BB)`:"rgba(255,255,255,0.06)",
               color:canAnswer||isCorrect||isWrong?"#fff":"rgba(255,255,255,0.25)",
               fontSize:typeof opt==="number"?28:18,fontWeight:800,fontFamily:"var(--font)",
               boxShadow:canAnswer?`0 4px 14px ${ARENA_COLORS[i%4]}30`:"none",
@@ -4122,13 +4084,13 @@ export default function App(){
     {arenaRoom&&arenaPhase==="result"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px 24px",gap:14}}>
       <div style={{fontSize:56,animation:"floatY 1.5s ease-in-out infinite"}}>{arenaRoom.answerBy?"🎉":"😢"}</div>
       <h2 style={{fontSize:22,fontWeight:800}}>Round {arenaRoom.round} Complete!</h2>
-      <div style={{fontSize:15,color:"rgba(255,255,255,0.7)"}}>Answer: <strong style={{color:"var(--yellow)"}}>{String(arenaRoom.question?.answer)}</strong></div>
+      <div style={{fontSize:15,color:"rgba(255,255,255,0.7)"}}>Answer: <strong style={{color:"#FECA57"}}>{String(arenaRoom.question?.answer)}</strong></div>
       {arenaRoom.answerBy&&<div style={{fontSize:13,color:"#55EFC4"}}>✅ {(arenaRoom.players||[]).find(p=>p.id===arenaRoom.answerBy)?.name||"Someone"} got it right!</div>}
       <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:8,marginTop:4}}>
         {(arenaRoom.players||[]).sort((a,b)=>(arenaRoom.scores?.[b.id]||0)-(arenaRoom.scores?.[a.id]||0)).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderRadius:18,background:i===0?"linear-gradient(135deg,#FECA57,#FF9F43)":"rgba(255,255,255,0.08)"}}>
           <span style={{fontSize:13,fontWeight:800,color:i===0?"#1B1464":"rgba(255,255,255,0.5)"}}>{["🥇","🥈","🥉","🏅"][i]}</span>
           <span style={{fontSize:24}}>{ARENA_AVATARS[(arenaRoom.players||[]).indexOf(p)%4]}</span>
-          <span style={{flex:1,fontWeight:800,fontSize:14,color:i===0?"#1B1464":"#fff"}}>{p.name}</span>
+          <span style={{flex:1,fontWeight:700,fontSize:14,color:i===0?"#1B1464":"#fff"}}>{p.name}</span>
           <span style={{fontSize:18,fontWeight:800,color:i===0?"#1B1464":"#FECA57"}}>{arenaRoom.scores?.[p.id]||0}</span>
         </div>)}
       </div>
@@ -4175,9 +4137,9 @@ export default function App(){
     <div style={{display:"flex",gap:6,padding:"2px 8px",flexShrink:0,background:"#fff"}}>
       {[{id:"plan",label:"📋 Study Plan"},{id:"rewards",label:"🎁 Rewards"},{id:"dashboard",label:"📊 Dashboard"}].map(t=>
         <button key={t.id} onClick={()=>{sfxTap();setParentTab(t.id);}} style={{
-          flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
-          background:parentTab===t.id?"var(--primary)":"#fff",
-          color:parentTab===t.id?"#fff":"var(--gray)",boxShadow:parentTab===t.id?"var(--shadow-btn)":"none"
+          flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
+          background:parentTab===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",
+          color:parentTab===t.id?"#fff":"#A4B0BE",boxShadow:parentTab===t.id?"var(--shadow-btn)":"none"
         }}>{t.label}</button>
       )}
     </div>
@@ -4186,7 +4148,7 @@ export default function App(){
     {/* ═══ STUDY PLAN TAB ═══ */}
     {parentTab==="plan"&&<div>
       <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginBottom:10}}>Assign Topics to Study Plan</h3>
-      <p style={{fontSize:11,color:"var(--gray)",fontWeight:700,marginBottom:12}}>Select what your child should practice. They'll see these in "Study Plan" on their home screen.</p>
+      <p style={{fontSize:11,color:"#A4B0BE",fontWeight:600,marginBottom:12}}>Select what your child should practice. They'll see these in "Study Plan" on their home screen.</p>
       {STUDY_TOPICS.map(topic=><div key={topic.id} style={{marginBottom:12}}>
         <div style={{fontWeight:800,fontSize:14,color:"var(--dark)",marginBottom:6}}>{topic.emoji} {topic.name}</div>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
@@ -4197,36 +4159,36 @@ export default function App(){
               else{savePlan([...studyPlan,{topicId:topic.id,subId:sub.id,completed:false,addedAt:Date.now()}]);}
             }} style={{
               padding:"12px 18px",borderRadius:16,border:"none",cursor:"pointer",fontFamily:"var(--font)",
-              fontSize:13,fontWeight:800,
-              background:isAdded?"var(--green)":"#fff",
-              color:isAdded?"#fff":"var(--gray)",
-              boxShadow:isAdded?"0 3px 10px rgba(0,210,160,0.2)":"0 2px 0 rgba(0,0,0,0.06)"}}>{isAdded?"✅ ":""}{sub.name}</button>;
+              fontSize:13,fontWeight:700,
+              background:isAdded?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#F0F4FF",
+              color:isAdded?"#fff":"#636E72",
+              boxShadow:isAdded?"0 3px 10px rgba(0,210,160,0.2)":"var(--shadow-card)"}}>{isAdded?"✅ ":""}{sub.name}</button>;
           })}
         </div>
       </div>)}
-      {studyPlan.length>0&&<div style={{marginTop:16,padding:14,borderRadius:18,background:"var(--primary)",boxShadow:"var(--shadow-btn)"}}>
+      {studyPlan.length>0&&<div style={{marginTop:16,padding:14,borderRadius:18,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",boxShadow:"var(--shadow-btn)"}}>
         <div style={{color:"#fff",fontWeight:800,fontSize:14}}>{studyPlan.length} task{studyPlan.length!==1?"s":""} assigned</div>
-        <button onClick={()=>{sfxTap();savePlan([]);}} style={{marginTop:8,padding:"8px 16px",borderRadius:12,border:"none",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Clear All</button>
+        <button onClick={()=>{sfxTap();savePlan([]);}} style={{marginTop:8,padding:"8px 16px",borderRadius:12,border:"none",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Clear All</button>
       </div>}
     </div>}
 
     {/* ═══ REWARDS TAB ═══ */}
     {parentTab==="rewards"&&<div>
       <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginBottom:6}}>Custom Rewards</h3>
-      <p style={{fontSize:11,color:"var(--gray)",fontWeight:700,marginBottom:4}}>1 point per correct answer from Study Plan. Set point goals for real rewards!</p>
-      <div style={{padding:12,borderRadius:16,background:"var(--orange)",marginBottom:12,boxShadow:"0 4px 14px rgba(255,159,67,0.2)"}}>
+      <p style={{fontSize:11,color:"#A4B0BE",fontWeight:600,marginBottom:4}}>1 point per correct answer from Study Plan. Set point goals for real rewards!</p>
+      <div style={{padding:12,borderRadius:16,background:"linear-gradient(135deg,#FF9F43,#FECA57)",marginBottom:12,boxShadow:"0 4px 14px rgba(255,159,67,0.2)"}}>
         <div style={{color:"#fff",fontWeight:800,fontSize:13}}>⏱️ Engagement Time Bonus</div>
         <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
-          {ENGAGE_TIERS.map(t=><span key={t.mins} style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,255,255,0.25)",color:"#fff",fontSize:10,fontWeight:800}}>{t.label}=+{t.pts}pts</span>)}
+          {ENGAGE_TIERS.map(t=><span key={t.mins} style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,255,255,0.25)",color:"#fff",fontSize:10,fontWeight:700}}>{t.label}=+{t.pts}pts</span>)}
         </div>
       </div>
       {/* Active rewards */}
       {customRewards.length>0&&<div style={{marginBottom:12}}>
         <div style={{fontSize:13,fontWeight:800,color:"var(--dark)",marginBottom:6}}>Active Rewards:</div>
-        {customRewards.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:16,marginBottom:6,border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9"}}>
+        {customRewards.map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:16,marginBottom:6,boxShadow:"var(--shadow-card)"}}>
           <span style={{fontSize:24}}>{r.emoji}</span>
-          <div style={{flex:1}}><div style={{fontWeight:800,fontSize:13}}>{r.name}</div><div style={{fontSize:10,color:"var(--gray)"}}>{r.pts} points needed</div></div>
-          <button onClick={()=>{sfxTap();saveRewards(customRewards.filter((_,j)=>j!==i));}} style={{padding:"6px 10px",borderRadius:10,border:"none",background:"#FEE2E2",color:"var(--red)",fontSize:11,fontWeight:800,cursor:"pointer"}}>✕</button>
+          <div style={{flex:1}}><div style={{fontWeight:700,fontSize:13}}>{r.name}</div><div style={{fontSize:10,color:"#A4B0BE"}}>{r.pts} points needed</div></div>
+          <button onClick={()=>{sfxTap();saveRewards(customRewards.filter((_,j)=>j!==i));}} style={{padding:"6px 10px",borderRadius:10,border:"none",background:"#FEE2E2",color:"#FF6B81",fontSize:11,fontWeight:700,cursor:"pointer"}}>✕</button>
         </div>)}
       </div>}
       {/* Catalog */}
@@ -4242,24 +4204,24 @@ export default function App(){
               }
             }} style={{
               display:"flex",flexDirection:"column",alignItems:"center",padding:"10px 4px",borderRadius:16,border:"none",cursor:"pointer",
-              background:isAdded?"var(--green)":"#fff",
-              color:isAdded?"#fff":"var(--dark)",fontSize:10,fontWeight:800,fontFamily:"var(--font)",
-              boxShadow:isAdded?"0 3px 10px rgba(0,210,160,0.15)":"0 2px 0 rgba(0,0,0,0.06)",
+              background:isAdded?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#F0F4FF",
+              color:isAdded?"#fff":"var(--dark)",fontSize:10,fontWeight:700,fontFamily:"var(--font)",
+              boxShadow:isAdded?"0 3px 10px rgba(0,210,160,0.15)":"var(--shadow-card)",
               opacity:isAdded?0.6:1
             }}>
               <span style={{fontSize:24}}>{item.emoji}</span>
               <span style={{marginTop:2}}>{item.name}</span>
-              <span style={{fontSize:9,color:isAdded?"rgba(255,255,255,0.7)":"var(--gray)"}}>{item.defPts}pts</span>
+              <span style={{fontSize:9,color:isAdded?"rgba(255,255,255,0.7)":"#A4B0BE"}}>{item.defPts}pts</span>
             </button>;
           })}
         </div>
       </div>)}
       {/* PIN change */}
-      <div style={{marginTop:16,padding:14,borderRadius:16,background:"var(--bg)"}}>
+      <div style={{marginTop:16,padding:14,borderRadius:16,background:"#F0F4FF"}}>
         <div style={{fontWeight:800,fontSize:13,marginBottom:6}}>🔒 Change PIN</div>
         <div style={{display:"flex",gap:8}}>
-          <input value={pinInput} onChange={e=>setPinInput(e.target.value.replace(/\D/g).slice(0,4))} placeholder="New 4-digit PIN" style={{flex:1,padding:"10px 14px",borderRadius:12,border:"2px solid #DFE6E9",fontSize:14,fontWeight:800,fontFamily:"var(--font)"}}/>
-          <button onClick={()=>{if(pinInput.length===4){savePin(pinInput);setPinInput("");alert("PIN updated!");}}} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"var(--primary)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer"}}>Save</button>
+          <input value={pinInput} onChange={e=>setPinInput(e.target.value.replace(/\D/g).slice(0,4))} placeholder="New 4-digit PIN" style={{flex:1,padding:"10px 14px",borderRadius:12,border:"2px solid #DFE6E9",fontSize:14,fontWeight:700,fontFamily:"var(--font)"}}/>
+          <button onClick={()=>{if(pinInput.length===4){savePin(pinInput);setPinInput("");alert("PIN updated!");}}} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer"}}>Save</button>
         </div>
       </div>
     </div>}
@@ -4286,26 +4248,26 @@ export default function App(){
         return<div>
           {/* Summary Cards */}
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
-            {[{label:"Today",s:dS,color:"var(--primary)"},{label:"This Week",s:wS,color:"#54A0FF"},{label:"This Month",s:mS,color:"#00D2A0"}].map(p=>
+            {[{label:"Today",s:dS,color:"#6C5CE7"},{label:"This Week",s:wS,color:"#54A0FF"},{label:"This Month",s:mS,color:"#00D2A0"}].map(p=>
               <div key={p.label} style={{padding:14,borderRadius:18,background:`linear-gradient(135deg,${p.color},${p.color}AA)`,textAlign:"center",boxShadow:`0 4px 14px ${p.color}25`}}>
-                <div style={{color:"rgba(255,255,255,0.8)",fontSize:10,fontWeight:800}}>{p.label}</div>
+                <div style={{color:"rgba(255,255,255,0.8)",fontSize:10,fontWeight:700}}>{p.label}</div>
                 <div style={{color:"#fff",fontSize:28,fontWeight:800,margin:"4px 0"}}>{p.s.pct}%</div>
-                <div style={{color:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:700}}>{p.s.correct}/{p.s.total} correct</div>
+                <div style={{color:"rgba(255,255,255,0.7)",fontSize:10,fontWeight:600}}>{p.s.correct}/{p.s.total} correct</div>
               </div>
             )}
           </div>
           {/* Strengths & Weaknesses */}
           <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>💪 Strengths & 📉 Weaknesses</div>
-          {Object.entries(mS.cats).length===0?<p style={{color:"var(--gray)",fontSize:12}}>No data yet — complete some activities!</p>:
+          {Object.entries(mS.cats).length===0?<p style={{color:"#A4B0BE",fontSize:12}}>No data yet — complete some activities!</p>:
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
             {Object.entries(mS.cats).sort((a,b)=>(b[1].total>0?b[1].correct/b[1].total:0)-(a[1].total>0?a[1].correct/a[1].total:0)).map(([cat,data])=>{
               const pct=data.total>0?Math.round(data.correct/data.total*100):0;
               const isStrong=pct>=70;
-              return<div key={cat} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:16,background:"#fff",border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9"}}>
+              return<div key={cat} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)"}}>
                 <span style={{fontSize:10,fontWeight:800,color:isStrong?"#00D2A0":"#FF6B81"}}>{isStrong?"💪":"📉"}</span>
                 <div style={{flex:1}}>
-                  <div style={{fontWeight:800,fontSize:12,textTransform:"capitalize"}}>{cat}</div>
-                  <div style={{height:6,borderRadius:3,background:"var(--bg)",marginTop:4,overflow:"hidden"}}>
+                  <div style={{fontWeight:700,fontSize:12,textTransform:"capitalize"}}>{cat}</div>
+                  <div style={{height:6,borderRadius:3,background:"#F0F4FF",marginTop:4,overflow:"hidden"}}>
                     <div style={{height:"100%",borderRadius:3,background:pct>=70?"linear-gradient(90deg,#00D2A0,#55EFC4)":pct>=40?"linear-gradient(90deg,#FF9F43,#FECA57)":"linear-gradient(90deg,#FF6B81,#FDA7DF)",width:`${pct}%`}}/>
                   </div>
                 </div>
@@ -4314,37 +4276,37 @@ export default function App(){
             })}
           </div>}
           {/* Engagement time today */}
-          <div style={{marginTop:14,padding:14,borderRadius:18,background:"var(--primary)",boxShadow:"var(--shadow-btn)"}}>
+          <div style={{marginTop:14,padding:14,borderRadius:18,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",boxShadow:"var(--shadow-btn)"}}>
             <div style={{color:"#fff",fontWeight:800,fontSize:14}}>⏱️ Active Time Today: {engageMins} min</div>
             <div style={{display:"flex",gap:4,marginTop:6}}>
               {ENGAGE_TIERS.map(t=><div key={t.mins} style={{flex:1,padding:"4px",borderRadius:8,background:engageMins>=t.mins?"#FECA57":"rgba(255,255,255,0.15)",textAlign:"center"}}>
-                <div style={{fontSize:9,fontWeight:800,color:engageMins>=t.mins?"var(--dark)":"rgba(255,255,255,0.5)"}}>{t.label}</div>
+                <div style={{fontSize:9,fontWeight:700,color:engageMins>=t.mins?"#2D3436":"rgba(255,255,255,0.5)"}}>{t.label}</div>
               </div>)}
             </div>
           </div>
           {/* Points summary */}
           <div style={{marginTop:14,display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
-            <div style={{padding:14,borderRadius:16,background:"#fff",border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9",textAlign:"center"}}>
-              <div style={{fontSize:9,fontWeight:800,color:"var(--gray)"}}>TOTAL POINTS</div>
+            <div style={{padding:14,borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",textAlign:"center"}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#A4B0BE"}}>TOTAL POINTS</div>
               <div style={{fontSize:28,fontWeight:800,color:"#FF9F43"}}>{prof?.totalEarned||0}</div>
             </div>
-            <div style={{padding:14,borderRadius:16,background:"#fff",border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9",textAlign:"center"}}>
-              <div style={{fontSize:9,fontWeight:800,color:"var(--gray)"}}>AVAILABLE</div>
+            <div style={{padding:14,borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",textAlign:"center"}}>
+              <div style={{fontSize:9,fontWeight:700,color:"#A4B0BE"}}>AVAILABLE</div>
               <div style={{fontSize:28,fontWeight:800,color:"#00D2A0"}}>{prof?.points||0}</div>
             </div>
           </div>
           {/* Custom rewards progress */}
           {customRewards.length>0&&<div style={{marginTop:14}}>
             <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>🎁 Reward Progress</div>
-            {customRewards.map((r,i)=>{const pct=Math.min(100,Math.round(((prof?.points||0)/r.pts)*100));return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:16,marginBottom:6,border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9"}}>
+            {customRewards.map((r,i)=>{const pct=Math.min(100,Math.round(((prof?.points||0)/r.pts)*100));return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:16,marginBottom:6,boxShadow:"var(--shadow-card)"}}>
               <span style={{fontSize:24}}>{r.emoji}</span>
               <div style={{flex:1}}>
-                <div style={{fontWeight:800,fontSize:12}}>{r.name}</div>
-                <div style={{height:8,borderRadius:4,background:"var(--bg)",marginTop:4,overflow:"hidden"}}>
+                <div style={{fontWeight:700,fontSize:12}}>{r.name}</div>
+                <div style={{height:8,borderRadius:4,background:"#F0F4FF",marginTop:4,overflow:"hidden"}}>
                   <div style={{height:"100%",borderRadius:4,background:pct>=100?"linear-gradient(90deg,#00D2A0,#55EFC4)":"linear-gradient(90deg,#FF9F43,#FECA57)",width:`${pct}%`}}/>
                 </div>
               </div>
-              <span style={{fontSize:11,fontWeight:800,color:pct>=100?"#00D2A0":"var(--gray)"}}>{prof?.points||0}/{r.pts}</span>
+              <span style={{fontSize:11,fontWeight:800,color:pct>=100?"#00D2A0":"#A4B0BE"}}>{prof?.points||0}/{r.pts}</span>
             </div>;})}
           </div>}
         </div>;
@@ -4361,7 +4323,7 @@ export default function App(){
       {studyPlan.length===0?<div style={{textAlign:"center",padding:40}}>
         <span style={{fontSize:64}}>📋</span>
         <h3 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",marginTop:12}}>No study plan yet!</h3>
-        <p style={{fontSize:13,color:"var(--gray)",fontWeight:700,marginTop:6}}>Ask your parents to create one for you</p>
+        <p style={{fontSize:13,color:"#A4B0BE",fontWeight:600,marginTop:6}}>Ask your parents to create one for you</p>
       </div>:
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {studyPlan.map((task,i)=>{
@@ -4378,27 +4340,27 @@ export default function App(){
             else if(task.topicId==="writing"){setScr("quizzone");setQuizTab("write");}
           }} style={{
             display:"flex",alignItems:"center",gap:14,padding:"18px 16px",borderRadius:22,border:"none",cursor:"pointer",
-            background:isDone?"var(--green)":"#fff",
-            boxShadow:isDone?"0 4px 14px rgba(0,210,160,0.2)":"0 2px 0 rgba(0,0,0,0.06)"}}>
+            background:isDone?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#fff",
+            boxShadow:isDone?"0 4px 14px rgba(0,210,160,0.2)":"var(--shadow-card)"}}>
             <span style={{fontSize:32}}>{isDone?"✅":topic?.emoji||"📚"}</span>
             <div style={{flex:1,textAlign:"left"}}>
               <div style={{fontWeight:800,fontSize:16,color:isDone?"#fff":"var(--dark)"}}>{topic?.name||task.topicId} — {task.subId}</div>
-              <div style={{fontSize:11,fontWeight:700,color:isDone?"rgba(255,255,255,0.8)":"var(--gray)",marginTop:2}}>{isDone?"Completed! 🎉":"Tap to start"}</div>
+              <div style={{fontSize:11,fontWeight:600,color:isDone?"rgba(255,255,255,0.8)":"#A4B0BE",marginTop:2}}>{isDone?"Completed! 🎉":"Tap to start"}</div>
             </div>
-            <div style={{padding:"6px 12px",borderRadius:12,background:isDone?"rgba(255,255,255,0.2)":"var(--primary)",color:"#fff",fontSize:11,fontWeight:800}}>
+            <div style={{padding:"6px 12px",borderRadius:12,background:isDone?"rgba(255,255,255,0.2)":"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:11,fontWeight:800}}>
               {isDone?"Done":"Go →"}
             </div>
           </button>;
         })}
         {/* Engagement time tracker */}
-        <div style={{padding:16,borderRadius:22,background:"var(--primary)",marginTop:8,boxShadow:"0 4px 14px rgba(108,92,231,0.2)"}}>
+        <div style={{padding:16,borderRadius:22,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",marginTop:8,boxShadow:"0 4px 14px rgba(108,92,231,0.2)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div>
               <div style={{color:"#fff",fontWeight:800,fontSize:14}}>⏱️ Active Time Today</div>
               <div style={{color:"rgba(255,255,255,0.8)",fontSize:24,fontWeight:800,marginTop:4}}>{engageMins} min</div>
             </div>
             <div style={{textAlign:"right"}}>
-              {ENGAGE_TIERS.map(t=><div key={t.mins} style={{fontSize:10,fontWeight:800,color:engageMins>=t.mins?"#FECA57":"rgba(255,255,255,0.4)",marginBottom:2}}>
+              {ENGAGE_TIERS.map(t=><div key={t.mins} style={{fontSize:10,fontWeight:700,color:engageMins>=t.mins?"#FECA57":"rgba(255,255,255,0.4)",marginBottom:2}}>
                 {engageMins>=t.mins?"✅":"○"} {t.label} → +{t.pts}pts
               </div>)}
             </div>
@@ -4414,7 +4376,7 @@ export default function App(){
   </div>;
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
-  if((scr==="numbers"||scr==="learn")&&selNum){const w=NW[selNum];const scene=getScene(selNum);const color=nClr(selNum);const phs=NPH[selNum];return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"var(--green)"}}>{ptAnim}</div>}<SubHead title={`Number ${selNum}`} onBack={()=>{stop();pRef.current=false;setSelNum(null);setNStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
+  if((scr==="numbers"||scr==="learn")&&selNum){const w=NW[selNum];const scene=getScene(selNum);const color=nClr(selNum);const phs=NPH[selNum];return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={`Number ${selNum}`} onBack={()=>{stop();pRef.current=false;setSelNum(null);setNStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
     {nStep!=="idle"&&<FlowSteps current={nStep} steps={NUM_STEPS}/>}
     <div style={{padding:"6px 10px",overflow:"hidden"}}>
       {/* 🎯 NUMBER HERO */}
@@ -4423,7 +4385,7 @@ export default function App(){
       </div>
 
       {/* Phonemes */}
-      {phs&&(nStep==="saying_phonics"||nStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8,animation:"slideUp 0.4s ease-out"}}><div style={{fontSize:11,fontWeight:800,color:"var(--gray)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{phs.map((ph,i)=>{const d=gPh(ph);const act=aPhI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?color:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${color}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:800,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      {phs&&(nStep==="saying_phonics"||nStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8,animation:"slideUp 0.4s ease-out"}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{phs.map((ph,i)=>{const d=gPh(ph);const act=aPhI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?color:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${color}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
 
       {/* Play controls */}
       <div style={{marginTop:12}}>
@@ -4431,23 +4393,23 @@ export default function App(){
           <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:8}}>
             {/* Speech Toggle */}
             <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}>
-              <span style={{fontSize:12,fontWeight:800,color:speakMode?"#22C55E":"#999"}}>🎤</span>
+              <span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span>
               <button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}>
                 <div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
               </button>
-              <span style={{fontSize:11,color:speakMode?"#22C55E":"var(--gray)",fontWeight:700}}>{speakMode?"Speak ON":"Speak OFF"}</span>
+              <span style={{fontSize:11,color:speakMode?"#22C55E":"#8E8CA3",fontWeight:600}}>{speakMode?"Speak ON":"Speak OFF"}</span>
             </div>
-            <button onClick={()=>playNum(selNum)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"var(--dark)",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${color},${color}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button>
+            <button onClick={()=>playNum(selNum)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${color},${color}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button>
           </div>
         </>}
         {nStep==="saying_number"&&<div style={{textAlign:"center",padding:12,background:"#fff",borderRadius:16,animation:"slideUp 0.3s"}}>
-          <span style={{fontSize:14,fontWeight:800,color:"var(--primary)"}}>🔊 Listen to the number!</span>
+          <span style={{fontSize:14,fontWeight:700,color:"#6C5CE7"}}>🔊 Listen to the number!</span>
         </div>}
         {/* SPELLING */}
         {nStep==="spelling"&&(
           <div style={{animation:"slideUp 0.3s ease-out"}}>
             <div style={{textAlign:"center",padding:"8px 12px",background:"#fff",borderRadius:14,marginBottom:8}}>
-              <span style={{fontSize:13,fontWeight:800,color:"var(--primary)"}}>{spellRound===1?"👀 Watch and listen!":"👆 Tap the letters in order!"}</span>
+              <span style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>{spellRound===1?"👀 Watch and listen!":"👆 Tap the letters in order!"}</span>
             </div>
             <div style={{padding:14,background:"#fff",borderRadius:20}}>
               {/* Letter slots */}
@@ -4475,7 +4437,7 @@ export default function App(){
               {/* Scrambled tappable letters (Round 2 only) */}
               {spellRound===2&&(
                 <div data-spell-tap="true" style={{marginTop:4}}>
-                  <div style={{textAlign:"center",fontSize:13,fontWeight:800,color:"var(--primary)",marginBottom:12}}>Tap each letter:</div>
+                  <div style={{textAlign:"center",fontSize:13,fontWeight:700,color:"#6C5CE7",marginBottom:12}}>Tap each letter:</div>
                   <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
                     {scrambledLetters.map((item,i)=>(
                       <button key={item.id} disabled={item.used}
@@ -4486,7 +4448,7 @@ export default function App(){
                           border:"3px solid",cursor:item.used?"default":"pointer",
                           borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":color,
                           background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",
-                          color:item.used?"#ddd":tapWrong===i?"#EF4444":"var(--dark)",
+                          color:item.used?"#ddd":tapWrong===i?"#EF4444":"#2D2B3D",
                           transform:tapWrong===i?"scale(0.9) rotate(-5deg)":item.used?"scale(0.8)":"scale(1)",
                           opacity:item.used?0.35:1,
                           transition:"all 0.2s cubic-bezier(0.34,1.56,0.64,1)",
@@ -4496,22 +4458,22 @@ export default function App(){
                 </div>
               )}
               {spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"10px 14px",background:"#fff",borderRadius:14}}>
-                <p style={{fontSize:14,fontWeight:800,color:"var(--primary)",margin:0}}>👀 Watch and listen!</p>
+                <p style={{fontSize:14,fontWeight:700,color:"#6C5CE7",margin:0}}>👀 Watch and listen!</p>
               </div>}
             </div>
           </div>
         )}
         {nStep==="saying_sentence"&&<div style={{textAlign:"center",padding:12,background:"#FFF5EB",borderRadius:16,animation:"slideUp 0.3s"}}>
-          <span style={{fontSize:14,fontWeight:800,color:"var(--primary)"}}>💬 Listen to the sentence!</span>
+          <span style={{fontSize:14,fontWeight:700,color:"#6C5CE7"}}>💬 Listen to the sentence!</span>
         </div>}
         {nStep==="saying_phonics"&&<div style={{textAlign:"center",padding:12,background:"#D1FAE5",borderRadius:16,animation:"slideUp 0.3s"}}>
-          <span style={{fontSize:14,fontWeight:800,color:"#16A34A"}}>🗣️ Repeat after me!</span>
+          <span style={{fontSize:14,fontWeight:700,color:"#16A34A"}}>🗣️ Repeat after me!</span>
         </div>}
         {/* COUNTDOWN */}
         {nStep==="countdown"&&(
           <div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,animation:"slideUp 0.3s ease-out"}}>
             <Mascot mood="listening" msg={`Say "${w.toUpperCase()}" when I say Start!`}/>
-            <div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?color:"var(--green)",animation:"numPulse 0.5s ease-in-out infinite",marginTop:8}}>
+            <div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?color:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite",marginTop:8}}>
               {countdown>0?countdown:"🎤 Start!"}
             </div>
           </div>
@@ -4528,7 +4490,7 @@ export default function App(){
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="Learn 📚" onBack={goHome} points={prof?.points||0}/>
     {/* Teaching mode toggles */}
-    <div style={{display:"flex",gap:4,padding:"6px 10px",background:"#fff",flexShrink:0,flexWrap:"wrap",borderBottom:"1px solid #E8EAF6"}}>
+    <div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0,flexWrap:"wrap"}}>
       {[
         {key:"spelling",icon:"🔤",label:"Spell"},
         {key:"phonics",icon:"🔡",label:"Sounds"},
@@ -4536,21 +4498,21 @@ export default function App(){
         {key:"speak",icon:"🎤",label:"Speak"},
       ].map(m=><button key={m.key} onClick={()=>toggleLearnMode(m.key)} style={{
         display:"flex",alignItems:"center",gap:3,padding:"6px 10px",borderRadius:10,
-        border:learnModes[m.key]?"2px solid var(--green-bottom)":"2px solid #E8EAF6",
-        borderBottom:learnModes[m.key]?"3px solid var(--green-bottom)":"2px solid #D1C4E9",
-        background:learnModes[m.key]?"var(--green)":"#fff",
-        color:learnModes[m.key]?"#fff":"var(--gray)",
-        fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"
+        border:"none",
+        background:learnModes[m.key]?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#F0F4FF",
+        color:learnModes[m.key]?"#fff":"#A4B0BE",
+        boxShadow:learnModes[m.key]?"0 3px 10px rgba(0,210,160,0.2)":"none",
+        fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"
       }}><span style={{fontSize:12}}>{m.icon}</span>{m.label}{learnModes[m.key]&&<span style={{fontSize:8}}>✓</span>}</button>)}
     </div>
     {/* Tab bar */}
-    <div style={{display:"flex",gap:4,padding:"6px 10px",background:"#fff",flexShrink:0,borderBottom:"2px solid #E8EAF6"}}>
+    <div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0}}>
       {[{id:"numbers",label:"🔢 Numbers"},{id:"abc",label:"🔤 ABC"},{id:"shapes",label:"🔷 Shapes"},{id:"colors",label:"🎨 Colors"}].map(t=>
         <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setLearnTab(t.id);
             const tabMsg={numbers:"Let's learn numbers!",abc:"Let's explore the alphabet!",shapes:"Let's discover shapes!",colors:"Let's learn colors!"};
             speak(tabMsg[t.id]||"Let's learn!",{rate:0.85,pitch:1.0});}}
-          style={{flex:1,padding:"9px 4px",borderRadius:12,border:learnTab===t.id?"2px solid var(--primary-bottom)":"2px solid #E8EAF6",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
-            background:learnTab===t.id?"var(--primary)":"#fff",color:learnTab===t.id?"#fff":"var(--gray)",borderBottom:learnTab===t.id?"3px solid var(--primary-bottom)":"2px solid #D1C4E9"
+          style={{flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
+            background:learnTab===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",color:learnTab===t.id?"#fff":"#A4B0BE",boxShadow:learnTab===t.id?"var(--shadow-btn)":"none"
           }}>{t.label}</button>
       )}
     </div>
@@ -4558,19 +4520,17 @@ export default function App(){
     {/* ═══ NUMBERS TAB ═══ */}
     {learnTab==="numbers"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column",minHeight:0,WebkitOverflowScrolling:"touch"}}>
       <div style={{padding:"2px 8px",flexShrink:0}}>
-        <div style={{fontSize:10,fontWeight:800,color:"var(--gray)",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>📊 Pick a range:</div>
+        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>📊 Pick a range:</div>
         <div style={{display:"flex",gap:4,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
         {NUM_RANGES.map(r=><button key={r} onClick={()=>setNumRange(r)} style={{
           padding:"5px 10px",borderRadius:10,border:"2px solid",whiteSpace:"nowrap",
-          borderColor:numRange===r?"var(--primary-bottom)":"#E8EAF6",
-          borderBottom:numRange===r?"3px solid var(--primary-bottom)":"2px solid #D1C4E9",
-          background:numRange===r?"var(--primary)":"#fff",
-          color:numRange===r?"#fff":"var(--gray)",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"
+          background:numRange===r?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",boxShadow:numRange===r?"0 3px 12px rgba(108,92,231,0.25)":"none",
+          color:numRange===r?"#fff":"#636E72",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"
         }}>{r}</button>)}
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:4,padding:"2px 6px",background:"var(--bg)",borderRadius:8,marginTop:3}}>
-          <span style={{fontSize:10,fontWeight:800,color:numSpelling?"var(--green)":"#999"}}>Abc</span>
-          <button onClick={()=>setNumSpelling(!numSpelling)} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:numSpelling?"var(--green)":"#ddd",position:"relative"}}>
+        <div style={{display:"flex",alignItems:"center",gap:4,padding:"2px 6px",background:"#F0F4FF",borderRadius:8,marginTop:3}}>
+          <span style={{fontSize:10,fontWeight:700,color:numSpelling?"#22C55E":"#999"}}>Abc</span>
+          <button onClick={()=>setNumSpelling(!numSpelling)} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:numSpelling?"#22C55E":"#ddd",position:"relative"}}>
             <div style={{width:12,height:12,borderRadius:6,background:"#fff",position:"absolute",top:2,left:numSpelling?16:2,transition:"left 0.3s"}}/>
           </button>
         </div>
@@ -4581,9 +4541,9 @@ export default function App(){
           border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
           fontFamily:"var(--font)",background:nGrad(n),
           boxShadow:`0 4px 14px ${nClr(n)}33`,...glowStyle("num-explore-"+n)
-        }}>{done&&<span style={{position:"absolute",top:4,right:6,fontSize:12,background:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:"var(--green)",fontWeight:900,boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>✓</span>}
+        }}>{done&&<span style={{position:"absolute",top:4,right:6,fontSize:12,background:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:"#22C55E",fontWeight:900,boxShadow:"0 2px 6px rgba(0,0,0,0.15)"}}>✓</span>}
           <span style={{fontFamily:"var(--font)",fontSize:count<=10?32:count<=20?22:18,fontWeight:800,color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>{n}</span>
-          {numSpelling&&<span style={{fontSize:count<=10?10:8,fontWeight:800,color:"rgba(255,255,255,0.85)"}}>{NW[n]||""}</span>}
+          {numSpelling&&<span style={{fontSize:count<=10?10:8,fontWeight:700,color:"rgba(255,255,255,0.85)"}}>{NW[n]||""}</span>}
         </button>;})}</div>;})()}</div>
     </div>}
 
@@ -4597,9 +4557,9 @@ export default function App(){
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
             fontFamily:"var(--font)",
             background:`linear-gradient(135deg,${ALPHA_COLORS[i%13]},${ALPHA_COLORS[i%13]}CC)`,
-            boxShadow:`0 4px 14px ${ALPHA_COLORS[i%13]}33`}}>{done&&<span style={{position:"absolute",top:3,right:5,fontSize:12,background:"#fff",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",color:"var(--green)",fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}
+            boxShadow:`0 4px 14px ${ALPHA_COLORS[i%13]}33`}}>{done&&<span style={{position:"absolute",top:3,right:5,fontSize:12,background:"#fff",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",color:"#22C55E",fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}
             <span style={{fontSize:24,fontWeight:900,color:"#fff",lineHeight:1,textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>{l}{l.toLowerCase()}</span>
-            <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.8)"}}>{ALPHA_DATA[l]?.examples[0]?.w||""}</span>
+            <span style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.8)"}}>{ALPHA_DATA[l]?.examples[0]?.w||""}</span>
           </button>;})}
         </div>
       </div>
@@ -4615,9 +4575,9 @@ export default function App(){
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,
             fontFamily:"var(--font)",
             background:`linear-gradient(135deg,${["#6C5CE7","#00D2A0","#FF9F43","#54A0FF","#FECA57","#FD79A8","#00CEC9","#FF6B81","#A29BFE","#74B9FF","#FF6348","#55EFC4"][i%12]},${["#5A4BD1","#00B894","#EE8520","#2E86DE","#F9CA24","#E84393","#00B5AD","#EE5A6F","#6C5CE7","#0984E3","#EE5A24","#00D2A0"][i%12]})`,
-            boxShadow:`0 4px 14px ${["#6C5CE7","#00D2A0","#FF9F43","#54A0FF","#FECA57","#FD79A8","#00CEC9","#FF6B81","#A29BFE","#74B9FF","#FF6348","#55EFC4"][i%12]}33`}}>{done&&<span style={{position:"absolute",top:4,right:5,fontSize:12,background:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:"var(--green)",fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}
+            boxShadow:`0 4px 14px ${["#6C5CE7","#00D2A0","#FF9F43","#54A0FF","#FECA57","#FD79A8","#00CEC9","#FF6B81","#A29BFE","#74B9FF","#FF6348","#55EFC4"][i%12]}33`}}>{done&&<span style={{position:"absolute",top:4,right:5,fontSize:12,background:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:"#22C55E",fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}
             <span style={{fontSize:36,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))"}}>{s.emoji}</span>
-            <span style={{fontSize:12,fontWeight:800,textTransform:"capitalize",color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{s.name}</span>
+            <span style={{fontSize:12,fontWeight:700,textTransform:"capitalize",color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{s.name}</span>
           </button>;})}
         </div>
       </div>
@@ -4634,9 +4594,9 @@ export default function App(){
             fontFamily:"var(--font)",
             background:`linear-gradient(145deg,${c.hex},${c.hex}CC)`,
             boxShadow:`0 4px 14px ${c.hex}33`,
-            border:(c.name==="white"||c.name==="silver"||c.name==="gray")?"2px solid #DFE6E9":"none"}}>{done&&<span style={{position:"absolute",top:4,right:5,fontSize:12,background:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:"var(--green)",fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}
+            border:(c.name==="white"||c.name==="silver"||c.name==="gray")?"2px solid #DFE6E9":"none"}}>{done&&<span style={{position:"absolute",top:4,right:5,fontSize:12,background:"#fff",borderRadius:"50%",width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:"#22C55E",fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}
             <div style={{width:44,height:44,borderRadius:14,background:(c.name==="white"||c.name==="silver"||c.name==="gray")?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,boxShadow:"inset 0 2px 4px rgba(255,255,255,0.3)"}}>{c.emoji||"●"}</div>
-            <span style={{fontSize:12,fontWeight:800,textTransform:"capitalize",color:(c.name==="white"||c.name==="silver"||c.name==="gray"||c.name==="yellow"||c.name==="gold")?"var(--dark)":"#fff",textShadow:(c.name==="white"||c.name==="silver"||c.name==="gray")?"none":"0 1px 3px rgba(0,0,0,0.2)"}}>{c.name}</span>
+            <span style={{fontSize:12,fontWeight:700,textTransform:"capitalize",color:(c.name==="white"||c.name==="silver"||c.name==="gray"||c.name==="yellow"||c.name==="gold")?"#2D3436":"#fff",textShadow:(c.name==="white"||c.name==="silver"||c.name==="gray")?"none":"0 1px 3px rgba(0,0,0,0.2)"}}>{c.name}</span>
           </button>;})}
         </div>
       </div>
@@ -4650,7 +4610,7 @@ export default function App(){
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="Quiz Zone 🎯" onBack={goHome} points={prof?.points||0}/>
     {/* Tab bar */}
-    <div style={{display:"flex",gap:4,padding:"6px 10px",background:"#fff",borderBottom:"2px solid #E8EAF6",flexShrink:0}}>
+    <div style={{display:"flex",gap:3,padding:"4px 8px",background:"#fff",borderBottom:"none",flexShrink:0}}>
       {[{id:"numquiz",label:"🔢 Numbers"},{id:"math",label:"➕ Math"},{id:"letters",label:"🔤 Letters"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
           stop();movePandaTo("bottomRight");setTeacherMood("happy");setQuizTab(t.id);
@@ -4658,8 +4618,8 @@ export default function App(){
           if(t.id==="math"){speak("Let's do math!",{rate:0.85,pitch:1.0});if(!mathProblem)setTimeout(()=>genMath(),800);}
           if(t.id==="letters"){speak("Let's match letters!",{rate:0.85,pitch:1.0});if(matchPairs.length===0)setTimeout(()=>startMatch(),800);}
           if(t.id==="write"){speak("Let's practice writing!",{rate:0.85,pitch:1.0});setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},1200);}
-        }} style={{flex:1,padding:"9px 4px",borderRadius:12,border:quizTab===t.id?"2px solid var(--blue-bottom)":"2px solid #E8EAF6",fontWeight:800,fontSize:11,cursor:"pointer",fontFamily:"var(--font)",
-          background:quizTab===t.id?"var(--blue)":"#fff",color:quizTab===t.id?"#fff":"var(--gray)",borderBottom:quizTab===t.id?"3px solid var(--blue-bottom)":"2px solid #D1C4E9"}}>{t.label}</button>
+        }} style={{flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"var(--font)",
+          background:quizTab===t.id?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#F0F4FF",color:quizTab===t.id?"#fff":"#A4B0BE",boxShadow:quizTab===t.id?"var(--shadow-btn)":"none"}}>{t.label}</button>
       )}
     </div>
 
@@ -4667,20 +4627,20 @@ export default function App(){
     {quizTab==="numquiz"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflowY:"auto",overflowX:"hidden",minHeight:0,WebkitOverflowScrolling:"touch"}}>
       {/* Range filter */}
       <div style={{padding:"2px 8px",background:"#fff",flexShrink:0}}>
-        <div style={{fontSize:10,fontWeight:800,color:"var(--gray)",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>📊 Pick a range:</div>
+        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>📊 Pick a range:</div>
         <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
         {["1-10","1-20","11-20","21-50","51-100","1-100"].map(r=><button key={r} onClick={()=>{setQuizRange(r);quizUsedRef.current=[];setQuizScore(0);setQuizStreak(0);setQuizTotal(0);newQuiz(r);}} style={{
-          padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
-          borderColor:quizRange===r?"#54A0FF":"#DFE6E9",background:quizRange===r?"var(--blue)":"#fff",boxShadow:quizRange===r?"var(--shadow-btn)":"none",color:quizRange===r?"#fff":"var(--gray)"
+          padding:"6px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
+          borderColor:quizRange===r?"#54A0FF":"#DFE6E9",background:quizRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#fff",boxShadow:quizRange===r?"var(--shadow-btn)":"none",color:quizRange===r?"#fff":"#8E8CA3"
         }}>{r}</button>)}
         </div>
       </div>
-      <div style={{padding:"8px 12px",background:"#fff",display:"flex",alignItems:"center",gap:8,flexShrink:0,borderBottom:"2px solid #E8EAF6"}}>
+      <div style={{padding:"8px 12px",background:"linear-gradient(135deg,#FFF5EB,#FFFBF5)",display:"flex",alignItems:"center",gap:8,flexShrink:0,borderBottom:"none"}}>
         {quizNum?<>
-          <button onClick={repeatQuiz} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"var(--primary)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",borderBottom:"3px solid var(--primary-bottom)"}}>🔊 Hear</button>
-          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:14,fontWeight:800,color:"var(--primary)"}}>Which number? 👂</div></div>
-          <div><div style={{fontSize:14,fontWeight:800,color:"var(--primary)"}}>🏆 {quizScore}</div>{quizStreak>=3&&<span style={{fontSize:10,fontWeight:800,color:"var(--red)"}}>🔥{quizStreak}</span>}</div>
-        </>:<button onClick={()=>newQuiz()} style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:"var(--primary)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",borderBottom:"4px solid var(--primary-bottom)"}}>Start Quiz!</button>}
+          <button onClick={repeatQuiz} style={{padding:"10px 16px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-btn)"}}>🔊 Hear</button>
+          <div style={{flex:1,textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:"#6C5CE7"}}>Which number? 👂</div></div>
+          <div><div style={{fontSize:14,fontWeight:700,color:"#6C5CE7"}}>🏆 {quizScore}</div>{quizStreak>=3&&<span style={{fontSize:10,fontWeight:700,color:"#EF4444"}}>🔥{quizStreak}</span>}</div>
+        </>:<button onClick={()=>newQuiz()} style={{width:"100%",padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>▶️ Start Quiz!</button>}
       </div>
       {quizNum&&<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,width:"100%",maxWidth:360}}>
@@ -4688,12 +4648,11 @@ export default function App(){
             const isCorrect=quizFb?.ok&&quizFb?.n===n;
             const isWrong=quizFb&&!quizFb.ok&&quizFb.n===n;
             return<button key={n} data-r="quiz" onClick={()=>{sfxTap();onQuizTap(n);}} style={{
-              padding:"28px 12px",borderRadius:18,border:isCorrect?"2px solid var(--green-bottom)":isWrong?"2px solid var(--red-bottom)":"2px solid "+["var(--primary-bottom)","#BF360C","var(--green-bottom)","var(--blue-bottom)"][i%4],cursor:"pointer",
-              borderBottom:isCorrect?"4px solid var(--green-bottom)":isWrong?"4px solid var(--red-bottom)":"4px solid "+["var(--primary-bottom)","#BF360C","var(--green-bottom)","var(--blue-bottom)"][i%4],
-              background:isCorrect?"var(--green)":isWrong?"var(--red)":["var(--primary)","var(--orange)","var(--green)","var(--blue)"][i%4],
-              fontFamily:"var(--font)",fontSize:34,fontWeight:900,
-              color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.15)",
-              transform:isCorrect?"scale(1.05)":isWrong?"scale(0.95)":"scale(1)"
+              padding:"28px 12px",borderRadius:26,border:"none",cursor:"pointer",
+              background:isCorrect?"linear-gradient(135deg,#00D2A0,#00B894)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
+              fontFamily:"var(--font)",fontSize:34,fontWeight:800,
+              color:"#fff",textShadow:"0 2px 6px rgba(0,0,0,0.2)",
+              transform:isCorrect?"scale(1.1)":isWrong?"scale(0.95)":"scale(1)",boxShadow:isCorrect?"0 6px 20px rgba(0,210,160,0.3)":isWrong?"0 4px 16px rgba(255,107,129,0.3)":`0 4px 14px ${nClr(n)}30`
             }}>{n}</button>;
           })}
         </div>
@@ -4703,12 +4662,12 @@ export default function App(){
     {/* ═══ MATH QUIZ ═══ */}
     {quizTab==="math"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",padding:"12px 14px",minHeight:0}}>
       <div style={{marginBottom:10}}>
-        <div style={{fontSize:10,fontWeight:800,color:"var(--gray)",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>📊 Difficulty:</div>
+        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>📊 Difficulty:</div>
         <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
-            padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",
-            background:mathRange===r?"var(--blue)":"#fff",borderBottom:mathRange===r?"3px solid var(--blue-bottom)":"2px solid #D1C4E9",color:mathRange===r?"#fff":"var(--gray)"
+            padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",
+            background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#F0F4FF",boxShadow:mathRange===r?"0 3px 12px rgba(84,160,255,0.25)":"none",color:mathRange===r?"#fff":"#636E72"
           }}>{r}</button>)}
           </div>
           <div style={{display:"flex",gap:4}}>
@@ -4717,19 +4676,19 @@ export default function App(){
               speak(opMsg[o.id]||"Let's go!",{rate:0.85,pitch:1.0});
               setTimeout(()=>genMath(mathRange,o.id),800);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
-            background:mathOp===o.id?"var(--orange)":"#fff",borderBottom:mathOp===o.id?"3px solid var(--orange-bottom)":"2px solid #D1C4E9",color:mathOp===o.id?"#fff":"var(--gray)"
+            background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#F0F4FF",boxShadow:mathOp===o.id?"0 3px 12px rgba(255,159,67,0.25)":"none",color:mathOp===o.id?"#fff":"#636E72"
           }}>{o.label}</button>)}
           </div>
         </div>
       </div>
       {mathProblem?<div>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <span style={{fontSize:15,fontWeight:800,color:"var(--primary)",background:"var(--bg)",padding:"6px 14px",borderRadius:14}}>🏆 {mathScore}/{mathTotal}</span>
+          <span style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14}}>🏆 {mathScore}/{mathTotal}</span>
           <button onClick={()=>genMath()} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
         </div>
-        <div style={{background:"var(--primary)",borderRadius:22,padding:18,textAlign:"center",marginBottom:14,boxShadow:"0 4px 16px rgba(108,92,231,0.2)"}}>
+        <div style={{background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",borderRadius:22,padding:18,textAlign:"center",marginBottom:14,boxShadow:"0 4px 16px rgba(108,92,231,0.2)"}}>
           <div style={{fontFamily:"var(--font)",fontSize:30,fontWeight:900,color:"#fff",marginTop:4,textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>
-            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"var(--yellow)",textShadow:"0 0 16px rgba(254,202,87,0.6)",fontSize:"inherit"}}>?</span>
+            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#FECA57",textShadow:"0 0 16px rgba(254,202,87,0.6)",fontSize:"inherit"}}>?</span>
           </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
@@ -4738,13 +4697,13 @@ export default function App(){
             const isWrong=mathFb==="wrong"&&c===mathAnswer;
             return<button key={c+"-"+i} data-r="quiz" onClick={()=>{sfxTap();onMathTap(c);}} style={{
               padding:"24px 14px",borderRadius:26,border:"none",cursor:"pointer",
-              background:isRight?"var(--green)":isWrong?"var(--red)":["var(--primary)","var(--orange)","var(--green)","var(--blue)"][i%4],
+              background:isRight?"linear-gradient(135deg,#00D2A0,#00B894)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
               fontFamily:"var(--font)",fontSize:28,fontWeight:800,
               color:"#fff",textShadow:"0 2px 6px rgba(0,0,0,0.2)",boxShadow:isRight?"0 4px 16px rgba(0,210,160,0.3)":isWrong?"0 4px 16px rgba(255,107,129,0.3)":["0 4px 14px rgba(108,92,231,0.25)","0 4px 14px rgba(255,159,67,0.25)","0 4px 14px rgba(0,210,160,0.25)","0 4px 14px rgba(84,160,255,0.25)"][i%4]
             }}>{c}</button>;
           })}
         </div>
-      </div>:<button onClick={()=>genMath()} style={{width:"100%",padding:"14px",borderRadius:16,border:"none",background:"var(--primary)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>▶️ Start Math!</button>}
+      </div>:<button onClick={()=>genMath()} style={{width:"100%",padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:16,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>▶️ Start Math!</button>}
     </div>}
 
     {/* ═══ LETTER MATCH ═══ */}
@@ -4752,32 +4711,32 @@ export default function App(){
       <div style={{display:"flex",gap:6,marginBottom:10}}>
         {[{id:"findSmall",label:"A→a"},{id:"findCaps",label:"a→A"},{id:"voiceQuiz",label:"🔊 Listen"}].map(m=>
           <button key={m.id} onClick={()=>{stop();setTeacherMood("excited");startMatch(m.id);}} style={{
-            flex:1,padding:"6px 2px",borderRadius:10,border:"2px solid",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
+            flex:1,padding:"6px 2px",borderRadius:10,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
             borderColor:matchMode===m.id?"#FF8C42":"#E8E0D8",background:matchMode===m.id?"#FF8C42":"#FFFBF5",
-            color:matchMode===m.id?"#fff":"var(--gray)"}}>{m.label}</button>
+            color:matchMode===m.id?"#fff":"#8E8CA3"}}>{m.label}</button>
         )}
       </div>
       <div style={{textAlign:"center",padding:"10px",background:"linear-gradient(135deg,#FFF5EB,#FFF5EB)",borderRadius:16,marginBottom:10}}>
         {matchIdx<matchPairs.length?<>
-          <div style={{fontSize:12,fontWeight:800,color:"var(--gray)"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#8E8CA3"}}>
             {matchMode==="findSmall"?"Find the small letter for:":matchMode==="findCaps"?"Find the CAPITAL for:":"Which letter did you hear?"}
           </div>
           {matchMode==="voiceQuiz"?
             <div style={{marginTop:6}}>
               <button onClick={()=>speak(`${matchPairs[matchIdx]?.cap}`,{rate:0.6,pitch:1.0})} style={{
-                fontSize:16,fontWeight:800,fontFamily:"var(--font)",
+                fontSize:16,fontWeight:700,fontFamily:"var(--font)",
                 background:"linear-gradient(135deg,#FF8C42,#FFB066)",border:"none",borderRadius:16,
                 padding:"12px 24px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:8,margin:"0 auto"
               }}>🔊 Hear Again</button>
             </div>:
-            <div style={{fontSize:56,fontWeight:900,color:"var(--primary)",fontFamily:"var(--font)",lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>
+            <div style={{fontSize:56,fontWeight:900,color:"#6C5CE7",fontFamily:"var(--font)",lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>
               {matchMode==="findCaps"?(matchPairs[matchIdx]?.cap||"").toLowerCase():(matchPairs[matchIdx]?.cap||"")}
             </div>
           }
-          <div style={{fontSize:15,fontWeight:800,color:"var(--primary)",background:"var(--bg)",padding:"6px 14px",borderRadius:14,marginTop:4}}>🏆 {matchScore}/8</div>
+          <div style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14,marginTop:4}}>🏆 {matchScore}/8</div>
         </>:<>
           <div style={{fontSize:36}}>🎉</div>
-          <div style={{fontSize:18,fontWeight:800,color:"var(--primary)"}}>All Done! {matchScore}/{matchPairs.length} correct</div>
+          <div style={{fontSize:18,fontWeight:800,color:"#6C5CE7"}}>All Done! {matchScore}/{matchPairs.length} correct</div>
           <button onClick={()=>{stop();startMatch();}} style={{marginTop:8,padding:"10px 24px",borderRadius:14,border:"none",background:"#FF8C42",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔄 Play Again</button>
         </>}
       </div>
@@ -4789,7 +4748,7 @@ export default function App(){
           return<button key={"m"+l+matchIdx+matchMode} data-r="quiz" onClick={()=>{sfxTap();onMatchTap(l);}} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
             borderColor:isWrong?"#FF6B81":isCorrect?"#00D2A0":"transparent",
-            background:isWrong?"var(--red)":isCorrect?"var(--green)":["var(--primary)","var(--orange)","var(--cyan)","var(--pink)"][i%4],
+            background:isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#00CEC9,#81ECEC)","linear-gradient(135deg,#E84393,#FD79A8)"][i%4],
             fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
             color:"#fff",textShadow:"0 2px 4px rgba(0,0,0,0.15)",fontFamily:"var(--font)",
             transform:isCorrect?"scale(1.2)":isWrong?"scale(0.9)":"scale(1)",boxShadow:isCorrect?"0 6px 20px rgba(0,210,160,.3)":isWrong?"0 4px 16px rgba(255,107,129,.25)":"0 4px 14px rgba(108,92,231,.2)"
@@ -4804,8 +4763,8 @@ export default function App(){
       <div style={{display:"flex",gap:4,marginBottom:4}}>
         {[{id:"numbers",label:"🔢 Numbers"},{id:"letters",label:"🔤 Letters"}].map(m=>
           <button key={m.id} onClick={()=>{setWriteMode(m.id);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);setTimeout(()=>{initCanvas();if(m.id==="numbers")speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75});else speak(`Write ${writeCase==="caps"?writeChar:writeChar.toLowerCase()}.`,{rate:0.75});},300);}} style={{
-            flex:1,padding:"9px",borderRadius:12,border:"2px solid",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
-            borderColor:writeMode===m.id?"#FF8C42":"#E8E0D8",background:writeMode===m.id?"#FF8C42":"#FFFBF5",color:writeMode===m.id?"#fff":"var(--gray)"
+            flex:1,padding:"9px",borderRadius:12,border:"2px solid",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
+            borderColor:writeMode===m.id?"#FF8C42":"#E8E0D8",background:writeMode===m.id?"#FF8C42":"#FFFBF5",color:writeMode===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
         )}
       </div>
@@ -4813,18 +4772,18 @@ export default function App(){
       {writeMode==="letters"&&<div style={{display:"flex",gap:4,marginBottom:4}}>
         {[{id:"caps",label:"ABC Capital"},{id:"small",label:"abc Small"}].map(m=>
           <button key={m.id} onClick={()=>{setWriteCase(m.id);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);const ch=m.id==="caps"?writeChar.toUpperCase():writeChar.toLowerCase();setTimeout(()=>{initCanvas();speak(`Write ${ch}.`,{rate:0.75});},300);}} style={{
-            flex:1,padding:"8px",borderRadius:12,border:"2px solid",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
-            borderColor:writeCase===m.id?"#FF8C42":"#E8E0D8",background:writeCase===m.id?"#FF8C42":"#FFFBF5",color:writeCase===m.id?"#fff":"var(--gray)"
+            flex:1,padding:"8px",borderRadius:12,border:"2px solid",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
+            borderColor:writeCase===m.id?"#FF8C42":"#E8E0D8",background:writeCase===m.id?"#FF8C42":"#FFFBF5",color:writeCase===m.id?"#fff":"#8E8CA3"
           }}>{m.label}</button>
         )}
       </div>}
       {/* Current target + score */}
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
         <div style={{textAlign:"center",minWidth:60}}>
-          <span style={{fontFamily:"var(--font)",fontSize:44,fontWeight:900,color:"var(--primary)",lineHeight:1}}>
+          <span style={{fontFamily:"var(--font)",fontSize:44,fontWeight:900,color:"#6C5CE7",lineHeight:1}}>
             {writeMode==="numbers"?writeNum:(writeCase==="caps"?writeChar.toUpperCase():writeChar.toLowerCase())}
           </span>
-          <div style={{fontSize:11,fontWeight:800,color:"var(--primary)",textTransform:"capitalize"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#6C5CE7",textTransform:"capitalize"}}>
             {writeMode==="numbers"?(NW[writeNum]||writeNum):(writeCase==="caps"?"Capital":"Small")}
           </div>
         </div>
@@ -4834,8 +4793,8 @@ export default function App(){
               <div style={{height:"100%",background:writeScore>=60?"#22C55E":writeScore>=35?"#F59E0B":"#F87171",borderRadius:5,width:`${Math.max(3,writeScore)}%`,transition:"width 0.3s"}}/>
             </div>
             <span style={{fontSize:14,fontWeight:800,minWidth:40,color:writeScore>=60?"#22C55E":writeScore>=35?"#F59E0B":"#F87171"}}>{writeScore}%</span>
-          </div>:<div style={{fontSize:12,fontWeight:700,color:"var(--gray)"}}>✏️ Trace on the watermark!</div>}
-          {writeOk&&<div style={{fontSize:12,fontWeight:800,color:"var(--green)",marginTop:2}}>✅ Next coming up...</div>}
+          </div>:<div style={{fontSize:12,fontWeight:600,color:"#8E8CA3"}}>✏️ Trace on the watermark!</div>}
+          {writeOk&&<div style={{fontSize:12,fontWeight:700,color:"#22C55E",marginTop:2}}>✅ Next coming up...</div>}
         </div>
         <button onClick={()=>{
           if(writeMode==="numbers"){const n=(writeNum%20)+1;setWriteNum(n);}
@@ -4853,8 +4812,8 @@ export default function App(){
           onPointerDown={drawStart} onPointerMove={drawMove} onPointerUp={drawEnd} onPointerLeave={drawEnd}/>
       </div>
       <div style={{display:"flex",gap:10,marginTop:10}}>
-        <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"#fff",color:"#888",fontSize:14,fontWeight:800,cursor:"pointer"}}>🗑️ Clear</button>
-        <button onClick={()=>speak(`Write ${writeMode==="numbers"?(NW[writeNum]||writeNum):writeChar}.`,{rate:0.75})} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"var(--primary)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔊 Hear</button>
+        <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"#fff",color:"#888",fontSize:14,fontWeight:700,cursor:"pointer"}}>🗑️ Clear</button>
+        <button onClick={()=>speak(`Write ${writeMode==="numbers"?(NW[writeNum]||writeNum):writeChar}.`,{rate:0.75})} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>🔊 Hear</button>
       </div>
     </div>}
 
@@ -4867,7 +4826,7 @@ export default function App(){
       {[{id:"learn",label:"🔢 Learn"},{id:"math",label:"➕ Math"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setNumTab(t.id);if(t.id==="math"&&!mathProblem)genMath();if(t.id==="write")setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}}
           style={{flex:1,padding:"10px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:14,cursor:"pointer",fontFamily:"var(--font)",
-            background:numTab===t.id?"#FF8C42":"#EDE5DC",color:numTab===t.id?"#fff":"var(--gray)"}}>{t.label}</button>
+            background:numTab===t.id?"#FF8C42":"#EDE5DC",color:numTab===t.id?"#fff":"#8E8CA3"}}>{t.label}</button>
       )}
     </div>
     {numTab==="learn"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column",minHeight:0,WebkitOverflowScrolling:"touch"}}>
@@ -4877,13 +4836,13 @@ export default function App(){
           padding:"6px 12px",borderRadius:14,border:"2px solid",whiteSpace:"nowrap",
           borderColor:numRange===r?"#FF8C42":"#E8E0D8",
           background:numRange===r?"#FF8C42":"#FFFBF5",
-          color:numRange===r?"#fff":"var(--gray)",fontSize:12,fontWeight:800,
+          color:numRange===r?"#fff":"#8E8CA3",fontSize:12,fontWeight:700,
           cursor:"pointer",fontFamily:"var(--font)",flexShrink:0
         }}>{r}</button>)}
         {/* Spelling toggle */}
         <div style={{display:"flex",alignItems:"center",gap:5,padding:"4px 10px",background:"#fff",borderRadius:14,flexShrink:0}}>
-          <span style={{fontSize:11,fontWeight:800,color:numSpelling?"var(--green)":"#999"}}>ABC</span>
-          <button onClick={()=>setNumSpelling(!numSpelling)} style={{width:34,height:18,borderRadius:9,border:"none",cursor:"pointer",background:numSpelling?"var(--green)":"#ddd",position:"relative",transition:"background 0.3s"}}>
+          <span style={{fontSize:11,fontWeight:700,color:numSpelling?"#22C55E":"#999"}}>ABC</span>
+          <button onClick={()=>setNumSpelling(!numSpelling)} style={{width:34,height:18,borderRadius:9,border:"none",cursor:"pointer",background:numSpelling?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}>
             <div style={{width:14,height:14,borderRadius:7,background:"#fff",position:"absolute",top:2,left:numSpelling?18:2,transition:"left 0.3s"}}/>
           </button>
         </div>
@@ -4899,10 +4858,10 @@ export default function App(){
           fontFamily:"var(--font)",
           background:done?`linear-gradient(135deg,${nClr(n)}08,${nClr(n)}15)`:"#fff",
           animation:`gridPop 0.3s ease ${i*0.02}s both`,
-          border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9"
+          boxShadow:"var(--shadow-card)"
         }}>{done&&<span style={{position:"absolute",top:3,right:4,fontSize:11,color:"#4ADE80",fontWeight:900}}>✓</span>}
           <span style={{fontFamily:"var(--font)",fontSize:count<=10?30:count<=20?22:16,fontWeight:800,color:nClr(n)}}>{n}</span>
-          {numSpelling&&<span style={{fontSize:count<=10?9:7,fontWeight:800,color:"var(--gray)",textTransform:"capitalize"}}>{NW[n]||""}</span>}
+          {numSpelling&&<span style={{fontSize:count<=10?9:7,fontWeight:700,color:"#8E8CA3",textTransform:"capitalize"}}>{NW[n]||""}</span>}
         </button>;})}</div>;})()}</div>
     </div>}
     {/* ═══ MATH TAB ═══ */}
@@ -4911,8 +4870,8 @@ export default function App(){
       <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
           {["1-10","1-20","1-50","1-100"].map(r=><button key={r} onClick={()=>{setMathRange(r);genMath(r,mathOp);}} style={{
-            padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",
-            background:mathRange===r?"var(--blue)":"#fff",borderBottom:mathRange===r?"3px solid var(--blue-bottom)":"2px solid #D1C4E9",color:mathRange===r?"#fff":"var(--gray)"
+            padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:"var(--font)",
+            background:mathRange===r?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#F0F4FF",boxShadow:mathRange===r?"0 3px 12px rgba(84,160,255,0.25)":"none",color:mathRange===r?"#fff":"#636E72"
           }}>{r}</button>)}
         </div>
         <div style={{display:"flex",gap:4}}>
@@ -4921,17 +4880,17 @@ export default function App(){
               speak(opMsg[o.id]||"Let's go!",{rate:0.85,pitch:1.0});
               setTimeout(()=>genMath(mathRange,o.id),800);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
-            background:mathOp===o.id?"var(--orange)":"#fff",borderBottom:mathOp===o.id?"3px solid var(--orange-bottom)":"2px solid #D1C4E9",color:mathOp===o.id?"#fff":"var(--gray)"
+            background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#F0F4FF",boxShadow:mathOp===o.id?"0 3px 12px rgba(255,159,67,0.25)":"none",color:mathOp===o.id?"#fff":"#636E72"
           }}>{o.label}</button>)}
         </div>
       </div>
       {mathProblem?<div data-owl="math-problem">
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-          <span style={{fontSize:15,fontWeight:800,color:"var(--primary)",background:"var(--bg)",padding:"6px 14px",borderRadius:14}}>🏆 {mathScore}/{mathTotal}</span>
+          <span style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14}}>🏆 {mathScore}/{mathTotal}</span>
           <button onClick={genMath} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer"}}>Skip ➡️</button>
         </div>
         {/* Visual problem with emojis */}
-        <div style={{background:"var(--primary)",borderRadius:22,padding:18,textAlign:"center",marginBottom:14,boxShadow:"0 4px 16px rgba(108,92,231,0.2)"}}>
+        <div style={{background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",borderRadius:22,padding:18,textAlign:"center",marginBottom:14,boxShadow:"0 4px 16px rgba(108,92,231,0.2)"}}>
           <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center",marginBottom:6}}>
             {Array.from({length:Math.min(mathProblem.a,15)}).map((_,i)=>
               <span key={"a"+i} style={{fontSize:26,animation:`gridPop 0.2s ease ${i*0.04}s both`}}>{getMathEmoji(0)}</span>
@@ -4944,7 +4903,7 @@ export default function App(){
             )}
           </div>
           <div style={{fontFamily:"var(--font)",fontSize:30,fontWeight:900,color:"#fff",marginTop:4,textShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>
-            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"var(--yellow)",textShadow:"0 0 16px rgba(254,202,87,0.6)",fontSize:"inherit"}}>?</span>
+            {mathProblem.a} {mathProblem.op} {mathProblem.b} = <span style={{color:"#FECA57",textShadow:"0 0 16px rgba(254,202,87,0.6)",fontSize:"inherit"}}>?</span>
           </div>
         </div>
         {/* 4 answer choices */}
@@ -4962,7 +4921,7 @@ export default function App(){
           })}
         </div>
         {mathFb==="wrong"&&<div style={{marginTop:10,padding:10,background:"#fff",borderRadius:14,textAlign:"center"}}>
-          <span style={{fontSize:15,fontWeight:800,color:"var(--primary)",background:"var(--bg)",padding:"6px 14px",borderRadius:14}}>{mathProblem.a} {mathProblem.op} {mathProblem.b} = {mathProblem.answer}</span>
+          <span style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14}}>{mathProblem.a} {mathProblem.op} {mathProblem.b} = {mathProblem.answer}</span>
           <div style={{display:"flex",flexWrap:"wrap",gap:3,justifyContent:"center",marginTop:4}}>
             {Array.from({length:Math.min(mathProblem.answer,20)}).map((_,i)=>
               <span key={"r"+i} style={{fontSize:18}}>{getMathEmoji(2)}</span>
@@ -4971,8 +4930,8 @@ export default function App(){
         </div>}
       </div>:<div style={{textAlign:"center",paddingTop:60}}>
         <span style={{fontSize:56}}>➕</span>
-        <p style={{fontSize:18,fontWeight:800,color:"var(--dark)",marginTop:10}}>Ready for Math?</p>
-        <button onClick={genMath} style={{marginTop:16,padding:"14px 32px",borderRadius:16,border:"none",background:"var(--primary)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer"}}>▶️ Start!</button>
+        <p style={{fontSize:18,fontWeight:800,color:"#2D2B3D",marginTop:10}}>Ready for Math?</p>
+        <button onClick={genMath} style={{marginTop:16,padding:"14px 32px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer"}}>▶️ Start!</button>
       </div>}
     </div>}
     {/* ═══ WRITE TAB ═══ */}
@@ -4981,15 +4940,15 @@ export default function App(){
         <div style={{position:"relative",padding:"8px 14px",backgroundImage:"repeating-linear-gradient(transparent,transparent 27px,#E8E8E8 27px,#E8E8E8 28px)",backgroundSize:"100% 28px",backgroundPosition:"0 8px"}}>
           <div style={{position:"absolute",left:30,top:0,bottom:0,width:2,background:"#FECACA"}}/>
           <div style={{display:"flex",alignItems:"center",gap:10,paddingLeft:36}}>
-            <span style={{fontFamily:"var(--font)",fontSize:52,fontWeight:900,color:"var(--primary)",lineHeight:1}}>{writeNum}</span>
-            <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15,color:"var(--dark)",textTransform:"capitalize"}}>{NW[writeNum]||""} {NUM_EMOJI[writeNum]||""}</div><div style={{fontSize:10,fontWeight:800,color:"var(--gray)"}}>{NUM_STROKES[writeNum]||"Write it!"}</div></div>
+            <span style={{fontFamily:"var(--font)",fontSize:52,fontWeight:900,color:"#6C5CE7",lineHeight:1}}>{writeNum}</span>
+            <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15,color:"#2D2B3D",textTransform:"capitalize"}}>{NW[writeNum]||""} {NUM_EMOJI[writeNum]||""}</div><div style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{NUM_STROKES[writeNum]||"Write it!"}</div></div>
             <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
           </div>
         </div>
         {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#FFF5EB":writeScore>=50?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
           <div style={{flex:1,height:8,borderRadius:4,background:"#E8E8E8",overflow:"hidden"}}><div style={{height:"100%",borderRadius:4,transition:"width 0.5s",background:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744",width:`${writeScore}%`}}/></div>
           <span style={{fontSize:12,fontWeight:800,color:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744"}}>{writeScore}%</span>
-          <span style={{fontSize:11,fontWeight:800,color:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744"}}>{writeScore>=85?"⭐ Perfect!":writeScore>=50?"✅ Pass!":"Keep tracing!"}</span>
+          <span style={{fontSize:11,fontWeight:700,color:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744"}}>{writeScore>=85?"⭐ Perfect!":writeScore>=50?"✅ Pass!":"Keep tracing!"}</span>
           {writeOk&&<span style={{fontSize:16}}>✅</span>}
         </div>}
       </div>
@@ -5000,13 +4959,13 @@ export default function App(){
         <canvas ref={cRef} style={{position:"absolute",inset:0,width:"100%",height:"100%",zIndex:2,cursor:"crosshair",touchAction:"none"}} onPointerDown={drawStart} onPointerMove={drawMove} onPointerUp={drawEnd} onPointerLeave={drawEnd}/>
       </div>
       <div style={{display:"flex",gap:6,padding:"8px 10px",background:"#fff",borderTop:"1px solid rgba(255,255,255,.06)",flexShrink:0}}>
-        <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"var(--dark)",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🗑️ Clear</button>
-        <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"var(--dark)",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 How</button>
+        <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🗑️ Clear</button>
+        <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 How</button>
         <button onClick={nextWrite} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:"linear-gradient(135deg,var(--green),var(--cyan))",color:"#000",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next ➡️</button>
       </div>
     </div>}
     <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
-  if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#FF8C42";return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"var(--green)"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
+  if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#FF8C42";return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
     {phStep!=="idle"&&<FlowSteps current={phStep} steps={PH_STEPS.filter(s=>
       s.id==="saying_word"||(s.id==="spelling"&&phModes.spelling)||(s.id==="saying_sentence"&&phModes.sentence)||(s.id==="saying_phonics"&&phModes.phonics)||(s.id==="countdown"&&phModes.speak)||(s.id==="result"&&phModes.speak)
     )}/>}
@@ -5024,24 +4983,24 @@ export default function App(){
           {extras.map((e,i)=><div key={i} style={{position:"absolute",left:`${15+i*18}%`,top:`${10+Math.sin(i)*20+15}%`,fontSize:20+Math.random()*12,zIndex:1,opacity:0.6,animation:`scene_${["floatBob","sway","twinkle","sparkle","cloudDrift"][i%5]} ${2+i*0.5}s ease-in-out ${i*0.3}s infinite`}}>{e}</div>)}
           {/* Word label overlay */}
           <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"24px 16px 12px",background:"linear-gradient(transparent,rgba(0,0,0,0.5))",zIndex:10,textAlign:"center"}}>
-            <h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"var(--dark)",letterSpacing:3,margin:0,textShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>{phW.word.toUpperCase()}{phStep==="saying_word"&&<span style={{animation:"pulse 0.5s infinite",fontSize:20,marginLeft:8}}>🔊</span>}</h2>
+            <h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",letterSpacing:3,margin:0,textShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>{phW.word.toUpperCase()}{phStep==="saying_word"&&<span style={{animation:"pulse 0.5s infinite",fontSize:20,marginLeft:8}}>🔊</span>}</h2>
           </div>
           {/* Sentence overlay */}
-          {phStep==="saying_sentence"&&<div style={{position:"absolute",top:8,left:8,right:8,padding:"8px 14px",background:"#fff",borderRadius:14,zIndex:11,animation:"slideUp 0.3s ease-out",...glowStyle("ph-sentence")}}><span style={{fontSize:13,fontWeight:800,color:"var(--primary)"}}>💬 {phW.sentence}</span></div>}
+          {phStep==="saying_sentence"&&<div style={{position:"absolute",top:8,left:8,right:8,padding:"8px 14px",background:"#fff",borderRadius:14,zIndex:11,animation:"slideUp 0.3s ease-out",...glowStyle("ph-sentence")}}><span style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>💬 {phW.sentence}</span></div>}
         </div>;
       })()}
       {/* Phoneme chips */}
-      <div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{phW.ph.map((ph,i)=>{const d=gPh(ph);const act=phAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:46,background:act?cc:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${cc}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:800,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div>
+      <div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{phW.ph.map((ph,i)=>{const d=gPh(ph);const act=phAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:46,background:act?cc:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${cc}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div>
       <div style={{marginTop:14}}>
         {phStep==="idle"&&<>
           <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
             <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
-              {phModes.spelling&&<span style={{fontSize:10,fontWeight:800,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔤 Spelling</span>}
-              {phModes.phonics&&<span style={{fontSize:10,fontWeight:800,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔡 Sounds</span>}
-              {phModes.sentence&&<span style={{fontSize:10,fontWeight:800,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>💬 Sentence</span>}
-              {phModes.speak&&<span style={{fontSize:10,fontWeight:800,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🎤 Speak</span>}
+              {phModes.spelling&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔤 Spelling</span>}
+              {phModes.phonics&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔡 Sounds</span>}
+              {phModes.sentence&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>💬 Sentence</span>}
+              {phModes.speak&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🎤 Speak</span>}
             </div>
-            <button onClick={()=>playPh(phW)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"var(--dark)",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${cc},${cc}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button>
+            <button onClick={()=>playPh(phW)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${cc},${cc}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button>
           </div>
         </>}
         {phStep==="saying_word"&&<Mascot mood="speaking" msg={`Listen! "${phW.word.toUpperCase()}" 🔊`}/>}
@@ -5072,7 +5031,7 @@ export default function App(){
               </div>
               {spellRound===2&&(
                 <div>
-                  <div style={{textAlign:"center",fontSize:12,fontWeight:800,color:"var(--primary)",marginBottom:10}}>Tap each letter:</div>
+                  <div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap each letter:</div>
                   <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
                     {scrambledLetters.map((item,i)=>(
                       <button key={item.id} disabled={item.used}
@@ -5093,7 +5052,7 @@ export default function App(){
                 </div>
               )}
               {spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px 14px",background:"#fff",borderRadius:12}}>
-                <p style={{fontSize:13,fontWeight:800,color:"var(--primary)"}}>👀 Watch and listen!</p>
+                <p style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>👀 Watch and listen!</p>
               </div>}
             </div>
           </div>
@@ -5117,7 +5076,7 @@ export default function App(){
   if(scr==="phonics")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/>
     {/* Teaching mode toggles */}
     <div style={{padding:"2px 8px",background:"#fff",flexShrink:0}}>
-      <div style={{fontSize:10,fontWeight:800,color:"var(--gray)",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>⚙️ What to teach:</div>
+      <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>⚙️ What to teach:</div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       {[
         {key:"spelling",icon:"🔤",label:"Spelling"},
@@ -5127,30 +5086,30 @@ export default function App(){
       ].map(m=><button key={m.key} onClick={()=>togglePhMode(m.key)} style={{
         display:"flex",alignItems:"center",gap:3,padding:"5px 10px",borderRadius:10,
         border:"none",
-        background:phModes[m.key]?"var(--green)":"#fff",
+        background:phModes[m.key]?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#F0F4FF",
         boxShadow:phModes[m.key]?"0 3px 10px rgba(0,210,160,0.2)":"none",
-        color:phModes[m.key]?"#FF8C42":"var(--gray)",
-        fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}><span style={{fontSize:14}}>{m.icon}</span>{m.label}{phModes[m.key]?<span style={{fontSize:10}}>✓</span>:null}</button>)}
+        color:phModes[m.key]?"#FF8C42":"#8E8CA3",
+        fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}><span style={{fontSize:14}}>{m.icon}</span>{m.label}{phModes[m.key]?<span style={{fontSize:10}}>✓</span>:null}</button>)}
       </div>
     </div>
-    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#fff",borderBottom:"none",flexShrink:0}}>{Object.entries(WCATS).map(([k,d])=><button key={k} data-r="pill" onClick={()=>{sfxTap();setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 12px",borderRadius:14,border:"2px solid",borderColor:phCat===k?"var(--primary-bottom)":"#E8EAF6",background:phCat===k?"var(--primary)":"#fff",borderBottom:phCat===k?"3px solid var(--primary-bottom)":"2px solid #D1C4E9",color:phCat===k?"#fff":"var(--gray)",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"var(--font)",flexShrink:0}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0,WebkitOverflowScrolling:"touch"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} data-r="word" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:"none",background:done?`linear-gradient(135deg,${cc},${cc}DD)`:"#fff",cursor:"pointer",fontFamily:"var(--font)",border:done?"none":"2px solid #E8EAF6",borderBottom:done?"none":"3px solid #D1C4E9",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"var(--green)",color:"var(--dark)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{w.img}</span><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,marginTop:4,color:done?"#fff":"var(--dark)"}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#fff",color:"var(--gray)",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#fff",borderBottom:"none",flexShrink:0}}>{Object.entries(WCATS).map(([k,d])=><button key={k} data-r="pill" onClick={()=>{sfxTap();setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 12px",borderRadius:14,border:"2px solid",borderColor:phCat===k?"transparent":"#DFE6E9",background:phCat===k?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",boxShadow:phCat===k?"0 3px 12px rgba(108,92,231,0.2)":"none",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"var(--font)",flexShrink:0}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0,WebkitOverflowScrolling:"touch"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} data-r="word" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:"none",background:done?`linear-gradient(135deg,${cc},${cc}DD)`:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:done?`0 4px 14px ${cc}30`:"var(--shadow-card)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{w.img}</span><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,marginTop:4,color:done?"#fff":"#2D3436"}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#fff",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
-  if((scr==="shapes"||scr==="learn")&&selShape){const sh=selShape;const shColor="#A855F7";return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"var(--green)"}}>{ptAnim}</div>}<SubHead title={sh.name} onBack={()=>{stop();pRef.current=false;setSelShape(null);setShStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
+  if((scr==="shapes"||scr==="learn")&&selShape){const sh=selShape;const shColor="#A855F7";return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={sh.name} onBack={()=>{stop();pRef.current=false;setSelShape(null);setShStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
     {shStep!=="idle"&&<FlowSteps current={shStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
       {sh.scene&&<div style={{position:"relative",width:"100%",height:120,borderRadius:16,overflow:"hidden",background:sh.scene.bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)",...glowStyle("shape-display")}}>
         {sh.scene.elements.map((el,i)=><div key={i} style={{position:"absolute",left:`${el.x}%`,top:`${el.y}%`,transform:"translate(-50%,-50%)",fontSize:el.size,zIndex:2,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))",animation:el.anim!=="none"?`scene_${el.anim} ${el.dur}s ease-in-out ${el.delay||0}s infinite`:"none"}}>{el.emoji}</div>)}
-        {shStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10,...glowStyle("shape-sentence")}}><p style={{color:"var(--dark)",fontSize:13,fontWeight:800,textAlign:"center"}}>💬 {sh.sentence}</p></div>}
+        {shStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10,...glowStyle("shape-sentence")}}><p style={{color:"#2D2B3D",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {sh.sentence}</p></div>}
       </div>}
-      <div style={{textAlign:"center",marginTop:4}}><span style={{fontSize:30}}>{sh.emoji}</span><div style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,textTransform:"capitalize"}}>{sh.name}</div>{sh.sides>0&&<span style={{fontSize:12,fontWeight:800,background:"#fff",color:"var(--primary)",padding:"4px 12px",borderRadius:10}}>{sh.sides} sides</span>}</div>
-      {sh.ph&&(shStep==="saying_phonics"||shStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:800,color:"var(--gray)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{sh.ph.map((ph,i)=>{const d=gPh(ph);const act=shAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?shColor:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:800,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      <div style={{textAlign:"center",marginTop:4}}><span style={{fontSize:30}}>{sh.emoji}</span><div style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{sh.name}</div>{sh.sides>0&&<span style={{fontSize:12,fontWeight:700,background:"#fff",color:"#6C5CE7",padding:"4px 12px",borderRadius:10}}>{sh.sides} sides</span>}</div>
+      {sh.ph&&(shStep==="saying_phonics"||shStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{sh.ph.map((ph,i)=>{const d=gPh(ph);const act=shAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?shColor:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
       <div style={{marginTop:12}}>
-        {shStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:800,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"var(--gray)",fontWeight:700}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playShape(sh)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"var(--dark)",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${shColor},${shColor}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
+        {shStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playShape(sh)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${shColor},${shColor}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
         {shStep==="saying_word"&&<Mascot mood="speaking" msg={`This is a ${sh.name}! 🔊`}/>}
-        {shStep==="spelling"&&<div data-owl="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{sh.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-owl={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?shColor:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:800,color:"var(--primary)",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#FF8C42",background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:800,color:"var(--primary)"}}>👀 Watch and listen!</p></div>}</div></div>}
+        {shStep==="spelling"&&<div data-owl="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{sh.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-owl={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?shColor:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#FF8C42",background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>👀 Watch and listen!</p></div>}</div></div>}
         {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {shStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {shStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?shColor:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
@@ -5160,25 +5119,25 @@ export default function App(){
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ SHAPES GRID ═══
-  if(scr==="shapes")return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto",minHeight:0,WebkitOverflowScrolling:"touch"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} data-r="shape" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:"none",background:done?"var(--primary)":"#fff",cursor:"pointer",fontFamily:"var(--font)",border:done?"2px solid var(--primary-bottom)":"2px solid #E8EAF6",borderBottom:done?"4px solid var(--primary-bottom)":"3px solid #D1C4E9",boxShadow:done?"none":"0 2px 0 rgba(0,0,0,0.06)",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"var(--green)",color:"var(--dark)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{s.emoji}</span><span style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginTop:6,textTransform:"capitalize",color:done?"#fff":"var(--dark)"}}>{s.name}</span><span style={{fontSize:11,color:done?"rgba(255,255,255,0.8)":"var(--gray)",fontWeight:700}}>{s.desc}</span></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="shapes")return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🔷","🔺","⭐","💎","❤️"]}/><SubHead title="Shapes" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto",minHeight:0,WebkitOverflowScrolling:"touch"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{SHAPES.map((s,i)=>{const done=isDone("shapes",s.name);return<button key={s.name} data-r="shape" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");rec.warmUp();setSelShape(s);setShStep("idle");setTimeout(()=>playShape(s),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:24,borderRadius:22,border:"none",background:done?"linear-gradient(135deg,#A29BFE,#6C5CE7)":"linear-gradient(145deg,#fff,#F8FAFF)",cursor:"pointer",fontFamily:"var(--font)",boxShadow:done?"0 4px 14px rgba(108,92,231,0.25)":"var(--shadow-card)",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:48,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{s.emoji}</span><span style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,marginTop:6,textTransform:"capitalize",color:done?"#fff":"#2D3436"}}>{s.name}</span><span style={{fontSize:11,color:done?"rgba(255,255,255,0.8)":"#A4B0BE",fontWeight:600}}>{s.desc}</span></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
 
   // ═══ COLORS ═══
   // ═══ COLOR DETAIL ═══
-  if((scr==="colors"||scr==="learn")&&selColor){const co=selColor;return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"var(--green)"}}>{ptAnim}</div>}<SubHead title={co.name} onBack={()=>{stop();pRef.current=false;setSelColor(null);setCoStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
+  if((scr==="colors"||scr==="learn")&&selColor){const co=selColor;return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={co.name} onBack={()=>{stop();pRef.current=false;setSelColor(null);setCoStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
     {coStep!=="idle"&&<FlowSteps current={coStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
       {co.scene&&<div style={{position:"relative",width:"100%",height:120,borderRadius:16,overflow:"hidden",background:co.scene.bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)",...glowStyle("color-display")}}>
         {co.scene.elements.map((el,i)=><div key={i} style={{position:"absolute",left:`${el.x}%`,top:`${el.y}%`,transform:"translate(-50%,-50%)",fontSize:el.size,zIndex:2,filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.2))",animation:el.anim!=="none"?`scene_${el.anim} ${el.dur}s ease-in-out ${el.delay||0}s infinite`:"none"}}>{el.emoji}</div>)}
-        {coStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10,...glowStyle("color-sentence")}}><p style={{color:"var(--dark)",fontSize:13,fontWeight:800,textAlign:"center"}}>💬 {co.sentence}</p></div>}
+        {coStep==="saying_sentence"&&<div style={{position:"absolute",bottom:0,left:0,right:0,padding:"20px 16px 10px",background:"linear-gradient(transparent,rgba(0,0,0,0.6))",zIndex:10,...glowStyle("color-sentence")}}><p style={{color:"#2D2B3D",fontSize:13,fontWeight:700,textAlign:"center"}}>💬 {co.sentence}</p></div>}
       </div>}
-      <div style={{textAlign:"center",marginTop:4}}><div style={{width:50,height:50,borderRadius:16,background:co.hex,margin:"0 auto 8px",boxShadow:`0 8px 24px ${co.hex}44`}}/><div style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,textTransform:"capitalize"}}>{co.name}</div><div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>{co.things.map((t,j)=><span key={j} style={{fontSize:11,fontWeight:800,background:"#fff",color:"var(--primary)",padding:"4px 10px",borderRadius:8}}>{t}</span>)}</div></div>
-      {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:800,color:"var(--gray)",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?co.hex:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:800,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      <div style={{textAlign:"center",marginTop:4}}><div style={{width:50,height:50,borderRadius:16,background:co.hex,margin:"0 auto 8px",boxShadow:`0 8px 24px ${co.hex}44`}}/><div style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{co.name}</div><div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>{co.things.map((t,j)=><span key={j} style={{fontSize:11,fontWeight:700,background:"#fff",color:"#6C5CE7",padding:"4px 10px",borderRadius:8}}>{t}</span>)}</div></div>
+      {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?co.hex:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
       <div style={{marginTop:12}}>
-        {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:800,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"var(--gray)",fontWeight:700}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"var(--dark)",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
+        {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
         {coStep==="saying_word"&&<Mascot mood="speaking" msg={`This color is ${co.name}! 🔊`}/>}
-        {coStep==="spelling"&&<div data-owl="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{co.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-owl={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?co.hex:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:800,color:"var(--primary)",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":co.hex,background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:800,color:"var(--primary)"}}>👀 Watch and listen!</p></div>}</div></div>}
+        {coStep==="spelling"&&<div data-owl="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{co.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-owl={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?co.hex:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":co.hex,background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>👀 Watch and listen!</p></div>}</div></div>}
         {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {coStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {coStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?co.hex:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
@@ -5188,7 +5147,7 @@ export default function App(){
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ COLORS GRID ═══
-  if(scr==="colors")return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto",minHeight:0,WebkitOverflowScrolling:"touch"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:22,borderRadius:22,border:["#F5F5F5","#C0C0C0","#9CA3AF","#FFD700","#EAB308"].includes(c.hex)?"2px solid #DFE6E9":"none",background:`linear-gradient(145deg,${c.hex},${c.hex}CC)`,cursor:"pointer",fontFamily:"var(--font)",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:`0 4px 14px ${c.hex}33`}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#fff",color:"var(--green)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}<div style={{width:48,height:48,borderRadius:14,background:["#F5F5F5","#C0C0C0","#9CA3AF","#FFD700","#EAB308"].includes(c.hex)?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:4}}>{c.emoji}</div><span style={{fontFamily:"var(--font)",fontSize:15,fontWeight:800,textTransform:"capitalize",color:["#F5F5F5","#C0C0C0","#9CA3AF","#FFD700","#EAB308"].includes(c.hex)?"var(--dark)":"#fff",textShadow:["#F5F5F5","#C0C0C0","#9CA3AF","#FFD700","#EAB308"].includes(c.hex)?"none":"0 1px 3px rgba(0,0,0,0.2)"}}>{c.name}</span></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="colors")return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8} emojis={["🌈","🎨","🖍️","✨"]}/><SubHead title="Colors" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto",minHeight:0,WebkitOverflowScrolling:"touch"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14,padding:16}}>{COLORSDATA.map((c,i)=>{const done=isDone("colors",c.name);return<button key={c.name} onClick={(e)=>{stop();movePandaTo("bottomRight");rec.warmUp();setSelColor(c);setCoStep("idle");setTimeout(()=>playColor(c),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:22,borderRadius:22,border:["#F5F5F5","#C0C0C0","#9CA3AF","#FFD700","#EAB308"].includes(c.hex)?"2px solid #DFE6E9":"none",background:`linear-gradient(145deg,${c.hex},${c.hex}CC)`,cursor:"pointer",fontFamily:"var(--font)",animation:`gridPop 0.5s cubic-bezier(0.34,1.56,0.64,1) ${i*0.1}s both`,boxShadow:`0 4px 14px ${c.hex}33`}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#fff",color:"#22C55E",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,boxShadow:"0 2px 4px rgba(0,0,0,0.15)"}}>✓</span>}<div style={{width:48,height:48,borderRadius:14,background:["#F5F5F5","#C0C0C0","#9CA3AF","#FFD700","#EAB308"].includes(c.hex)?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,marginBottom:4}}>{c.emoji}</div><span style={{fontFamily:"var(--font)",fontSize:15,fontWeight:700,textTransform:"capitalize",color:["#F5F5F5","#C0C0C0","#9CA3AF","#FFD700","#EAB308"].includes(c.hex)?"#2D3436":"#fff",textShadow:["#F5F5F5","#C0C0C0","#9CA3AF","#FFD700","#EAB308"].includes(c.hex)?"none":"0 1px 3px rgba(0,0,0,0.2)"}}>{c.name}</span></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
 
 
@@ -5201,7 +5160,7 @@ export default function App(){
       {[{id:"caps",label:"🔤 CAPITAL"},{id:"small",label:"🔡 small"}].map(t=>
         <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setAlphaTab(t.id);setSelLetter(null);}}
           style={{flex:1,padding:"10px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",
-            background:alphaTab===t.id?"#FF8C42":"#EDE5DC",color:alphaTab===t.id?"#fff":"var(--gray)"}}>{t.label}</button>
+            background:alphaTab===t.id?"#FF8C42":"#EDE5DC",color:alphaTab===t.id?"#fff":"#8E8CA3"}}>{t.label}</button>
       )}
     </div>
 
@@ -5209,7 +5168,7 @@ export default function App(){
     {selLetter&&<div data-owl="letter-detail" style={{position:"absolute",inset:0,background:"rgba(255,255,255,.97)",zIndex:30,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,animation:"fadeIn 0.3s",padding:20}}>
       <button onClick={closeLetter} style={{position:"absolute",top:12,right:16,padding:"8px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#fff",fontSize:13,fontWeight:800,cursor:"pointer"}}>✕ Close</button>
       <div style={{fontSize:80,fontFamily:"var(--font)",fontWeight:900,color:ALPHA_COLORS[ALPHA_LETTERS.indexOf(selLetter)%13],lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite",...glowStyle("letter-big")}}>{selLetter}{selLetter.toLowerCase()}</div>
-      <div style={{fontSize:18,fontWeight:800,color:"var(--dark)",marginTop:4,...glowStyle("letter-sound")}}>"{ALPHA_DATA[selLetter]?.ph}" sound</div>
+      <div style={{fontSize:18,fontWeight:800,color:"#2D2B3D",marginTop:4,...glowStyle("letter-sound")}}>"{ALPHA_DATA[selLetter]?.ph}" sound</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:10,justifyContent:"center",marginTop:8}}>
         {ALPHA_DATA[selLetter]?.examples.map((ex,i)=>
           <button key={i} onClick={()=>speak(`${selLetter} for ${ex.w}!`,{rate:0.85,pitch:1.0})} style={{
@@ -5219,13 +5178,13 @@ export default function App(){
             ...glowStyle("letter-ex-"+i)
           }}>
             <span style={{fontSize:32}}>{ex.e}</span>
-            <span style={{fontSize:12,fontWeight:800,color:"var(--dark)",marginTop:4}}>{selLetter} for {ex.w}</span>
+            <span style={{fontSize:12,fontWeight:800,color:"#2D2B3D",marginTop:4}}>{selLetter} for {ex.w}</span>
           </button>
         )}
       </div>
       <div style={{display:"flex",gap:10,marginTop:12}}>
-        <button onClick={()=>{stop();playLetter(selLetter);}} style={{flex:1,padding:"12px 20px",borderRadius:16,border:"none",background:"var(--primary)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔊 Again</button>
-        <button onClick={()=>{const idx=ALPHA_LETTERS.indexOf(selLetter);const next=ALPHA_LETTERS[(idx+1)%26];pRef.current=true;setSelLetter(next);playLetter(next);}} style={{flex:1,padding:"12px 20px",borderRadius:16,border:"none",background:"var(--primary)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>Next ➡️</button>
+        <button onClick={()=>{stop();playLetter(selLetter);}} style={{flex:1,padding:"12px 20px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔊 Again</button>
+        <button onClick={()=>{const idx=ALPHA_LETTERS.indexOf(selLetter);const next=ALPHA_LETTERS[(idx+1)%26];pRef.current=true;setSelLetter(next);playLetter(next);}} style={{flex:1,padding:"12px 20px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>Next ➡️</button>
       </div>
     </div>}
 
@@ -5236,11 +5195,11 @@ export default function App(){
           <button key={l} onClick={(e)=>{stop();movePandaTo("bottomRight");pRef.current=true;playLetter(l);}} style={{
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
             padding:"10px 4px",borderRadius:14,border:"2px solid #E8E0D8",cursor:"pointer",
-            background:"#fff",border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9",
+            background:"#fff",boxShadow:"var(--shadow-card)",
             animation:`gridPop 0.2s ease ${i*0.02}s both`
           }}>
             <span style={{fontSize:24,fontWeight:900,color:ALPHA_COLORS[i%13]}}>{l}</span>
-            <span style={{fontSize:10,fontWeight:800,color:"var(--gray)"}}>{ALPHA_DATA[l]?.examples[0]?.e||""}</span>
+            <span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{ALPHA_DATA[l]?.examples[0]?.e||""}</span>
           </button>
         )}
       </div>
@@ -5253,11 +5212,11 @@ export default function App(){
           <button key={l} onClick={(e)=>{stop();movePandaTo("bottomRight");pRef.current=true;playLetter(l);}} style={{
             display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
             padding:"10px 4px",borderRadius:14,border:"2px solid #E8E0D8",cursor:"pointer",
-            background:"#fff",border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9",
+            background:"#fff",boxShadow:"var(--shadow-card)",
             animation:`gridPop 0.2s ease ${i*0.02}s both`
           }}>
             <span style={{fontSize:24,fontWeight:900,color:ALPHA_COLORS[i%13]}}>{l.toLowerCase()}</span>
-            <span style={{fontSize:10,fontWeight:800,color:"var(--gray)"}}>{ALPHA_DATA[l]?.examples[0]?.e||""}</span>
+            <span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{ALPHA_DATA[l]?.examples[0]?.e||""}</span>
           </button>
         )}
       </div>
@@ -5269,35 +5228,35 @@ export default function App(){
       <div style={{display:"flex",gap:6,marginBottom:10}}>
         {[{id:"findSmall",label:"A→a"},{id:"findCaps",label:"a→A"},{id:"voiceQuiz",label:"🔊 Listen"}].map(m=>
           <button key={m.id} onClick={()=>{stop();setTeacherMood("excited");startMatch(m.id);}} style={{
-            flex:1,padding:"6px 2px",borderRadius:10,border:"2px solid",fontSize:12,fontWeight:800,
+            flex:1,padding:"6px 2px",borderRadius:10,border:"2px solid",fontSize:12,fontWeight:700,
             cursor:"pointer",fontFamily:"var(--font)",
             borderColor:matchMode===m.id?"#FF8C42":"#E8E0D8",
             background:matchMode===m.id?"#FF8C42":"#FFFBF5",
-            color:matchMode===m.id?"#fff":"var(--gray)"}}>{m.label}</button>
+            color:matchMode===m.id?"#fff":"#8E8CA3"}}>{m.label}</button>
         )}
       </div>
       {/* Current letter prompt */}
       <div style={{textAlign:"center",padding:"10px",background:"linear-gradient(135deg,#FFF5EB,#FFF5EB)",borderRadius:16,marginBottom:10}}>
         {matchIdx<matchPairs.length?<>
-          <div style={{fontSize:12,fontWeight:800,color:"var(--gray)"}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#8E8CA3"}}>
             {matchMode==="findSmall"?"Find the small letter for:":matchMode==="findCaps"?"Find the CAPITAL for:":"Which letter did you hear?"}
           </div>
           {matchMode==="voiceQuiz"?
             <div style={{marginTop:6}}>
               <button onClick={()=>speak(`${matchPairs[matchIdx]?.cap}`,{rate:0.65,pitch:1.0})} style={{
-                fontSize:16,fontWeight:800,fontFamily:"var(--font)",
+                fontSize:16,fontWeight:700,fontFamily:"var(--font)",
                 background:"linear-gradient(135deg,#FF8C42,#FFB066)",border:"none",borderRadius:16,
                 padding:"12px 24px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:8,margin:"0 auto"
               }}>🔊 Hear Again</button>
             </div>:
-            <div style={{fontSize:56,fontWeight:900,color:"var(--primary)",fontFamily:"var(--font)",lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>
+            <div style={{fontSize:56,fontWeight:900,color:"#6C5CE7",fontFamily:"var(--font)",lineHeight:1,animation:"numPulse 1.5s ease-in-out infinite"}}>
               {matchMode==="findCaps"?(matchPairs[matchIdx]?.cap||"").toLowerCase():(matchPairs[matchIdx]?.cap||"")}
             </div>
           }
-          <div style={{fontSize:15,fontWeight:800,color:"var(--primary)",background:"var(--bg)",padding:"6px 14px",borderRadius:14,marginTop:4}}>🏆 {matchScore}/8</div>
+          <div style={{fontSize:15,fontWeight:800,color:"#6C5CE7",background:"#F0F4FF",padding:"6px 14px",borderRadius:14,marginTop:4}}>🏆 {matchScore}/8</div>
         </>:<>
           <div style={{fontSize:36}}>🎉</div>
-          <div style={{fontSize:18,fontWeight:800,color:"var(--primary)"}}>All Done! {matchScore}/{matchPairs.length} correct</div>
+          <div style={{fontSize:18,fontWeight:800,color:"#6C5CE7"}}>All Done! {matchScore}/{matchPairs.length} correct</div>
           <button onClick={()=>{stop();startMatch();}} style={{marginTop:8,padding:"10px 24px",borderRadius:14,border:"none",background:"#FF8C42",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔄 Play Again</button>
         </>}
       </div>
@@ -5310,9 +5269,9 @@ export default function App(){
           return<button key={"m"+l+matchIdx+matchMode} data-r="quiz" onClick={()=>{sfxTap();onMatchTap(l);}} style={{
             padding:matchMode==="voiceQuiz"?"20px 6px":"16px 6px",borderRadius:18,border:"3px solid",cursor:"pointer",
             borderColor:isWrong?"#FF6B81":isCorrect?"#00D2A0":"transparent",
-            background:isWrong?"var(--red)":isCorrect?"var(--green)":["var(--primary)","var(--orange)","var(--cyan)","var(--pink)"][i%4],
+            background:isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#00CEC9,#81ECEC)","linear-gradient(135deg,#E84393,#FD79A8)"][i%4],
             fontSize:matchMode==="voiceQuiz"?36:30,fontWeight:900,
-            color:isWrong?"#F87171":isCorrect?"#4ADE80":"var(--dark)",
+            color:isWrong?"#F87171":isCorrect?"#4ADE80":"#2D2B3D",
             fontFamily:"var(--font)",
             transform:isCorrect?"scale(1.2)":isWrong?"scale(0.9)":"scale(1)",
             animation:`gridPop 0.3s ease ${i*0.06}s both`,
@@ -5337,7 +5296,7 @@ export default function App(){
           if(t.id==="write")
           if(t.id==="explore")
           if(t.id==="write"){setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},500);}
-        }} style={{flex:1,padding:"11px 6px",borderRadius:14,border:"none",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",
+        }} style={{flex:1,padding:"11px 6px",borderRadius:14,border:"none",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",
           background:basicsTab===t.id?"#FF8C42":"#FFF0E0",color:basicsTab===t.id?"#fff":"#888"}}>{t.label}</button>
       )}
     </div>
@@ -5350,12 +5309,12 @@ export default function App(){
           padding:"5px 10px",borderRadius:10,border:"2px solid",whiteSpace:"nowrap",
           borderColor:numRange===r?"#FF8C42":"#E8E0D8",
           background:numRange===r?"#FF8C42":"#FFFBF5",
-          color:numRange===r?"#fff":"var(--gray)",fontSize:11,fontWeight:800,
+          color:numRange===r?"#fff":"#8E8CA3",fontSize:11,fontWeight:700,
           cursor:"pointer",fontFamily:"var(--font)",flexShrink:0
         }}>{r}</button>)}
         <div style={{display:"flex",alignItems:"center",gap:4,padding:"3px 8px",background:"#fff",borderRadius:10,flexShrink:0}}>
-          <span style={{fontSize:10,fontWeight:800,color:numSpelling?"var(--green)":"#999"}}>Abc</span>
-          <button onClick={()=>setNumSpelling(!numSpelling)} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:numSpelling?"var(--green)":"#ddd",position:"relative"}}>
+          <span style={{fontSize:10,fontWeight:700,color:numSpelling?"#22C55E":"#999"}}>Abc</span>
+          <button onClick={()=>setNumSpelling(!numSpelling)} style={{width:30,height:16,borderRadius:8,border:"none",cursor:"pointer",background:numSpelling?"#22C55E":"#ddd",position:"relative"}}>
             <div style={{width:12,height:12,borderRadius:6,background:"#fff",position:"absolute",top:2,left:numSpelling?16:2,transition:"left 0.3s"}}/>
           </button>
         </div>
@@ -5370,7 +5329,7 @@ export default function App(){
             background:"#fff",boxShadow:"0 2px 8px rgba(0,0,0,.04)",fontFamily:"var(--font)",...glowStyle("num-explore-"+n)
           }}>
             <span style={{fontSize:count<=10?26:count<=20?20:16,fontWeight:800,color:nClr(n),lineHeight:1}}>{n}</span>
-            {numSpelling&&<span style={{fontSize:count<=10?9:7,fontWeight:800,color:"var(--gray)",marginTop:2}}>{NW[n]||""}</span>}
+            {numSpelling&&<span style={{fontSize:count<=10?9:7,fontWeight:700,color:"#8E8CA3",marginTop:2}}>{NW[n]||""}</span>}
           </button>;
         })}
       </div>;})()}</div>
@@ -5381,17 +5340,17 @@ export default function App(){
       {/* Quiz header */}
       <div style={{padding:"12px 16px",background:"linear-gradient(135deg,#FFF5EB,#FFFBF5)",display:"flex",alignItems:"center",gap:10,borderBottom:"none"}}>
         {quizNum?<>
-          <button onClick={repeatQuiz} style={{padding:"10px 18px",borderRadius:14,border:"none",background:"var(--primary)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-btn)",display:"flex",alignItems:"center",gap:6}}>
+          <button onClick={repeatQuiz} style={{padding:"10px 18px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-btn)",display:"flex",alignItems:"center",gap:6}}>
             🔊 Hear Again
           </button>
           <div style={{flex:1,textAlign:"center"}}>
-            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--primary)"}}>Which number is it? 👂</div>
+            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,color:"#6C5CE7"}}>Which number is it? 👂</div>
           </div>
           <div style={{textAlign:"right"}}>
-            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--primary)"}}>🏆 {quizScore}</div>
-            {quizStreak>=3&&<span style={{fontSize:10,fontWeight:800,color:"#EF4444"}}>🔥{quizStreak}</span>}
+            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,color:"#6C5CE7"}}>🏆 {quizScore}</div>
+            {quizStreak>=3&&<span style={{fontSize:10,fontWeight:700,color:"#EF4444"}}>🔥{quizStreak}</span>}
           </div>
-        </>:<button onClick={newQuiz} style={{width:"100%",padding:"16px",borderRadius:16,border:"none",background:"var(--primary)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 20px rgba(139,92,246,.3)"}}>▶️ Start Quiz!</button>}
+        </>:<button onClick={newQuiz} style={{width:"100%",padding:"16px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:18,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 20px rgba(139,92,246,.3)"}}>▶️ Start Quiz!</button>}
       </div>
       {/* Quiz options grid */}
       {quizNum&&<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
@@ -5426,10 +5385,10 @@ export default function App(){
         }}>
           <div style={{position:"absolute",left:30,top:0,bottom:0,width:2,background:"#FECACA"}}/>
           <div style={{display:"flex",alignItems:"center",gap:10,paddingLeft:36}}>
-            <span style={{fontFamily:"var(--font)",fontSize:52,fontWeight:900,color:"var(--primary)",lineHeight:1}}>{writeNum}</span>
+            <span style={{fontFamily:"var(--font)",fontSize:52,fontWeight:900,color:"#6C5CE7",lineHeight:1}}>{writeNum}</span>
             <div style={{flex:1}}>
-              <div style={{fontWeight:800,fontSize:15,color:"var(--dark)",textTransform:"capitalize"}}>{NW[writeNum]||""} {NUM_EMOJI[writeNum]||""}</div>
-              <div style={{fontSize:10,fontWeight:800,color:"var(--gray)"}}>{NUM_STROKES[writeNum]||"Write it!"}</div>
+              <div style={{fontWeight:800,fontSize:15,color:"#2D2B3D",textTransform:"capitalize"}}>{NW[writeNum]||""} {NUM_EMOJI[writeNum]||""}</div>
+              <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{NUM_STROKES[writeNum]||"Write it!"}</div>
             </div>
             <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
           </div>
@@ -5439,7 +5398,7 @@ export default function App(){
             <div style={{height:"100%",borderRadius:4,transition:"width 0.5s",background:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744",width:`${writeScore}%`}}/>
           </div>
           <span style={{fontSize:12,fontWeight:800,color:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744"}}>{writeScore}%</span>
-          <span style={{fontSize:11,fontWeight:800,color:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744"}}>{writeScore>=85?"⭐ Perfect!":writeScore>=50?"✅ Pass!":"Keep tracing!"}</span>
+          <span style={{fontSize:11,fontWeight:700,color:writeScore>=85?"#60B246":writeScore>=50?"#FF8C42":"#E23744"}}>{writeScore>=85?"⭐ Perfect!":writeScore>=50?"✅ Pass!":"Keep tracing!"}</span>
           {writeOk&&<span style={{fontSize:16}}>✅</span>}
         </div>}
       </div>
@@ -5467,8 +5426,8 @@ export default function App(){
 
       {/* Bottom controls */}
       <div style={{display:"flex",gap:6,padding:"8px 10px",background:"#fff",borderTop:"1px solid rgba(255,255,255,.06)",flexShrink:0}}>
-        <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"var(--dark)",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🗑️ Clear</button>
-        <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"var(--dark)",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 How</button>
+        <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🗑️ Clear</button>
+        <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 How</button>
         <button onClick={nextWrite} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:"linear-gradient(135deg,var(--green),var(--cyan))",color:"#000",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next ➡️</button>
       </div>
     </div>}<div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
@@ -5489,13 +5448,13 @@ export default function App(){
         }}>
           <span style={{fontSize:42,flexShrink:0}}>{st.emoji}</span>
           <div style={{flex:1}}>
-            <div style={{fontWeight:800,fontSize:16,color:"var(--dark)"}}>{st.title}</div>
-            <div style={{fontSize:12,color:"var(--gray)",fontWeight:500,marginTop:2}}>
+            <div style={{fontWeight:700,fontSize:16,color:"#2D2B3D"}}>{st.title}</div>
+            <div style={{fontSize:12,color:"#8E8CA3",fontWeight:500,marginTop:2}}>
               {st.level==="easy"?"⭐ Easy":st.level==="medium"?"⭐⭐ Medium":"⭐⭐⭐ Hard"}
               {done&&" · ✅ Done"}
             </div>
           </div>
-          <span style={{fontSize:20,color:"var(--gray)"}}>→</span>
+          <span style={{fontSize:20,color:"#8E8CA3"}}>→</span>
         </button>;})}
       </div>
     </div>}
@@ -5503,28 +5462,28 @@ export default function App(){
     {storyStep==="reading"&&storyPicked&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",padding:16}}>
       <div style={{textAlign:"center",marginBottom:16}}>
         <span style={{fontSize:64}}>{storyPicked.emoji}</span>
-        <h2 style={{fontSize:22,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>{storyPicked.title}</h2>
-        <span style={{fontSize:12,color:"var(--gray)",fontWeight:500}}>{storyPicked.level==="easy"?"⭐ Easy":storyPicked.level==="medium"?"⭐⭐ Medium":"⭐⭐⭐ Hard"}</span>
+        <h2 style={{fontSize:22,fontWeight:700,color:"#2D2B3D",margin:"8px 0 4px"}}>{storyPicked.title}</h2>
+        <span style={{fontSize:12,color:"#8E8CA3",fontWeight:500}}>{storyPicked.level==="easy"?"⭐ Easy":storyPicked.level==="medium"?"⭐⭐ Medium":"⭐⭐⭐ Hard"}</span>
       </div>
-      <div style={{background:"#fff",borderRadius:20,padding:"20px 18px",border:"1.5px solid #FFE0C2",lineHeight:1.8,fontSize:16,fontWeight:500,color:"var(--dark)"}}>
+      <div style={{background:"#fff",borderRadius:20,padding:"20px 18px",border:"1.5px solid #FFE0C2",lineHeight:1.8,fontSize:16,fontWeight:500,color:"#2D2B3D"}}>
         {storyPicked.text}
       </div>
       <div style={{display:"flex",gap:10,marginTop:16}}>
-        <button onClick={()=>{speak(storyPicked.text,{rate:0.8});}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#3B82F6",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer"}}>🔊 Read to Me</button>
-        <button onClick={()=>{stop();setStoryStep("questions");setStoryIdx(0);speak("Now answer these questions!",{rate:0.85});}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#4ADE80",color:"var(--dark)",fontSize:15,fontWeight:800,cursor:"pointer"}}>📝 Questions</button>
+        <button onClick={()=>{speak(storyPicked.text,{rate:0.8});}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#3B82F6",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>🔊 Read to Me</button>
+        <button onClick={()=>{stop();setStoryStep("questions");setStoryIdx(0);speak("Now answer these questions!",{rate:0.85});}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#4ADE80",color:"#2D2B3D",fontSize:15,fontWeight:700,cursor:"pointer"}}>📝 Questions</button>
       </div>
     </div>}
     {/* QUESTIONS VIEW */}
     {storyStep==="questions"&&storyPicked&&<div style={{flex:1,overflow:"auto",padding:16}}>
       {storyIdx<storyPicked.questions.length?<div>
         <div style={{textAlign:"center",marginBottom:12}}>
-          <span style={{fontSize:13,fontWeight:800,color:"#3B82F6"}}>Question {storyIdx+1} of {storyPicked.questions.length}</span>
+          <span style={{fontSize:13,fontWeight:700,color:"#3B82F6"}}>Question {storyIdx+1} of {storyPicked.questions.length}</span>
           <div style={{width:"100%",height:6,background:"#E8E0D8",borderRadius:4,marginTop:6,overflow:"hidden"}}>
             <div style={{height:"100%",background:"#3B82F6",borderRadius:4,width:`${((storyIdx)/storyPicked.questions.length)*100}%`,transition:"width 0.5s"}}/>
           </div>
         </div>
         <div style={{background:"#DBEAFE",borderRadius:20,padding:"18px 16px",marginBottom:14,border:"1.5px solid #93C5FD"}}>
-          <p style={{fontSize:17,fontWeight:800,color:"#1E40AF",textAlign:"center"}}>{storyPicked.questions[storyIdx].q}</p>
+          <p style={{fontSize:17,fontWeight:700,color:"#1E40AF",textAlign:"center"}}>{storyPicked.questions[storyIdx].q}</p>
         </div>
         <div style={{display:"grid",gap:10}}>
           {storyPicked.questions[storyIdx].opts.map((opt,oi)=>{
@@ -5547,10 +5506,10 @@ export default function App(){
               }
             }} style={{
               padding:"16px 18px",borderRadius:18,border:"2.5px solid",cursor:answered?"default":"pointer",
-              fontSize:15,fontWeight:700,textAlign:"left",
+              fontSize:15,fontWeight:600,textAlign:"left",
               borderColor:answered?(isCorrect?"#4ADE80":isPicked?"#F87171":"#E8E0D8"):"#E8E0D8",
               background:answered?(isCorrect?"#F0FDF4":isPicked?"#FEF2F2":"#FFFBF5"):"#FFFBF5",
-              color:"var(--dark)",
+              color:"#2D2B3D",
               animation:`gridPop 0.2s ease ${oi*0.05}s both`
             }}>{answered&&isCorrect?"✅ ":answered&&isPicked?"❌ ":""}{opt}</button>;
           })}
@@ -5561,35 +5520,35 @@ export default function App(){
     {storyStep==="done"&&storyPicked&&<div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,gap:12}}>
       <Confetti active={storyScore>=storyPicked.questions.length}/>
       <span style={{fontSize:64}}>{storyScore>=storyPicked.questions.length?"🎉":"📖"}</span>
-      <h2 style={{fontSize:24,fontWeight:800,color:"var(--dark)"}}>
+      <h2 style={{fontSize:24,fontWeight:700,color:"#2D2B3D"}}>
         {storyScore>=storyPicked.questions.length?"Perfect Score!":"Nice Try!"}
       </h2>
       <Stars count={storyScore>=3?5:storyScore>=2?4:storyScore>=1?3:1}/>
-      <p style={{fontSize:16,fontWeight:700,color:"var(--gray)"}}>{storyScore} / {storyPicked.questions.length} correct</p>
-      {storyScore>0&&<p style={{fontSize:16,fontWeight:800,color:"#4ADE80"}}>+{storyScore*5} points!</p>}
+      <p style={{fontSize:16,fontWeight:600,color:"#8E8CA3"}}>{storyScore} / {storyPicked.questions.length} correct</p>
+      {storyScore>0&&<p style={{fontSize:16,fontWeight:700,color:"#4ADE80"}}>+{storyScore*5} points!</p>}
       <div style={{display:"flex",gap:10,marginTop:12,width:"100%",maxWidth:320}}>
-        <button onClick={()=>{stop();setStoryStep("reading");setStoryAnswers([]);setStoryScore(0);setStoryIdx(0);}} style={{flex:1,padding:14,borderRadius:16,border:"2px solid #E8E0D8",background:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔄 Try Again</button>
-        <button onClick={()=>{stop();setStoryStep("list");setStoryPicked(null);}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#3B82F6",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>📚 More Stories</button>
+        <button onClick={()=>{stop();setStoryStep("reading");setStoryAnswers([]);setStoryScore(0);setStoryIdx(0);}} style={{flex:1,padding:14,borderRadius:16,border:"2px solid #E8E0D8",background:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>🔄 Try Again</button>
+        <button onClick={()=>{stop();setStoryStep("list");setStoryPicked(null);}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#3B82F6",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>📚 More Stories</button>
       </div>
     </div>}
     <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
   </div>;
 
     // ═══ REWARDS ═══
-  if(scr==="rewards")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"var(--green)",color:"var(--dark)",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"#FFF8E1",borderRadius:20,display:"flex",alignItems:"center",gap:14,border:"2px solid #FFE082",borderBottom:"4px solid #FFE082"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"var(--dark)",fontFamily:"var(--font)",fontSize:28,fontWeight:900}}>{prof?.points||0}</div><div style={{color:"var(--gray)",fontSize:11,fontWeight:800}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"var(--gray)",fontWeight:800,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} data-r="reward" onClick={()=>{if(can){sfxTap();buyR(r);}}} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:"none",background:can?"#fff":"#F0F0F0",boxShadow:can?"0 2px 0 rgba(0,0,0,0.06)":"none",cursor:can?"pointer":"default",fontFamily:"var(--font)",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"var(--font)",fontSize:14,fontWeight:800,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"var(--gray)",fontWeight:700}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"var(--green)":"#D4D5D9",boxShadow:can?"0 3px 10px rgba(0,210,160,0.2)":"none",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#fff",borderRadius:18,border:"none",marginBottom:8,border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9"}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"var(--gray)"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="rewards")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/><SubHead title="Rewards 🎁" onBack={goHome} points={prof?.points||0}/>{rwdMsg&&<div style={{position:"fixed",top:60,left:16,right:16,padding:14,background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#2D2B3D",borderRadius:18,fontWeight:800,textAlign:"center",zIndex:999,animation:"slideUp 0.3s ease-out",fontSize:13,maxWidth:490,margin:"0 auto"}}>{rwdMsg}</div>}<div style={{margin:"14px 16px 0",padding:"18px 20px",background:"linear-gradient(135deg,#FF9F43,#FECA57)",borderRadius:24,display:"flex",alignItems:"center",gap:14,boxShadow:"0 8px 28px rgba(255,159,67,0.25)"}}><span style={{fontSize:36,animation:"coinSp 2s ease-in-out infinite"}}>💰</span><div><div style={{color:"#2D2B3D",fontFamily:"var(--font)",fontSize:28,fontWeight:800}}>{prof?.points||0}</div><div style={{color:"rgba(255,255,255,.8)",fontSize:11,fontWeight:700}}>Earn more by practicing!</div></div></div><p style={{padding:"8px 16px",fontSize:11,color:"#8E8CA3",fontWeight:700,textAlign:"center"}}>🎉 Show parents when you earn a reward!</p><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,padding:"0 16px 20px"}}>{REWARDS.map((r,i)=>{const can=(prof?.points||0)>=r.cost;return<button key={r.id} data-r="reward" onClick={()=>{if(can){sfxTap();buyR(r);}}} disabled={!can} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:16,borderRadius:20,border:"none",background:can?"linear-gradient(145deg,#fff,#F8FAFF)":"#F0F0F0",boxShadow:can?"var(--shadow-card)":"none",cursor:can?"pointer":"default",fontFamily:"var(--font)",opacity:can?1:0.4,animation:`cardIn 0.3s ease ${i*0.05}s both`}}><span style={{fontSize:36}}>{r.emoji}</span><span style={{fontFamily:"var(--font)",fontSize:14,fontWeight:700,marginTop:4}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3",fontWeight:600}}>{r.desc}</span><span style={{marginTop:6,padding:"5px 14px",borderRadius:12,fontSize:12,fontWeight:800,background:can?"linear-gradient(135deg,#00D2A0,#00B894)":"#D4D5D9",boxShadow:can?"0 3px 10px rgba(0,210,160,0.2)":"none",color:can?"#fff":"#999"}}>💰 {r.cost}</span></button>;})}</div>{(prof?.rewards||[]).length>0&&<div style={{padding:"0 16px 20px"}}><h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:700,marginBottom:8}}>🏆 Your Rewards</h3>{(prof?.rewards||[]).slice(-6).reverse().map((r,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"linear-gradient(145deg,#fff,#F8FAFF)",borderRadius:18,border:"none",marginBottom:8,boxShadow:"var(--shadow-card)"}}><span style={{fontSize:24}}>{r.emoji}</span><span style={{fontWeight:800,fontSize:13,flex:1}}>{r.name}</span><span style={{fontSize:10,color:"#8E8CA3"}}>{new Date(r.at).toLocaleDateString()}</span></div>)}</div>}<div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SETTINGS ═══
-  if(scr==="settings")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:20,border:"2px solid #E8EAF6",borderBottom:"4px solid #D1C4E9"}}><div style={{width:80,height:80,borderRadius:20,background:"#EDE7F6",margin:"0 auto 8px",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid #D1C4E9"}}><span style={{fontSize:48}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span></div><h2 style={{fontFamily:"var(--font)",fontSize:24,fontWeight:900,margin:"6px 0 2px",color:"var(--dark)"}}>{prof?.name}</h2><p style={{color:"var(--gray)",fontSize:13,fontWeight:800}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"var(--orange)",bg:"#FFF3E0",bc:"#FFE0B2"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"var(--red)",bg:"#FFEBEE",bc:"#FFCDD2"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"var(--cyan)",bg:"#E0F7FA",bc:"#B2EBF2"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"var(--yellow-dark)",bg:"#FFF8E1",bc:"#FFE082"}].map((s,i)=><div key={i} style={{background:s.bg,borderRadius:16,padding:18,textAlign:"center",border:`2px solid ${s.bc}`,borderBottom:`3px solid ${s.bc}`}}><span style={{fontFamily:"var(--font)",fontSize:28,fontWeight:900,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:800,color:"var(--gray)"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:14,border:"2px solid #E8EAF6",borderBottom:"3px solid #D1C4E9",background:"#fff",color:"var(--primary)",fontSize:14,fontWeight:900,fontFamily:"var(--font)",cursor:"pointer",marginTop:14}}>Change Profile</button>
+  if(scr==="settings")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,boxShadow:"var(--shadow-card)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"var(--font)",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#8E8CA3",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#FF8C42"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"linear-gradient(145deg,#fff,#F8FAFF)",borderRadius:22,padding:18,textAlign:"center",border:"none",boxShadow:"var(--shadow-card)"}}><span style={{fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#fff",color:"#6C5CE7",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button>
 {/* Voice Settings */}
 <div style={{marginTop:16,padding:16,background:"#fff",borderRadius:20,border:"none"}}>
-<div style={{fontSize:13,fontWeight:800,color:"var(--primary)",marginBottom:8}}>🔊 Voice Settings</div>
-<p style={{fontSize:11,color:"var(--gray)",fontWeight:700,marginBottom:10}}>{ttsKey?"Using Google Cloud voice (same sweet voice on all devices!)":"Using your device's built-in voice. Add a Google Cloud API key for a consistent sweet voice everywhere."}</p>
-<input value={ttsKey} onChange={e=>saveTtsKey(e.target.value.trim())} placeholder="Paste Google Cloud API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E0D8",borderRadius:12,fontSize:12,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
+<div style={{fontSize:13,fontWeight:800,color:"#6C5CE7",marginBottom:8}}>🔊 Voice Settings</div>
+<p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{ttsKey?"Using Google Cloud voice (same sweet voice on all devices!)":"Using your device's built-in voice. Add a Google Cloud API key for a consistent sweet voice everywhere."}</p>
+<input value={ttsKey} onChange={e=>saveTtsKey(e.target.value.trim())} placeholder="Paste Google Cloud API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E0D8",borderRadius:12,fontSize:12,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
 <div style={{display:"flex",gap:8,marginTop:8}}>
 <button onClick={()=>{speak("Hi! I'm Ollie! This is how I sound!",{rate:0.92,pitch:1.05});}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:ttsKey?"linear-gradient(135deg,#FF8C42,#FFB066)":"#E8E8E8",color:ttsKey?"#fff":"#666",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Test Voice</button>
 {ttsKey&&<button onClick={()=>saveTtsKey("")} style={{padding:"10px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#fff",color:"#E23744",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Remove</button>}
 </div>
-{ttsKey&&<p style={{fontSize:10,color:"var(--green)",fontWeight:800,marginTop:6}}>✅ Cloud voice active</p>}
+{ttsKey&&<p style={{fontSize:10,color:"#22C55E",fontWeight:700,marginTop:6}}>✅ Cloud voice active</p>}
 </div>
 <button onClick={()=>{if(window.confirm("Are you sure? This will delete all your progress and points!")){save(null);setScr("onboard");setObSt(0);}}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FEE2E2",color:"#DC2626",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:8}}>🗑️ Reset</button></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
@@ -5603,47 +5562,32 @@ const CSS=`
 :root{
   --bg:#F7F5FF;--bg2:#EEEAFF;--card:#FFFFFF;--card2:#FAFAFF;
   --primary:#7C4DFF;--primary-light:#B388FF;--primary-dark:#651FFF;
-  --primary-bottom:#5E35B1;
-  --orange:#FF8A50;--orange-light:#FFB74D;--orange-dark:#E65100;--orange-bottom:#BF360C;
-  --green:#4CAF50;--green-light:#81C784;--green-dark:#2E7D32;--green-bottom:#1B5E20;
-  --red:#EF5350;--red-light:#E57373;--red-dark:#C62828;--red-bottom:#B71C1C;
-  --blue:#42A5F5;--blue-light:#64B5F6;--blue-dark:#1565C0;--blue-bottom:#0D47A1;
-  --pink:#EC407A;--pink-light:#F48FB1;--pink-dark:#AD1457;--pink-bottom:#880E4F;
-  --cyan:#26C6DA;--cyan-light:#4DD0E1;--cyan-dark:#00838F;--cyan-bottom:#006064;
-  --yellow:#FFCA28;--yellow-dark:#FFA000;--yellow-bottom:#FF6F00;
+  --orange:#FF8A50;--orange-light:#FFB74D;--orange-dark:#E65100;
+  --green:#4CAF50;--green-light:#81C784;--green-dark:#2E7D32;
+  --red:#EF5350;--red-light:#E57373;--red-dark:#C62828;
+  --blue:#42A5F5;--blue-light:#64B5F6;--blue-dark:#1565C0;
+  --pink:#EC407A;--pink-light:#F48FB1;--pink-dark:#AD1457;
+  --cyan:#26C6DA;--cyan-light:#4DD0E1;--cyan-dark:#00838F;
+  --yellow:#FFCA28;--yellow-dark:#FFA000;
   --dark:#1A1A2E;--gray:#78909C;--muted:#B0BEC5;--light:#E8EAF6;
   --radius:16px;--radius-lg:24px;--radius-xl:32px;
   --shadow-card:0 2px 0 rgba(0,0,0,0.06),0 1px 3px rgba(0,0,0,0.05);
-  --shadow-btn:0 4px 0 var(--primary-bottom),0 2px 8px rgba(0,0,0,0.08);
+  --shadow-btn:0 4px 0 #5E35B1;
   --shadow-float:0 8px 24px rgba(0,0,0,0.12),0 2px 4px rgba(0,0,0,0.04);
   --shadow-glow:0 0 24px rgba(124,77,255,0.2);
   --font:'Nunito','Fredoka',system-ui,-apple-system,sans-serif;
-  --border-thick:4px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
 html,body{background:var(--bg);overflow-x:hidden;color:var(--dark);font-family:var(--font);-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;}
 *{-webkit-overflow-scrolling:touch;}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:var(--primary-light);border-radius:4px;}::-webkit-scrollbar-track{background:transparent;}
-button{font-family:var(--font);touch-action:manipulation;-webkit-touch-callout:none;transition:transform 0.1s ease,box-shadow 0.1s ease;-webkit-appearance:none;}
+button{font-family:var(--font);touch-action:manipulation;-webkit-touch-callout:none;transition:transform 0.1s ease;-webkit-appearance:none;}
 button:active{transform:translateY(2px);}
-
-/* ═══ 3D BUTTON SYSTEM (Duolingo-inspired) ═══ */
-.btn3d{position:relative;border:none;border-radius:16px;font-family:var(--font);font-weight:800;cursor:pointer;transition:transform 0.1s ease,box-shadow 0.1s ease;border-bottom:4px solid rgba(0,0,0,0.15);}
-.btn3d:active{transform:translateY(3px);border-bottom-width:1px;}
-.btn3d-primary{background:var(--primary);color:#fff;border-bottom-color:var(--primary-bottom);}
-.btn3d-primary:active{border-bottom-color:var(--primary-dark);}
-.btn3d-green{background:var(--green);color:#fff;border-bottom-color:var(--green-bottom);}
-.btn3d-orange{background:var(--orange);color:#fff;border-bottom-color:var(--orange-bottom);}
-.btn3d-blue{background:var(--blue);color:#fff;border-bottom-color:var(--blue-bottom);}
-
-/* ═══ CARD SYSTEM ═══ */
-.card-raised{background:#fff;border-radius:16px;border:2px solid #E8EAF6;border-bottom:4px solid #D1C4E9;transition:transform 0.15s ease,border-bottom-width 0.1s ease;}
-.card-raised:active{transform:translateY(2px);border-bottom-width:2px;}
 
 /* ═══ REACTIVE HOVER SYSTEM ═══ */
 @media(hover:hover){
-  [data-r]{transition:transform 0.15s ease,box-shadow 0.15s ease,border-bottom-width 0.1s ease;cursor:pointer;}
+  [data-r]{transition:transform 0.15s ease;cursor:pointer;}
   [data-r]:hover{transform:translateY(-2px);z-index:2;}
   [data-r]:active{transform:translateY(2px);}
 }
@@ -5651,9 +5595,9 @@ button:active{transform:translateY(2px);}
   [data-r]{cursor:pointer;-webkit-tap-highlight-color:transparent;}
   [data-r]:active{transform:translateY(2px);opacity:0.95;}
 }
+@keyframes continuePulse{0%,100%{box-shadow:0 0 0 0 rgba(76,175,80,0.25)}50%{box-shadow:0 0 0 8px rgba(76,175,80,0)}}
 
 /* ═══ CORE ANIMATIONS ═══ */
-@keyframes splashFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-15px) scale(1.02)}}
 @keyframes emojiPop{0%{transform:scale(1) rotate(0)}25%{transform:scale(1.2) rotate(-8deg)}50%{transform:scale(1.15) rotate(6deg)}75%{transform:scale(1.18) rotate(-4deg)}100%{transform:scale(1) rotate(0)}}
 @keyframes tapPop{0%{transform:scale(1)}40%{transform:scale(0.92)}100%{transform:scale(1)}}
 @keyframes popIn{0%{transform:scale(0) rotate(-5deg);opacity:0}60%{transform:scale(1.08) rotate(1deg);opacity:1}100%{transform:scale(1) rotate(0)}}
