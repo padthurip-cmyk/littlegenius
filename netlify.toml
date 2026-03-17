@@ -4,3 +4,41 @@
 
 [build.environment]
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
+  NODE_VERSION = "20"
+
+# ═══ CRITICAL: Cross-Origin Isolation for SharedArrayBuffer ═══
+# ONNX Runtime WASM threading needs SharedArrayBuffer
+# SharedArrayBuffer requires COEP + COOP headers
+# Without these: Whisper AI runs single-threaded (3-4x slower on phones)
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cross-Origin-Embedder-Policy = "credentialless"
+    Cross-Origin-Opener-Policy = "same-origin"
+    X-Content-Type-Options = "nosniff"
+    Permissions-Policy = "microphone=(self)"
+
+# ═══ WASM files — correct MIME type + immutable cache ═══
+[[headers]]
+  for = "*.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ═══ JS/CSS hashed assets — immutable cache ═══
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# ═══ Main page — always revalidate ═══
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# ═══ SPA routing ═══
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
