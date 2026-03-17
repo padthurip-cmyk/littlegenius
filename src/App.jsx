@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 
 // ═══ FIREBASE CONFIG — Set your project URL here (one-time developer setup) ═══
@@ -1643,6 +1643,7 @@ const useRec=()=>{
   const[err,setErr]=useState("");
   const[countdown,setCountdown]=useState(0);
   const[vol,setVol]=useState(0);
+  const[phase,setPhase]=useState("idle"); // idle | listening | processing | done
   const supported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
   const cbRef=useRef(null);
   const recRef=useRef(null);
@@ -1651,6 +1652,11 @@ const useRec=()=>{
   const bestRef=useRef("");
   const altsRef=useRef([]);
   const deliveredRef=useRef(false);
+  const hasFinalRef=useRef(false);
+  const maxTimerRef=useRef(null);
+  const expectedRef=useRef("");
+  const speechDetectedRef=useRef(false);
+  const restartCountRef=useRef(0);
 
   // Beep using AudioContext — works on all devices, no files needed
   const beep=useCallback((freq=880,dur=150,type="sine")=>{
@@ -1668,6 +1674,34 @@ const useRec=()=>{
     }catch(e){}
   },[]);
 
+  // Deliver result to callback — GUARANTEED to fire exactly once per start()
+  const deliver=useCallback((forceEmpty=false)=>{
+    if(deliveredRef.current)return;
+    deliveredRef.current=true;
+    clearInterval(cdRef.current);
+    clearTimeout(maxTimerRef.current);
+    try{recRef.current?.stop();}catch(e){}
+    setVol(0);
+    const result=bestRef.current;
+    const alts=altsRef.current;
+    if(result){
+      beep(800,100,"sine");
+      setTxt(result);
+      setPhase("done");
+      setOn(false);setCountdown(0);
+      setTimeout(()=>cbRef.current?.(result,alts),150);
+    } else {
+      // NO speech detected — deliver empty so parent can handle it
+      beep(400,200,"triangle");
+      setPhase("done");
+      setOn(false);setCountdown(0);
+      setTxt("");
+      setErr(forceEmpty?"":"No speech heard — tap mic to try again");
+      // Call callback with empty string so parent step state transitions properly
+      setTimeout(()=>cbRef.current?.("",alts),150);
+    }
+  },[beep]);
+
   const warmUp=useCallback(()=>{
     if(permRef.current)return;
     if(navigator.mediaDevices?.getUserMedia){
@@ -1677,109 +1711,180 @@ const useRec=()=>{
     }
   },[]);
 
-  const start=useCallback(async(cb)=>{
+  const start=useCallback(async(cb,expected)=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){setErr("Not supported");return;}
+    if(!SR){setErr("Speech recognition not supported in this browser");return;}
 
+    // Clean up any previous session completely
     try{recRef.current?.abort();}catch(e){}
     clearInterval(cdRef.current);
+    clearTimeout(maxTimerRef.current);
     try{speechSynthesis.cancel();}catch(e){}
 
-    cbRef.current=cb;bestRef.current="";altsRef.current=[];
+    // Reset all state
+    cbRef.current=cb;
+    expectedRef.current=(expected||"").toLowerCase().trim();
+    bestRef.current="";altsRef.current=[];
     deliveredRef.current=false;
-    setTxt("");setErr("");setVol(0);
+    hasFinalRef.current=false;
+    speechDetectedRef.current=false;
+    restartCountRef.current=0;
+    setTxt("");setErr("");setVol(0);setPhase("idle");
 
-    // Wait for TTS to fully stop
+    // Wait for any lingering TTS to fully stop
     await new Promise(r=>{
-      const ck=()=>{if(!speechSynthesis.speaking&&!speechSynthesis.pending)r();else setTimeout(ck,100);};ck();
+      const ck=()=>{if(!speechSynthesis.speaking&&!speechSynthesis.pending)r();else setTimeout(ck,50);};
+      ck();
     });
-    await new Promise(r=>setTimeout(r,200));
+    await new Promise(r=>setTimeout(r,150));
 
     // START BEEP — high pitch, short
     beep(1200,120,"sine");
+    await new Promise(r=>setTimeout(r,200));
 
-    // Give beep 200ms to play, then start recognition
-    await new Promise(r=>setTimeout(r,250));
+    const LISTEN_SECONDS=6; // 6 seconds for kids to respond — generous window
 
-    const r=new SR();
-    // KEY: continuous=true keeps connection to Google open — critical for short words
-    r.continuous=true;
-    r.interimResults=true;
-    r.lang="en-US";
-    r.maxAlternatives=5;
-    recRef.current=r;
+    const createRecognizer=()=>{
+      const r=new SR();
+      r.continuous=false; // Single utterance mode — stops after speech ends
+      r.interimResults=true;
+      r.lang="en-US";
+      r.maxAlternatives=5;
 
-    r.onresult=(e)=>{
-      let final="",interim="";const newAlts=[];
-      for(let i=0;i<e.results.length;i++){
-        for(let a=0;a<e.results[i].length;a++){
-          const t=e.results[i][a].transcript.toLowerCase().trim();
-          if(t&&!newAlts.includes(t))newAlts.push(t);
+      r.onresult=(e)=>{
+        let final="",interim="";const newAlts=[];
+        for(let i=0;i<e.results.length;i++){
+          for(let a=0;a<e.results[i].length;a++){
+            const t=e.results[i][a].transcript.toLowerCase().trim();
+            if(t&&!newAlts.includes(t))newAlts.push(t);
+          }
+          if(e.results[i].isFinal){
+            final+=e.results[i][0].transcript;
+            hasFinalRef.current=true;
+          }
+          else interim+=e.results[i][0].transcript;
         }
-        if(e.results[i].isFinal)final+=e.results[i][0].transcript;
-        else interim+=e.results[i][0].transcript;
-      }
-      const current=(final||interim).toLowerCase().trim();
-      if(current){bestRef.current=current;altsRef.current=newAlts;setTxt(current);}
+        const current=(final||interim).toLowerCase().trim();
+        if(current){
+          bestRef.current=current;
+          altsRef.current=[...new Set([...altsRef.current,...newAlts])];
+          setTxt(current);
+          speechDetectedRef.current=true;
+        }
+        // If we got a FINAL result, deliver immediately — no waiting
+        if(hasFinalRef.current&&bestRef.current){
+          deliver();
+        }
+      };
+
+      // Volume indicators based on speech events
+      r.onspeechstart=()=>{setVol(0.7);speechDetectedRef.current=true;};
+      r.onspeechend=()=>{setVol(0.15);};
+      r.onaudiostart=()=>{setVol(0.25);};
+      r.onaudioend=()=>{setVol(0);};
+
+      r.onend=()=>{
+        // Recognition ended — could be silence timeout, network issue, or normal end
+        if(deliveredRef.current)return; // Already delivered, ignore
+
+        // If we have a result but hasFinal didn't trigger (edge case), deliver it
+        if(bestRef.current){
+          deliver();
+          return;
+        }
+
+        // No result yet — try restarting if we still have time
+        // (SpeechRecognition with continuous=false auto-stops on silence)
+        if(restartCountRef.current<2&&!deliveredRef.current){
+          restartCountRef.current++;
+          try{
+            const r2=createRecognizer();
+            recRef.current=r2;
+            r2.start();
+          }catch(e){
+            deliver(); // Can't restart — deliver whatever we have
+          }
+        }
+        // Max restarts reached — the hard timeout will handle final delivery
+      };
+
+      r.onerror=(e)=>{
+        if(deliveredRef.current)return;
+        if(e.error==="not-allowed"||e.error==="service-not-allowed"){
+          clearInterval(cdRef.current);clearTimeout(maxTimerRef.current);
+          setErr("Microphone access blocked — please allow mic access in your browser settings");
+          setOn(false);setCountdown(0);setPhase("idle");
+          deliveredRef.current=true; // Prevent further delivery
+          return;
+        }
+        if(e.error==="no-speech"){
+          // Silence detected — onend will handle restart or timeout will deliver
+          return;
+        }
+        if(e.error==="network"){
+          setErr("Network error — check your internet connection");
+          deliver();
+          return;
+        }
+        // aborted, audio-capture errors — let onend or timeout handle
+      };
+
+      return r;
     };
 
-    // Fake volume based on whether speech events fire
-    r.onspeechstart=()=>{setVol(0.6);};
-    r.onspeechend=()=>{setVol(0.1);};
-    r.onaudiostart=()=>{setVol(0.2);};
-
-    r.onend=()=>{/* let countdown timer handle everything */};
-    r.onerror=(e)=>{
-      if(e.error==="not-allowed"){
-        setErr("Mic blocked");setOn(false);setCountdown(0);clearInterval(cdRef.current);
-      }
-    };
-
-    try{r.start();}catch(e){
-      // Request mic permission
+    // Request mic permission proactively if not yet granted
+    if(!permRef.current){
       try{
         const s=await navigator.mediaDevices.getUserMedia({audio:true});
-        s.getTracks().forEach(t=>t.stop());permRef.current=true;
-        r.start();
+        s.getTracks().forEach(t=>t.stop());
+        permRef.current=true;
       }catch(e2){
-        setErr("Mic denied");setOn(false);setCountdown(0);return;
+        setErr("Microphone denied — please allow access to use speech");
+        setOn(false);setCountdown(0);setPhase("idle");
+        return;
       }
     }
 
-    setOn(true);setCountdown(3);
+    const r=createRecognizer();
+    recRef.current=r;
 
-    // Countdown 3..2..1
-    let sec=3;
+    try{r.start();}catch(e){
+      setErr("Could not start listening — please try again");
+      setOn(false);setCountdown(0);setPhase("idle");
+      return;
+    }
+
+    setOn(true);setCountdown(LISTEN_SECONDS);setPhase("listening");
+
+    // Visual countdown (cosmetic — does NOT control delivery)
+    let sec=LISTEN_SECONDS;
     cdRef.current=setInterval(()=>{
-      sec--;setCountdown(Math.max(0,sec));
+      sec--;
+      setCountdown(Math.max(0,sec));
       if(sec<=0){
         clearInterval(cdRef.current);
-        // STOP BEEP — lower pitch
-        beep(600,180,"sine");
-        // Call stop() — NOT abort(). stop() tells Google: "done talking, give me results"
-        try{r.stop();}catch(e){}
-        setVol(0);
-        setTxt(bestRef.current||"Processing...");
-
-        // WAIT 2.5 seconds for Google to send results back over network
-        setTimeout(()=>{
-          setOn(false);setCountdown(0);
-          if(!deliveredRef.current&&bestRef.current){
-            deliveredRef.current=true;
-            cbRef.current?.(bestRef.current,altsRef.current);
-          } else if(!deliveredRef.current){
-            setTxt("");setErr("");
-            // Silent reset — user taps again
-          }
-        },2500);
+        setPhase("processing");
       }
     },1000);
-  },[beep]);
+
+    // HARD TIMEOUT — absolute max wait, then deliver whatever we have
+    maxTimerRef.current=setTimeout(()=>{
+      if(!deliveredRef.current){
+        setPhase("processing");
+        // Give one final moment for any pending results
+        setTimeout(()=>{
+          if(!deliveredRef.current) deliver();
+        },1500);
+      }
+    },LISTEN_SECONDS*1000);
+
+  },[beep,deliver]);
 
   const stop=useCallback(()=>{
     clearInterval(cdRef.current);
-    try{recRef.current?.stop();}catch(e){}
-    setOn(false);setCountdown(0);setVol(0);
+    clearTimeout(maxTimerRef.current);
+    try{recRef.current?.abort();}catch(e){}
+    setOn(false);setCountdown(0);setVol(0);setPhase("idle");
   },[]);
 
   const quickListen=useCallback((ms=5000)=>{
@@ -1797,7 +1902,7 @@ const useRec=()=>{
     });
   },[]);
 
-  return{start,stop,warmUp,quickListen,on,txt,err,countdown,vol,supported};
+  return{start,stop,warmUp,quickListen,on,txt,err,countdown,vol,phase,supported};
 };
 
 const useStore=()=>{const[d,setD]=useState(null);const[ok,setOk]=useState(false);useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4");if(r?.value)setD(JSON.parse(r.value));}catch(e){}setOk(true);})();},[]);const save=useCallback(async(nd)=>{setD(nd);try{await window.storage.set("lg4",JSON.stringify(nd));}catch(e){}},[]);return{data:d,save,loaded:ok};};
@@ -2058,58 +2163,76 @@ const SoundWave=()=><div style={{display:"flex",justifyContent:"center",gap:3,ma
 const ProgressRing=({pct,size=70,color="#22C55E"})=>{const r=(size-10)/2;const c=2*Math.PI*r;return<svg width={size} height={size} style={{transform:"rotate(-90deg)"}}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={10}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={10} strokeDasharray={c} strokeDashoffset={c-((pct||0)/100)*c} strokeLinecap="round" style={{transition:"stroke-dashoffset 1s ease-out"}}/></svg>;};
 const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",position:"sticky",top:0,zIndex:50,borderRadius:"0 0 16px 16px",boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}><button onClick={()=>{sfxTap();onBack();}} style={{padding:"8px 14px",borderRadius:14,border:"none",background:"rgba(255,255,255,0.2)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",color:"#fff",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Back</button><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{title}</span><div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:16,background:"rgba(255,255,255,0.2)",fontSize:13,fontWeight:800,color:"#FECA57",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}><span>⭐</span>{points||0}</div></div>;
 const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:800,fontFamily:"var(--font)",background:act?"linear-gradient(135deg,#FF8C42,#FF8C42)":done?"#22C55E":"#e5e7eb",color:(act||done)?"#fff":"#aaa",transform:act?"scale(1.08)":"scale(1)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
-const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,countdown,vol})=>{
+const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,countdown,vol,phase})=>{
   const[typed,setTyped]=useState("");
-  const recording=isListening&&countdown>0;
-  const waiting=isListening&&countdown===0; // waiting for Google
-  return <div data-owl="mic-area" style={{textAlign:"center",padding:14,background:"#fff",borderRadius:20,border:"2px solid #E8EAF6"}}>
-    {/* What to say */}
-    <div style={{padding:"8px 14px",background:"#FFF8E1",borderRadius:12,border:"2px solid #FFE082",marginBottom:12}}>
-      <div style={{fontSize:9,fontWeight:800,color:"#78909C",textTransform:"uppercase",letterSpacing:1.5}}>Say this word:</div>
-      <div style={{fontSize:26,fontWeight:900,color:"#1A1A2E",marginTop:2,letterSpacing:2}}>"{expected?.toUpperCase()}"</div>
+  const active=isListening&&phase==="listening";
+  const processing=phase==="processing";
+  const idle=!isListening&&phase!=="processing";
+  // Animated volume bars with requestAnimationFrame feel
+  const volBars=useMemo(()=>Array.from({length:14},(_,i)=>({id:i,offset:i*0.07})),[]);
+  return <div data-owl="mic-area" style={{textAlign:"center",padding:16,background:"#fff",borderRadius:22,border:"2.5px solid #E8EAF6",animation:"slideUp 0.3s ease-out"}}>
+    {/* Target word — large, clear, always visible */}
+    <div style={{padding:"10px 16px",background:"linear-gradient(135deg,#FFF8E1,#FFFDE7)",borderRadius:14,border:"2.5px solid #FFE082",marginBottom:14,position:"relative",overflow:"hidden"}}>
+      <div style={{fontSize:9,fontWeight:800,color:"#78909C",textTransform:"uppercase",letterSpacing:2}}>Say this word:</div>
+      <div style={{fontSize:28,fontWeight:900,color:"#1A1A2E",marginTop:4,letterSpacing:3,fontFamily:"var(--font)"}}>{expected?.toUpperCase()}</div>
+      {active&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:"linear-gradient(90deg,#4CAF50,#81C784,#4CAF50)",backgroundSize:"200% 100%",animation:"micShimmer 1.5s ease-in-out infinite"}}/>}
     </div>
-    {/* Big tap button */}
-    <button onClick={()=>{if(!recording&&!waiting)onTapMic();}} disabled={recording||waiting} style={{
-      width:90,height:90,borderRadius:"50%",border:"none",cursor:recording||waiting?"default":"pointer",margin:"0 auto",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-      background:recording?"#EF4444":waiting?"#FF8A50":"#4CAF50",
-      borderBottom:recording?"6px solid #B71C1C":waiting?"6px solid #E65100":"6px solid #2E7D32",
-      boxShadow:recording?"0 0 0 "+(8+Math.round((vol||0)*12))+"px rgba(239,68,68,"+(0.1+(vol||0)*0.2)+")":"0 4px 16px rgba(76,175,80,0.25)",
-      transition:"box-shadow 0.1s ease"
+    {/* Mic button — three states: idle (green), active (pulsing red), processing (orange) */}
+    <button onClick={()=>{if(idle&&!processing)onTapMic();}} disabled={active||processing} style={{
+      width:100,height:100,borderRadius:"50%",border:"none",cursor:(active||processing)?"default":"pointer",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+      background:active?"linear-gradient(135deg,#EF4444,#DC2626)":processing?"linear-gradient(135deg,#FF8A50,#F57C00)":"linear-gradient(135deg,#4CAF50,#388E3C)",
+      borderBottom:active?"6px solid #B71C1C":processing?"6px solid #E65100":"6px solid #2E7D32",
+      boxShadow:active?`0 0 0 ${8+Math.round((vol||0)*16)}px rgba(239,68,68,${0.15+(vol||0)*0.25}), 0 0 ${20+(vol||0)*30}px rgba(239,68,68,0.2)`
+        :processing?"0 0 20px rgba(255,138,80,0.3)"
+        :"0 4px 20px rgba(76,175,80,0.3), 0 0 0 0px rgba(76,175,80,0)",
+      transition:"box-shadow 0.12s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+      transform:idle&&!processing?"scale(1)":"scale(0.96)",
+      animation:active?"micPulse 2s ease-in-out infinite":idle&&!processing?"micBreathe 3s ease-in-out infinite":"none"
     }}>
-      {recording?<>
-        <span style={{fontSize:32,fontWeight:900,color:"#fff",lineHeight:1}}>{countdown}</span>
-        <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.8)"}}>SPEAK!</span>
-      </>:waiting?<>
-        <span style={{fontSize:18,color:"#fff"}}>⏳</span>
-        <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.8)"}}>ANALYZING</span>
+      {active?<>
+        <span style={{fontSize:36,fontWeight:900,color:"#fff",lineHeight:1,textShadow:"0 2px 8px rgba(0,0,0,0.2)"}}>{countdown||"🎤"}</span>
+        <span style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,0.9)",marginTop:2,letterSpacing:1}}>LISTENING...</span>
+      </>:processing?<>
+        <span style={{fontSize:28,color:"#fff",animation:"spinSlow 1.2s linear infinite"}}>⏳</span>
+        <span style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,0.9)",marginTop:2}}>ANALYZING</span>
       </>:<>
-        <span style={{fontSize:36}}>🎤</span>
-        <span style={{fontSize:9,fontWeight:900,color:"#fff"}}>TAP</span>
+        <span style={{fontSize:42}}>🎤</span>
+        <span style={{fontSize:10,fontWeight:900,color:"#fff",letterSpacing:1}}>TAP TO SPEAK</span>
       </>}
     </button>
-    {/* VOLUME BARS — proof your voice is heard */}
-    {recording&&<div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:30,margin:"10px 0 4px"}}>
-      {Array.from({length:12}).map((_,i)=>{
-        const h=Math.max(3,Math.min(26,((vol||0)*30)+Math.random()*2));
-        return<div key={i} style={{width:5,height:h,borderRadius:3,background:(vol||0)>0.1?"#4CAF50":"#E0E0E0",transition:"height 0.08s ease"}}/>;
+    {/* Live volume visualization — shows real-time audio feedback */}
+    {active&&<div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:34,margin:"8px 0 4px"}}>
+      {volBars.map((bar)=>{
+        const v=vol||0;
+        const h=Math.max(4,Math.min(30,v*38+Math.sin(Date.now()*0.005+bar.offset*10)*3));
+        return<div key={bar.id} style={{width:5,height:h,borderRadius:3,background:v>0.15?"linear-gradient(180deg,#66BB6A,#4CAF50)":v>0.05?"#FFB74D":"#E0E0E0",transition:"height 0.1s ease, background 0.2s ease"}}/>;
       })}
     </div>}
-    {recording&&(vol||0)>0.1&&<p style={{fontSize:11,fontWeight:800,color:"#4CAF50",margin:"0 0 4px"}}>✅ Voice detected!</p>}
-    {recording&&(vol||0)<=0.1&&<p style={{fontSize:11,fontWeight:800,color:"#EF5350",margin:"0 0 4px"}}>🔇 Speak louder!</p>}
-    {/* Status */}
-    {!recording&&!waiting&&!transcript&&!error&&<p style={{fontSize:12,fontWeight:700,color:"#78909C",margin:"10px 0 4px"}}>Tap 🎤, then say "{expected}"</p>}
-    {waiting&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"10px 0 4px"}}>Processing...</p>}
-    {transcript&&!recording&&!waiting&&<div style={{padding:"8px 14px",background:"#E8F5E9",borderRadius:10,border:"2px solid #C8E6C9",margin:"10px 0 4px"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Heard: "{transcript}"</span></div>}
-    {error&&!recording&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,margin:"10px 0 4px"}}><span style={{fontSize:11,fontWeight:700,color:"#E65100"}}>{error}</span></div>}
-    {!recording&&!waiting&&!transcript&&<p style={{fontSize:10,fontWeight:600,color:"#B0BEC5",margin:"0 0 6px"}}>Didn't work? Tap 🎤 again</p>}
-    {/* Type fallback */}
-    <div style={{display:"flex",gap:6,marginTop:6}}>
-      <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type here..."
-        style={{flex:1,padding:"8px 10px",borderRadius:10,border:"2px solid #E8EAF6",fontSize:13,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
+    {/* Live status messages */}
+    {active&&(vol||0)>0.15&&<p style={{fontSize:12,fontWeight:800,color:"#4CAF50",margin:"0 0 4px",animation:"fadeIn 0.2s ease-out"}}>✅ I can hear you! Keep going!</p>}
+    {active&&(vol||0)>0&&(vol||0)<=0.15&&<p style={{fontSize:12,fontWeight:800,color:"#FFB74D",margin:"0 0 4px"}}>🎙️ Speak up a little!</p>}
+    {active&&(vol||0)===0&&countdown>4&&<p style={{fontSize:12,fontWeight:800,color:"#90A4AE",margin:"0 0 4px"}}>👂 Listening... say "{expected}" clearly</p>}
+    {active&&(vol||0)===0&&countdown<=4&&countdown>0&&<p style={{fontSize:12,fontWeight:800,color:"#EF5350",margin:"0 0 4px"}}>🗣️ Speak now!</p>}
+    {/* Live transcript preview */}
+    {active&&transcript&&<div style={{padding:"6px 12px",background:"#E8F5E9",borderRadius:10,border:"2px solid #A5D6A7",margin:"6px 0",animation:"fadeIn 0.2s ease-out"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Hearing: "{transcript}"</span></div>}
+    {/* Processing state */}
+    {processing&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px",animation:"fadeIn 0.3s ease-out"}}>🧠 Checking what you said...</p>}
+    {processing&&transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
+    {/* Idle state */}
+    {idle&&!error&&!transcript&&<p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>Tap the microphone, then say <strong>"{expected}"</strong></p>}
+    {/* Error display */}
+    {error&&idle&&<div style={{padding:"8px 14px",background:"#FFF3E0",borderRadius:12,margin:"8px 0 4px",border:"2px solid #FFE0B2"}}><span style={{fontSize:12,fontWeight:700,color:"#E65100"}}>{error}</span><br/><span style={{fontSize:11,fontWeight:600,color:"#BF360C"}}>Tap 🎤 to try again!</span></div>}
+    {/* Heard result in idle (shouldn't normally show because result handler fires fast) */}
+    {transcript&&idle&&!error&&<div style={{padding:"8px 14px",background:"#E8F5E9",borderRadius:10,border:"2px solid #C8E6C9",margin:"8px 0 4px"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Heard: "{transcript}"</span></div>}
+    {idle&&!error&&<p style={{fontSize:10,fontWeight:600,color:"#B0BEC5",margin:"0 0 6px"}}>Didn't work? Tap 🎤 again</p>}
+    {/* Type fallback — always available */}
+    <div style={{display:"flex",gap:6,marginTop:8}}>
+      <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type the word here..."
+        style={{flex:1,padding:"9px 12px",borderRadius:12,border:"2px solid #E8EAF6",fontSize:13,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
         onKeyDown={e=>{if(e.key==="Enter"&&typed.trim())onType(typed.trim().toLowerCase());}}
       />
       <button onClick={()=>{if(typed.trim())onType(typed.trim().toLowerCase());}}
-        style={{padding:"8px 14px",borderRadius:10,background:"#42A5F5",color:"#fff",border:"none",borderBottom:"3px solid #1565C0",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)"}}>Go</button>
+        style={{padding:"9px 16px",borderRadius:12,background:"linear-gradient(135deg,#42A5F5,#1E88E5)",color:"#fff",border:"none",borderBottom:"3px solid #1565C0",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)"}}>Go</button>
     </div>
   </div>;
 };
@@ -2888,6 +3011,12 @@ export default function App(){
   const kidName = prof?.name || "Buddy";
 
   const handleNumResult=(result,alternatives)=>{
+    // Guard: empty result means no speech detected — go back to listening
+    if(!result||!result.trim()){
+      setNStep("listening");
+      speak(`I didn't hear you ${kidName}. Tap the mic and try again!`,{rate:0.8,pitch:1.0});
+      return;
+    }
     const w=NW[selNum];
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(w,result,alternatives);setSpRes(normalized);setSpAcc(acc);setNStep("result");
@@ -2910,6 +3039,11 @@ export default function App(){
     },300);
   };
   const handlePhResult=(result,alternatives)=>{
+    if(!result||!result.trim()){
+      setPhStep("listening");
+      speak(`I didn't hear you ${kidName}. Tap the mic and try again!`,{rate:0.8,pitch:1.0});
+      return;
+    }
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(phW.word,result,alternatives);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
@@ -3179,6 +3313,11 @@ export default function App(){
 
   // ═══ SHAPE PLAY FLOW ═══
   const handleShResult=(result,alternatives)=>{
+    if(!result||!result.trim()){
+      setShStep("listening");
+      speak(`I didn't hear you ${kidName}. Tap the mic and try again!`,{rate:0.8,pitch:1.0});
+      return;
+    }
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selShape.name,result,alternatives);setShRes(normalized);setShAcc(acc);setShStep("result");
     const s=getStars(acc);const p=getStarPts(s);
@@ -3214,6 +3353,11 @@ export default function App(){
 
   // ═══ COLOR PLAY FLOW ═══
   const handleCoResult=(result,alternatives)=>{
+    if(!result||!result.trim()){
+      setCoStep("listening");
+      speak(`I didn't hear you ${kidName}. Tap the mic and try again!`,{rate:0.8,pitch:1.0});
+      return;
+    }
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selColor.name,result,alternatives);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
     const s=getStars(acc);const p=getStarPts(s);
@@ -4600,7 +4744,7 @@ export default function App(){
             </div>
           </div>
         )}
-        {nStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]}/>}
+        {nStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]} phase={rec.phase}/>}
         {nStep==="result"&&spRes!==null&&<ResultBox acc={spAcc} result={spRes} expected={w} onRetry={retryNum} onDone={()=>{setSpRes(null);const next=selNum>=(aCfg?.max||20)?1:selNum+1;setSelNum(next);setNStep("idle");setTimeout(()=>playNum(next),200);}} color={color} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5189,7 +5333,7 @@ export default function App(){
             </div>
           </div>
         )}
-        {phStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""}/>}
+        {phStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""} phase={rec.phase}/>}
         {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhRes(null);const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),200);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5235,7 +5379,7 @@ export default function App(){
         {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {shStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {shStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?shColor:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {shStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>rec.start(handleShResult,selShape?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
+        {shStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>rec.start(handleShResult,selShape?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name} phase={rec.phase}/>}
         {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShRes(null);const idx=SHAPES.findIndex(x=>x.name===sh.name);const next=SHAPES[(idx+1)%SHAPES.length];setSelShape(next);setShStep("idle");setTimeout(()=>playShape(next),200);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5263,7 +5407,7 @@ export default function App(){
         {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {coStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {coStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?co.hex:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {coStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>rec.start(handleCoResult,selColor?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
+        {coStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>rec.start(handleCoResult,selColor?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name} phase={rec.phase}/>}
         {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoRes(null);const idx=COLORSDATA.findIndex(x=>x.name===co.name);const next=COLORSDATA[(idx+1)%COLORSDATA.length];setSelColor(next);setCoStep("idle");setTimeout(()=>playColor(next),200);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5730,6 +5874,10 @@ button:active{transform:translateY(2px);}
 /* Animations */
 @keyframes fadeIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}} @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @keyframes splashPop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+@keyframes micPulse{0%,100%{transform:scale(0.96);box-shadow:0 0 0 8px rgba(239,68,68,0.15)}50%{transform:scale(1.02);box-shadow:0 0 0 16px rgba(239,68,68,0.08)}}
+@keyframes micBreathe{0%,100%{transform:scale(1);box-shadow:0 4px 20px rgba(76,175,80,0.3)}50%{transform:scale(1.04);box-shadow:0 4px 28px rgba(76,175,80,0.45)}}
+@keyframes micShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes spinSlow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 @keyframes mascotB{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
 @keyframes floatP{0%,100%{transform:translateY(0) translateX(0)}25%{transform:translateY(calc(-1*var(--dr,15px))) translateX(10px)}75%{transform:translateY(5px) translateX(-10px)}}
 @keyframes cFallPaper{
