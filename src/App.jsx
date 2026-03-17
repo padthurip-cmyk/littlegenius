@@ -2174,43 +2174,71 @@ const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"c
 const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:800,fontFamily:"var(--font)",background:act?"linear-gradient(135deg,#FF8C42,#FF8C42)":done?"#22C55E":"#e5e7eb",color:(act||done)?"#fff":"#aaa",transform:act?"scale(1.08)":"scale(1)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
 const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,volume})=>{
   const[typed,setTyped]=useState("");
-  const bars=8; // volume visualization bars
-  return <div data-owl="mic-area" style={{textAlign:"center",padding:12,background:"#fff",borderRadius:20,border:"2px solid #FF8C4211"}}>
-    <div style={{display:"flex",alignItems:"center",gap:12}}>
-      <button onClick={onTapMic} style={{
-        width:60,height:60,borderRadius:"50%",border:"none",cursor:"pointer",flexShrink:0,
-        background:isListening?"linear-gradient(135deg,#EF4444,#DC2626)":"linear-gradient(135deg,#FF8C42,#FF8C42)",
-        boxShadow:isListening?`0 0 0 ${4+((volume||0)*8)}px rgba(239,68,68,${0.08+((volume||0)*0.15)})`:"0 4px 12px rgba(99,102,241,0.2)",
-        animation:isListening?"micP 1.5s ease-in-out infinite":"none",
-        display:"flex",alignItems:"center",justifyContent:"center",
-        transform:isListening?`scale(${1+(volume||0)*0.12})`:"scale(1)",
-        transition:"transform 0.1s ease,box-shadow 0.15s ease"
-      }}>
-        <span style={{fontSize:30}}>🎤</span>
-      </button>
-      <div style={{flex:1,textAlign:"left"}}>
-        <p style={{fontSize:12,fontWeight:800,color:isListening?"#DC2626":error?"#D97706":"#FF8C42",margin:0}}>
-          {isListening?"🔴 Listening — speak now!":error||"Tap 🎤 to speak!"}
-        </p>
-        <p style={{fontSize:16,fontWeight:900,color:"#2D2B3D",margin:"2px 0 0",letterSpacing:1}}>Say: "{expected?.toUpperCase()}"</p>
-        {transcript&&<p style={{fontSize:11,fontWeight:700,color:"#22C55E",margin:"2px 0 0"}}>Heard: "{transcript}"</p>}
-      </div>
+  const[dbg,setDbg]=useState([]);
+  const addDbg=(m)=>setDbg(p=>[...p.slice(-4),{t:Date.now(),m}]);
+  // "I Said It" gives 75% credit — kid DID practice saying it, mic just didn't capture
+  const iSaidIt=()=>{onType(expected?.toLowerCase()||"");};
+  return <div data-owl="mic-area" style={{textAlign:"center",padding:14,background:"#fff",borderRadius:20,border:"2px solid #E8EAF6"}}>
+    {/* WHAT TO SAY — big and clear */}
+    <div style={{padding:"10px 16px",background:"#FFF8E1",borderRadius:14,border:"2px solid #FFE082",marginBottom:10}}>
+      <div style={{fontSize:10,fontWeight:800,color:"#78909C",textTransform:"uppercase",letterSpacing:1}}>Say this word out loud:</div>
+      <div style={{fontSize:28,fontWeight:900,color:"#1A1A2E",marginTop:4,letterSpacing:2}}>"{expected?.toUpperCase()}"</div>
     </div>
-    {/* LIVE VOLUME BARS — shows kid their voice is being captured */}
-    {isListening&&<div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:32,margin:"8px 0 4px"}}>
-      {Array.from({length:bars}).map((_,i)=>{
-        const h=Math.max(4,Math.min(28,((volume||0)*30)+Math.sin(Date.now()/200+i)*3));
-        return<div key={i} style={{width:6,height:h,borderRadius:3,background:`hsl(${120-(volume||0)*80},70%,50%)`,transition:"height 0.1s ease",opacity:0.6+((volume||0)*0.4)}}/>;
+
+    {/* THREE OPTIONS — all equal, kid picks what works */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+      {/* Option 1: I Said It (always works) */}
+      <button onClick={iSaidIt} style={{
+        padding:"14px 8px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"var(--font)",
+        background:"linear-gradient(135deg,#4CAF50,#66BB6A)",borderBottom:"4px solid #2E7D32",
+        display:"flex",flexDirection:"column",alignItems:"center",gap:4
+      }}>
+        <span style={{fontSize:24}}>✅</span>
+        <span style={{fontSize:13,fontWeight:900,color:"#fff"}}>I Said It!</span>
+        <span style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.8)"}}>Tap after speaking</span>
+      </button>
+
+      {/* Option 2: Use Mic (bonus — captures voice for accuracy) */}
+      <button onClick={onTapMic} style={{
+        padding:"14px 8px",borderRadius:14,border:"none",cursor:"pointer",fontFamily:"var(--font)",
+        background:isListening?"linear-gradient(135deg,#EF4444,#E53935)":"linear-gradient(135deg,#FF8A50,#FF7043)",
+        borderBottom:isListening?"4px solid #B71C1C":"4px solid #E65100",
+        display:"flex",flexDirection:"column",alignItems:"center",gap:4,
+        animation:isListening?"micP 1.5s ease-in-out infinite":"none"
+      }}>
+        <span style={{fontSize:24}}>🎤</span>
+        <span style={{fontSize:13,fontWeight:900,color:"#fff"}}>{isListening?"Listening...":"Use Mic"}</span>
+        <span style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.8)"}}>{isListening?"Speak now!":"Auto-score"}</span>
+      </button>
+    </div>
+
+    {/* Status messages */}
+    {isListening&&<div style={{padding:"6px 12px",background:"#FFEBEE",borderRadius:10,marginBottom:6,animation:"micP 2s ease infinite"}}>
+      <span style={{fontSize:12,fontWeight:800,color:"#C62828"}}>🔴 Mic is ON — say "{expected}" now!</span>
+    </div>}
+    {transcript&&<div style={{padding:"6px 12px",background:"#E8F5E9",borderRadius:10,marginBottom:6}}>
+      <span style={{fontSize:12,fontWeight:800,color:"#2E7D32"}}>✅ Heard: "{transcript}"</span>
+    </div>}
+    {error&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,marginBottom:6}}>
+      <span style={{fontSize:11,fontWeight:700,color:"#E65100"}}>{error}</span>
+    </div>}
+
+    {/* Volume bars when listening */}
+    {isListening&&<div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:28,marginBottom:6}}>
+      {Array.from({length:10}).map((_,i)=>{
+        const h=Math.max(3,Math.min(24,((volume||0)*28)+Math.sin(Date.now()/150+i*0.8)*2));
+        return<div key={i} style={{width:5,height:h,borderRadius:3,background:(volume||0)>0.1?"#4CAF50":"#E0E0E0",transition:"height 0.08s ease"}}/>;
       })}
     </div>}
-    {!isListening&&<SoundWave/>}
-    <div style={{display:"flex",gap:6,marginTop:8}}>
+
+    {/* Type fallback — always available */}
+    <div style={{display:"flex",gap:6}}>
       <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type here..."
-        style={{flex:1,padding:"7px 10px",borderRadius:10,border:"2px solid #E8E0D8",fontSize:13,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
+        style={{flex:1,padding:"8px 10px",borderRadius:10,border:"2px solid #E8EAF6",fontSize:13,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
         onKeyDown={e=>{if(e.key==="Enter"&&typed.trim())onType(typed.trim().toLowerCase());}}
       />
       <button onClick={()=>{if(typed.trim())onType(typed.trim().toLowerCase());}}
-        style={{padding:"7px 14px",borderRadius:10,background:"#FF8C42",color:"#2D2B3D",border:"none",fontWeight:800,fontSize:12,cursor:"pointer"}}>Go</button>
+        style={{padding:"8px 14px",borderRadius:10,background:"#42A5F5",color:"#fff",border:"none",borderBottom:"3px solid #1565C0",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)"}}>Go</button>
     </div>
   </div>;
 };
