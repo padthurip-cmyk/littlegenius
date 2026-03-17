@@ -1,0 +1,8 @@
+src/
+DEPLOY-GUIDE.md
+index.html
+mic-debug.html
+netlify.toml
+package.json
+vite.config.js
+.gitignore          ← here
