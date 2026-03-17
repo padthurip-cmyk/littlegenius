@@ -1651,10 +1651,22 @@ const useRec=()=>{
   const bestRef=useRef("");
   const altsRef=useRef([]);
   const deliveredRef=useRef(false);
-  const streamRef=useRef(null);
-  const ctxRef=useRef(null);
-  const rafRef=useRef(null);
-  const hadVoiceRef=useRef(false);
+
+  // Beep using AudioContext — works on all devices, no files needed
+  const beep=useCallback((freq=880,dur=150,type="sine")=>{
+    try{
+      const ctx=new (window.AudioContext||window.webkitAudioContext)();
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type=type;osc.frequency.value=freq;
+      gain.gain.value=0.3;
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.start();
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur/1000);
+      osc.stop(ctx.currentTime+dur/1000);
+      setTimeout(()=>ctx.close(),dur+100);
+    }catch(e){}
+  },[]);
 
   const warmUp=useCallback(()=>{
     if(permRef.current)return;
@@ -1665,63 +1677,33 @@ const useRec=()=>{
     }
   },[]);
 
-  const cleanup=useCallback(()=>{
-    cancelAnimationFrame(rafRef.current);
-    try{streamRef.current?.getTracks().forEach(t=>t.stop());}catch(e){}
-    try{ctxRef.current?.close();}catch(e){}
-    streamRef.current=null;ctxRef.current=null;
-    setVol(0);
-  },[]);
-
   const start=useCallback(async(cb)=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SR){setErr("Not supported");return;}
-    // Kill previous
+
     try{recRef.current?.abort();}catch(e){}
-    clearInterval(cdRef.current);cleanup();
+    clearInterval(cdRef.current);
     try{speechSynthesis.cancel();}catch(e){}
+
     cbRef.current=cb;bestRef.current="";altsRef.current=[];
-    deliveredRef.current=false;hadVoiceRef.current=false;
-    setTxt("");setErr("");setOn(true);setCountdown(3);
+    deliveredRef.current=false;
+    setTxt("");setErr("");setVol(0);
 
-    // STEP 1: Grab raw mic FIRST — this guarantees we have audio
-    let stream;
-    try{
-      stream=await navigator.mediaDevices.getUserMedia({audio:true});
-      streamRef.current=stream;
-    }catch(e){
-      setErr("Mic denied");setOn(false);setCountdown(0);return;
-    }
-
-    // STEP 2: Monitor volume so user sees their voice
-    try{
-      const ctx=new (window.AudioContext||window.webkitAudioContext)();
-      ctxRef.current=ctx;
-      const src=ctx.createMediaStreamSource(stream);
-      const an=ctx.createAnalyser();an.fftSize=256;an.smoothingTimeConstant=0.3;
-      src.connect(an);
-      const data=new Uint8Array(an.frequencyBinCount);
-      const tick=()=>{
-        an.getByteFrequencyData(data);
-        let sum=0;for(let i=0;i<data.length;i++)sum+=data[i];
-        const v=Math.min(1,(sum/data.length)/60);
-        setVol(v);
-        if(v>0.15)hadVoiceRef.current=true;
-        rafRef.current=requestAnimationFrame(tick);
-      };
-      tick();
-    }catch(e){}
-
-    // STEP 3: Wait for TTS to fully stop
+    // Wait for TTS to fully stop
     await new Promise(r=>{
-      const check=()=>{if(!speechSynthesis.speaking&&!speechSynthesis.pending)r();else setTimeout(check,100);};
-      check();
+      const ck=()=>{if(!speechSynthesis.speaking&&!speechSynthesis.pending)r();else setTimeout(ck,100);};ck();
     });
-    await new Promise(r=>setTimeout(r,300));
+    await new Promise(r=>setTimeout(r,200));
 
-    // STEP 4: Start speech recognition ON TOP of the raw stream
+    // START BEEP — high pitch, short
+    beep(1200,120,"sine");
+
+    // Give beep 200ms to play, then start recognition
+    await new Promise(r=>setTimeout(r,250));
+
     const r=new SR();
-    r.continuous=false;
+    // KEY: continuous=true keeps connection to Google open — critical for short words
+    r.continuous=true;
     r.interimResults=true;
     r.lang="en-US";
     r.maxAlternatives=5;
@@ -1741,66 +1723,77 @@ const useRec=()=>{
       if(current){bestRef.current=current;altsRef.current=newAlts;setTxt(current);}
     };
 
-    r.onend=()=>{
-      // Don't deliver here — let the countdown timer handle delivery
-    };
+    // Fake volume based on whether speech events fire
+    r.onspeechstart=()=>{setVol(0.6);};
+    r.onspeechend=()=>{setVol(0.1);};
+    r.onaudiostart=()=>{setVol(0.2);};
+
+    r.onend=()=>{/* let countdown timer handle everything */};
     r.onerror=(e)=>{
       if(e.error==="not-allowed"){
-        setErr("Mic blocked");setOn(false);setCountdown(0);cleanup();clearInterval(cdRef.current);
+        setErr("Mic blocked");setOn(false);setCountdown(0);clearInterval(cdRef.current);
       }
-      // For all other errors (no-speech, network) — just let countdown finish
     };
 
     try{r.start();}catch(e){
-      setErr("Start failed — reload page");setOn(false);setCountdown(0);cleanup();return;
+      // Request mic permission
+      try{
+        const s=await navigator.mediaDevices.getUserMedia({audio:true});
+        s.getTracks().forEach(t=>t.stop());permRef.current=true;
+        r.start();
+      }catch(e2){
+        setErr("Mic denied");setOn(false);setCountdown(0);return;
+      }
     }
 
-    // STEP 5: Countdown 3..2..1..DONE
+    setOn(true);setCountdown(3);
+
+    // Countdown 3..2..1
     let sec=3;
-    setCountdown(3);
     cdRef.current=setInterval(()=>{
       sec--;setCountdown(Math.max(0,sec));
       if(sec<=0){
         clearInterval(cdRef.current);
-        // Stop speech recognition gently
+        // STOP BEEP — lower pitch
+        beep(600,180,"sine");
+        // Call stop() — NOT abort(). stop() tells Google: "done talking, give me results"
         try{r.stop();}catch(e){}
-        // Wait 2 full seconds for Google to send back results
+        setVol(0);
+        setTxt(bestRef.current||"Processing...");
+
+        // WAIT 2.5 seconds for Google to send results back over network
         setTimeout(()=>{
-          cleanup();setOn(false);setCountdown(0);
+          setOn(false);setCountdown(0);
           if(!deliveredRef.current&&bestRef.current){
             deliveredRef.current=true;
             cbRef.current?.(bestRef.current,altsRef.current);
           } else if(!deliveredRef.current){
-            // Nothing recognized
-            if(hadVoiceRef.current){
-              setTxt("");setErr("Heard your voice but couldn't recognize. Tap to try again!");
-            } else {
-              setTxt("");setErr("");
-              // Silent reset — just go back to idle button
-            }
+            setTxt("");setErr("");
+            // Silent reset — user taps again
           }
-        },2000);
+        },2500);
       }
     },1000);
-  },[cleanup]);
+  },[beep]);
 
   const stop=useCallback(()=>{
-    clearInterval(cdRef.current);cleanup();
+    clearInterval(cdRef.current);
     try{recRef.current?.stop();}catch(e){}
-    setOn(false);setCountdown(0);
-  },[cleanup]);
+    setOn(false);setCountdown(0);setVol(0);
+  },[]);
 
   const quickListen=useCallback((ms=5000)=>{
     return new Promise((res)=>{
       const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
       if(!SR){res("");return;}
-      const r=new SR();r.continuous=false;r.interimResults=true;r.lang="en-US";r.maxAlternatives=5;
+      const r=new SR();r.continuous=true;r.interimResults=true;r.lang="en-US";r.maxAlternatives=5;
       recRef.current=r;let best="";let done=false;
       const fin=(v)=>{if(!done){done=true;try{r.stop();}catch(e){}res(v||best);}};
       r.onresult=(e)=>{for(let i=0;i<e.results.length;i++){if(e.results[i].isFinal)best=e.results[i][0].transcript.toLowerCase().trim();}};
       r.onend=()=>fin(best);r.onerror=()=>fin("");
       try{r.start();}catch(e){fin("");}
-      setTimeout(()=>fin(""),ms);
+      setTimeout(()=>{try{r.stop();}catch(e){}},ms);
+      setTimeout(()=>fin(""),ms+2000);
     });
   },[]);
 
