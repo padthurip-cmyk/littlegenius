@@ -1641,64 +1641,102 @@ const useRec=()=>{
   const[on,setOn]=useState(false);
   const[txt,setTxt]=useState("");
   const[err,setErr]=useState("");
-  const[countdown,setCountdown]=useState(0);
+  const[countdown,setCountdown]=useState(0); // 3,2,1,0
   const supported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
   const cbRef=useRef(null);
   const recRef=useRef(null);
-  const timerRef=useRef(null);
   const cdRef=useRef(null);
   const permRef=useRef(false);
+  const bestRef=useRef("");
+  const altsRef=useRef([]);
+  const deliveredRef=useRef(false);
 
   const warmUp=useCallback(()=>{
     if(permRef.current)return;
-    if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+    if(navigator.mediaDevices?.getUserMedia){
       navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{
         s.getTracks().forEach(t=>t.stop());permRef.current=true;
       }).catch(()=>{});
     }
   },[]);
 
-  // THE ONLY FUNCTION: tap → record 3s → stop → callback
   const start=useCallback((cb)=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR){setErr("Not supported");return;}
-    // Kill anything running
+    if(!SR){setErr("Speech not supported");return;}
+
+    // Clean up any previous session
     try{recRef.current?.abort();}catch(e){}
-    clearTimeout(timerRef.current);clearInterval(cdRef.current);
+    clearInterval(cdRef.current);
     try{speechSynthesis.cancel();}catch(e){}
+
     cbRef.current=cb;
-    setTxt("");setErr("");setOn(true);setCountdown(3);
+    bestRef.current="";
+    altsRef.current=[];
+    deliveredRef.current=false;
+    setTxt("");setErr("");
 
     const go=()=>{
-      if(speechSynthesis.speaking){setTimeout(go,200);return;}
+      // Make sure TTS is done
+      if(speechSynthesis.speaking||speechSynthesis.pending){setTimeout(go,200);return;}
+
       const r=new SR();
-      r.continuous=true;
+      r.continuous=false;  // Single-shot: Android handles this best
       r.interimResults=true;
       r.lang="en-US";
       r.maxAlternatives=5;
       recRef.current=r;
-      let best="";
-      let alts=[];
 
+      // Collect ALL results as they come in
       r.onresult=(e)=>{
-        let f="",it="";alts=[];
+        let final="",interim="";
+        const newAlts=[];
         for(let i=0;i<e.results.length;i++){
           for(let a=0;a<e.results[i].length;a++){
             const t=e.results[i][a].transcript.toLowerCase().trim();
-            if(t&&!alts.includes(t))alts.push(t);
+            if(t&&!newAlts.includes(t))newAlts.push(t);
           }
-          if(e.results[i].isFinal)f+=e.results[i][0].transcript;
-          else it+=e.results[i][0].transcript;
+          if(e.results[i].isFinal)final+=e.results[i][0].transcript;
+          else interim+=e.results[i][0].transcript;
         }
-        best=(f||it||best).toLowerCase().trim();
-        if(best)setTxt(best);
+        const current=(final||interim).toLowerCase().trim();
+        if(current){
+          bestRef.current=current;
+          altsRef.current=newAlts;
+          setTxt(current);
+        }
       };
-      r.onerror=(e)=>{
-        if(e.error==="not-allowed"){setErr("Mic blocked");setOn(false);setCountdown(0);return;}
-      };
-      r.onend=()=>{};
 
-      try{r.start();}catch(e){
+      // THIS is where we deliver results — onend fires AFTER all results are in
+      r.onend=()=>{
+        clearInterval(cdRef.current);
+        setOn(false);setCountdown(0);
+        if(!deliveredRef.current&&bestRef.current){
+          deliveredRef.current=true;
+          cbRef.current?.(bestRef.current,altsRef.current);
+        } else if(!deliveredRef.current){
+          // Nothing heard — reset to idle, user taps again
+          setTxt("");setErr("");
+        }
+      };
+
+      r.onerror=(e)=>{
+        if(e.error==="not-allowed"){
+          clearInterval(cdRef.current);
+          setErr("Mic blocked — check browser settings");setOn(false);setCountdown(0);
+          return;
+        }
+        if(e.error==="no-speech"){
+          // Android fires this when silence detected — that's ok, onend will handle it
+          return;
+        }
+        // network error etc — let onend handle cleanup
+      };
+
+      // Start recognition
+      try{
+        r.start();
+      }catch(e){
+        // Mic not ready — request permission and retry
         navigator.mediaDevices?.getUserMedia({audio:true}).then(s=>{
           s.getTracks().forEach(t=>t.stop());permRef.current=true;
           try{r.start();}catch(e2){setErr("Mic error");setOn(false);setCountdown(0);}
@@ -1706,49 +1744,54 @@ const useRec=()=>{
         return;
       }
 
-      // Countdown 3..2..1..done
+      // We're recording!
+      setOn(true);setCountdown(3);
+
+      // Visual countdown: 3..2..1..0
       let sec=3;
-      setCountdown(3);
       cdRef.current=setInterval(()=>{
-        sec--;setCountdown(sec);
+        sec--;
+        setCountdown(Math.max(0,sec));
         if(sec<=0){
           clearInterval(cdRef.current);
-          // STOP and deliver
+          // Tell engine to stop — but DON'T abort!
+          // stop() lets it finish processing and fire onresult+onend
           try{r.stop();}catch(e){}
-          try{r.abort();}catch(e){}
-          setOn(false);setCountdown(0);
-          // Small delay for final results to arrive
+          // Safety: if onend hasn't fired in 3s, force deliver
           setTimeout(()=>{
-            if(best){
-              cbRef.current?.(best,alts);
-            } else {
-              setErr("");setTxt("");
-              // Nothing heard — just reset to idle. User taps again.
+            if(!deliveredRef.current){
+              setOn(false);setCountdown(0);
+              if(bestRef.current){
+                deliveredRef.current=true;
+                cbRef.current?.(bestRef.current,altsRef.current);
+              } else {
+                setTxt("");setErr("");
+              }
             }
-          },300);
+          },3000);
         }
       },1000);
     };
-    // 500ms gap after TTS
-    setTimeout(go,500);
+
+    // Small gap to ensure TTS audio has stopped
+    setTimeout(go,400);
   },[]);
 
   const stop=useCallback(()=>{
-    clearTimeout(timerRef.current);clearInterval(cdRef.current);
-    try{recRef.current?.abort();}catch(e){}
+    clearInterval(cdRef.current);
+    try{recRef.current?.stop();}catch(e){}
     setOn(false);setCountdown(0);
   },[]);
 
-  const quickListen=useCallback((ms=4000)=>{
+  const quickListen=useCallback((ms=5000)=>{
     return new Promise((res)=>{
       const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
       if(!SR){res("");return;}
-      try{recRef.current?.abort();}catch(e){}
-      const r=new SR();r.continuous=true;r.interimResults=true;r.lang="en-US";r.maxAlternatives=5;
-      recRef.current=r;let done=false;let best="";
-      const fin=(v)=>{if(!done){done=true;try{r.abort();}catch(e){}res(v||best);}};
-      r.onresult=(e)=>{let f="",it="";for(let i=0;i<e.results.length;i++){if(e.results[i].isFinal)f+=e.results[i][0].transcript;else it+=e.results[i][0].transcript;}best=(f||it).toLowerCase().trim();};
-      r.onerror=()=>fin("");r.onend=()=>fin("");
+      const r=new SR();r.continuous=false;r.interimResults=true;r.lang="en-US";r.maxAlternatives=5;
+      recRef.current=r;let best="";let done=false;
+      const fin=(v)=>{if(!done){done=true;try{r.stop();}catch(e){}res(v||best);}};
+      r.onresult=(e)=>{for(let i=0;i<e.results.length;i++){if(e.results[i].isFinal)best=e.results[i][0].transcript.toLowerCase().trim();}};
+      r.onend=()=>fin(best);r.onerror=()=>fin("");
       try{r.start();}catch(e){fin("");}
       setTimeout(()=>fin(""),ms);
     });
