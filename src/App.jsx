@@ -1456,21 +1456,70 @@ const normalizeSpoken=(text)=>{
   let t=text.trim().toLowerCase();
   // Replace digits with words: "17" → "seventeen"
   t=t.replace(/\b(\d+)\b/g,(match)=>{const n=parseInt(match);if(n>=0&&n<=100&&NW[n])return NW[n];return match;});
-  // Strip filler words at start
-  t=t.replace(/^(the |a |an |uh |um |oh |i said |it's |its |say )/i,'');
-  // Common speech-to-text mishears
-  const fixes={"for":"four","to":"two","too":"two","won":"one","ate":"eight","tree":"three","free":"three","sex":"six","tin":"ten","night":"nine",
-    "read":"red","blew":"blue","grin":"green","greed":"green","yell":"yellow","yell oh":"yellow","pin":"pink","pinkish":"pink","orangey":"orange",
-    "hart":"heart","hard":"heart","hut":"heart","start":"star","stare":"star",
-    "sickle":"circle","circus":"circle","sir cool":"circle","squire":"square","try angle":"triangle","dime and":"diamond","dim end":"diamond",
-    "rectangle":"rectangle","wreck tangle":"rectangle","oval":"oval","oh val":"oval"
+  // Strip filler words kids say
+  t=t.replace(/^(the |a |an |uh |um |oh |hmm |like |i said |it's |its |say |it is |that's |that is |this is |i think |i see )/i,'');
+  t=t.replace(/ (the|a|an)$/i,'');
+  // Common speech-to-text mishears + children's mispronunciations
+  const fixes={
+    // Numbers
+    "for":"four","to":"two","too":"two","won":"one","ate":"eight","tree":"three","free":"three",
+    "sex":"six","tin":"ten","night":"nine","nein":"nine","sven":"seven","levin":"eleven",
+    "wan":"one","wun":"one","tew":"two","fo":"four","fiv":"five","siks":"six",
+    "ait":"eight","nain":"nine","twen":"twenty","twenny":"twenty",
+    // Colors
+    "read":"red","reed":"red","bread":"red","wed":"red",
+    "blew":"blue","boo":"blue","bue":"blue",
+    "grin":"green","greed":"green","grain":"green","gren":"green",
+    "yell":"yellow","yell oh":"yellow","yella":"yellow","yello":"yellow",
+    "pin":"pink","pinkish":"pink","pank":"pink",
+    "orangey":"orange","ornge":"orange","orinj":"orange",
+    "purrple":"purple","perple":"purple","purpul":"purple",
+    "bown":"brown","braun":"brown",
+    "wight":"white","wite":"white",
+    "bwack":"black","blak":"black",
+    // Shapes
+    "sickle":"circle","circus":"circle","sir cool":"circle","sircle":"circle","surcle":"circle","cerkle":"circle",
+    "squire":"square","sqare":"square","skwer":"square","skware":"square",
+    "try angle":"triangle","tri angle":"triangle","trangle":"triangle","triango":"triangle",
+    "dime and":"diamond","dim end":"diamond","dymond":"diamond","daimond":"diamond",
+    "rectangle":"rectangle","wreck tangle":"rectangle","wectangle":"rectangle","wektangle":"rectangle",
+    "oval":"oval","oh val":"oval","ovul":"oval",
+    "hart":"heart","hard":"heart","hut":"heart","haart":"heart",
+    "start":"star","stare":"star","stor":"star",
+    // Common child speech patterns
+    "wabbit":"rabbit","wion":"lion","gween":"green","bwue":"blue","fwog":"frog",
+    "twi":"three","fwee":"three","thwee":"three","fee":"three",
+    "wectangle":"rectangle","lellow":"yellow","wed":"red","puple":"purple",
   };
+  // Try exact match first
+  if(fixes[t]) return fixes[t];
+  // Try replacing within the string
   for(const[wrong,right] of Object.entries(fixes)){
-    if(t===wrong) t=right;
+    if(t.includes(wrong)){t=t.replace(wrong,right);break;}
   }
   return t.trim();
 };
-const calcAcc=(e,g)=>{if(!e||!g)return 0;const a=e.trim().toLowerCase(),b=normalizeSpoken(g);if(a===b)return 100;const m=Array.from({length:a.length+1},(_,i)=>Array.from({length:b.length+1},(_,j)=>i===0?j:j===0?i:0));for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)m[i][j]=a[i-1]===b[j-1]?m[i-1][j-1]:1+Math.min(m[i-1][j],m[i][j-1],m[i-1][j-1]);return Math.max(0,Math.round((1-m[a.length][b.length]/Math.max(a.length,b.length))*100));};
+// FIX: calcAcc now accepts alternatives array and returns best match
+const calcAcc=(expected,spoken,alternatives)=>{
+  if(!expected||!spoken)return 0;
+  const e=expected.trim().toLowerCase();
+  // Check primary result AND all alternatives for best match
+  const candidates=[normalizeSpoken(spoken),...(alternatives||[]).map(a=>normalizeSpoken(a))];
+  let bestAcc=0;
+  for(const b of candidates){
+    if(!b)continue;
+    if(e===b){bestAcc=100;break;}
+    // Also check if the spoken word CONTAINS the expected word (kid says "it's a circle" → "circle")
+    if(b.includes(e)){bestAcc=Math.max(bestAcc,95);continue;}
+    if(e.includes(b)&&b.length>=e.length*0.6){bestAcc=Math.max(bestAcc,85);continue;}
+    // Levenshtein distance
+    const m=Array.from({length:e.length+1},(_,i)=>Array.from({length:b.length+1},(_,j)=>i===0?j:j===0?i:0));
+    for(let i=1;i<=e.length;i++)for(let j=1;j<=b.length;j++)m[i][j]=e[i-1]===b[j-1]?m[i-1][j-1]:1+Math.min(m[i-1][j],m[i][j-1],m[i-1][j-1]);
+    const acc=Math.max(0,Math.round((1-m[e.length][b.length]/Math.max(e.length,b.length))*100));
+    bestAcc=Math.max(bestAcc,acc);
+  }
+  return bestAcc;
+};
 const getStars=(a)=>a>=90?5:a>=75?4:a>=50?3:a>=35?2:a>=20?1:0;
 const getStarPts=(s)=>[0,2,5,10,15,20][s]||0;
 
@@ -1592,23 +1641,55 @@ const useRec=()=>{
   const[on,setOn]=useState(false);
   const[txt,setTxt]=useState("");
   const[err,setErr]=useState("");
+  const[vol,setVol]=useState(0); // 0-1 volume level for visualization
   const supported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
   const cbRef=useRef(null);
   const recRef=useRef(null);
   const timeoutRef=useRef(null);
   const gotResultRef=useRef(false);
-  const permRef=useRef(false); // mic permission granted?
+  const permRef=useRef(false);
+  const volCtx=useRef(null); // AudioContext for volume
+  const volAn=useRef(null);  // AnalyserNode
+  const volStream=useRef(null);
+  const volRAF=useRef(null);
 
-  // Call this ONCE on first user tap — grants persistent mic permission
   const warmUp=useCallback(()=>{
     if(permRef.current) return;
     if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
       navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
         stream.getTracks().forEach(t=>t.stop());
         permRef.current=true;
-        console.log("Mic permission granted");
       }).catch(()=>{});
     }
+  },[]);
+
+  // Start volume meter for visual feedback
+  const startVolMeter=useCallback(()=>{
+    if(!navigator.mediaDevices)return;
+    navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+      volStream.current=stream;
+      const ctx=new (window.AudioContext||window.webkitAudioContext)();
+      const src=ctx.createMediaStreamSource(stream);
+      const an=ctx.createAnalyser();
+      an.fftSize=256;an.smoothingTimeConstant=0.5;
+      src.connect(an);
+      volCtx.current=ctx;volAn.current=an;
+      const data=new Uint8Array(an.frequencyBinCount);
+      const tick=()=>{
+        an.getByteFrequencyData(data);
+        let sum=0;for(let i=0;i<data.length;i++)sum+=data[i];
+        setVol(Math.min(1,(sum/data.length)/80));
+        volRAF.current=requestAnimationFrame(tick);
+      };
+      tick();
+    }).catch(()=>{});
+  },[]);
+
+  const stopVolMeter=useCallback(()=>{
+    cancelAnimationFrame(volRAF.current);
+    try{volStream.current?.getTracks().forEach(t=>t.stop());}catch(e){}
+    try{volCtx.current?.close();}catch(e){}
+    setVol(0);
   },[]);
 
   const retryCountRef=useRef(0);
@@ -1624,75 +1705,102 @@ const useRec=()=>{
     retryCountRef.current=0;
     setTxt("");setErr("");setOn(true);
 
+    // CRITICAL: Stop TTS completely before listening
     try{speechSynthesis.cancel();}catch(e){}
 
     const doStart=()=>{
-      if(speechSynthesis.speaking){setTimeout(doStart,400);return;}
+      // Wait until TTS is FULLY done (fixes Ollie's voice being captured)
+      if(speechSynthesis.speaking||speechSynthesis.pending){setTimeout(doStart,300);return;}
+
+      startVolMeter(); // Show live volume so kid sees mic is working
 
       const r=new SR();
-      r.continuous=true;        // KEEP listening — don't stop on first pause
+      r.continuous=false;       // FIX #1: single-shot is more reliable on mobile
       r.interimResults=true;
       r.lang="en-US";
-      r.maxAlternatives=3;
+      r.maxAlternatives=5;      // FIX #2: check all 5 alternatives
       recRef.current=r;
 
       const startTime=Date.now();
       let bestFinal="";
-      let bestInterim=""; // Track what user sees as "Heard: ..."
-      let acceptTimer=null;
+      let bestInterim="";
+      let allAlternatives=[];    // FIX #3: collect all alternatives
+      let silenceTimer=null;
 
       r.onresult=(e)=>{
         let f="",interim="";
+        // Collect ALL alternatives (not just first)
+        allAlternatives=[];
         for(let x=0;x<e.results.length;x++){
-          if(e.results[x].isFinal)f+=e.results[x][0].transcript;
-          else interim+=e.results[x][0].transcript;
+          const res=e.results[x];
+          for(let a=0;a<res.length;a++){
+            const alt=res[a].transcript.toLowerCase().trim();
+            if(alt)allAlternatives.push(alt);
+          }
+          if(res.isFinal)f+=res[0].transcript;
+          else interim+=res[0].transcript;
         }
         const t=(f||interim).toLowerCase().trim();
         setTxt(t);
-        // Always track best interim (what the user sees)
-        if(t) bestInterim=t;
-        if(f && t){
+        if(t)bestInterim=t;
+        if(f&&t){
           bestFinal=t;
-          clearTimeout(acceptTimer);
-          acceptTimer=setTimeout(()=>{
+          // FIX #4: Longer silence timeout (1.5s) for kids who pause mid-word
+          clearTimeout(silenceTimer);
+          silenceTimer=setTimeout(()=>{
             gotResultRef.current=true;
             clearTimeout(timeoutRef.current);
             try{r.stop();}catch(e){}
-            setOn(false);
-            cbRef.current?.(bestFinal);
-          },800);
+            setOn(false);stopVolMeter();
+            // Pass ALL alternatives to callback for better matching
+            cbRef.current?.(bestFinal,allAlternatives);
+          },1500);
         }
       };
       r.onerror=(e)=>{
-        if(e.error==="not-allowed"){setErr("Mic blocked.");setOn(false);return;}
-        // If we heard something (even interim), accept it
-        if(!gotResultRef.current && bestInterim){
-          gotResultRef.current=true;setOn(false);cbRef.current?.(bestInterim);return;
+        if(e.error==="not-allowed"){setErr("Mic blocked. Tap Settings → Allow Microphone.");setOn(false);stopVolMeter();return;}
+        if(e.error==="network"){setErr("Need internet for speech.");setOn(false);stopVolMeter();return;}
+        if(!gotResultRef.current&&bestInterim){
+          gotResultRef.current=true;setOn(false);stopVolMeter();cbRef.current?.(bestInterim,allAlternatives);return;
         }
-        if(!gotResultRef.current){retryCountRef.current++;setTxt("Listening...");setTimeout(doStart,2000);}
+        // FIX #5: Clear feedback on retry, not silent
+        if(!gotResultRef.current&&retryCountRef.current<4){
+          retryCountRef.current++;
+          setTxt("🎤 Speak louder!");
+          setTimeout(doStart,1500);
+        } else {
+          setErr("Couldn't hear. Try again!");setOn(false);stopVolMeter();
+        }
       };
       r.onend=()=>{
-        clearTimeout(acceptTimer);
-        // Accept best final if we have it
-        if(bestFinal && !gotResultRef.current){
-          gotResultRef.current=true;setOn(false);cbRef.current?.(bestFinal);return;
+        clearTimeout(silenceTimer);
+        // Accept best result if we have one
+        if(bestFinal&&!gotResultRef.current){
+          gotResultRef.current=true;setOn(false);stopVolMeter();cbRef.current?.(bestFinal,allAlternatives);return;
         }
-        // FALLBACK: accept interim result if we heard something but browser never marked it final
-        if(bestInterim && !gotResultRef.current){
-          gotResultRef.current=true;setOn(false);cbRef.current?.(bestInterim);return;
+        if(bestInterim&&!gotResultRef.current){
+          gotResultRef.current=true;setOn(false);stopVolMeter();cbRef.current?.(bestInterim,allAlternatives);return;
         }
         if(!gotResultRef.current){
           const elapsed=Date.now()-startTime;
-          if(elapsed<3000){setTxt("Listening...");setTimeout(doStart,200);return;}
+          // FIX #6: Give kids more time (5s instead of 3s) before giving up
+          if(elapsed<5000){
+            setTxt(elapsed<2000?"🎤 Say it now!":"🎤 Speak louder!");
+            setTimeout(doStart,300);
+            return;
+          }
           retryCountRef.current++;
-          if(retryCountRef.current%3===0){
-            setTxt("One more time!..");setOn(false);
-            const u=new SpeechSynthesisUtterance("One more time!");
-            u.rate=0.7;u.pitch=1.0;u.lang="en-US";
-            u.onend=()=>{setTimeout(()=>{setOn(true);doStart();},800);};
-            u.onerror=()=>{setTimeout(()=>{setOn(true);doStart();},800);};
+          if(retryCountRef.current<=3){
+            setTxt("🎤 One more try!");
+            // Brief TTS encouragement then restart
+            const u=new SpeechSynthesisUtterance("Try again!");
+            u.rate=0.8;u.pitch=1.1;u.lang="en-US";
+            u.onend=()=>{setTimeout(doStart,600);};
+            u.onerror=()=>{setTimeout(doStart,600);};
             speechSynthesis.speak(u);
-          } else {setTxt("Listening...");setTimeout(doStart,1500);}
+          } else {
+            setErr("Tap 🎤 to try again");setOn(false);stopVolMeter();
+          }
         }
       };
 
@@ -1700,40 +1808,54 @@ const useRec=()=>{
         if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
           navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
             stream.getTracks().forEach(t=>t.stop());permRef.current=true;
-            try{r.start();}catch(e2){setTimeout(doStart,2000);}
-          }).catch(()=>{setErr("Mic access denied.");setOn(false);});
-        } else {setTimeout(doStart,2000);}
+            try{r.start();}catch(e2){setTimeout(doStart,1500);}
+          }).catch(()=>{setErr("Mic access denied.");setOn(false);stopVolMeter();});
+        } else {setTimeout(doStart,1500);}
       }
+      // FIX #7: 12-second absolute timeout (was implicit, now explicit)
       clearTimeout(timeoutRef.current);
+      timeoutRef.current=setTimeout(()=>{
+        if(!gotResultRef.current){
+          if(bestInterim){gotResultRef.current=true;setOn(false);stopVolMeter();cbRef.current?.(bestInterim,allAlternatives);}
+          else{setErr("Tap 🎤 to try again");setOn(false);stopVolMeter();}
+        }
+      },12000);
     };
 
-    setTimeout(doStart,800);
-  },[]);
-
-
+    // FIX: Start mic IMMEDIATELY — no delay. If TTS is still going, wait just for that.
+    const doStartNow=()=>{
+      if(speechSynthesis.speaking||speechSynthesis.pending){setTimeout(doStartNow,200);return;}
+      doStart();
+    };
+    doStartNow();
+  },[startVolMeter,stopVolMeter]);
 
   const stopR=useCallback(()=>{
     clearTimeout(timeoutRef.current);
     try{recRef.current?.abort();}catch(e){}
     try{recRef.current?.stop();}catch(e){}
+    stopVolMeter();
     setOn(false);
-  },[]);
+  },[stopVolMeter]);
 
-  const quickListen=useCallback((timeoutMs=5000)=>{
+  const quickListen=useCallback((timeoutMs=6000)=>{
     return new Promise((resolve)=>{
       const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
       if(!SR){resolve("");return;}
       try{recRef.current?.abort();}catch(e){}
       clearTimeout(timeoutRef.current);
       const r=new SR();
-      r.continuous=false;r.interimResults=true;r.lang="en-US";r.maxAlternatives=3;
+      r.continuous=false;r.interimResults=true;r.lang="en-US";r.maxAlternatives=5;
       recRef.current=r;
-      let resolved=false;let best="";
+      let resolved=false;let best="";let alts=[];
       const done=(val)=>{if(!resolved){resolved=true;setOn(false);clearTimeout(timeoutRef.current);try{r.abort();}catch(e){}resolve(val||best);}};
       r.onresult=(e)=>{
-        let f="",interim="";
-        for(let x=0;x<e.results.length;x++){if(e.results[x].isFinal)f+=e.results[x][0].transcript;else interim+=e.results[x][0].transcript;}
-        if(f){done(f.toLowerCase().trim());}else if(interim){best=interim.toLowerCase().trim();clearTimeout(timeoutRef.current);timeoutRef.current=setTimeout(()=>done(best),800);}
+        let f="",interim="";alts=[];
+        for(let x=0;x<e.results.length;x++){
+          for(let a=0;a<e.results[x].length;a++){const alt=e.results[x][a].transcript.toLowerCase().trim();if(alt)alts.push(alt);}
+          if(e.results[x].isFinal)f+=e.results[x][0].transcript;else interim+=e.results[x][0].transcript;
+        }
+        if(f){done(f.toLowerCase().trim());}else if(interim){best=interim.toLowerCase().trim();clearTimeout(timeoutRef.current);timeoutRef.current=setTimeout(()=>done(best),1500);}
       };
       r.onerror=()=>done("");r.onend=()=>done("");
       try{r.start();}catch(e){done("");}
@@ -1741,7 +1863,7 @@ const useRec=()=>{
     });
   },[]);
 
-  return{start,stop:stopR,warmUp,quickListen,on,txt,err,supported};
+  return{start,stop:stopR,warmUp,quickListen,on,txt,err,vol,supported};
 };
 const useStore=()=>{const[d,setD]=useState(null);const[ok,setOk]=useState(false);useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4");if(r?.value)setD(JSON.parse(r.value));}catch(e){}setOk(true);})();},[]);const save=useCallback(async(nd)=>{setD(nd);try{await window.storage.set("lg4",JSON.stringify(nd));}catch(e){}},[]);return{data:d,save,loaded:ok};};
 
@@ -2001,28 +2123,38 @@ const SoundWave=()=><div style={{display:"flex",justifyContent:"center",gap:3,ma
 const ProgressRing=({pct,size=70,color="#22C55E"})=>{const r=(size-10)/2;const c=2*Math.PI*r;return<svg width={size} height={size} style={{transform:"rotate(-90deg)"}}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e5e7eb" strokeWidth={10}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={10} strokeDasharray={c} strokeDashoffset={c-((pct||0)/100)*c} strokeLinecap="round" style={{transition:"stroke-dashoffset 1s ease-out"}}/></svg>;};
 const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"7px 10px",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",position:"sticky",top:0,zIndex:50,borderRadius:"0 0 16px 16px",boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}><button onClick={()=>{sfxTap();onBack();}} style={{padding:"8px 14px",borderRadius:14,border:"none",background:"rgba(255,255,255,0.2)",fontWeight:800,fontSize:13,cursor:"pointer",fontFamily:"var(--font)",color:"#fff",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>← Back</button><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{title}</span><div style={{display:"flex",alignItems:"center",gap:4,padding:"6px 12px",borderRadius:16,background:"rgba(255,255,255,0.2)",fontSize:13,fontWeight:800,color:"#FECA57",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}><span>⭐</span>{points||0}</div></div>;
 const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:800,fontFamily:"var(--font)",background:act?"linear-gradient(135deg,#FF8C42,#FF8C42)":done?"#22C55E":"#e5e7eb",color:(act||done)?"#fff":"#aaa",transform:act?"scale(1.08)":"scale(1)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
-const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected})=>{
+const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,volume})=>{
   const[typed,setTyped]=useState("");
+  const bars=8; // volume visualization bars
   return <div data-owl="mic-area" style={{textAlign:"center",padding:12,background:"#fff",borderRadius:20,border:"2px solid #FF8C4211"}}>
     <div style={{display:"flex",alignItems:"center",gap:12}}>
       <button onClick={onTapMic} style={{
-        width:56,height:56,borderRadius:"50%",border:"none",cursor:"pointer",flexShrink:0,
+        width:60,height:60,borderRadius:"50%",border:"none",cursor:"pointer",flexShrink:0,
         background:isListening?"linear-gradient(135deg,#EF4444,#DC2626)":"linear-gradient(135deg,#FF8C42,#FF8C42)",
-        boxShadow:isListening?"0 0 0 6px rgba(239,68,68,0.15)":"0 4px 12px rgba(99,102,241,0.2)",
+        boxShadow:isListening?`0 0 0 ${4+((volume||0)*8)}px rgba(239,68,68,${0.08+((volume||0)*0.15)})`:"0 4px 12px rgba(99,102,241,0.2)",
         animation:isListening?"micP 1.5s ease-in-out infinite":"none",
-        display:"flex",alignItems:"center",justifyContent:"center"
+        display:"flex",alignItems:"center",justifyContent:"center",
+        transform:isListening?`scale(${1+(volume||0)*0.12})`:"scale(1)",
+        transition:"transform 0.1s ease,box-shadow 0.15s ease"
       }}>
-        <span style={{fontSize:28}}>🎤</span>
+        <span style={{fontSize:30}}>🎤</span>
       </button>
       <div style={{flex:1,textAlign:"left"}}>
         <p style={{fontSize:12,fontWeight:800,color:isListening?"#DC2626":error?"#D97706":"#FF8C42",margin:0}}>
-          {isListening?"🔴 Listening...":error||"Speak now!"}
+          {isListening?"🔴 Listening — speak now!":error||"Tap 🎤 to speak!"}
         </p>
-        <p style={{fontSize:16,fontWeight:900,color:"#2D2B3D",margin:"2px 0 0",letterSpacing:1}}>"{expected?.toUpperCase()}"</p>
+        <p style={{fontSize:16,fontWeight:900,color:"#2D2B3D",margin:"2px 0 0",letterSpacing:1}}>Say: "{expected?.toUpperCase()}"</p>
         {transcript&&<p style={{fontSize:11,fontWeight:700,color:"#22C55E",margin:"2px 0 0"}}>Heard: "{transcript}"</p>}
       </div>
     </div>
-    {isListening&&<SoundWave/>}
+    {/* LIVE VOLUME BARS — shows kid their voice is being captured */}
+    {isListening&&<div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:32,margin:"8px 0 4px"}}>
+      {Array.from({length:bars}).map((_,i)=>{
+        const h=Math.max(4,Math.min(28,((volume||0)*30)+Math.sin(Date.now()/200+i)*3));
+        return<div key={i} style={{width:6,height:h,borderRadius:3,background:`hsl(${120-(volume||0)*80},70%,50%)`,transition:"height 0.1s ease",opacity:0.6+((volume||0)*0.4)}}/>;
+      })}
+    </div>}
+    {!isListening&&<SoundWave/>}
     <div style={{display:"flex",gap:6,marginTop:8}}>
       <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type here..."
         style={{flex:1,padding:"7px 10px",borderRadius:10,border:"2px solid #E8E0D8",fontSize:13,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
@@ -2765,10 +2897,10 @@ export default function App(){
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
 
-  const handleNumResult=(result)=>{
+  const handleNumResult=(result,alternatives)=>{
     const w=NW[selNum];
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(w,normalized);setSpRes(normalized);setSpAcc(acc);setNStep("result");
+    const acc=calcAcc(w,result,alternatives);setSpRes(normalized);setSpAcc(acc);setNStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"numbers",selNum);boom();}else{flashWrong();}
     // Voice cheer with name and reward motivation!
@@ -2787,9 +2919,9 @@ export default function App(){
       else{headNo();flashWrong();speak(`That's okay ${kidName}! Let's try again!`,{rate:0.8,pitch:1.0});}
     },300);
   };
-  const handlePhResult=(result)=>{
+  const handlePhResult=(result,alternatives)=>{
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(phW.word,normalized);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
+    const acc=calcAcc(phW.word,result,alternatives);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"phonics",phW.word);boom();}else{flashWrong();}
     setTimeout(()=>{
@@ -2980,8 +3112,8 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(learnModes.speak){
-      await speak(`Your turn ${kidName}! Can you say, ${w}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setNStep("listening");pRef.current=false;showTeacher("happy","I'm listening!");rec.start(handleNumResult);
+      await speak(`Your turn ${kidName}! Can you say, ${w}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handleNumResult);
     }else{
       pRef.current=false;
       if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
@@ -2992,8 +3124,8 @@ export default function App(){
   const retryNum=async()=>{showTeacher("happy","Try again! You can do it! 💪");
     setSpRes(null);setSpAcc(null);
     setNStep("countdown");
-    await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);
-    stop();await wait(600);setNStep("listening");rec.start(handleNumResult);
+    await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);
+    stop();setNStep("listening");rec.start(handleNumResult);
   };
 
   // PHONICS PLAY FLOW
@@ -3039,8 +3171,8 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(phModes.speak){
-      await speak(`Your turn ${kidName}! Can you say, ${wd.word}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setPhStep("listening");pRef.current=false;showTeacher("happy","Your turn!");rec.start(handlePhResult);
+      await speak(`Your turn ${kidName}! Can you say, ${wd.word}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handlePhResult);
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
@@ -3051,14 +3183,14 @@ export default function App(){
   const retryPh=async()=>{showTeacher("happy","One more try! I believe in you! 🌈");
     setPhRes(null);setPhAcc(null);
     setPhStep("countdown");
-    await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);
-    stop();await wait(600);setPhStep("listening");rec.start(handlePhResult);
+    await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);
+    stop();setPhStep("listening");rec.start(handlePhResult);
   };
 
   // ═══ SHAPE PLAY FLOW ═══
-  const handleShResult=(result)=>{
+  const handleShResult=(result,alternatives)=>{
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(selShape.name,normalized);setShRes(normalized);setShAcc(acc);setShStep("result");
+    const acc=calcAcc(selShape.name,result,alternatives);setShRes(normalized);setShAcc(acc);setShStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"shapes",selShape.name);boom();}else{flashWrong();}
     setTimeout(()=>{
@@ -3084,16 +3216,16 @@ export default function App(){
       await speak(`Now say it with me, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`Your turn ${kidName}! Can you say, ${sh.name}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setShStep("listening");pRef.current=false;rec.start(handleShResult);
+      await speak(`Your turn ${kidName}! Can you say, ${sh.name}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      stop();setShStep("listening");pRef.current=false;rec.start(handleShResult);
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
-  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setShStep("listening");rec.start(handleShResult);};
+  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setShStep("listening");rec.start(handleShResult);};
 
   // ═══ COLOR PLAY FLOW ═══
-  const handleCoResult=(result)=>{
+  const handleCoResult=(result,alternatives)=>{
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(selColor.name,normalized);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
+    const acc=calcAcc(selColor.name,result,alternatives);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"colors",selColor.name);boom();}else{flashWrong();}
     setTimeout(()=>{
@@ -3119,11 +3251,11 @@ export default function App(){
       await speak(`Now say it with me, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`Your turn ${kidName}! Can you say, ${co.name}?`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
-      stop();await wait(600);setCoStep("listening");pRef.current=false;rec.start(handleCoResult);
+      await speak(`Your turn ${kidName}! Can you say, ${co.name}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      stop();setCoStep("listening");pRef.current=false;rec.start(handleCoResult);
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
-  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(300);stop();await wait(600);setCoStep("listening");rec.start(handleCoResult);};
+  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setCoStep("listening");rec.start(handleCoResult);};
 
 
 
@@ -4478,7 +4610,7 @@ export default function App(){
             </div>
           </div>
         )}
-        {nStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]}/>}
+        {nStep==="listening"&&<ListeningBox transcript={rec.txt} volume={rec.vol} onTapMic={tapMicNum} isListening={rec.on} error={rec.err} onType={typeNum} expected={NW[selNum]}/>}
         {nStep==="result"&&spRes!==null&&<ResultBox acc={spAcc} result={spRes} expected={w} onRetry={retryNum} onDone={()=>{setSpRes(null);const next=selNum>=(aCfg?.max||20)?1:selNum+1;setSelNum(next);setNStep("idle");setTimeout(()=>playNum(next),200);}} color={color} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5067,7 +5199,7 @@ export default function App(){
             </div>
           </div>
         )}
-        {phStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""}/>}
+        {phStep==="listening"&&<ListeningBox transcript={rec.txt} volume={rec.vol} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""}/>}
         {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhRes(null);const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),200);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5113,7 +5245,7 @@ export default function App(){
         {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {shStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {shStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?shColor:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {shStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleShResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
+        {shStep==="listening"&&<ListeningBox transcript={rec.txt} volume={rec.vol} onTapMic={()=>rec.start(handleShResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
         {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShRes(null);const idx=SHAPES.findIndex(x=>x.name===sh.name);const next=SHAPES[(idx+1)%SHAPES.length];setSelShape(next);setShStep("idle");setTimeout(()=>playShape(next),200);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5141,7 +5273,7 @@ export default function App(){
         {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {coStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {coStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?co.hex:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {coStep==="listening"&&<ListeningBox transcript={rec.txt} onTapMic={()=>rec.start(handleCoResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
+        {coStep==="listening"&&<ListeningBox transcript={rec.txt} volume={rec.vol} onTapMic={()=>rec.start(handleCoResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
         {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoRes(null);const idx=COLORSDATA.findIndex(x=>x.name===co.name);const next=COLORSDATA[(idx+1)%COLORSDATA.length];setSelColor(next);setCoStep("idle");setTimeout(()=>playColor(next),200);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
