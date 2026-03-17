@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mic Debug</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui;padding:20px;background:#111;color:#fff}
+button{font-size:18px;padding:16px;border:none;border-radius:16px;cursor:pointer;font-weight:900;width:100%;margin:6px 0}
+#log{background:#1a1a1a;border-radius:12px;padding:12px;margin-top:12px;font-size:12px;max-height:55vh;overflow-y:auto;font-family:monospace;line-height:1.5}
+.ok{color:#4CAF50}.er{color:#EF5350}.w{color:#FFB74D}.i{color:#64B5F6}
+</style></head><body>
+<h2>🎤 Mic Debug</h2>
+<p style="color:#666;font-size:11px;margin:4px 0 12px">Tap buttons and tell me what the log says</p>
+<button onclick="testMic()" style="background:#4CAF50;color:#fff">1. Test Microphone</button>
+<button onclick="testSpeech(3)" style="background:#FF8A50;color:#fff">2. Speech 3s (say "one")</button>
+<button onclick="testSpeech(6)" style="background:#7C4DFF;color:#fff">3. Speech 6s (say anything)</button>
+<button onclick="log.innerHTML=''" style="background:#333;color:#666">Clear</button>
+<div id="log"></div>
+<script>
+const log=document.getElementById('log');
+const L=(m,c='i')=>{const d=document.createElement('div');d.className=c;d.textContent=new Date().toLocaleTimeString().slice(0,8)+' '+m;log.appendChild(d);log.scrollTop=9e9;}
+async function testMic(){
+L('--- MIC TEST ---','w');
+try{
+const s=await navigator.mediaDevices.getUserMedia({audio:true});
+L('✅ Mic GRANTED','ok');
+const t=s.getAudioTracks();
+L('Tracks: '+t.length+' — '+t.map(x=>x.label).join(', '));
+const ctx=new AudioContext();const src=ctx.createMediaStreamSource(s);
+const an=ctx.createAnalyser();an.fftSize=256;src.connect(an);
+const d=new Uint8Array(an.frequencyBinCount);
+L('🎤 Speak now for 3 sec...','w');
+let mx=0;
+await new Promise(r=>{let c=0;const iv=setInterval(()=>{an.getByteFrequencyData(d);let sum=0;for(let i=0;i<d.length;i++)sum+=d[i];const v=sum/d.length;if(v>mx)mx=v;if(++c>=30){clearInterval(iv);r();}},100);});
+s.getTracks().forEach(t=>t.stop());ctx.close();
+L('Max volume: '+mx.toFixed(1),mx>5?'ok':'er');
+if(mx<2)L('❌ NO AUDIO','er');else if(mx<10)L('⚠️ Low vol','w');else L('✅ Mic works!','ok');
+}catch(e){L('❌ '+e.message,'er');}
+}
+function testSpeech(sec){
+L('--- SPEECH '+sec+'s ---','w');
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){L('❌ API not available','er');return;}
+L('✅ API found','ok');
+const r=new SR();r.continuous=sec>3;r.interimResults=true;r.lang='en-US';r.maxAlternatives=5;
+let res=[];
+r.onaudiostart=()=>L('📡 audiostart','ok');
+r.onsoundstart=()=>L('🔊 soundstart','ok');
+r.onspeechstart=()=>L('🗣️ SPEECH HEARD!','ok');
+r.onspeechend=()=>L('🗣️ speechend');
+r.onaudioend=()=>L('📡 audioend');
+r.onresult=(e)=>{L('📝 result!','ok');for(let i=0;i<e.results.length;i++){for(let a=0;a<e.results[i].length;a++){const x=e.results[i][a];L('  '+(e.results[i].isFinal?'FINAL':'interim')+'['+a+']: "'+x.transcript+'" '+Math.round(x.confidence*100)+'%',e.results[i].isFinal?'ok':'i');res.push(x.transcript);}}};
+r.onerror=(e)=>L('❌ '+e.error,'er');
+r.onend=()=>{L('🏁 end');if(res.length)L('✅ RESULT: "'+res[0]+'"','ok');else L('❌ NOTHING recognized','er');};
+try{r.start();L('▶️ SAY "ONE" NOW!','w');setTimeout(()=>{L('⏹️ stop()');try{r.stop();}catch(e){}},sec*1000);}catch(e){L('❌ '+e.message,'er');}
+}
+</script></body></html>
