@@ -1718,7 +1718,123 @@ const useSpeech=()=>{const[v,setV]=useState([]);
 
   return{speak,stop:stopAll,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey};
 };
-const useRec=(googleApiKey)=>{
+// ═══ WHISPER AI HOOK — On-Device Speech Recognition ═══
+// Loads OpenAI Whisper model in a Web Worker (off main thread)
+// Model: whisper-tiny.en quantized (~15MB) — cached in IndexedDB forever after first download
+const useWhisper=()=>{
+  const[status,setStatus]=useState("idle"); // idle | loading | ready | error
+  const[progress,setProgress]=useState(0);
+  const[loadMsg,setLoadMsg]=useState("");
+  const workerRef=useRef(null);
+  const resolveRef=useRef(null);
+  const readyRef=useRef(false);
+
+  // Create worker and start model load on mount
+  useEffect(()=>{
+    try{
+      const worker=new Worker(new URL('./whisper-worker.js',import.meta.url),{type:'module'});
+      workerRef.current=worker;
+
+      worker.onmessage=(e)=>{
+        const d=e.data;
+        if(d.type==='loading'){
+          setStatus("loading");
+          setProgress(d.progress||0);
+          setLoadMsg(d.message||"Loading...");
+        }else if(d.type==='ready'){
+          setStatus("ready");
+          readyRef.current=true;
+          setProgress(100);
+          setLoadMsg("Whisper AI ready!");
+        }else if(d.type==='error'){
+          setStatus("error");
+          setLoadMsg(d.error||"Failed to load");
+          console.warn("Whisper worker error:",d.error);
+        }else if(d.type==='result'){
+          if(resolveRef.current){
+            resolveRef.current({transcript:d.transcript||"",error:d.error||null});
+            resolveRef.current=null;
+          }
+        }
+      };
+
+      worker.onerror=(err)=>{
+        console.warn("Whisper worker crash:",err);
+        setStatus("error");
+        setLoadMsg("AI worker failed to start");
+      };
+
+      // Start loading the model immediately
+      worker.postMessage({type:'load'});
+    }catch(err){
+      console.warn("Cannot create Whisper worker:",err);
+      setStatus("error");
+    }
+
+    return()=>{
+      try{workerRef.current?.terminate();}catch(e){}
+    };
+  },[]);
+
+  // Resample audio blob to 16kHz mono Float32Array
+  const preprocessAudio=useCallback(async(audioBlob)=>{
+    const arrayBuffer=await audioBlob.arrayBuffer();
+    // Decode audio using AudioContext
+    const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    let decoded;
+    try{
+      decoded=await audioCtx.decodeAudioData(arrayBuffer);
+    }catch(e){
+      audioCtx.close();
+      throw new Error("Cannot decode audio: "+e.message);
+    }
+
+    // Resample to 16kHz mono using OfflineAudioContext
+    const targetRate=16000;
+    const numSamples=Math.ceil(decoded.duration*targetRate);
+    if(numSamples<100){audioCtx.close();throw new Error("Audio too short");}
+
+    const offlineCtx=new OfflineAudioContext(1,numSamples,targetRate);
+    const source=offlineCtx.createBufferSource();
+    source.buffer=decoded;
+    source.connect(offlineCtx.destination);
+    source.start(0);
+    const resampled=await offlineCtx.startRendering();
+    audioCtx.close();
+    return resampled.getChannelData(0); // Float32Array at 16kHz
+  },[]);
+
+  // Transcribe audio blob — returns {transcript, error}
+  const transcribe=useCallback(async(audioBlob)=>{
+    if(!readyRef.current||!workerRef.current){
+      return{transcript:"",error:"Whisper not ready"};
+    }
+    try{
+      const float32=await preprocessAudio(audioBlob);
+      return new Promise((resolve)=>{
+        resolveRef.current=resolve;
+        // Transfer the Float32Array buffer to avoid copying
+        workerRef.current.postMessage(
+          {type:'transcribe',audioData:float32,sampleRate:16000},
+          [float32.buffer]
+        );
+        // Safety timeout — 15 seconds max for inference
+        setTimeout(()=>{
+          if(resolveRef.current){
+            resolveRef.current({transcript:"",error:"Whisper timed out"});
+            resolveRef.current=null;
+          }
+        },15000);
+      });
+    }catch(e){
+      return{transcript:"",error:e.message};
+    }
+  },[preprocessAudio]);
+
+  return{status,progress,loadMsg,transcribe,isReady:status==="ready"};
+};
+
+const useRec=(googleApiKey,whisper)=>{
   const[on,setOn]=useState(false);
   const[txt,setTxt]=useState("");
   const[err,setErr]=useState("");
@@ -2002,43 +2118,43 @@ const useRec=(googleApiKey)=>{
 
             if(blob.size<500){
               // Too small — probably no speech
-              // Fall through to web speech results
               const webResult=webBestRef.current;
-              const webAlts=webAltsRef.current;
-              if(webResult){
-                setEngineUsed("web");
-                deliver(webResult,webAlts);
-              }else{
-                deliver("",[]); // no speech detected anywhere
-              }
+              if(webResult){setEngineUsed("web");deliver(webResult,webAltsRef.current);}
+              else deliver("",[]);
               return;
             }
 
-            // ─── Send to Google Cloud Speech-to-Text ───
-            setEngineUsed("cloud");
-            const result=await transcribeWithCloudSTT(blob,googleApiKey,expectedRef.current);
+            // ─── TIER 1: Google Cloud Speech-to-Text (if API key) ───
+            if(canUseCloud){
+              setEngineUsed("cloud");
+              const result=await transcribeWithCloudSTT(blob,googleApiKey,expectedRef.current);
+              if(result.transcript){deliver(result.transcript,result.alternatives);return;}
+              if(!result.error){
+                // Cloud returned empty — try other engines before giving up
+                console.warn("Cloud STT returned empty, trying Whisper fallback");
+              }else{
+                console.warn("Cloud STT error:",result.error);
+              }
+            }
 
-            if(result.transcript){
-              deliver(result.transcript,result.alternatives);
-            }else if(result.error){
-              // Cloud failed — use web speech results as fallback
-              console.warn("Cloud STT failed, using Web Speech fallback");
-              const webResult=webBestRef.current;
-              if(webResult){
-                setEngineUsed("web");
-                deliver(webResult,webAltsRef.current);
-              }else{
-                deliver("",[]); // nothing from either engine
+            // ─── TIER 2: Whisper AI on-device (if model loaded) ───
+            if(whisper?.isReady){
+              setEngineUsed("whisper");
+              const wResult=await whisper.transcribe(blob);
+              if(wResult.transcript){
+                deliver(wResult.transcript,[wResult.transcript]);
+                return;
               }
+              if(wResult.error)console.warn("Whisper error:",wResult.error);
+            }
+
+            // ─── TIER 3: Web Speech API fallback ───
+            const webResult=webBestRef.current;
+            if(webResult){
+              setEngineUsed("web");
+              deliver(webResult,webAltsRef.current);
             }else{
-              // Cloud returned empty — check web speech
-              const webResult=webBestRef.current;
-              if(webResult){
-                setEngineUsed("web");
-                deliver(webResult,webAltsRef.current);
-              }else{
-                deliver("",[]); // silence
-              }
+              deliver("",[]);
             }
           };
 
@@ -2103,7 +2219,7 @@ const useRec=(googleApiKey)=>{
       }
     },LISTEN_SECONDS*1000);
 
-  },[googleApiKey,beep,cleanup,deliver,startVolumeMonitor,startWebSpeech,hasWebSpeech]);
+  },[googleApiKey,whisper,beep,cleanup,deliver,startVolumeMonitor,startWebSpeech,hasWebSpeech]);
 
   // ═══ STOP (manual) ═══
   const stop=useCallback(()=>{
@@ -2445,7 +2561,7 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,count
     {processing&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px",animation:"fadeIn 0.3s ease-out"}}>{engineUsed==="cloud"?"☁️ Cloud AI analyzing your voice...":"🧠 Checking what you said..."}</p>}
     {processing&&transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
     {/* Engine indicator — small subtle badge */}
-    {(active||processing)&&engineUsed&&engineUsed!=="none"&&<div style={{display:"flex",justifyContent:"center",margin:"4px 0"}}><span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:engineUsed==="cloud"?"#E3F2FD":"#FFF3E0",color:engineUsed==="cloud"?"#1565C0":"#E65100"}}>{engineUsed==="cloud"?"☁️ Google Cloud STT":"📱 Device Speech"}</span></div>}
+    {(active||processing)&&engineUsed&&engineUsed!=="none"&&<div style={{display:"flex",justifyContent:"center",margin:"4px 0"}}><span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:engineUsed==="cloud"?"#E3F2FD":engineUsed==="whisper"?"#F3E5F5":"#FFF3E0",color:engineUsed==="cloud"?"#1565C0":engineUsed==="whisper"?"#7B1FA2":"#E65100"}}>{engineUsed==="cloud"?"☁️ Google Cloud STT":engineUsed==="whisper"?"🧠 Whisper AI (on-device)":"📱 Device Speech"}</span></div>}
     {/* Idle state */}
     {idle&&!error&&!transcript&&<p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>Tap the microphone, then say <strong>"{expected}"</strong></p>}
     {/* Error display */}
@@ -2515,7 +2631,7 @@ const PH_STEPS=[{id:"saying_word",icon:"🔊",label:"Word"},{id:"spelling",icon:
 // 🎮 MAIN APP
 // ═══════════════════════════════════════════════════════════════
 export default function App(){
-  const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey}=useSpeech();const rec=useRec(ttsKey);
+  const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey}=useSpeech();const whisper=useWhisper();const rec=useRec(ttsKey,whisper);
   const[scr,setScr]=useState("splash");
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
   const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn");
@@ -6036,7 +6152,19 @@ export default function App(){
 {/* Voice Settings */}
 <div style={{marginTop:16,padding:16,background:"#fff",borderRadius:20,border:"none"}}>
 <div style={{fontSize:13,fontWeight:800,color:"#6C5CE7",marginBottom:8}}>🔊 Voice Settings</div>
-<p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{ttsKey?"Using Google Cloud for voice AND speech recognition (premium accuracy for kids!)":"Using your device's built-in voice & speech. Add a Google Cloud API key for a sweet consistent voice + much better speech recognition on phones."}</p>
+{/* Whisper AI Status */}
+<div style={{padding:"10px 14px",background:whisper.status==="ready"?"#F3E8FD":whisper.status==="loading"?"#FFF8E1":"#FFF3E0",borderRadius:14,border:`2px solid ${whisper.status==="ready"?"#CE93D8":whisper.status==="loading"?"#FFE082":"#FFCC80"}`,marginBottom:12}}>
+<div style={{display:"flex",alignItems:"center",gap:8}}>
+<span style={{fontSize:18}}>{whisper.status==="ready"?"🧠":whisper.status==="loading"?"⏳":"⚠️"}</span>
+<div style={{flex:1}}>
+<div style={{fontSize:12,fontWeight:800,color:whisper.status==="ready"?"#7B1FA2":whisper.status==="loading"?"#F57F17":"#E65100"}}>{whisper.status==="ready"?"Whisper AI Ready":whisper.status==="loading"?"Loading Whisper AI...":"Whisper AI Unavailable"}</div>
+<div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>{whisper.status==="ready"?"OpenAI Whisper runs on-device — Alexa-like accuracy, no API key needed!":whisper.status==="loading"?`${whisper.loadMsg} (first time only — cached forever after)`:"Your browser may not support AI workers. Speech will use fallback engine."}</div>
+</div>
+</div>
+{whisper.status==="loading"&&<div style={{marginTop:8,height:6,borderRadius:3,background:"#FFF3E0",overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:"linear-gradient(90deg,#7B1FA2,#CE93D8)",width:`${whisper.progress}%`,transition:"width 0.3s ease"}}/></div>}
+</div>
+<div style={{fontSize:13,fontWeight:800,color:"#6C5CE7",marginBottom:8}}>🔊 Voice Settings</div>
+<p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{ttsKey?"Using Google Cloud for voice + premium speech recognition. Whisper AI also active as backup!":"Whisper AI handles speech recognition on-device. Optionally add a Google Cloud API key for premium voice + even better recognition."}</p>
 <input value={ttsKey} onChange={e=>saveTtsKey(e.target.value.trim())} placeholder="Paste Google Cloud API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E0D8",borderRadius:12,fontSize:12,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
 <div style={{display:"flex",gap:8,marginTop:8}}>
 <button onClick={()=>{speak("Hi! I'm Ollie! This is how I sound!",{rate:0.92,pitch:1.05});}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:ttsKey?"linear-gradient(135deg,#FF8C42,#FFB066)":"#E8E8E8",color:ttsKey?"#fff":"#666",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Test Voice</button>
