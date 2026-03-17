@@ -1641,17 +1641,20 @@ const useRec=()=>{
   const[on,setOn]=useState(false);
   const[txt,setTxt]=useState("");
   const[err,setErr]=useState("");
-  const[vol,setVol]=useState(0); // 0-1 volume level for visualization
+  const[vol,setVol]=useState(0);
   const supported=!!(window.SpeechRecognition||window.webkitSpeechRecognition);
   const cbRef=useRef(null);
   const recRef=useRef(null);
   const timeoutRef=useRef(null);
   const gotResultRef=useRef(false);
   const permRef=useRef(false);
-  const volCtx=useRef(null); // AudioContext for volume
-  const volAn=useRef(null);  // AnalyserNode
+  const attemptsRef=useRef(0);
+  const volCtx=useRef(null);
+  const volAn=useRef(null);
   const volStream=useRef(null);
   const volRAF=useRef(null);
+  const speechDetectedRef=useRef(false);
+  const expectedRef=useRef(""); // HINT: the word we expect — helps with matching
 
   const warmUp=useCallback(()=>{
     if(permRef.current) return;
@@ -1663,7 +1666,6 @@ const useRec=()=>{
     }
   },[]);
 
-  // Start volume meter for visual feedback
   const startVolMeter=useCallback(()=>{
     if(!navigator.mediaDevices)return;
     navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
@@ -1692,9 +1694,17 @@ const useRec=()=>{
     setVol(0);
   },[]);
 
-  const retryCountRef=useRef(0);
+  const deliver=useCallback((result,alts)=>{
+    if(gotResultRef.current)return;
+    gotResultRef.current=true;
+    clearTimeout(timeoutRef.current);
+    try{recRef.current?.stop();}catch(e){}
+    try{recRef.current?.abort();}catch(e){}
+    setOn(false);stopVolMeter();
+    cbRef.current?.(result,alts||[]);
+  },[stopVolMeter]);
 
-  const start=useCallback((cb)=>{
+  const start=useCallback((cb,expectedWord)=>{
     const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
     if(!SR){setErr("Speech not supported");return;}
 
@@ -1702,133 +1712,169 @@ const useRec=()=>{
     clearTimeout(timeoutRef.current);
     cbRef.current=cb;
     gotResultRef.current=false;
-    retryCountRef.current=0;
+    attemptsRef.current=0;
+    speechDetectedRef.current=false;
+    expectedRef.current=(expectedWord||"").toLowerCase();
     setTxt("");setErr("");setOn(true);
 
-    // CRITICAL: Stop TTS completely before listening
     try{speechSynthesis.cancel();}catch(e){}
 
     const doStart=()=>{
-      // Wait until TTS is FULLY done (fixes Ollie's voice being captured)
-      if(speechSynthesis.speaking||speechSynthesis.pending){setTimeout(doStart,300);return;}
+      if(speechSynthesis.speaking||speechSynthesis.pending){setTimeout(doStart,200);return;}
 
-      startVolMeter(); // Show live volume so kid sees mic is working
+      startVolMeter();
+      attemptsRef.current++;
 
       const r=new SR();
-      r.continuous=false;       // FIX #1: single-shot is more reliable on mobile
+      // KEY FIX: Use continuous=true — this keeps the mic open long enough for short words
+      // We manually stop it when we have a result, instead of letting the engine auto-stop
+      r.continuous=true;
       r.interimResults=true;
       r.lang="en-US";
-      r.maxAlternatives=5;      // FIX #2: check all 5 alternatives
+      r.maxAlternatives=5;
       recRef.current=r;
 
-      const startTime=Date.now();
       let bestFinal="";
       let bestInterim="";
-      let allAlternatives=[];    // FIX #3: collect all alternatives
-      let silenceTimer=null;
+      let allAlts=[];
+      let speechStartTime=0;
+      let speechEndTimer=null;
+      let anyResult=false;
+
+      // When the engine detects actual human speech (not just noise)
+      r.onspeechstart=()=>{
+        speechDetectedRef.current=true;
+        speechStartTime=Date.now();
+        setTxt("🎤 Hearing you...");
+      };
+
+      // When speech stops — wait a moment then accept whatever we have
+      r.onspeechend=()=>{
+        // Give 1.2s for the engine to finalize after speech ends
+        clearTimeout(speechEndTimer);
+        speechEndTimer=setTimeout(()=>{
+          if(!gotResultRef.current){
+            // Accept best result we have
+            const result=bestFinal||bestInterim;
+            if(result){
+              deliver(result,allAlts);
+            }
+          }
+        },1200);
+      };
 
       r.onresult=(e)=>{
-        let f="",interim="";
-        // Collect ALL alternatives (not just first)
-        allAlternatives=[];
+        anyResult=true;
+        let finalText="",interimText="";
+        allAlts=[];
         for(let x=0;x<e.results.length;x++){
           const res=e.results[x];
           for(let a=0;a<res.length;a++){
-            const alt=res[a].transcript.toLowerCase().trim();
-            if(alt)allAlternatives.push(alt);
+            const t=res[a].transcript.toLowerCase().trim();
+            if(t&&!allAlts.includes(t))allAlts.push(t);
           }
-          if(res.isFinal)f+=res[0].transcript;
-          else interim+=res[0].transcript;
+          if(res.isFinal) finalText+=res[0].transcript;
+          else interimText+=res[0].transcript;
         }
-        const t=(f||interim).toLowerCase().trim();
-        setTxt(t);
-        if(t)bestInterim=t;
-        if(f&&t){
-          bestFinal=t;
-          // FIX #4: Longer silence timeout (1.5s) for kids who pause mid-word
-          clearTimeout(silenceTimer);
-          silenceTimer=setTimeout(()=>{
-            gotResultRef.current=true;
-            clearTimeout(timeoutRef.current);
-            try{r.stop();}catch(e){}
-            setOn(false);stopVolMeter();
-            // Pass ALL alternatives to callback for better matching
-            cbRef.current?.(bestFinal,allAlternatives);
-          },1500);
-        }
-      };
-      r.onerror=(e)=>{
-        if(e.error==="not-allowed"){setErr("Mic blocked. Tap Settings → Allow Microphone.");setOn(false);stopVolMeter();return;}
-        if(e.error==="network"){setErr("Need internet for speech.");setOn(false);stopVolMeter();return;}
-        if(!gotResultRef.current&&bestInterim){
-          gotResultRef.current=true;setOn(false);stopVolMeter();cbRef.current?.(bestInterim,allAlternatives);return;
-        }
-        // FIX #5: Clear feedback on retry, not silent
-        if(!gotResultRef.current&&retryCountRef.current<4){
-          retryCountRef.current++;
-          setTxt("🎤 Speak louder!");
-          setTimeout(doStart,1500);
-        } else {
-          setErr("Couldn't hear. Try again!");setOn(false);stopVolMeter();
-        }
-      };
-      r.onend=()=>{
-        clearTimeout(silenceTimer);
-        // Accept best result if we have one
-        if(bestFinal&&!gotResultRef.current){
-          gotResultRef.current=true;setOn(false);stopVolMeter();cbRef.current?.(bestFinal,allAlternatives);return;
-        }
-        if(bestInterim&&!gotResultRef.current){
-          gotResultRef.current=true;setOn(false);stopVolMeter();cbRef.current?.(bestInterim,allAlternatives);return;
-        }
-        if(!gotResultRef.current){
-          const elapsed=Date.now()-startTime;
-          // FIX #6: Give kids more time (5s instead of 3s) before giving up
-          if(elapsed<5000){
-            setTxt(elapsed<2000?"🎤 Say it now!":"🎤 Speak louder!");
-            setTimeout(doStart,300);
-            return;
-          }
-          retryCountRef.current++;
-          if(retryCountRef.current<=3){
-            setTxt("🎤 One more try!");
-            // Brief TTS encouragement then restart
-            const u=new SpeechSynthesisUtterance("Try again!");
-            u.rate=0.8;u.pitch=1.1;u.lang="en-US";
-            u.onend=()=>{setTimeout(doStart,600);};
-            u.onerror=()=>{setTimeout(doStart,600);};
-            speechSynthesis.speak(u);
+        const current=(finalText||interimText).toLowerCase().trim();
+        if(current)setTxt(current);
+        if(current)bestInterim=current;
+        if(finalText){
+          bestFinal=finalText.toLowerCase().trim();
+          // GOT FINAL — accept after short delay to collect any remaining results
+          clearTimeout(speechEndTimer);
+          speechEndTimer=setTimeout(()=>{
+            if(!gotResultRef.current)deliver(bestFinal,allAlts);
+          },600);
+        } else if(interimText){
+          // INTERIM RESULT — for single words, interim is often all we get
+          // If the interim closely matches expected word, accept it faster
+          const expected=expectedRef.current;
+          const interimLower=interimText.toLowerCase().trim();
+          if(expected&&(interimLower===expected||interimLower.includes(expected)||expected.includes(interimLower))){
+            // Strong match to expected word — accept quickly
+            clearTimeout(speechEndTimer);
+            speechEndTimer=setTimeout(()=>{
+              if(!gotResultRef.current)deliver(interimLower,allAlts);
+            },800);
           } else {
-            setErr("Tap 🎤 to try again");setOn(false);stopVolMeter();
+            // Unknown interim — wait longer for possible final
+            clearTimeout(speechEndTimer);
+            speechEndTimer=setTimeout(()=>{
+              if(!gotResultRef.current&&bestInterim){
+                deliver(bestFinal||bestInterim,allAlts);
+              }
+            },2000);
+          }
+        }
+      };
+
+      r.onerror=(e)=>{
+        clearTimeout(speechEndTimer);
+        if(e.error==="not-allowed"){setErr("Mic blocked. Check browser settings.");setOn(false);stopVolMeter();return;}
+        if(e.error==="network"){setErr("Need internet for speech.");setOn(false);stopVolMeter();return;}
+        if(e.error==="no-speech"){
+          // NO SPEECH DETECTED — most common failure for short words
+          // If we got any interim at all, accept it
+          if(bestInterim){deliver(bestInterim,allAlts);return;}
+          // Otherwise retry up to 3 times
+          if(attemptsRef.current<3){
+            setTxt("🎤 Say it louder!");
+            setTimeout(doStart,500);
+          } else {
+            setErr("Couldn't hear. Tap 🎤 to try again.");
+            setOn(false);stopVolMeter();
+          }
+          return;
+        }
+        // Other errors — accept what we have or retry
+        if(bestInterim){deliver(bestInterim,allAlts);return;}
+        if(attemptsRef.current<3){setTxt("🎤 Try again...");setTimeout(doStart,800);}
+        else{setErr("Tap 🎤 to try again.");setOn(false);stopVolMeter();}
+      };
+
+      r.onend=()=>{
+        clearTimeout(speechEndTimer);
+        // Accept any result we have
+        if(!gotResultRef.current){
+          if(bestFinal){deliver(bestFinal,allAlts);return;}
+          if(bestInterim){deliver(bestInterim,allAlts);return;}
+          // No result at all
+          if(attemptsRef.current<3){
+            setTxt(attemptsRef.current===1?"🎤 Speak up!":"🎤 One more try!");
+            setTimeout(doStart,600);
+          } else {
+            setErr("Tap 🎤 to try again.");
+            setOn(false);stopVolMeter();
           }
         }
       };
 
       try{r.start();}catch(e){
-        if(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){
+        if(navigator.mediaDevices){
           navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
             stream.getTracks().forEach(t=>t.stop());permRef.current=true;
-            try{r.start();}catch(e2){setTimeout(doStart,1500);}
+            try{r.start();}catch(e2){
+              if(attemptsRef.current<3)setTimeout(doStart,1000);
+              else{setErr("Mic error. Tap 🎤.");setOn(false);stopVolMeter();}
+            }
           }).catch(()=>{setErr("Mic access denied.");setOn(false);stopVolMeter();});
-        } else {setTimeout(doStart,1500);}
+        } else {setErr("No mic found.");setOn(false);stopVolMeter();}
       }
-      // FIX #7: 12-second absolute timeout (was implicit, now explicit)
+
+      // ABSOLUTE TIMEOUT: 10 seconds — accept whatever we have
       clearTimeout(timeoutRef.current);
       timeoutRef.current=setTimeout(()=>{
         if(!gotResultRef.current){
-          if(bestInterim){gotResultRef.current=true;setOn(false);stopVolMeter();cbRef.current?.(bestInterim,allAlternatives);}
-          else{setErr("Tap 🎤 to try again");setOn(false);stopVolMeter();}
+          if(bestFinal||bestInterim){deliver(bestFinal||bestInterim,allAlts);}
+          else{try{r.stop();}catch(e){}setErr("Tap 🎤 to try.");setOn(false);stopVolMeter();}
         }
-      },12000);
+      },10000);
     };
 
-    // FIX: Start mic IMMEDIATELY — no delay. If TTS is still going, wait just for that.
-    const doStartNow=()=>{
-      if(speechSynthesis.speaking||speechSynthesis.pending){setTimeout(doStartNow,200);return;}
-      doStart();
-    };
-    doStartNow();
-  },[startVolMeter,stopVolMeter]);
+    // Delay start to ensure TTS is completely done
+    setTimeout(doStart,1000);
+  },[startVolMeter,stopVolMeter,deliver]);
 
   const stopR=useCallback(()=>{
     clearTimeout(timeoutRef.current);
@@ -1845,19 +1891,21 @@ const useRec=()=>{
       try{recRef.current?.abort();}catch(e){}
       clearTimeout(timeoutRef.current);
       const r=new SR();
-      r.continuous=false;r.interimResults=true;r.lang="en-US";r.maxAlternatives=5;
+      r.continuous=true;r.interimResults=true;r.lang="en-US";r.maxAlternatives=5;
       recRef.current=r;
-      let resolved=false;let best="";let alts=[];
-      const done=(val)=>{if(!resolved){resolved=true;setOn(false);clearTimeout(timeoutRef.current);try{r.abort();}catch(e){}resolve(val||best);}};
+      let resolved=false;let best="";let alts=[];let endTimer=null;
+      const done=(val)=>{if(!resolved){resolved=true;setOn(false);clearTimeout(timeoutRef.current);clearTimeout(endTimer);try{r.abort();}catch(e){}resolve(val||best);}};
+      r.onspeechend=()=>{clearTimeout(endTimer);endTimer=setTimeout(()=>done(best),1200);};
       r.onresult=(e)=>{
         let f="",interim="";alts=[];
         for(let x=0;x<e.results.length;x++){
-          for(let a=0;a<e.results[x].length;a++){const alt=e.results[x][a].transcript.toLowerCase().trim();if(alt)alts.push(alt);}
+          for(let a=0;a<e.results[x].length;a++){const t=e.results[x][a].transcript.toLowerCase().trim();if(t)alts.push(t);}
           if(e.results[x].isFinal)f+=e.results[x][0].transcript;else interim+=e.results[x][0].transcript;
         }
-        if(f){done(f.toLowerCase().trim());}else if(interim){best=interim.toLowerCase().trim();clearTimeout(timeoutRef.current);timeoutRef.current=setTimeout(()=>done(best),1500);}
+        if(f){clearTimeout(endTimer);endTimer=setTimeout(()=>done(f.toLowerCase().trim()),600);}
+        else if(interim){best=interim.toLowerCase().trim();clearTimeout(endTimer);endTimer=setTimeout(()=>done(best),2000);}
       };
-      r.onerror=()=>done("");r.onend=()=>done("");
+      r.onerror=()=>done("");r.onend=()=>{if(!resolved)setTimeout(()=>done(best),200);};
       try{r.start();}catch(e){done("");}
       timeoutRef.current=setTimeout(()=>done(""),timeoutMs);
     });
@@ -1865,6 +1913,7 @@ const useRec=()=>{
 
   return{start,stop:stopR,warmUp,quickListen,on,txt,err,vol,supported};
 };
+
 const useStore=()=>{const[d,setD]=useState(null);const[ok,setOk]=useState(false);useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4");if(r?.value)setD(JSON.parse(r.value));}catch(e){}setOk(true);})();},[]);const save=useCallback(async(nd)=>{setD(nd);try{await window.storage.set("lg4",JSON.stringify(nd));}catch(e){}},[]);return{data:d,save,loaded:ok};};
 
 // Small components
@@ -2531,10 +2580,12 @@ export default function App(){
     if(data.state==="playing"&&data.question){
       const turnChanged=data.turnPlayerId!==lastTurnRef.current;
       const roundChanged=data.round!==lastRoundRef.current;
+      // FIX: ALWAYS reset answer state when turn or round changes — even if already "playing"
       if(roundChanged||turnChanged){
-        if(roundChanged){lastRoundRef.current=data.round;setArenaAnswered(false);setArenaFb(null);}
-        if(turnChanged){lastTurnRef.current=data.turnPlayerId;if(!roundChanged){setArenaAnswered(false);setArenaFb(null);}}
-        setArenaSec(6);
+        lastRoundRef.current=data.round;
+        lastTurnRef.current=data.turnPlayerId;
+        setArenaAnswered(false);setArenaFb(null);
+        setArenaSec(Math.max(0,Math.ceil(6-(Date.now()-(data.turnStartedAt||Date.now()))/1000)));
         // Ollie announces whose turn
         const tp=players.find(p=>p.id===data.turnPlayerId);
         if(tp){
@@ -2545,6 +2596,8 @@ export default function App(){
             setArenaMsg(isMe?"🎯 Your turn now! Quick!":"🦉 "+tp.name+"'s turn!");
           }
           setTeacherMood(isMe?"star":"happy");
+          // FIX: Speak turn announcement for better awareness
+          if(isMe) speak("Your turn!",{rate:1.0,pitch:1.1});
         }
       }
       setArenaPhase("playing");
@@ -2667,10 +2720,29 @@ export default function App(){
       const newScore=(rm.scores?.[arenaId]||0)+1;
       fbUpdate("rooms/"+roomCode,{["scores/"+arenaId]:newScore,state:"result",answerBy:arenaId});
     } else {
-      // Wrong or timeout → write answer marker to Firebase so host can advance
-      // Only write if we are the turn player (prevents duplicate writes)
+      // Wrong or timeout → write answer marker so host can advance
+      // FIX: Always write lastAnswer for ANY wrong answer (not just turn player)
+      // This ensures the host watchdog detects the answer even on slow networks
       if(rm.turnPlayerId===arenaId){
         fbUpdate("rooms/"+roomCode,{["lastAnswer"]:{playerId:arenaId,correct:false,turnIdx:rm.turnIdx,round:rm.round,ts:Date.now()}});
+        // FIX: If I'm the HOST AND the turn player, advance immediately instead of waiting for watchdog
+        if(rm.hostId===arenaId){
+          setTimeout(()=>{
+            const cur=arenaRoomRef.current;
+            if(!cur||cur.state!=="playing")return;
+            // Only advance if we're still on the same turn
+            if(cur.turnIdx===rm.turnIdx&&cur.round===rm.round){
+              const players=cur.players||[];
+              const nextIdx=((cur.turnIdx||0)+1)%players.length;
+              if(nextIdx===0){
+                fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null,lastAnswer:null});
+              } else {
+                const nextPid=players[nextIdx]?.id;
+                fbUpdate("rooms/"+roomCode,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now(),lastAnswer:null});
+              }
+            }
+          },500); // Small delay to let Firebase sync
+        }
       }
       setArenaMsg(opt===null?"⏰ Time's up!":"❌ Wrong answer!");setTeacherMood("thinking");
     }
@@ -2699,17 +2771,19 @@ export default function App(){
     }
   },[arenaRoom?.lastAnswer?.ts]);
 
-  // HOST: Watchdog timer — if current turn player doesn't answer within 8s, force advance
+  // HOST: Watchdog timer — if current turn player doesn't answer within 7s, force advance
   useEffect(()=>{
     if(hostWatchdogRef.current)clearTimeout(hostWatchdogRef.current);
     const rm=arenaRoomRef.current||arenaRoom;
     if(!rm||rm.hostId!==arenaId||rm.state!=="playing"||arenaPaused)return;
     const turnStart=rm.turnStartedAt||Date.now();
     const elapsed=Date.now()-turnStart;
-    const remaining=Math.max(100,8000-elapsed); // 8s total grace (6s visible + 2s network buffer)
+    const remaining=Math.max(100,7000-elapsed); // FIX: 7s total (6s visible + 1s buffer) — was 8s
     hostWatchdogRef.current=setTimeout(()=>{
       const cur=arenaRoomRef.current||arenaRoom;
       if(!cur||cur.state!=="playing")return;
+      // Double-check: is the turn STILL on the same player? (prevents double-advance)
+      if(cur.turnPlayerId!==rm.turnPlayerId||cur.turnIdx!==rm.turnIdx||cur.round!==rm.round)return;
       // Force advance: treat as wrong answer
       const players=cur.players||[];
       const nextIdx=((cur.turnIdx||0)+1)%players.length;
@@ -2757,6 +2831,10 @@ export default function App(){
   },[arenaPhase,arenaRoom?.round]);
 
   // ALL DEVICES: Visual countdown timer (display only — no game logic)
+  // FIX: Use ref for arenaAnswered to avoid stale closure in setInterval
+  const arenaAnsweredRef=useRef(false);
+  useEffect(()=>{arenaAnsweredRef.current=arenaAnswered;},[arenaAnswered]);
+  
   useEffect(()=>{
     if(arenaPhase!=="playing"||arenaPaused)return;
     const rm=arenaRoomRef.current||arenaRoom;
@@ -2767,13 +2845,26 @@ export default function App(){
     const iv=setInterval(()=>{
       const s=calcSec();
       setArenaSec(s);
-      // Turn player auto-submits wrong answer when their timer hits 0
-      if(s<=0&&!arenaAnswered&&rm.turnPlayerId===arenaId){
+      // FIX: Use ref instead of stale closure for arenaAnswered
+      const curRm=arenaRoomRef.current;
+      if(s<=0&&!arenaAnsweredRef.current&&curRm?.turnPlayerId===arenaId){
         arenaAnswer(null);
       }
     },250); // 250ms for smoother countdown
     return()=>clearInterval(iv);
-  },[arenaRoom?.turnStartedAt,arenaPhase,arenaPaused,arenaAnswered]);
+  },[arenaRoom?.turnStartedAt,arenaPhase,arenaPaused]);
+  
+  // FIX: Universal fallback watchdog — if ANY device sees turn stuck for 10s, non-host forces UI reset
+  useEffect(()=>{
+    if(arenaPhase!=="playing")return;
+    const rm=arenaRoomRef.current||arenaRoom;
+    if(!rm||!rm.turnStartedAt)return;
+    const elapsed=Date.now()-rm.turnStartedAt;
+    if(elapsed>10000){
+      // Turn has been stuck — force UI to show waiting state instead of frozen
+      setArenaMsg("⏳ Waiting for next turn...");
+    }
+  },[arenaRoom?.turnStartedAt,arenaPhase]);
 
   // Reset answer state when turn or round changes
   useEffect(()=>{
@@ -2940,8 +3031,8 @@ export default function App(){
     },300);
   };
 
-  const tapMicNum=()=>rec.start(handleNumResult);
-  const tapMicPh=()=>rec.start(handlePhResult);
+  const tapMicNum=()=>rec.start(handleNumResult,NW[selNum]);
+  const tapMicPh=()=>rec.start(handlePhResult,phW?.word);
   const typeNum=(typed)=>handleNumResult(typed);
   const typePh=(typed)=>handlePhResult(typed);
 
@@ -3113,7 +3204,7 @@ export default function App(){
     // Step 5: Speaking practice (if enabled)
     if(learnModes.speak){
       await speak(`Your turn ${kidName}! Can you say, ${w}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
-      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handleNumResult);
+      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handleNumResult,NW[selNum]);
     }else{
       pRef.current=false;
       if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
@@ -3125,7 +3216,7 @@ export default function App(){
     setSpRes(null);setSpAcc(null);
     setNStep("countdown");
     await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);
-    stop();setNStep("listening");rec.start(handleNumResult);
+    stop();setNStep("listening");rec.start(handleNumResult,NW[selNum]);
   };
 
   // PHONICS PLAY FLOW
@@ -3172,7 +3263,7 @@ export default function App(){
     // Step 5: Speaking practice (if enabled)
     if(phModes.speak){
       await speak(`Your turn ${kidName}! Can you say, ${wd.word}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
-      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handlePhResult);
+      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handlePhResult,phW?.word);
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
@@ -3184,7 +3275,7 @@ export default function App(){
     setPhRes(null);setPhAcc(null);
     setPhStep("countdown");
     await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);
-    stop();setPhStep("listening");rec.start(handlePhResult);
+    stop();setPhStep("listening");rec.start(handlePhResult,phW?.word);
   };
 
   // ═══ SHAPE PLAY FLOW ═══
@@ -3217,10 +3308,10 @@ export default function App(){
     }
     if(speakMode){
       await speak(`Your turn ${kidName}! Can you say, ${sh.name}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
-      stop();setShStep("listening");pRef.current=false;rec.start(handleShResult);
+      stop();setShStep("listening");pRef.current=false;rec.start(handleShResult,selShape?.name);
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
-  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setShStep("listening");rec.start(handleShResult);};
+  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setShStep("listening");rec.start(handleShResult,selShape?.name);};
 
   // ═══ COLOR PLAY FLOW ═══
   const handleCoResult=(result,alternatives)=>{
@@ -3252,10 +3343,10 @@ export default function App(){
     }
     if(speakMode){
       await speak(`Your turn ${kidName}! Can you say, ${co.name}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
-      stop();setCoStep("listening");pRef.current=false;rec.start(handleCoResult);
+      stop();setCoStep("listening");pRef.current=false;rec.start(handleCoResult,selColor?.name);
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
-  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setCoStep("listening");rec.start(handleCoResult);};
+  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setCoStep("listening");rec.start(handleCoResult,selColor?.name);};
 
 
 
@@ -4181,8 +4272,8 @@ export default function App(){
 
       <div style={{textAlign:"center",padding:"8px 16px",borderRadius:16,background:arenaRoom.turnPlayerId===arenaId?"linear-gradient(135deg,#FECA57,#FF9F43)":"rgba(255,255,255,0.08)",flexShrink:0}}>
         <span style={{fontSize:14,fontWeight:800,color:arenaRoom.turnPlayerId===arenaId?"#1B1464":"rgba(255,255,255,0.7)"}}>
-          {arenaRoom.turnPlayerId===arenaId?"🎯 YOUR TURN — Answer now!":
-           `⏳ ${(arenaRoom.players||[]).find(p=>p.id===arenaRoom.turnPlayerId)?.name||"Player"}'s turn`}
+          {arenaRoom.turnPlayerId===arenaId?(arenaSec>0?"🎯 YOUR TURN — Answer now!":"⏳ Submitting..."):
+           arenaSec>0?`⏳ ${(arenaRoom.players||[]).find(p=>p.id===arenaRoom.turnPlayerId)?.name||"Player"}'s turn`:"⏳ Advancing..."}
         </span>
       </div>
 
@@ -5245,7 +5336,7 @@ export default function App(){
         {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {shStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {shStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?shColor:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {shStep==="listening"&&<ListeningBox transcript={rec.txt} volume={rec.vol} onTapMic={()=>rec.start(handleShResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
+        {shStep==="listening"&&<ListeningBox transcript={rec.txt} volume={rec.vol} onTapMic={()=>rec.start(handleShResult,selShape?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name}/>}
         {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShRes(null);const idx=SHAPES.findIndex(x=>x.name===sh.name);const next=SHAPES[(idx+1)%SHAPES.length];setSelShape(next);setShStep("idle");setTimeout(()=>playShape(next),200);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5273,7 +5364,7 @@ export default function App(){
         {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {coStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {coStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?co.hex:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {coStep==="listening"&&<ListeningBox transcript={rec.txt} volume={rec.vol} onTapMic={()=>rec.start(handleCoResult)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
+        {coStep==="listening"&&<ListeningBox transcript={rec.txt} volume={rec.vol} onTapMic={()=>rec.start(handleCoResult,selColor?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name}/>}
         {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoRes(null);const idx=COLORSDATA.findIndex(x=>x.name===co.name);const next=COLORSDATA[(idx+1)%COLORSDATA.length];setSelColor(next);setCoStep("idle");setTimeout(()=>playColor(next),200);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
