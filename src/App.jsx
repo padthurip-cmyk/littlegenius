@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+=import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 
 // ═══ FIREBASE CONFIG — Set your project URL here (one-time developer setup) ═══
@@ -2712,6 +2712,59 @@ export default function App(){
   const[modeStep,setModeStep]=useState("idle"); // idle|playing|listening|result
   const[modeRes,setModeRes]=useState(null); // speech result text
   const[modeAcc,setModeAcc]=useState(null); // accuracy percentage
+  const speakModeCb=useRef(null);
+  const doSpeak=useCallback(async(w)=>{
+    if(!w){setModeStep("idle");return;}
+    stop();pRef.current=true;setModeStep("playing");setModeRes(null);setModeAcc(null);
+    setTeacherMood("speaking");
+    await speak(`Say this word!`,{rate:0.9,pitch:1.0});
+    await wait(400);if(!pRef.current){setModeStep("idle");return;}
+    await speak(`${w.word}!`,{rate:0.6,pitch:1.0});
+    await wait(600);if(!pRef.current){setModeStep("idle");return;}
+    await speak(`Now you say it! Say ${w.word}!`,{rate:0.9,pitch:1.0});
+    await wait(400);if(!pRef.current){setModeStep("idle");return;}
+    stop();pRef.current=false;setModeStep("listening");setTeacherMood("happy");
+  },[speak,stop]);
+  const handleSpeakResult=useCallback((result,alternatives,expected)=>{
+    const w=modeWords[modeIdx];if(!w)return;
+    if(!result?.trim()){setModeStep("mic_ready");return;}
+    const acc=calcAcc(w.word,result,alternatives);
+    setModeRes(normalizeSpoken(result));setModeAcc(acc);setModeStep("result");
+    const s=getStars(acc);const p=getStarPts(s);
+    if(p>0){awardPoints(p,"phonics",w.word);boom();}else{flashWrong();}
+    setTimeout(()=>{
+      if(s>=3)speak(`${kidName}, perfect! ${acc} percent!`,{rate:0.85,pitch:1.0});
+      else if(s>=1)speak(`${acc} percent. Nice try!`,{rate:0.85,pitch:1.0});
+      else speak(`That was ${acc} percent. Try again!`,{rate:0.85,pitch:1.0});
+    },400);
+  },[modeWords,modeIdx,speak,kidName]);
+  const doListen=useCallback(async(w)=>{
+    if(!w)return;stop();pRef.current=true;setModeStep("playing");
+    setTeacherMood("speaking");
+    await speak(`${w.word}!`,{rate:0.8,pitch:1.0});
+    await wait(500);if(!pRef.current){setModeStep("idle");return;}
+    await speak(`This is ${w.word}. ${w.sentence}`,{rate:0.7,pitch:1.0});
+    await wait(600);if(!pRef.current){setModeStep("idle");return;}
+    await speak(`Now repeat after me...`,{rate:0.8,pitch:1.0});
+    await wait(400);if(!pRef.current){setModeStep("idle");return;}
+    setModeStep("repeat");
+    await speak(`${w.word}`,{rate:0.45,pitch:1.0});
+    await wait(1000);if(!pRef.current){setModeStep("idle");return;}
+    if(!isDone("phonics",w.word))awardPoints(3,"phonics",w.word);
+    pRef.current=false;setModeStep("done");setTeacherMood("star");
+  },[speak,stop]);
+  const doRead=useCallback(async(w)=>{
+    if(!w)return;stop();pRef.current=true;setModeStep("playing");setModeRes(null);setModeAcc(null);
+    setTeacherMood("excited");
+    await speak(`Spell this word: ${w.word}!`,{rate:0.85,pitch:1.0});
+    await wait(400);if(!pRef.current){setModeStep("idle");return;}
+    setActiveSpellIdx(-1);setSpellStatus([]);
+    await spellWord(w.word);
+    await wait(300);if(!pRef.current){setModeStep("idle");return;}
+    if(!isDone("phonics",w.word))awardPoints(5,"phonics",w.word);
+    boom();pRef.current=false;setModeStep("done");setTeacherMood("star");
+    await speak(`You spelled ${w.word}! Great job!`,{rate:0.85,pitch:1.0});
+  },[speak,stop,spellWord]);
   const toggleLearnMode=(key)=>setLearnModes(p=>({...p,[key]:!p[key]})); // "numbers","abc","shapes","colors"
   const[quizTab,setQuizTab]=useState("numquiz"); // "numquiz","math","letters","write"
   const prevScrRef=useRef("home"); // track where user navigated from
@@ -4471,33 +4524,6 @@ export default function App(){
   // ═══════════════════════════════════════════════════
   // 🗣️ SPEAKING MODULE — App says word → Kid says it back → Mic → Score
   // ═══════════════════════════════════════════════════
-  const speakModeCb=useRef(null);
-  const doSpeak=useCallback(async(w)=>{
-    if(!w){setModeStep("idle");return;}
-    stop();pRef.current=true;setModeStep("playing");setModeRes(null);setModeAcc(null);
-    setTeacherMood("speaking");
-    await speak(`Say this word!`,{rate:0.9,pitch:1.0});
-    await wait(400);if(!pRef.current){setModeStep("idle");return;}
-    await speak(`${w.word}!`,{rate:0.6,pitch:1.0});
-    await wait(600);if(!pRef.current){setModeStep("idle");return;}
-    await speak(`Now you say it! Say ${w.word}!`,{rate:0.9,pitch:1.0});
-    await wait(400);if(!pRef.current){setModeStep("idle");return;}
-    stop();pRef.current=false;setModeStep("listening");setTeacherMood("happy");
-  },[speak,stop]);
-
-  const handleSpeakResult=useCallback((result,alternatives,expected)=>{
-    const w=modeWords[modeIdx];if(!w)return;
-    if(!result?.trim()){setModeStep("mic_ready");return;}
-    const acc=calcAcc(w.word,result,alternatives);
-    setModeRes(normalizeSpoken(result));setModeAcc(acc);setModeStep("result");
-    const s=getStars(acc);const p=getStarPts(s);
-    if(p>0){awardPoints(p,"phonics",w.word);boom();}else{flashWrong();}
-    setTimeout(()=>{
-      if(s>=3)speak(`${kidName}, perfect! ${acc} percent!`,{rate:0.85,pitch:1.0});
-      else if(s>=1)speak(`${acc} percent. Nice try!`,{rate:0.85,pitch:1.0});
-      else speak(`That was ${acc} percent. Try again!`,{rate:0.85,pitch:1.0});
-    },400);
-  },[modeWords,modeIdx,speak,kidName]);
 
   if(scr==="speak_play"){const w=modeWords[modeIdx];return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
@@ -4558,21 +4584,6 @@ export default function App(){
   // ═══════════════════════════════════════════════════
   // 👂 LISTENING MODULE — App says word + context → "Repeat after me" → Done (NO mic)
   // ═══════════════════════════════════════════════════
-  const doListen=useCallback(async(w)=>{
-    if(!w)return;stop();pRef.current=true;setModeStep("playing");
-    setTeacherMood("speaking");
-    await speak(`${w.word}!`,{rate:0.8,pitch:1.0});
-    await wait(500);if(!pRef.current){setModeStep("idle");return;}
-    await speak(`This is ${w.word}. ${w.sentence}`,{rate:0.7,pitch:1.0});
-    await wait(600);if(!pRef.current){setModeStep("idle");return;}
-    await speak(`Now repeat after me...`,{rate:0.8,pitch:1.0});
-    await wait(400);if(!pRef.current){setModeStep("idle");return;}
-    setModeStep("repeat");
-    await speak(`${w.word}`,{rate:0.45,pitch:1.0});
-    await wait(1000);if(!pRef.current){setModeStep("idle");return;}
-    if(!isDone("phonics",w.word))awardPoints(3,"phonics",w.word);
-    pRef.current=false;setModeStep("done");setTeacherMood("star");
-  },[speak,stop]);
 
   if(scr==="listen_play"){const w=modeWords[modeIdx];return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <SubHead title={`Listening 👂 — ${(modeCat||"").charAt(0).toUpperCase()+(modeCat||"").slice(1)}`} onBack={()=>{stop();pRef.current=false;setModeStep("idle");setScr("listening");}} points={prof?.points||0}/>
@@ -4620,18 +4631,6 @@ export default function App(){
   // ═══════════════════════════════════════════════════
   // 📖 READING MODULE — See word → Scrambled letter tap → Score
   // ═══════════════════════════════════════════════════
-  const doRead=useCallback(async(w)=>{
-    if(!w)return;stop();pRef.current=true;setModeStep("playing");setModeRes(null);setModeAcc(null);
-    setTeacherMood("excited");
-    await speak(`Spell this word: ${w.word}!`,{rate:0.85,pitch:1.0});
-    await wait(400);if(!pRef.current){setModeStep("idle");return;}
-    setActiveSpellIdx(-1);setSpellStatus([]);
-    await spellWord(w.word);
-    await wait(300);if(!pRef.current){setModeStep("idle");return;}
-    if(!isDone("phonics",w.word))awardPoints(5,"phonics",w.word);
-    boom();pRef.current=false;setModeStep("done");setTeacherMood("star");
-    await speak(`You spelled ${w.word}! Great job!`,{rate:0.85,pitch:1.0});
-  },[speak,stop,spellWord]);
 
   if(scr==="read_play"){const w=modeWords[modeIdx];return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
