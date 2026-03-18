@@ -3044,7 +3044,7 @@ export default function App(){
   const pRef=useRef(false);
   const nudgeRef=useRef(null);
   // Nudge: if kid doesn't tap mic within 10s, remind them
-  const startNudge=()=>{clearTimeout(nudgeRef.current);nudgeRef.current=setTimeout(()=>{speak(`${kidName}, tap the big green microphone button to start!`,{rate:0.8,pitch:1.0});},10000);};
+  const startNudge=()=>{clearTimeout(nudgeRef.current);nudgeRef.current=setTimeout(()=>{showTeacher("happy","Tap the 🎤 button to start!");},10000);};
   const clearNudge=()=>clearTimeout(nudgeRef.current);
   // Highlight system — pulses any element Bella talks about
   const[glowTarget,setGlowTarget]=useState(null);
@@ -3124,7 +3124,7 @@ export default function App(){
     // Guard: empty result means no speech detected — go back to listening
     if(!result||!result.trim()){
       setNStep("listening");
-      speak(`I didn't hear you ${kidName}. Tap the mic and try again!`,{rate:0.8,pitch:1.0});
+      showTeacher("happy","Tap 🎤 and try again!");startNudge();
       return;
     }
     const w=NW[selNum];
@@ -3132,46 +3132,25 @@ export default function App(){
     const acc=calcAcc(w,result,alternatives);setSpRes(normalized);setSpAcc(acc);setNStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"numbers",selNum);boom();}else{flashWrong();}
-    // Voice cheer with name and reward motivation!
-    setTimeout(()=>{
-      const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
-      const need=nextR?(nextR.cost-((prof?.points||0)+p)):0;
-      if(s>=4){
-        speak(`${kidName}, wow! That was perfect!`,{rate:0.8,pitch:1.0});
-        if(nextR&&need<=30) setTimeout(()=>speak(`Only ${need} more for a ${nextR.name}!`,{rate:0.8,pitch:1.0}),2500);
-      }
-      else if(s>=3) speak(`Awesome ${kidName}! You nailed it!`,{rate:0.8,pitch:1.0});
-      else if(s>=1){
-        speak(`Nice try ${kidName}! Almost got it!`,{rate:0.8,pitch:1.0});
-        if(nextR) setTimeout(()=>speak(`Keep going for your ${nextR.name}!`,{rate:0.8,pitch:1.0}),2200);
-      }
-      else{headNo();flashWrong();speak(`That's okay ${kidName}! Let's try again!`,{rate:0.8,pitch:1.0});}
-    },300);
+    if(s>=4) showTeacher("cheering",`WOW ${kidName}! PERFECT! ⭐`);
+    else if(s>=3) showTeacher("excited",`Great job ${kidName}! 🎉`);
+    else if(s>=1) showTeacher("happy",`Nice try ${kidName}! 💪`);
+    else{headNo();showTeacher("sad",`Try again ${kidName}! 💫`);}
   };
   const handlePhResult=(result,alternatives)=>{
     if(!result||!result.trim()){
       setPhStep("listening");
-      speak(`I didn't hear you ${kidName}. Tap the mic and try again!`,{rate:0.8,pitch:1.0});
+      showTeacher("happy","Tap 🎤 and try again!");startNudge();
       return;
     }
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(phW.word,result,alternatives);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"phonics",phW.word);boom();}else{flashWrong();}
-    setTimeout(()=>{
-      const nextR=REWARDS.filter(r=>r.cost>((prof?.points||0)+p)).sort((a,b)=>a.cost-b.cost)[0];
-      const need=nextR?(nextR.cost-((prof?.points||0)+p)):0;
-      if(s>=4){
-        speak(`${kidName}, that was amazing! You got it!`,{rate:0.8,pitch:1.0});
-        if(nextR&&need<=30) setTimeout(()=>speak(`So close! ${need} more points for a ${nextR.name}.`,{rate:0.8,pitch:1.0}),2500);
-      }
-      else if(s>=3) speak(`Awesome ${kidName}! Keep going!`,{rate:0.8,pitch:1.0});
-      else if(s>=1){
-        speak(`Nice try ${kidName}! So close!`,{rate:0.8,pitch:1.0});
-        if(nextR) setTimeout(()=>speak(`Keep going for your ${nextR.name}.`,{rate:0.8,pitch:1.0}),2200);
-      }
-      else speak(`You got this ${kidName}! Try again!`,{rate:0.8,pitch:1.0});
-    },300);
+    if(s>=4) showTeacher("cheering",`Amazing ${kidName}! ⭐`);
+    else if(s>=3) showTeacher("excited",`Great job ${kidName}! 🎉`);
+    else if(s>=1) showTeacher("happy",`Nice try ${kidName}! 💪`);
+    else showTeacher("sad",`Try again ${kidName}! 💫`);
   };
 
   const tapMicNum=()=>{clearNudge();rec.start(handleNumResult,NW[selNum]);};
@@ -3346,7 +3325,7 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(learnModes.speak){
-      await speak(`Your turn ${kidName}! Tap the microphone and say, ${w}!`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${w}!`);await wait(300);if(!pRef.current)return;
       stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
     }else{
       pRef.current=false;
@@ -3355,9 +3334,8 @@ export default function App(){
       setNStep("idle");
     }
   };
-  const retryNum=async()=>{showTeacher("happy","Try again! You can do it! 💪");
+  const retryNum=async()=>{showTeacher("happy","One more time! Tap 🎤");
     setSpRes(null);setSpAcc(null);
-    await speak(`One more time! Tap the microphone!`,{rate:0.75,pitch:1.0});await wait(200);
     stop();setNStep("listening");startNudge();
   };
 
@@ -3404,7 +3382,7 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(phModes.speak){
-      await speak(`Your turn ${kidName}! Tap the microphone and say, ${wd.word}!`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${wd.word}!`);await wait(300);if(!pRef.current)return;
       stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
     }else{
       pRef.current=false;
@@ -3413,9 +3391,8 @@ export default function App(){
       setPhStep("idle");
     }
   };
-  const retryPh=async()=>{showTeacher("happy","One more try! I believe in you! 🌈");
+  const retryPh=async()=>{showTeacher("happy","One more try! Tap 🎤");
     setPhRes(null);setPhAcc(null);
-    await speak(`One more time! Tap the microphone!`,{rate:0.75,pitch:1.0});await wait(200);
     stop();setPhStep("listening");startNudge();
   };
 
@@ -3423,17 +3400,15 @@ export default function App(){
   const handleShResult=(result,alternatives)=>{
     if(!result||!result.trim()){
       setShStep("listening");
-      speak(`I didn't hear you ${kidName}. Tap the mic and try again!`,{rate:0.8,pitch:1.0});
+      showTeacher("happy","Tap 🎤 and try again!");startNudge();
       return;
     }
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selShape.name,result,alternatives);setShRes(normalized);setShAcc(acc);setShStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"shapes",selShape.name);boom();}else{flashWrong();}
-    setTimeout(()=>{
-      if(s>=3) speak(`${kidName}, you got it!`,{rate:0.8,pitch:1.0});
-      else speak(`Nice try ${kidName}!`,{rate:0.8,pitch:1.0});
-    },300);
+    if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
+    else showTeacher("happy",`Nice try ${kidName}! 💪`);
   };
   const playShape=async(sh)=>{
     if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
@@ -3453,27 +3428,25 @@ export default function App(){
       await speak(`Now say it with me, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`Your turn ${kidName}! Tap the microphone and say, ${sh.name}!`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${sh.name}!`);await wait(300);if(!pRef.current)return;
       stop();setShStep("listening");pRef.current=false;startNudge();
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
-  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setShStep("listening");startNudge();};
+  const retryShape=async()=>{setShRes(null);setShAcc(null);showTeacher("happy","One more time! Tap 🎤");stop();setShStep("listening");startNudge();};
 
   // ═══ COLOR PLAY FLOW ═══
   const handleCoResult=(result,alternatives)=>{
     if(!result||!result.trim()){
       setCoStep("listening");
-      speak(`I didn't hear you ${kidName}. Tap the mic and try again!`,{rate:0.8,pitch:1.0});
+      showTeacher("happy","Tap 🎤 and try again!");startNudge();
       return;
     }
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selColor.name,result,alternatives);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"colors",selColor.name);boom();}else{flashWrong();}
-    setTimeout(()=>{
-      if(s>=3) speak(`${kidName}, you got it!`,{rate:0.8,pitch:1.0});
-      else speak(`Nice try ${kidName}!`,{rate:0.8,pitch:1.0});
-    },300);
+    if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
+    else showTeacher("happy",`Nice try ${kidName}! 💪`);
   };
   const playColor=async(co)=>{
     if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
@@ -3493,11 +3466,11 @@ export default function App(){
       await speak(`Now say it with me, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`Your turn ${kidName}! Tap the microphone and say, ${co.name}!`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${co.name}!`);await wait(300);if(!pRef.current)return;
       stop();setCoStep("listening");pRef.current=false;startNudge();
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
-  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setCoStep("listening");startNudge();};
+  const retryColor=async()=>{setCoRes(null);setCoAcc(null);showTeacher("happy","One more time! Tap 🎤");stop();setCoStep("listening");startNudge();};
 
 
 
