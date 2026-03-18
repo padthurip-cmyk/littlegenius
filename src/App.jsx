@@ -3395,9 +3395,54 @@ export default function App(){
   // NUMBER PLAY FLOW
   const playNum=async(num)=>{
     if(pRef.current){stop();pRef.current=false;setNStep("idle");return;}
-    pRef.current=true;setSelNum(num);setSpRes(null);setSpAcc(null);setAPhI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    retryCountRef.current=0;pRef.current=true;setSelNum(num);setSpRes(null);setSpAcc(null);setAPhI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     const w=NW[num];const scene=getScene(num);
 
+    // ═══ LISTENING MODE: Say number → "Repeat after me" → say slowly → done ═══
+    if(activeMode==="listening"){
+      setNStep("saying_number");glow("num-display");
+      await speak(`${w}!`,{rate:0.8,pitch:1.0});
+      await wait(500);if(!pRef.current)return;
+      await speak(`This is the number ${num}. ${w}.`,{rate:0.7,pitch:1.0});
+      await wait(500);if(!pRef.current)return;
+      await speak(scene.sentence,{rate:0.7,pitch:1.0});
+      await wait(500);if(!pRef.current)return;
+      await speak(`Now repeat after me...`,{rate:0.75,pitch:1.0});
+      await wait(400);if(!pRef.current)return;
+      await speak(`${w}`,{rate:0.5,pitch:1.0});
+      await wait(800);if(!pRef.current)return;
+      if(!isDone("numbers",num)) awardPoints(3,"numbers",num);
+      pRef.current=false;setNStep("idle");
+      return;
+    }
+
+    // ═══ SPEAKING MODE: Say number → mic → score ═══
+    if(activeMode==="speaking"){
+      setNStep("saying_number");glow("num-display");
+      await speak(`What number is this? ${num}!`,{rate:0.8,pitch:1.0});
+      await wait(400);if(!pRef.current)return;
+      await speak(`Your turn ${kidName}! Say, ${w}!`,{rate:0.85,pitch:1.0});
+      await wait(400);if(!pRef.current)return;
+      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handleNumResult,NW[num]);
+      return;
+    }
+
+    // ═══ READING MODE: Say number → spelling tap game → done ═══
+    if(activeMode==="reading"){
+      setNStep("saying_number");glow("num-display");
+      await speak(`Spell this number: ${w}!`,{rate:0.8,pitch:1.0});
+      await wait(400);if(!pRef.current)return;
+      setNStep("spelling");
+      await spellWord(w.replace(/\s/g,''));
+      await wait(400);if(!pRef.current)return;
+      if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
+      boom();
+      await speak(`You spelled ${w}!`,{rate:0.85,pitch:1.0});
+      pRef.current=false;setNStep("idle");
+      return;
+    }
+
+    // ═══ DEFAULT / PHONICS MODE: Full comprehensive teaching ═══
     // Step 1: Say the number (always)
     setNStep("saying_number");
     glow("num-display");
@@ -3455,11 +3500,56 @@ export default function App(){
   // PHONICS PLAY FLOW
   const playPh=async(wd)=>{
     if(pRef.current){stop();pRef.current=false;setPhStep("idle");return;}
-    pRef.current=true;setPhW(wd);setPhRes(null);setPhAcc(null);setPhAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    retryCountRef.current=0;pRef.current=true;setPhW(wd);setPhRes(null);setPhAcc(null);setPhAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
 
+    // ═══ LISTENING MODE: Say word → "Repeat after me" → say slowly → done ═══
+    if(activeMode==="listening"){
+      setPhStep("saying_word");glow("ph-word");
+      await speak(`${wd.word}!`,{rate:0.8,pitch:1.0});
+      await wait(600);if(!pRef.current)return;
+      await speak(`This is ${wd.img} ${wd.word}.`,{rate:0.7,pitch:1.0});
+      await wait(500);if(!pRef.current)return;
+      setPhStep("saying_sentence");
+      await speak(wd.sentence,{rate:0.7,pitch:1.0});
+      await wait(500);if(!pRef.current)return;
+      await speak(`Now repeat after me...`,{rate:0.75,pitch:1.0});
+      await wait(400);if(!pRef.current)return;
+      await speak(`${wd.word}`,{rate:0.55,pitch:1.0});
+      await wait(800);if(!pRef.current)return;
+      if(!isDone("phonics",wd.word)) awardPoints(3,"phonics",wd.word);
+      pRef.current=false;setPhStep("idle");
+      return;
+    }
+
+    // ═══ SPEAKING MODE: Say word → mic → score ═══
+    if(activeMode==="speaking"){
+      setPhStep("saying_word");glow("ph-word");
+      await speak(`Say this word: ${wd.word}!`,{rate:0.8,pitch:1.0});
+      await wait(400);if(!pRef.current)return;
+      await speak(`Your turn ${kidName}! Say, ${wd.word}!`,{rate:0.85,pitch:1.0});
+      await wait(400);if(!pRef.current)return;
+      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handlePhResult,wd.word);
+      return;
+    }
+
+    // ═══ READING MODE: Say word → spelling tap game only ═══
+    if(activeMode==="reading"){
+      setPhStep("saying_word");glow("ph-word");
+      await speak(`Spell this word: ${wd.word}!`,{rate:0.8,pitch:1.0});
+      await wait(400);if(!pRef.current)return;
+      setPhStep("spelling");
+      await spellWord(wd.word);
+      await wait(400);if(!pRef.current)return;
+      if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
+      boom();
+      await speak(`You spelled ${wd.word}!`,{rate:0.85,pitch:1.0});
+      pRef.current=false;setPhStep("idle");
+      return;
+    }
+
+    // ═══ DEFAULT / PHONICS MODE: Full comprehensive teaching ═══
     // Step 1: Say the word (always)
     setPhStep("saying_word");
-    glow("ph-word");
     glow("ph-word");
     await speak(`This word is, ${wd.word}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current)return;
@@ -3496,7 +3586,7 @@ export default function App(){
     // Step 5: Speaking practice (if enabled)
     if(phModes.speak){
       showTeacher('listening',`Your turn! Tap 🎤 and say ${wd.word}!`);await wait(300);if(!pRef.current)return;
-      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
+      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handlePhResult,wd.word);
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
@@ -4332,9 +4422,13 @@ export default function App(){
     const mode=parentMode||null;
     setActiveMode(mode);
     // Force teaching modes based on parent section
+    // Speaking: say word → kid repeats → mic → score
     if(mode==="speaking"){setLearnModes({spelling:false,phonics:false,sentence:false,speak:true});setPhModes({spelling:false,phonics:false,sentence:false,speak:true});}
-    else if(mode==="listening"){setLearnModes({spelling:true,phonics:true,sentence:true,speak:false});setPhModes({spelling:true,phonics:true,sentence:true,speak:false});}
+    // Listening: say word → "repeat after me" → say again slowly → done (NO mic)
+    else if(mode==="listening"){setLearnModes({spelling:false,phonics:false,sentence:false,speak:false});setPhModes({spelling:false,phonics:false,sentence:false,speak:false});}
+    // Reading: show word → spelling tap game only → score
     else if(mode==="reading"){setLearnModes({spelling:true,phonics:false,sentence:false,speak:false});setPhModes({spelling:true,phonics:false,sentence:false,speak:false});}
+    // Writing: watermark trace → score
     else if(mode==="writing"){setLearnModes({spelling:false,phonics:false,sentence:false,speak:false});setPhModes({spelling:false,phonics:false,sentence:false,speak:false});}
     if(cat.cat)setPhCat(cat.cat);
     if(cat.tab)setLearnTab(cat.tab);
@@ -4350,9 +4444,9 @@ export default function App(){
       <SubHead title={title} onBack={()=>{setActiveMode(null);onBack();}} points={prof?.points||0}/>
       <div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}>
         <div style={{textAlign:"center",fontSize:48,marginBottom:8,animation:"mascotB 2s ease-in-out infinite"}}>{emoji}</div>
-        {parentMode&&<div style={{textAlign:"center",padding:"6px 14px",background:parentMode==="speaking"?"#EDE7F6":parentMode==="listening"?"#E8F5E9":parentMode==="reading"?"#FFF8E1":"#E3F2FD",borderRadius:12,marginBottom:10}}>
-          <span style={{fontSize:12,fontWeight:700,color:parentMode==="speaking"?"#6C5CE7":parentMode==="listening"?"#00D2A0":parentMode==="reading"?"#FF9F43":"#54A0FF"}}>
-            {parentMode==="speaking"?"🗣️ Speaking Mode — Say each word aloud!":parentMode==="listening"?"👂 Listening Mode — Tap to hear & learn!":parentMode==="reading"?"📖 Reading Mode — Match & spell words!":"✍️ Writing Mode — Trace & write!"}
+        {parentMode&&<div style={{textAlign:"center",padding:"8px 14px",background:parentMode==="speaking"?"linear-gradient(135deg,#EDE7F6,#F3E8FF)":parentMode==="listening"?"linear-gradient(135deg,#E8F5E9,#F0FFF4)":parentMode==="reading"?"linear-gradient(135deg,#FFF8E1,#FFFDE7)":"linear-gradient(135deg,#E3F2FD,#EBF5FF)",borderRadius:14,marginBottom:10,border:parentMode==="speaking"?"2px solid #D8B4FE":parentMode==="listening"?"2px solid #86EFAC":parentMode==="reading"?"2px solid #FDE68A":"2px solid #93C5FD"}}>
+          <span style={{fontSize:13,fontWeight:800,color:parentMode==="speaking"?"#6C5CE7":parentMode==="listening"?"#16A34A":parentMode==="reading"?"#D97706":"#2563EB"}}>
+            {parentMode==="speaking"?"🗣️ App says the word → You say it back → Get scored!":parentMode==="listening"?"👂 Tap any word → Listen carefully → Repeat after Ollie!":parentMode==="reading"?"📖 See the word → Tap letters in order → Spell it!":"✍️ See the watermark → Trace & write → Get scored!"}
           </span>
         </div>}
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
@@ -5091,7 +5185,7 @@ export default function App(){
     {activeMode&&<div style={{padding:"8px 16px",background:activeMode==="speaking"?"linear-gradient(135deg,#6C5CE7,#A29BFE)":activeMode==="listening"?"linear-gradient(135deg,#00D2A0,#55EFC4)":activeMode==="reading"?"linear-gradient(135deg,#FF9F43,#FECA57)":"linear-gradient(135deg,#54A0FF,#74B9FF)",flexShrink:0}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
         <span style={{fontSize:18}}>{activeMode==="speaking"?"🗣️":activeMode==="listening"?"👂":activeMode==="reading"?"📖":"✍️"}</span>
-        <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{activeMode==="speaking"?"Say each item aloud!":activeMode==="listening"?"Tap to hear & learn!":activeMode==="reading"?"Match & spell!":"Trace & write!"}</span>
+        <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{activeMode==="speaking"?"🎤 Tap any item → Say it → Get scored!":activeMode==="listening"?"👂 Tap any item → Listen & repeat!":activeMode==="reading"?"📖 Tap any item → Spell it!":"✍️ Trace & write!"}</span>
       </div>
     </div>}
     {/* Teaching mode toggles — hidden in activeMode */}
@@ -5679,7 +5773,7 @@ export default function App(){
           </div>
         )}
         {phStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={tapMicPh} isListening={rec.on} error={rec.err} onType={typePh} expected={phW?.word||""} phase={rec.phase} engineUsed={rec.engineUsed}/>}
-        {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhRes(null);const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),200);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
+        {phStep==="result"&&phRes!==null&&<ResultBox acc={phAcc} result={phRes} expected={phW.word} onRetry={retryPh} onDone={()=>{setPhRes(null);const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),300);}} color={cc} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
@@ -5689,7 +5783,7 @@ export default function App(){
     {activeMode&&<div style={{padding:"8px 16px",background:activeMode==="speaking"?"linear-gradient(135deg,#6C5CE7,#A29BFE)":activeMode==="listening"?"linear-gradient(135deg,#00D2A0,#55EFC4)":activeMode==="reading"?"linear-gradient(135deg,#FF9F43,#FECA57)":"linear-gradient(135deg,#54A0FF,#74B9FF)",flexShrink:0}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
         <span style={{fontSize:18}}>{activeMode==="speaking"?"🗣️":activeMode==="listening"?"👂":activeMode==="reading"?"📖":"✍️"}</span>
-        <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{activeMode==="speaking"?"Tap a word, then say it!":activeMode==="listening"?"Tap any word to hear it!":activeMode==="reading"?"Tap to practice spelling!":"Tap to write!"}</span>
+        <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{activeMode==="speaking"?"🎤 Tap a word → Say it → Get scored!":activeMode==="listening"?"👂 Tap a word → Listen & repeat!":activeMode==="reading"?"📖 Tap a word → Spell it with letter taps!":"✍️ Trace the watermark!"}</span>
       </div>
     </div>}
     {/* Teaching mode toggles — hidden in activeMode */}
