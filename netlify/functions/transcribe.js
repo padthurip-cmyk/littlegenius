@@ -30,7 +30,6 @@ export default async (req) => {
       smart_format: "true",
       punctuate: "false",
       diarize: "false",
-      alternatives: "5",
     });
 
     // Add keyword boosting for expected word
