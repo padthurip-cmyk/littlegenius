@@ -71,7 +71,3 @@ export default async (req) => {
     return new Response(JSON.stringify({ transcript: "", error: e.message }), { status: 200 });
   }
 };
-
-export const config = {
-  path: "/api/transcribe",
-};
