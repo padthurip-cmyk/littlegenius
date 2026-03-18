@@ -2705,6 +2705,7 @@ export default function App(){
   const[basicsTab,setBasicsTab]=useState("explore"); // legacy
   const[learnTab,setLearnTab]=useState("numbers");
   const[learnModes,setLearnModes]=useState({spelling:true,phonics:true,sentence:true,speak:false});
+  const[activeMode,setActiveMode]=useState(null); // "speaking"|"listening"|"reading"|"writing"|null
   const toggleLearnMode=(key)=>setLearnModes(p=>({...p,[key]:!p[key]})); // "numbers","abc","shapes","colors"
   const[quizTab,setQuizTab]=useState("numquiz"); // "numquiz","math","letters","write"
   const prevScrRef=useRef("home"); // track where user navigated from
@@ -3214,7 +3215,7 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setOllieSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.overflow="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
+  const goHome=()=>{setJoyFly(false);setOllieSize(95);stop();pRef.current=false;setActiveMode(null);guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.overflow="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -4326,8 +4327,15 @@ export default function App(){
     {id:"tables",icon:"📋",title:"Times Tables",scr:"quizzone",qtab:"math",mop:"×"},
     {id:"compare",icon:"⚖️",title:"Number Quiz",scr:"quizzone",qtab:"numquiz"},
   ];
-  const goSubCat=(cat)=>{
+  const goSubCat=(cat,parentMode)=>{
     sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
+    const mode=parentMode||null;
+    setActiveMode(mode);
+    // Force teaching modes based on parent section
+    if(mode==="speaking"){setLearnModes({spelling:false,phonics:false,sentence:false,speak:true});setPhModes({spelling:false,phonics:false,sentence:false,speak:true});}
+    else if(mode==="listening"){setLearnModes({spelling:true,phonics:true,sentence:true,speak:false});setPhModes({spelling:true,phonics:true,sentence:true,speak:false});}
+    else if(mode==="reading"){setLearnModes({spelling:true,phonics:false,sentence:false,speak:false});setPhModes({spelling:true,phonics:false,sentence:false,speak:false});}
+    else if(mode==="writing"){setLearnModes({spelling:false,phonics:false,sentence:false,speak:false});setPhModes({spelling:false,phonics:false,sentence:false,speak:false});}
     if(cat.cat)setPhCat(cat.cat);
     if(cat.tab)setLearnTab(cat.tab);
     if(cat.mop)setMathOp(cat.mop);
@@ -4336,15 +4344,20 @@ export default function App(){
     if(cat.wcase)setWriteCase(cat.wcase);
     setScr(cat.scr);
   };
-  const SubCatScreen=({title,emoji,cats,onBack})=>(
+  const SubCatScreen=({title,emoji,cats,onBack,parentMode})=>(
     <div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
       <Particles count={6}/>
-      <SubHead title={title} onBack={onBack} points={prof?.points||0}/>
+      <SubHead title={title} onBack={()=>{setActiveMode(null);onBack();}} points={prof?.points||0}/>
       <div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}>
         <div style={{textAlign:"center",fontSize:48,marginBottom:8,animation:"mascotB 2s ease-in-out infinite"}}>{emoji}</div>
+        {parentMode&&<div style={{textAlign:"center",padding:"6px 14px",background:parentMode==="speaking"?"#EDE7F6":parentMode==="listening"?"#E8F5E9":parentMode==="reading"?"#FFF8E1":"#E3F2FD",borderRadius:12,marginBottom:10}}>
+          <span style={{fontSize:12,fontWeight:700,color:parentMode==="speaking"?"#6C5CE7":parentMode==="listening"?"#00D2A0":parentMode==="reading"?"#FF9F43":"#54A0FF"}}>
+            {parentMode==="speaking"?"🗣️ Speaking Mode — Say each word aloud!":parentMode==="listening"?"👂 Listening Mode — Tap to hear & learn!":parentMode==="reading"?"📖 Reading Mode — Match & spell words!":"✍️ Writing Mode — Trace & write!"}
+          </span>
+        </div>}
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
           {cats.map((c,i)=>
-            <button key={c.id} data-r="tile" onClick={()=>goSubCat(c)} style={{
+            <button key={c.id} data-r="tile" onClick={()=>goSubCat(c,parentMode)} style={{
               display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"18px 10px",
               borderRadius:22,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",
               animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`
@@ -4387,10 +4400,10 @@ export default function App(){
     </div>
     <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
-    if(scr==="speaking")return<SubCatScreen title="Speaking 🗣️" emoji="🗣️" cats={SPEAKING_CATS} onBack={goHome}/>;
-  if(scr==="listening")return<SubCatScreen title="Listening 👂" emoji="👂" cats={LISTENING_CATS} onBack={goHome}/>;
-  if(scr==="reading")return<SubCatScreen title="Reading 📖" emoji="📖" cats={READING_CATS} onBack={goHome}/>;
-  if(scr==="writing")return<SubCatScreen title="Writing ✍️" emoji="✍️" cats={WRITING_CATS} onBack={goHome}/>;
+    if(scr==="speaking")return<SubCatScreen title="Speaking 🗣️" emoji="🗣️" cats={SPEAKING_CATS} onBack={goHome} parentMode="speaking"/>;
+  if(scr==="listening")return<SubCatScreen title="Listening 👂" emoji="👂" cats={LISTENING_CATS} onBack={goHome} parentMode="listening"/>;
+  if(scr==="reading")return<SubCatScreen title="Reading 📖" emoji="📖" cats={READING_CATS} onBack={goHome} parentMode="reading"/>;
+  if(scr==="writing")return<SubCatScreen title="Writing ✍️" emoji="✍️" cats={WRITING_CATS} onBack={goHome} parentMode="writing"/>;
   if(scr==="maths")return<SubCatScreen title="Maths 🧮" emoji="🧮" cats={MATHS_CATS} onBack={goHome}/>;
   if(scr==="mixquiz"){setScr("quizzone");return null;}
   if(scr==="homework")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Homework 📝" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,padding:20}}><span style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>📝</span><h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",textAlign:"center"}}>Coming Soon!</h2><p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,textAlign:"center"}}>Parents will assign homework tasks here</p></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
@@ -5073,9 +5086,16 @@ export default function App(){
   // ═══ LEARN HUB ═══
   if(scr==="learn"&&!selNum&&!selShape&&!selColor)return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
-    <SubHead title="Learn 📚" onBack={goHome} points={prof?.points||0}/>
-    {/* Teaching mode toggles */}
-    <div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0,flexWrap:"wrap"}}>
+    <SubHead title={activeMode?({speaking:"Speaking 🗣️",listening:"Listening 👂",reading:"Reading 📖",writing:"Writing ✍️"}[activeMode]||"Learn 📚"):"Learn 📚"} onBack={()=>{if(activeMode){const m=activeMode;setActiveMode(null);setScr(m);}else goHome();}} points={prof?.points||0}/>
+    {/* Mode banner when coming from main section */}
+    {activeMode&&<div style={{padding:"8px 16px",background:activeMode==="speaking"?"linear-gradient(135deg,#6C5CE7,#A29BFE)":activeMode==="listening"?"linear-gradient(135deg,#00D2A0,#55EFC4)":activeMode==="reading"?"linear-gradient(135deg,#FF9F43,#FECA57)":"linear-gradient(135deg,#54A0FF,#74B9FF)",flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <span style={{fontSize:18}}>{activeMode==="speaking"?"🗣️":activeMode==="listening"?"👂":activeMode==="reading"?"📖":"✍️"}</span>
+        <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{activeMode==="speaking"?"Say each item aloud!":activeMode==="listening"?"Tap to hear & learn!":activeMode==="reading"?"Match & spell!":"Trace & write!"}</span>
+      </div>
+    </div>}
+    {/* Teaching mode toggles — hidden in activeMode */}
+    {!activeMode&&<div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0,flexWrap:"wrap"}}>
       {[
         {key:"spelling",icon:"🔤",label:"Spell"},
         {key:"phonics",icon:"🔡",label:"Sounds"},
@@ -5089,9 +5109,9 @@ export default function App(){
         boxShadow:learnModes[m.key]?"0 3px 10px rgba(0,210,160,0.2)":"none",
         fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"
       }}><span style={{fontSize:12}}>{m.icon}</span>{m.label}{learnModes[m.key]&&<span style={{fontSize:8}}>✓</span>}</button>)}
-    </div>
-    {/* Tab bar */}
-    <div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0}}>
+    </div>}
+    {/* Tab bar — hidden in activeMode */}
+    {!activeMode&&<div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0}}>
       {[{id:"numbers",label:"🔢 Numbers"},{id:"abc",label:"🔤 ABC"},{id:"shapes",label:"🔷 Shapes"},{id:"colors",label:"🎨 Colors"}].map(t=>
         <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setLearnTab(t.id);
             const tabMsg={numbers:"Let's learn numbers!",abc:"Let's explore the alphabet!",shapes:"Let's discover shapes!",colors:"Let's learn colors!"};
@@ -5100,7 +5120,7 @@ export default function App(){
             background:learnTab===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",color:learnTab===t.id?"#fff":"#A4B0BE",boxShadow:learnTab===t.id?"var(--shadow-btn)":"none"
           }}>{t.label}</button>
       )}
-    </div>
+    </div>}
 
     {/* ═══ NUMBERS TAB ═══ */}
     {learnTab==="numbers"&&<div style={{flex:1,overflowY:"auto",overflowX:"hidden",display:"flex",flexDirection:"column",minHeight:0,WebkitOverflowScrolling:"touch"}}>
@@ -5193,9 +5213,15 @@ export default function App(){
   // ═══ QUIZ ZONE ═══
   if(scr==="quizzone")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
-    <SubHead title="Quiz Zone 🎯" onBack={goHome} points={prof?.points||0}/>
-    {/* Tab bar */}
-    <div style={{display:"flex",gap:3,padding:"4px 8px",background:"#fff",borderBottom:"none",flexShrink:0}}>
+    <SubHead title={activeMode?({speaking:"Speaking 🗣️",listening:"Listening 👂",reading:"Reading 📖",writing:"Writing ✍️"}[activeMode]||"Quiz Zone 🎯"):"Quiz Zone 🎯"} onBack={()=>{if(activeMode){const m=activeMode;setActiveMode(null);setScr(m);}else goHome();}} points={prof?.points||0}/>
+    {activeMode&&<div style={{padding:"8px 16px",background:activeMode==="speaking"?"linear-gradient(135deg,#6C5CE7,#A29BFE)":activeMode==="listening"?"linear-gradient(135deg,#00D2A0,#55EFC4)":activeMode==="reading"?"linear-gradient(135deg,#FF9F43,#FECA57)":"linear-gradient(135deg,#54A0FF,#74B9FF)",flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <span style={{fontSize:18}}>{activeMode==="speaking"?"🗣️":activeMode==="listening"?"👂":activeMode==="reading"?"📖":"✍️"}</span>
+        <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{activeMode==="writing"?"Trace & write carefully!":activeMode==="speaking"?"Answer by speaking!":"Focus mode active"}</span>
+      </div>
+    </div>}
+    {/* Tab bar — hidden in activeMode */}
+    {!activeMode&&<div style={{display:"flex",gap:3,padding:"4px 8px",background:"#fff",borderBottom:"none",flexShrink:0}}>
       {[{id:"numquiz",label:"🔢 Numbers"},{id:"math",label:"➕ Math"},{id:"letters",label:"🔤 Letters"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
           stop();movePandaTo("bottomRight");setTeacherMood("happy");setQuizTab(t.id);
@@ -5206,7 +5232,7 @@ export default function App(){
         }} style={{flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"var(--font)",
           background:quizTab===t.id?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#F0F4FF",color:quizTab===t.id?"#fff":"#A4B0BE",boxShadow:quizTab===t.id?"var(--shadow-btn)":"none"}}>{t.label}</button>
       )}
-    </div>
+    </div>}
 
     {/* ═══ NUMBER QUIZ ═══ */}
     {quizTab==="numquiz"&&<div style={{flex:1,display:"flex",flexDirection:"column",overflowY:"auto",overflowX:"hidden",minHeight:0,WebkitOverflowScrolling:"touch"}}>
@@ -5550,7 +5576,7 @@ export default function App(){
       </div>
     </div>}
     <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
-  if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#FF8C42";return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title="Phonics" onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
+  if(scr==="phonics"&&phW){const cc=WCATS[phCat]?.color||"#FF8C42";return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={activeMode?({speaking:"Speaking 🗣️",listening:"Listening 👂",reading:"Reading 📖",writing:"Writing ✍️"}[activeMode]||"Phonics"):"Phonics"} onBack={()=>{stop();pRef.current=false;setPhW(null);setPhStep("idle");}} points={prof?.points||0}/>
     {phStep!=="idle"&&<FlowSteps current={phStep} steps={PH_STEPS.filter(s=>
       s.id==="saying_word"||(s.id==="spelling"&&phModes.spelling)||(s.id==="saying_sentence"&&phModes.sentence)||(s.id==="saying_phonics"&&phModes.phonics)||(s.id==="countdown"&&phModes.speak)||(s.id==="result"&&phModes.speak)
     )}/>}
@@ -5658,9 +5684,16 @@ export default function App(){
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
 
   // ═══ PHONICS GRID ═══
-  if(scr==="phonics")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Phonics" onBack={goHome} points={prof?.points||0}/>
-    {/* Teaching mode toggles */}
-    <div style={{padding:"2px 8px",background:"#fff",flexShrink:0}}>
+  if(scr==="phonics")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title={activeMode?({speaking:"Speaking 🗣️ — "+phCat.charAt(0).toUpperCase()+phCat.slice(1),listening:"Listening 👂 — "+phCat.charAt(0).toUpperCase()+phCat.slice(1),reading:"Reading 📖 — "+phCat.charAt(0).toUpperCase()+phCat.slice(1),writing:"Writing ✍️"}[activeMode]||"Phonics"):"Phonics"} onBack={()=>{if(activeMode){const m=activeMode;setActiveMode(null);setScr(m);}else goHome();}} points={prof?.points||0}/>
+    {/* Mode banner */}
+    {activeMode&&<div style={{padding:"8px 16px",background:activeMode==="speaking"?"linear-gradient(135deg,#6C5CE7,#A29BFE)":activeMode==="listening"?"linear-gradient(135deg,#00D2A0,#55EFC4)":activeMode==="reading"?"linear-gradient(135deg,#FF9F43,#FECA57)":"linear-gradient(135deg,#54A0FF,#74B9FF)",flexShrink:0}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        <span style={{fontSize:18}}>{activeMode==="speaking"?"🗣️":activeMode==="listening"?"👂":activeMode==="reading"?"📖":"✍️"}</span>
+        <span style={{fontSize:13,fontWeight:800,color:"#fff"}}>{activeMode==="speaking"?"Tap a word, then say it!":activeMode==="listening"?"Tap any word to hear it!":activeMode==="reading"?"Tap to practice spelling!":"Tap to write!"}</span>
+      </div>
+    </div>}
+    {/* Teaching mode toggles — hidden in activeMode */}
+    {!activeMode&&<div style={{padding:"2px 8px",background:"#fff",flexShrink:0}}>
       <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:0.5,marginBottom:2}}>⚙️ What to teach:</div>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
       {[
@@ -5676,8 +5709,9 @@ export default function App(){
         color:phModes[m.key]?"#FF8C42":"#8E8CA3",
         fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}><span style={{fontSize:14}}>{m.icon}</span>{m.label}{phModes[m.key]?<span style={{fontSize:10}}>✓</span>:null}</button>)}
       </div>
-    </div>
-    <nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#fff",borderBottom:"none",flexShrink:0}}>{Object.entries(WCATS).map(([k,d])=><button key={k} data-r="pill" onClick={()=>{sfxTap();setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 12px",borderRadius:14,border:"2px solid",borderColor:phCat===k?"transparent":"#DFE6E9",background:phCat===k?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",boxShadow:phCat===k?"0 3px 12px rgba(108,92,231,0.2)":"none",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"var(--font)",flexShrink:0}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav><div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0,WebkitOverflowScrolling:"touch"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} data-r="word" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:"none",background:done?`linear-gradient(135deg,${cc},${cc}DD)`:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:done?`0 4px 14px ${cc}30`:"var(--shadow-card)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{w.img}</span><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,marginTop:4,color:done?"#fff":"#2D3436"}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#fff",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
+    </div>}
+    {/* Category nav — hidden in activeMode */}
+    {!activeMode&&<nav style={{display:"flex",gap:8,padding:"10px 16px",overflowX:"auto",background:"#fff",borderBottom:"none",flexShrink:0}}>{Object.entries(WCATS).map(([k,d])=><button key={k} data-r="pill" onClick={()=>{sfxTap();setPhCat(k);setTeacherMood("happy");}} style={{padding:"7px 12px",borderRadius:14,border:"2px solid",borderColor:phCat===k?"transparent":"#DFE6E9",background:phCat===k?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",boxShadow:phCat===k?"0 3px 12px rgba(108,92,231,0.2)":"none",color:phCat===k?"#fff":"#8E8CA3",fontSize:12,fontWeight:800,whiteSpace:"nowrap",cursor:"pointer",fontFamily:"var(--font)",flexShrink:0}}>{d.emoji} {k.charAt(0).toUpperCase()+k.slice(1)}</button>)}</nav>}<div style={{flex:1,overflowY:"auto",overflowX:"hidden",minHeight:0,WebkitOverflowScrolling:"touch"}}><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:16}}>{WCATS[phCat]?.words.map((w,i)=>{const done=isDone("phonics",w.word);const cc=WCATS[phCat].color;return<button key={w.word} data-r="word" onClick={(e)=>{sfxTap();stop();movePandaTo("bottomRight");setPhW(w);setPhStep("idle");setTimeout(()=>playPh(w),100);}} style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",padding:"18px 10px 12px",borderRadius:20,border:"none",background:done?`linear-gradient(135deg,${cc},${cc}DD)`:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:done?`0 4px 14px ${cc}30`:"var(--shadow-card)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`}}>{done&&<span style={{position:"absolute",top:6,right:6,width:20,height:20,borderRadius:"50%",background:"#22C55E",color:"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>✓</span>}<span style={{fontSize:34,animation:"none",filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{w.img}</span><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,marginTop:4,color:done?"#fff":"#2D3436"}}>{w.word}</span><div style={{display:"flex",gap:3,marginTop:5}}>{w.ph.map((ph,j)=><span key={j} style={{fontSize:9,fontWeight:800,background:"#fff",color:"#8E8CA3",padding:"2px 7px",borderRadius:7}}>{ph}</span>)}</div></button>;})}</div></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
