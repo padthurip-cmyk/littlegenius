@@ -1473,20 +1473,35 @@ const getPhoneticVariants=(word)=>{
 // API key lives on server, never exposed to users
 const transcribeViaProxy=async(audioBlob,expectedWord)=>{
   try{
-    const resp=await fetch("/api/transcribe",{
+    // Use native Netlify function path — NOT /api/ which gets caught by SPA redirect
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),12000); // 12s max
+
+    const resp=await fetch("/.netlify/functions/transcribe",{
       method:"POST",
       headers:{
         "Content-Type":audioBlob.type||"audio/webm",
         "X-Expected-Word":expectedWord||"",
       },
       body:audioBlob,
+      signal:controller.signal,
     });
+    clearTimeout(timeout);
 
     if(!resp.ok){
+      const errText=await resp.text().catch(()=>"");
+      console.warn("Proxy error:",resp.status,errText);
       return{transcript:"",alternatives:[],confidence:0,error:"proxy_error_"+resp.status};
     }
 
-    const data=await resp.json();
+    // Verify we got JSON back (not HTML from SPA redirect)
+    const text=await resp.text();
+    if(text.startsWith("<!") || text.startsWith("<html")){
+      console.warn("Proxy returned HTML — function not deployed");
+      return{transcript:"",alternatives:[],confidence:0,error:"function_not_deployed"};
+    }
+
+    const data=JSON.parse(text);
     return{
       transcript:data.transcript||"",
       alternatives:data.alternatives||[],
@@ -1836,7 +1851,15 @@ const useRec=()=>{
       setEngineUsed("deepgram");
       const r=await transcribeViaProxy(blob,expectedRef.current);
       if(r.transcript){deliver(r.transcript,r.alternatives);return;}
-      // Proxy failed — deliver empty
+
+      // Proxy failed — show error and let user retry
+      if(r.error){
+        console.warn("Speech proxy failed:",r.error);
+        setErr(r.error.includes("not_deployed")?"Server function not set up yet"
+          :r.error.includes("abort")?"Took too long — try again"
+          :r.error.includes("500")?"Server error — check Deepgram key in Netlify"
+          :"Could not process speech — tap mic to retry");
+      }
       deliver("",[]);
     };
 
