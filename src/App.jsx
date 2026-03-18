@@ -1533,6 +1533,58 @@ const transcribeWithCloudSTT=async(audioBlob,apiKey,expectedWord)=>{
   }
 };
 
+// ═══ DEEPGRAM NOVA-3 ENGINE ═══
+// Premium pay-per-use STT — $0.0077/min — best accuracy for children's voices
+// Simple REST API: send audio blob, get transcript back
+const transcribeWithDeepgram=async(audioBlob,apiKey,expectedWord)=>{
+  try{
+    const mimeType=audioBlob.type||"audio/webm";
+    // Build query params — Nova-3 with smart formatting
+    const params=new URLSearchParams({
+      model:"nova-3",
+      language:"en",
+      smart_format:"true",
+      punctuate:"false",        // Kids saying single words don't need punctuation
+      diarize:"false",
+      alternatives:5,           // Get 5 alternatives for better matching
+    });
+    // Add keyword boosting if we know the expected word
+    if(expectedWord){
+      params.append("keywords",expectedWord);
+      // Add phonetic variants too
+      const variants=getPhoneticVariants(expectedWord);
+      variants.forEach(v=>{if(v!==expectedWord)params.append("keywords",v);});
+    }
+
+    const resp=await fetch(`https://api.deepgram.com/v1/listen?${params.toString()}`,{
+      method:"POST",
+      headers:{
+        "Authorization":`Token ${apiKey}`,
+        "Content-Type":mimeType,
+      },
+      body:audioBlob,
+    });
+
+    if(!resp.ok){
+      const errData=await resp.json().catch(()=>({}));
+      console.warn("Deepgram error:",resp.status,errData);
+      return{transcript:"",alternatives:[],confidence:0,error:"deepgram_error_"+resp.status};
+    }
+
+    const data=await resp.json();
+    const channel=data?.results?.channels?.[0];
+    if(channel?.alternatives?.length){
+      const alts=channel.alternatives.map(a=>(a.transcript||"").toLowerCase().trim()).filter(Boolean);
+      const confidence=channel.alternatives[0]?.confidence||0;
+      return{transcript:alts[0]||"",alternatives:alts,confidence};
+    }
+    return{transcript:"",alternatives:[],confidence:0};
+  }catch(e){
+    console.warn("Deepgram exception:",e.message);
+    return{transcript:"",alternatives:[],confidence:0,error:e.message};
+  }
+};
+
 const normalizeSpoken=(text)=>{
   let t=text.trim().toLowerCase();
   // Replace digits with words: "17" → "seventeen"
@@ -1611,10 +1663,12 @@ const useSpeech=()=>{const[v,setV]=useState([]);
   const cloudAudioRef=useRef(null); // current cloud Audio element
   const cloudPlayingRef=useRef(false); // for lip sync polling
   const[ttsKey,setTtsKey]=useState("");
+  const[dgKey,setDgKey]=useState("");
 
-  // Load API key from storage on mount
-  useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4_tts_key");if(r?.value)setTtsKey(r.value);}catch(e){}})();},[]);
+  // Load API keys from storage on mount
+  useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4_tts_key");if(r?.value)setTtsKey(r.value);}catch(e){}try{const r2=await window.storage.get("lg4_dg_key");if(r2?.value)setDgKey(r2.value);}catch(e){}})();},[]);
   const saveTtsKey=useCallback(async(key)=>{setTtsKey(key);try{await window.storage.set("lg4_tts_key",key);}catch(e){}},[]);
+  const saveDgKey=useCallback(async(key)=>{setDgKey(key);try{await window.storage.set("lg4_dg_key",key);}catch(e){}},[]);
 
   // Browser voices setup
   useEffect(()=>{const l=()=>{const x=speechSynthesis.getVoices();if(x.length)setV(x);};l();speechSynthesis.onvoiceschanged=l;return()=>{speechSynthesis.onvoiceschanged=null;};},[]);
@@ -1716,7 +1770,7 @@ const useSpeech=()=>{const[v,setV]=useState([]);
     cloudPlayingRef.current=false;
   },[]);
 
-  return{speak,stop:stopAll,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey};
+  return{speak,stop:stopAll,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey,dgKey,saveDgKey};
 };
 // ═══ WHISPER AI HOOK — On-Device Speech Recognition ═══
 // Loads OpenAI Whisper model in a Web Worker (off main thread)
@@ -1834,7 +1888,7 @@ const useWhisper=()=>{
   return{status,progress,loadMsg,transcribe,isReady:status==="ready"};
 };
 
-const useRec=(googleApiKey,whisper)=>{
+const useRec=(googleApiKey,whisper,dgKey)=>{
   const[on,setOn]=useState(false);
   const[txt,setTxt]=useState("");
   const[err,setErr]=useState("");
@@ -2124,20 +2178,23 @@ const useRec=(googleApiKey,whisper)=>{
               return;
             }
 
-            // ─── TIER 1: Google Cloud Speech-to-Text (if API key) ───
+            // ─── TIER 1: Deepgram Nova-3 (if API key — best accuracy) ───
+            if(dgKey){
+              setEngineUsed("deepgram");
+              const dgResult=await transcribeWithDeepgram(blob,dgKey,expectedRef.current);
+              if(dgResult.transcript){deliver(dgResult.transcript,dgResult.alternatives);return;}
+              if(dgResult.error)console.warn("Deepgram error:",dgResult.error);
+            }
+
+            // ─── TIER 2: Google Cloud Speech-to-Text (if API key) ───
             if(canUseCloud){
               setEngineUsed("cloud");
               const result=await transcribeWithCloudSTT(blob,googleApiKey,expectedRef.current);
               if(result.transcript){deliver(result.transcript,result.alternatives);return;}
-              if(!result.error){
-                // Cloud returned empty — try other engines before giving up
-                console.warn("Cloud STT returned empty, trying Whisper fallback");
-              }else{
-                console.warn("Cloud STT error:",result.error);
-              }
+              if(result.error)console.warn("Cloud STT error:",result.error);
             }
 
-            // ─── TIER 2: Whisper AI on-device (if model loaded) ───
+            // ─── TIER 3: Whisper AI on-device (if model loaded) ───
             if(whisper?.isReady){
               setEngineUsed("whisper");
               const wResult=await whisper.transcribe(blob);
@@ -2148,7 +2205,7 @@ const useRec=(googleApiKey,whisper)=>{
               if(wResult.error)console.warn("Whisper error:",wResult.error);
             }
 
-            // ─── TIER 3: Web Speech API fallback ───
+            // ─── TIER 4: Web Speech API fallback ───
             const webResult=webBestRef.current;
             if(webResult){
               setEngineUsed("web");
@@ -2219,7 +2276,7 @@ const useRec=(googleApiKey,whisper)=>{
       }
     },LISTEN_SECONDS*1000);
 
-  },[googleApiKey,whisper,beep,cleanup,deliver,startVolumeMonitor,startWebSpeech,hasWebSpeech]);
+  },[googleApiKey,whisper,dgKey,beep,cleanup,deliver,startVolumeMonitor,startWebSpeech,hasWebSpeech]);
 
   // ═══ STOP (manual) ═══
   const stop=useCallback(()=>{
@@ -2561,7 +2618,7 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,count
     {processing&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px",animation:"fadeIn 0.3s ease-out"}}>{engineUsed==="cloud"?"☁️ Cloud AI analyzing your voice...":"🧠 Checking what you said..."}</p>}
     {processing&&transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
     {/* Engine indicator — small subtle badge */}
-    {(active||processing)&&engineUsed&&engineUsed!=="none"&&<div style={{display:"flex",justifyContent:"center",margin:"4px 0"}}><span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:engineUsed==="cloud"?"#E3F2FD":engineUsed==="whisper"?"#F3E5F5":"#FFF3E0",color:engineUsed==="cloud"?"#1565C0":engineUsed==="whisper"?"#7B1FA2":"#E65100"}}>{engineUsed==="cloud"?"☁️ Google Cloud STT":engineUsed==="whisper"?"🧠 Whisper AI (on-device)":"📱 Device Speech"}</span></div>}
+    {(active||processing)&&engineUsed&&engineUsed!=="none"&&<div style={{display:"flex",justifyContent:"center",margin:"4px 0"}}><span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:engineUsed==="deepgram"?"#E8F5E9":engineUsed==="cloud"?"#E3F2FD":engineUsed==="whisper"?"#F3E5F5":"#FFF3E0",color:engineUsed==="deepgram"?"#2E7D32":engineUsed==="cloud"?"#1565C0":engineUsed==="whisper"?"#7B1FA2":"#E65100"}}>{engineUsed==="deepgram"?"⚡ Deepgram Nova-3":engineUsed==="cloud"?"☁️ Google Cloud STT":engineUsed==="whisper"?"🧠 Whisper AI (on-device)":"📱 Device Speech"}</span></div>}
     {/* Idle state */}
     {idle&&!error&&!transcript&&<p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>Tap the microphone, then say <strong>"{expected}"</strong></p>}
     {/* Error display */}
@@ -2631,7 +2688,7 @@ const PH_STEPS=[{id:"saying_word",icon:"🔊",label:"Word"},{id:"spelling",icon:
 // 🎮 MAIN APP
 // ═══════════════════════════════════════════════════════════════
 export default function App(){
-  const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey}=useSpeech();const whisper=useWhisper();const rec=useRec(ttsKey,whisper);
+  const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey,dgKey,saveDgKey}=useSpeech();const whisper=useWhisper();const rec=useRec(ttsKey,whisper,dgKey);
   const[scr,setScr]=useState("splash");
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
   const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn");
@@ -3280,6 +3337,10 @@ export default function App(){
   const[activeSpellIdx,setActiveSpellIdx]=useState(-1); // which letter is being spelled
   const[spellStatus,setSpellStatus]=useState([]); // per-letter: 'waiting'|'listening'|'correct'|'skipped'
   const pRef=useRef(false);
+  const nudgeRef=useRef(null);
+  // Nudge: if kid doesn't tap mic within 10s, remind them
+  const startNudge=()=>{clearTimeout(nudgeRef.current);nudgeRef.current=setTimeout(()=>{speak(`${kidName}, tap the big green microphone button to start!`,{rate:0.8,pitch:1.0});},10000);};
+  const clearNudge=()=>clearTimeout(nudgeRef.current);
   // Highlight system — pulses any element Bella talks about
   const[glowTarget,setGlowTarget]=useState(null);
   const glowTimer=useRef(null);
@@ -3408,8 +3469,8 @@ export default function App(){
     },300);
   };
 
-  const tapMicNum=()=>rec.start(handleNumResult,NW[selNum]);
-  const tapMicPh=()=>rec.start(handlePhResult,phW?.word);
+  const tapMicNum=()=>{clearNudge();rec.start(handleNumResult,NW[selNum]);};
+  const tapMicPh=()=>{clearNudge();rec.start(handlePhResult,phW?.word);};
   const typeNum=(typed)=>handleNumResult(typed);
   const typePh=(typed)=>handlePhResult(typed);
 
@@ -3580,8 +3641,8 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(learnModes.speak){
-      await speak(`Your turn ${kidName}! Can you say, ${w}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
-      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handleNumResult,NW[selNum]);
+      await speak(`Your turn ${kidName}! Tap the microphone and say, ${w}!`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
     }else{
       pRef.current=false;
       if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
@@ -3593,7 +3654,7 @@ export default function App(){
     setSpRes(null);setSpAcc(null);
     setNStep("countdown");
     await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);
-    stop();setNStep("listening");rec.start(handleNumResult,NW[selNum]);
+    stop();setNStep("listening");startNudge();
   };
 
   // PHONICS PLAY FLOW
@@ -3639,8 +3700,8 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(phModes.speak){
-      await speak(`Your turn ${kidName}! Can you say, ${wd.word}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
-      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handlePhResult,phW?.word);
+      await speak(`Your turn ${kidName}! Tap the microphone and say, ${wd.word}!`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
@@ -3652,7 +3713,7 @@ export default function App(){
     setPhRes(null);setPhAcc(null);
     setPhStep("countdown");
     await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);
-    stop();setPhStep("listening");rec.start(handlePhResult,phW?.word);
+    stop();setPhStep("listening");startNudge();
   };
 
   // ═══ SHAPE PLAY FLOW ═══
@@ -3689,11 +3750,11 @@ export default function App(){
       await speak(`Now say it with me, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`Your turn ${kidName}! Can you say, ${sh.name}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
-      stop();setShStep("listening");pRef.current=false;rec.start(handleShResult,selShape?.name);
+      await speak(`Your turn ${kidName}! Tap the microphone and say, ${sh.name}!`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      stop();setShStep("listening");pRef.current=false;startNudge();
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
-  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setShStep("listening");rec.start(handleShResult,selShape?.name);};
+  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setShStep("listening");startNudge();};
 
   // ═══ COLOR PLAY FLOW ═══
   const handleCoResult=(result,alternatives)=>{
@@ -3729,11 +3790,11 @@ export default function App(){
       await speak(`Now say it with me, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`Your turn ${kidName}! Can you say, ${co.name}?`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
-      stop();setCoStep("listening");pRef.current=false;rec.start(handleCoResult,selColor?.name);
+      await speak(`Your turn ${kidName}! Tap the microphone and say, ${co.name}!`,{rate:0.75,pitch:1.0});await wait(300);if(!pRef.current)return;
+      stop();setCoStep("listening");pRef.current=false;startNudge();
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
-  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setCoStep("listening");rec.start(handleCoResult,selColor?.name);};
+  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);stop();setCoStep("listening");startNudge();};
 
 
 
@@ -5723,7 +5784,7 @@ export default function App(){
         {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {shStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {shStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?shColor:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {shStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>rec.start(handleShResult,selShape?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name} phase={rec.phase} engineUsed={rec.engineUsed}/>}
+        {shStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>{clearNudge();rec.start(handleShResult,selShape?.name);}} isListening={rec.on} error={rec.err} onType={(t)=>handleShResult(t)} expected={sh.name} phase={rec.phase} engineUsed={rec.engineUsed}/>}
         {shStep==="result"&&shRes!==null&&<ResultBox acc={shAcc} result={shRes} expected={sh.name} onRetry={retryShape} onDone={()=>{setShRes(null);const idx=SHAPES.findIndex(x=>x.name===sh.name);const next=SHAPES[(idx+1)%SHAPES.length];setSelShape(next);setShStep("idle");setTimeout(()=>playShape(next),200);}} color={shColor} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -5751,7 +5812,7 @@ export default function App(){
         {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
         {coStep==="saying_phonics"&&<Mascot mood="thinking" msg="How to speak this word... 🔡"/>}
         {coStep==="countdown"&&<div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24}}><div style={{fontSize:48,fontFamily:"var(--font)",fontWeight:800,color:countdown>0?co.hex:"#22C55E",animation:"numPulse 0.5s ease-in-out infinite"}}>{countdown>0?countdown:"🎤 Go!"}</div></div>}
-        {coStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>rec.start(handleCoResult,selColor?.name)} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name} phase={rec.phase} engineUsed={rec.engineUsed}/>}
+        {coStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>{clearNudge();rec.start(handleCoResult,selColor?.name);}} isListening={rec.on} error={rec.err} onType={(t)=>handleCoResult(t)} expected={co.name} phase={rec.phase} engineUsed={rec.engineUsed}/>}
         {coStep==="result"&&coRes!==null&&<ResultBox acc={coAcc} result={coRes} expected={co.name} onRetry={retryColor} onDone={()=>{setCoRes(null);const idx=COLORSDATA.findIndex(x=>x.name===co.name);const next=COLORSDATA[(idx+1)%COLORSDATA.length];setSelColor(next);setCoStep("idle");setTimeout(()=>playColor(next),200);}} color={co.hex} kidName={kidName} currentPoints={prof?.points||0}/>}
       </div>
     </div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;}
@@ -6171,6 +6232,18 @@ export default function App(){
 {ttsKey&&<button onClick={()=>saveTtsKey("")} style={{padding:"10px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#fff",color:"#E23744",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Remove</button>}
 </div>
 {ttsKey&&<p style={{fontSize:10,color:"#22C55E",fontWeight:700,marginTop:6}}>✅ Cloud voice + speech recognition active</p>}
+</div>
+{/* Deepgram Speech Recognition */}
+<div style={{marginTop:12,padding:16,background:"#fff",borderRadius:20,border:dgKey?"2px solid #66BB6A":"none"}}>
+<div style={{fontSize:13,fontWeight:800,color:"#2E7D32",marginBottom:8}}>⚡ Deepgram Speech Recognition</div>
+<p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{dgKey?"Deepgram Nova-3 active — best accuracy for children's voices! ($0.0077/min)":"Add a Deepgram API key for Alexa-level speech recognition. Sign up free at deepgram.com — you get $200 free credits!"}</p>
+<input value={dgKey} onChange={e=>saveDgKey(e.target.value.trim())} placeholder="Paste Deepgram API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E0D8",borderRadius:12,fontSize:12,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
+<div style={{display:"flex",gap:8,marginTop:8}}>
+<a href="https://deepgram.com" target="_blank" rel="noopener" style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#2E7D32,#66BB6A)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",textDecoration:"none",textAlign:"center"}}>🌐 Get Free Key</a>
+{dgKey&&<button onClick={()=>saveDgKey("")} style={{padding:"10px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#fff",color:"#E23744",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Remove</button>}
+</div>
+{dgKey&&<p style={{fontSize:10,color:"#2E7D32",fontWeight:700,marginTop:6}}>✅ Deepgram Nova-3 active — top priority engine</p>}
+{!dgKey&&<div style={{marginTop:8,padding:"8px 12px",background:"#FFF8E1",borderRadius:10,border:"1.5px solid #FFE082"}}><p style={{fontSize:10,fontWeight:700,color:"#F57F17",margin:0}}>💡 Recommended: Deepgram gives $200 free credits on signup — enough for ~430 hours of speech recognition. Best option for kids' voices.</p></div>}
 </div>
 <button onClick={()=>{if(window.confirm("Are you sure? This will delete all your progress and points!")){save(null);setScr("onboard");setObSt(0);}}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FEE2E2",color:"#DC2626",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:8}}>🗑️ Reset</button></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
