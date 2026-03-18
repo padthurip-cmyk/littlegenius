@@ -51,7 +51,7 @@ export default async (req) => {
     if (!dgResp.ok) {
       const errText = await dgResp.text().catch(() => "");
       console.error("Deepgram error:", dgResp.status, errText);
-      return new Response(JSON.stringify({ transcript: "", error: "transcription_failed" }), { status: 200 });
+      return new Response(JSON.stringify({ transcript: "", error: "deepgram_" + dgResp.status + ": " + errText.substring(0, 200) }), { status: 200 });
     }
 
     const data = await dgResp.json();
