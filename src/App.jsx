@@ -2729,6 +2729,7 @@ export default function App(){
   const saveMyPlan=(p)=>{setMyPlan(p);localStorage.setItem("lg_myplan",JSON.stringify(p));};
   const[qStep,setQStep]=useState(0);
   const[qAnswers,setQAnswers]=useState([]);
+  const[multiSel,setMultiSel]=useState([]);
   // ═══ ARENA MULTIPLAYER STATE (Firebase Realtime DB) ═══
   const[arenaRoom,setArenaRoom]=useState(null);
   const[arenaId]=useState(()=>genPlayerId());
@@ -4222,7 +4223,6 @@ export default function App(){
 
 
   // ═══ QUESTIONNAIRE (first-time only — with multi-select support) ═══
-  const[multiSel,setMultiSel]=useState([]);
   if(scr==="questionnaire")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{background:"rgba(255,255,255,0.97)",borderRadius:28,padding:"24px 18px",maxWidth:400,border:"1px solid rgba(255,255,255,0.8)",width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
       <div style={{fontSize:48}}>🦉</div>
