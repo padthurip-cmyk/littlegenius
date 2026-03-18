@@ -1772,7 +1772,7 @@ const useRec=()=>{
     if(result)beep(800,100,"sine");
     else beep(400,200,"triangle");
     setTxt(result);setPhase("done");setOn(false);setCountdown(0);setVol(0);
-    setTimeout(()=>cbRef.current?.(result,alternatives||[],expectedRef.current),100);
+    setTimeout(()=>cbRef.current?.(result,alternatives||[]),100);
   },[cleanup,beep]);
 
   // ═══ VOLUME MONITOR (runs alongside any engine) ═══
@@ -1855,7 +1855,7 @@ const useRec=()=>{
       // Proxy failed — show actual error for debugging
       if(r.error){
         console.warn("Speech proxy failed:",r.error);
-        setErr("Couldn't hear you clearly — try again!");
+        setErr("Error: "+r.error);
       }
       deliver("",[]);
     };
@@ -2289,82 +2289,70 @@ const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"c
 const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:800,fontFamily:"var(--font)",background:act?"linear-gradient(135deg,#FF8C42,#FF8C42)":done?"#22C55E":"#e5e7eb",color:(act||done)?"#fff":"#aaa",transform:act?"scale(1.08)":"scale(1)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
 const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,countdown,vol,phase,engineUsed})=>{
   const[typed,setTyped]=useState("");
-  const[showTapBtn,setShowTapBtn]=useState(false);
   const active=isListening&&phase==="listening";
   const processing=phase==="processing";
   const idle=!isListening&&phase!=="processing";
-  // Show tap button only after 3s if still idle (auto-start should fire within 1s)
-  useEffect(()=>{
-    if(idle&&!active&&!processing){
-      const t=setTimeout(()=>setShowTapBtn(true),3000);
-      return()=>clearTimeout(t);
-    }else{setShowTapBtn(false);}
-  },[idle,active,processing]);
+  // Animated volume bars with requestAnimationFrame feel
   const volBars=useMemo(()=>Array.from({length:14},(_,i)=>({id:i,offset:i*0.07})),[]);
   return <div data-owl="mic-area" style={{textAlign:"center",padding:16,background:"#fff",borderRadius:22,border:"2.5px solid #E8EAF6",animation:"slideUp 0.3s ease-out"}}>
-    {/* Target word */}
+    {/* Target word — large, clear, always visible */}
     <div style={{padding:"10px 16px",background:"linear-gradient(135deg,#FFF8E1,#FFFDE7)",borderRadius:14,border:"2.5px solid #FFE082",marginBottom:14,position:"relative",overflow:"hidden"}}>
       <div style={{fontSize:9,fontWeight:800,color:"#78909C",textTransform:"uppercase",letterSpacing:2}}>Say this word:</div>
       <div style={{fontSize:28,fontWeight:900,color:"#1A1A2E",marginTop:4,letterSpacing:3,fontFamily:"var(--font)"}}>{expected?.toUpperCase()}</div>
       {active&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:"linear-gradient(90deg,#4CAF50,#81C784,#4CAF50)",backgroundSize:"200% 100%",animation:"micShimmer 1.5s ease-in-out infinite"}}/>}
     </div>
-
-    {/* ═══ ACTIVE: Recording in progress ═══ */}
-    {active&&<>
-      <div style={{width:110,height:110,borderRadius:"50%",border:"none",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
-        background:"linear-gradient(135deg,#EF4444,#DC2626)",borderBottom:"6px solid #B71C1C",
-        boxShadow:`0 0 0 ${8+Math.round((vol||0)*16)}px rgba(239,68,68,${0.15+(vol||0)*0.25}), 0 0 ${20+(vol||0)*30}px rgba(239,68,68,0.2)`,
-        animation:"micPulse 2s ease-in-out infinite"}}>
+    {/* Mic button — three states: idle (green), active (pulsing red), processing (orange) */}
+    <button onClick={()=>{if(idle&&!processing)onTapMic();}} disabled={active||processing} style={{
+      width:110,height:110,borderRadius:"50%",border:"none",cursor:(active||processing)?"default":"pointer",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
+      background:active?"linear-gradient(135deg,#EF4444,#DC2626)":processing?"linear-gradient(135deg,#FF8A50,#F57C00)":"linear-gradient(135deg,#4CAF50,#388E3C)",
+      borderBottom:active?"6px solid #B71C1C":processing?"6px solid #E65100":"6px solid #2E7D32",
+      boxShadow:active?`0 0 0 ${8+Math.round((vol||0)*16)}px rgba(239,68,68,${0.15+(vol||0)*0.25}), 0 0 ${20+(vol||0)*30}px rgba(239,68,68,0.2)`
+        :processing?"0 0 20px rgba(255,138,80,0.3)"
+        :"0 4px 20px rgba(76,175,80,0.3)",
+      transition:"box-shadow 0.12s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
+      transform:idle&&!processing?"scale(1)":"scale(0.96)",
+      animation:active?"micPulse 2s ease-in-out infinite":idle&&!processing?"micBreathe 3s ease-in-out infinite":"none"
+    }}>
+      {active?<>
         <span style={{fontSize:38,fontWeight:900,color:"#fff",lineHeight:1}}>{countdown||"🎤"}</span>
         <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.9)",letterSpacing:1,lineHeight:1}}>LISTENING</span>
-      </div>
-      <div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:34,margin:"8px 0 4px"}}>
-        {volBars.map((bar)=>{const v=vol||0;const h=Math.max(4,Math.min(30,v*38+Math.sin(Date.now()*0.005+bar.offset*10)*3));
-          return<div key={bar.id} style={{width:5,height:h,borderRadius:3,background:v>0.15?"linear-gradient(180deg,#66BB6A,#4CAF50)":v>0.05?"#FFB74D":"#E0E0E0",transition:"height 0.1s ease, background 0.2s ease"}}/>;
-        })}
-      </div>
-      {(vol||0)>0.15&&<p style={{fontSize:12,fontWeight:800,color:"#4CAF50",margin:"0 0 4px"}}>✅ I can hear you!</p>}
-      {(vol||0)>0&&(vol||0)<=0.15&&<p style={{fontSize:12,fontWeight:800,color:"#FFB74D",margin:"0 0 4px"}}>🎙️ Speak up a little!</p>}
-      {(vol||0)===0&&countdown>4&&<p style={{fontSize:12,fontWeight:800,color:"#90A4AE",margin:"0 0 4px"}}>👂 Say "{expected}" now!</p>}
-      {(vol||0)===0&&countdown<=4&&countdown>0&&<p style={{fontSize:12,fontWeight:800,color:"#EF5350",margin:"0 0 4px"}}>🗣️ Speak now!</p>}
-      {transcript&&<div style={{padding:"6px 12px",background:"#E8F5E9",borderRadius:10,border:"2px solid #A5D6A7",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Hearing: "{transcript}"</span></div>}
-    </>}
-
-    {/* ═══ PROCESSING: Deepgram analyzing ═══ */}
-    {processing&&<>
-      <div style={{width:110,height:110,borderRadius:"50%",border:"none",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
-        background:"linear-gradient(135deg,#FF8A50,#F57C00)",borderBottom:"6px solid #E65100",
-        boxShadow:"0 0 20px rgba(255,138,80,0.3)"}}>
+      </>:processing?<>
         <span style={{fontSize:28,color:"#fff",animation:"spinSlow 1.2s linear infinite"}}>⏳</span>
         <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.9)",lineHeight:1}}>ANALYZING</span>
-      </div>
-      <p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px"}}>🧠 Checking what you said...</p>
-      {transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
-    </>}
-
-    {/* ═══ IDLE: Preparing or fallback tap ═══ */}
-    {idle&&!active&&!processing&&<>
-      {showTapBtn?<>
-        <button onClick={()=>onTapMic()} style={{width:110,height:110,borderRadius:"50%",border:"none",cursor:"pointer",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
-          background:"linear-gradient(135deg,#4CAF50,#388E3C)",borderBottom:"6px solid #2E7D32",
-          boxShadow:"0 4px 20px rgba(76,175,80,0.3)",animation:"micBreathe 3s ease-in-out infinite"}}>
-          <span style={{fontSize:40,lineHeight:1}}>🎤</span>
-          <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>TAP TO</span>
-          <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>SPEAK</span>
-        </button>
-        <p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>Tap the microphone, then say <strong>"{expected}"</strong></p>
       </>:<>
-        <div style={{padding:"20px 0",margin:"0 auto 8px"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-            <span style={{fontSize:24,animation:"micPulse 1.2s ease-in-out infinite"}}>🎙️</span>
-            <span style={{fontSize:14,fontWeight:800,color:"#4CAF50",animation:"pulse 1.5s ease-in-out infinite"}}>Getting ready...</span>
-          </div>
-        </div>
+        <span style={{fontSize:40,lineHeight:1}}>🎤</span>
+        <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>TAP TO</span>
+        <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>SPEAK</span>
       </>}
-      {error&&<div style={{padding:"8px 14px",background:"#FFF3E0",borderRadius:12,margin:"8px 0 4px",border:"2px solid #FFE0B2"}}><span style={{fontSize:12,fontWeight:700,color:"#E65100"}}>{error}</span></div>}
-    </>}
-
-    {/* Type fallback */}
+    </button>
+    {/* Live volume visualization — shows real-time audio feedback */}
+    {active&&<div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:34,margin:"8px 0 4px"}}>
+      {volBars.map((bar)=>{
+        const v=vol||0;
+        const h=Math.max(4,Math.min(30,v*38+Math.sin(Date.now()*0.005+bar.offset*10)*3));
+        return<div key={bar.id} style={{width:5,height:h,borderRadius:3,background:v>0.15?"linear-gradient(180deg,#66BB6A,#4CAF50)":v>0.05?"#FFB74D":"#E0E0E0",transition:"height 0.1s ease, background 0.2s ease"}}/>;
+      })}
+    </div>}
+    {/* Live status messages */}
+    {active&&(vol||0)>0.15&&<p style={{fontSize:12,fontWeight:800,color:"#4CAF50",margin:"0 0 4px",animation:"fadeIn 0.2s ease-out"}}>✅ I can hear you! Keep going!</p>}
+    {active&&(vol||0)>0&&(vol||0)<=0.15&&<p style={{fontSize:12,fontWeight:800,color:"#FFB74D",margin:"0 0 4px"}}>🎙️ Speak up a little!</p>}
+    {active&&(vol||0)===0&&countdown>4&&<p style={{fontSize:12,fontWeight:800,color:"#90A4AE",margin:"0 0 4px"}}>👂 Listening... say "{expected}" clearly</p>}
+    {active&&(vol||0)===0&&countdown<=4&&countdown>0&&<p style={{fontSize:12,fontWeight:800,color:"#EF5350",margin:"0 0 4px"}}>🗣️ Speak now!</p>}
+    {/* Live transcript preview */}
+    {active&&transcript&&<div style={{padding:"6px 12px",background:"#E8F5E9",borderRadius:10,border:"2px solid #A5D6A7",margin:"6px 0",animation:"fadeIn 0.2s ease-out"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Hearing: "{transcript}"</span></div>}
+    {/* Processing state */}
+    {processing&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px",animation:"fadeIn 0.3s ease-out"}}>{engineUsed==="cloud"?"☁️ Cloud AI analyzing your voice...":"🧠 Checking what you said..."}</p>}
+    {processing&&transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
+    {/* Engine indicator — small subtle badge */}
+    {(active||processing)&&engineUsed&&engineUsed!=="none"&&<div style={{display:"flex",justifyContent:"center",margin:"4px 0"}}><span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:engineUsed==="deepgram"?"#E8F5E9":engineUsed==="cloud"?"#E3F2FD":"#FFF3E0",color:engineUsed==="deepgram"?"#2E7D32":engineUsed==="cloud"?"#1565C0":"#E65100"}}>{engineUsed==="deepgram"?"⚡ Deepgram Nova-3":engineUsed==="cloud"?"☁️ Google Cloud STT":"📱 Device Speech"}</span></div>}
+    {/* Idle state */}
+    {idle&&!error&&!transcript&&<p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>Tap the microphone, then say <strong>"{expected}"</strong></p>}
+    {/* Error display */}
+    {error&&idle&&<div style={{padding:"8px 14px",background:"#FFF3E0",borderRadius:12,margin:"8px 0 4px",border:"2px solid #FFE0B2"}}><span style={{fontSize:12,fontWeight:700,color:"#E65100"}}>{error}</span><br/><span style={{fontSize:11,fontWeight:600,color:"#BF360C"}}>Tap 🎤 to try again!</span></div>}
+    {/* Heard result in idle (shouldn't normally show because result handler fires fast) */}
+    {transcript&&idle&&!error&&<div style={{padding:"8px 14px",background:"#E8F5E9",borderRadius:10,border:"2px solid #C8E6C9",margin:"8px 0 4px"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Heard: "{transcript}"</span></div>}
+    {idle&&!error&&<p style={{fontSize:10,fontWeight:600,color:"#B0BEC5",margin:"0 0 6px"}}>Didn't work? Tap 🎤 again</p>}
+    {/* Type fallback — always available */}
     <div style={{display:"flex",gap:6,marginTop:8}}>
       <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type the word here..."
         style={{flex:1,padding:"9px 12px",borderRadius:12,border:"2px solid #E8EAF6",fontSize:13,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
@@ -2467,34 +2455,6 @@ export default function App(){
       }
     },180);
     return()=>clearInterval(iv);
-  },[]);
-
-  // ═══ TOUCH TILT — 3D finger-following effect on all buttons/cards ═══
-  useEffect(()=>{
-    const handler=(e)=>{
-      const touch=e.touches?.[0];if(!touch)return;
-      const el=e.target.closest('[data-r]');if(!el)return;
-      const rect=el.getBoundingClientRect();
-      const x=(touch.clientX-rect.left)/rect.width;
-      const y=(touch.clientY-rect.top)/rect.height;
-      const tiltX=(y-0.5)*-8;
-      const tiltY=(x-0.5)*8;
-      el.style.transform=`perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
-      el.style.transition='transform 0.08s ease';
-    };
-    const reset=(e)=>{
-      const el=e.target.closest('[data-r]');if(!el)return;
-      el.style.transform='';
-      el.style.transition='transform 0.3s cubic-bezier(0.34,1.56,0.64,1)';
-    };
-    document.addEventListener('touchmove',handler,{passive:true});
-    document.addEventListener('touchend',reset,{passive:true});
-    document.addEventListener('touchcancel',reset,{passive:true});
-    return()=>{
-      document.removeEventListener('touchmove',handler);
-      document.removeEventListener('touchend',reset);
-      document.removeEventListener('touchcancel',reset);
-    };
   },[]);
   // Head reactions
   const headYes=()=>{setHeadShake("yes");setTeacherMood("star");setTimeout(()=>{setHeadShake("");setTeacherMood("happy");},1500);};
@@ -3104,7 +3064,6 @@ export default function App(){
   const[spellStatus,setSpellStatus]=useState([]); // per-letter: 'waiting'|'listening'|'correct'|'skipped'
   const pRef=useRef(false);
   const nudgeRef=useRef(null);
-  const retryCountRef=useRef(0);
   // Nudge: if kid doesn't tap mic within 10s, remind them
   const startNudge=()=>{clearTimeout(nudgeRef.current);nudgeRef.current=setTimeout(()=>{showTeacher("happy","Tap the 🎤 button to start!");},10000);};
   const clearNudge=()=>clearTimeout(nudgeRef.current);
@@ -3182,22 +3141,14 @@ export default function App(){
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
 
-  const handleNumResult=(result,alternatives,expectedWord)=>{
-    const w=expectedWord||NW[selNum];
+  const handleNumResult=(result,alternatives)=>{
+    // Guard: empty result means no speech detected — go back to listening
     if(!result||!result.trim()){
-      if(retryCountRef.current<2){
-        retryCountRef.current++;
-        setNStep("listening");
-        showTeacher("happy","Didn't catch that — say it again!");
-        setTimeout(()=>rec.start(handleNumResult,w),800);
-      }else{
-        retryCountRef.current=0;
-        setNStep("listening");
-        showTeacher("happy","Tap 🎤 and try again!");
-      }
+      setNStep("listening");
+      showTeacher("happy","Tap 🎤 and try again!");startNudge();
       return;
     }
-    retryCountRef.current=0;
+    const w=NW[selNum];
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(w,result,alternatives);setSpRes(normalized);setSpAcc(acc);setNStep("result");
     const s=getStars(acc);const p=getStarPts(s);
@@ -3214,24 +3165,14 @@ export default function App(){
       else speak(`You scored ${acc} percent. Keep practicing!`,{rate:0.85,pitch:1.0});
     },600);
   };
-  const handlePhResult=(result,alternatives,expectedWord)=>{
-    const w=expectedWord||phW?.word;
+  const handlePhResult=(result,alternatives)=>{
     if(!result||!result.trim()){
-      if(retryCountRef.current<2){
-        retryCountRef.current++;
-        setPhStep("listening");
-        showTeacher("happy","Didn't catch that — say it again!");
-        setTimeout(()=>rec.start(handlePhResult,w),800);
-      }else{
-        retryCountRef.current=0;
-        setPhStep("listening");
-        showTeacher("happy","Tap 🎤 and try again!");
-      }
+      setPhStep("listening");
+      showTeacher("happy","Tap 🎤 and try again!");startNudge();
       return;
     }
-    retryCountRef.current=0;
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(w,result,alternatives);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
+    const acc=calcAcc(phW.word,result,alternatives);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"phonics",phW.word);boom();}else{flashWrong();}
     if(s>=4) showTeacher("cheering",`Amazing ${kidName}! ⭐`);
@@ -3375,7 +3316,7 @@ export default function App(){
   // NUMBER PLAY FLOW
   const playNum=async(num)=>{
     if(pRef.current){stop();pRef.current=false;setNStep("idle");return;}
-    retryCountRef.current=0;pRef.current=true;setSelNum(num);setSpRes(null);setSpAcc(null);setAPhI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    pRef.current=true;setSelNum(num);setSpRes(null);setSpAcc(null);setAPhI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     const w=NW[num];const scene=getScene(num);
 
     // Step 1: Say the number (always)
@@ -3418,8 +3359,8 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(learnModes.speak){
-      await speak(`Your turn ${kidName}! Say, ${w}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
-      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handleNumResult,NW[selNum]);
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${w}!`);await wait(300);if(!pRef.current)return;
+      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
     }else{
       pRef.current=false;
       if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
@@ -3427,16 +3368,15 @@ export default function App(){
       setNStep("idle");
     }
   };
-  const retryNum=async()=>{
+  const retryNum=async()=>{showTeacher("happy","One more time! Tap 🎤");
     setSpRes(null);setSpAcc(null);
-    await speak(`One more time! Say, ${NW[selNum]}!`,{rate:0.85,pitch:1.0});await wait(300);
-    stop();setNStep("listening");rec.start(handleNumResult,NW[selNum]);
+    stop();setNStep("listening");startNudge();
   };
 
   // PHONICS PLAY FLOW
   const playPh=async(wd)=>{
     if(pRef.current){stop();pRef.current=false;setPhStep("idle");return;}
-    retryCountRef.current=0;pRef.current=true;setPhW(wd);setPhRes(null);setPhAcc(null);setPhAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    pRef.current=true;setPhW(wd);setPhRes(null);setPhAcc(null);setPhAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
 
     // Step 1: Say the word (always)
     setPhStep("saying_word");
@@ -3476,8 +3416,8 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(phModes.speak){
-      await speak(`Your turn ${kidName}! Say, ${wd.word}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
-      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handlePhResult,phW?.word);
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${wd.word}!`);await wait(300);if(!pRef.current)return;
+      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
@@ -3485,31 +3425,20 @@ export default function App(){
       setPhStep("idle");
     }
   };
-  const retryPh=async()=>{
+  const retryPh=async()=>{showTeacher("happy","One more try! Tap 🎤");
     setPhRes(null);setPhAcc(null);
-    await speak(`One more time! Say, ${phW?.word}!`,{rate:0.85,pitch:1.0});await wait(300);
-    stop();setPhStep("listening");rec.start(handlePhResult,phW?.word);
+    stop();setPhStep("listening");startNudge();
   };
 
   // ═══ SHAPE PLAY FLOW ═══
-  const handleShResult=(result,alternatives,expectedWord)=>{
-    const w=expectedWord||selShape?.name;
+  const handleShResult=(result,alternatives)=>{
     if(!result||!result.trim()){
-      if(retryCountRef.current<2){
-        retryCountRef.current++;
-        setShStep("listening");
-        showTeacher("happy","Didn't catch that — say it again!");
-        setTimeout(()=>rec.start(handleShResult,w),800);
-      }else{
-        retryCountRef.current=0;
-        setShStep("listening");
-        showTeacher("happy","Tap 🎤 and try again!");
-      }
+      setShStep("listening");
+      showTeacher("happy","Tap 🎤 and try again!");startNudge();
       return;
     }
-    retryCountRef.current=0;
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(w,result,alternatives);setShRes(normalized);setShAcc(acc);setShStep("result");
+    const acc=calcAcc(selShape.name,result,alternatives);setShRes(normalized);setShAcc(acc);setShStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"shapes",selShape.name);boom();}else{flashWrong();}
     if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
@@ -3521,7 +3450,7 @@ export default function App(){
   };
   const playShape=async(sh)=>{
     if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
-    retryCountRef.current=0;pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setShStep("saying_word");glow("shape-display");
     await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setShStep("spelling");
@@ -3537,31 +3466,21 @@ export default function App(){
       await speak(`Now say it with me, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`Your turn ${kidName}! Say, ${sh.name}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
-      stop();setShStep("listening");pRef.current=false;rec.start(handleShResult,selShape?.name);
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${sh.name}!`);await wait(300);if(!pRef.current)return;
+      stop();setShStep("listening");pRef.current=false;startNudge();
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
-  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time! Say, ${selShape?.name}!`,{rate:0.85,pitch:1.0});await wait(300);stop();setShStep("listening");rec.start(handleShResult,selShape?.name);};
+  const retryShape=async()=>{setShRes(null);setShAcc(null);showTeacher("happy","One more time! Tap 🎤");stop();setShStep("listening");startNudge();};
 
   // ═══ COLOR PLAY FLOW ═══
-  const handleCoResult=(result,alternatives,expectedWord)=>{
-    const w=expectedWord||selColor?.name;
+  const handleCoResult=(result,alternatives)=>{
     if(!result||!result.trim()){
-      if(retryCountRef.current<2){
-        retryCountRef.current++;
-        setCoStep("listening");
-        showTeacher("happy","Didn't catch that — say it again!");
-        setTimeout(()=>rec.start(handleCoResult,w),800);
-      }else{
-        retryCountRef.current=0;
-        setCoStep("listening");
-        showTeacher("happy","Tap 🎤 and try again!");
-      }
+      setCoStep("listening");
+      showTeacher("happy","Tap 🎤 and try again!");startNudge();
       return;
     }
-    retryCountRef.current=0;
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(w,result,alternatives);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
+    const acc=calcAcc(selColor.name,result,alternatives);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"colors",selColor.name);boom();}else{flashWrong();}
     if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
@@ -3573,7 +3492,7 @@ export default function App(){
   };
   const playColor=async(co)=>{
     if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
-    retryCountRef.current=0;pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setCoStep("saying_word");glow("color-display");
     await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setCoStep("spelling");
@@ -3589,11 +3508,11 @@ export default function App(){
       await speak(`Now say it with me, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      await speak(`Your turn ${kidName}! Say, ${co.name}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
-      stop();setCoStep("listening");pRef.current=false;rec.start(handleCoResult,selColor?.name);
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${co.name}!`);await wait(300);if(!pRef.current)return;
+      stop();setCoStep("listening");pRef.current=false;startNudge();
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
-  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time! Say, ${selColor?.name}!`,{rate:0.85,pitch:1.0});await wait(300);stop();setCoStep("listening");rec.start(handleCoResult,selColor?.name);};
+  const retryColor=async()=>{setCoRes(null);setCoAcc(null);showTeacher("happy","One more time! Tap 🎤");stop();setCoStep("listening");startNudge();};
 
 
 
@@ -4103,7 +4022,7 @@ export default function App(){
     <div style={{textAlign:"center",zIndex:2,animation:"splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1)"}}>
       <h1 style={{fontSize:48,fontWeight:900,color:"#fff",margin:0,letterSpacing:-1,textShadow:"0 3px 12px rgba(0,0,0,0.15)"}}>Little Genius 🦉</h1>
       <p style={{color:"rgba(255,255,255,0.85)",fontSize:14,fontWeight:700,letterSpacing:3,textTransform:"uppercase",marginTop:8}}>Learn • Play • Grow</p>
-      <button style={{marginTop:32,padding:"18px 48px",borderRadius:50,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"8px 8px 24px rgba(0,0,0,0.15),-6px -6px 16px rgba(255,255,255,0.3),inset 0 2px 6px rgba(255,255,255,0.4),inset 0 -2px 4px rgba(0,0,0,0.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",animation:"numPulse 2s ease-in-out infinite",letterSpacing:1}}>Tap to Start! 🦉</button>
+      <button style={{marginTop:32,padding:"18px 48px",borderRadius:50,border:"3px solid rgba(255,255,255,0.3)",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 8px 32px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",animation:"numPulse 2s ease-in-out infinite"}}>Tap to Start! 🦉</button>
     </div>
     {TeacherBubble}<style>{CSS}</style>
   </div>;
@@ -4111,7 +4030,7 @@ export default function App(){
 
   if(scr==="onboard")return<div style={{height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",fontFamily:"var(--font)"}}>
     <Particles count={6} emojis={["🌸","🦋","⭐","🌈"]}/>
-    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:32,padding:"28px 20px",maxWidth:400,width:"100%",boxShadow:"10px 10px 30px rgba(108,92,231,0.25),-8px -8px 24px rgba(255,255,255,0.6),inset 0 3px 8px rgba(255,255,255,0.7),inset 0 -2px 6px rgba(0,0,0,0.04)",zIndex:2,animation:"slideUp 0.5s ease-out",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)"}}>
+    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:28,padding:"24px 18px",maxWidth:400,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2),0 4px 12px rgba(0,0,0,0.06)",zIndex:2,animation:"slideUp 0.5s ease-out",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
     {obSt===0?<>
       {/* Step 1: Name + Age */}
       <div style={{textAlign:"center",marginBottom:20}}>
@@ -4123,15 +4042,16 @@ export default function App(){
       <input value={obN} onChange={e=>setObN(e.target.value)} placeholder="Type your name..." style={{width:"100%",padding:"14px 16px",border:"2px solid #DFE6E9",borderRadius:18,fontSize:17,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#F8FAFF"}}/>
       <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",margin:"20px 0 10px"}}>How old are you?</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8}}>
-        {[3,4,5,6,7,8].map(a=><button key={a} data-r="age" onClick={()=>setObA(a)} style={{
-          padding:"14px 0",borderRadius:18,border:"none",
+        {[3,4,5,6,7,8].map(a=><button key={a} onClick={()=>setObA(a)} style={{
+          padding:"14px 0",borderRadius:16,border:"3px solid",
+          borderColor:obA===a?"#6C5CE7":"#DFE6E9",
           background:obA===a?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",
           color:obA===a?"#fff":"#1C1C2B",fontSize:20,fontWeight:900,
           fontFamily:"var(--font)",cursor:"pointer",transform:obA===a?"scale(1.08)":"scale(1)",
-          boxShadow:obA===a?"6px 6px 18px rgba(108,92,231,0.35),-4px -4px 12px rgba(255,255,255,0.6),inset 0 2px 4px rgba(255,255,255,0.4)":"var(--clay-btn)"
+          boxShadow:obA===a?"0 4px 12px rgba(252,128,25,.3)":"none"
         }}>{a}</button>)}
       </div>
-      <button onClick={()=>{sfxTap();setObSt(1);speak("Great! Now select your style!",{rate:0.85,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:22,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,boxShadow:"6px 6px 18px rgba(108,92,231,0.3),-4px -4px 12px rgba(255,255,255,0.5),inset 0 2px 4px rgba(255,255,255,0.3),inset 0 -2px 3px rgba(0,0,0,0.08)",letterSpacing:0.5}}>Next →</button>
+      <button onClick={()=>{sfxTap();setObSt(1);speak("Great! Now select your style!",{rate:0.85,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,boxShadow:"var(--shadow-btn)",letterSpacing:0.5}}>Next →</button>
     </>:
     obSt===1?<>
       {/* Step 2: Gender + Avatar */}
@@ -4141,11 +4061,12 @@ export default function App(){
       </div>
       <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:6}}>I am a...</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
-        {[{g:"boy",e:"👦",c:"#6C5CE7"},{g:"girl",e:"👧",c:"#E84393"}].map(x=><button key={x.g} data-r="gender" onClick={()=>setObG(x.g)} style={{
-          padding:16,borderRadius:22,border:"none",
-          background:obG===x.g?(x.g==="boy"?"linear-gradient(135deg,#EDE7F6,#FFF5EB)":"linear-gradient(135deg,#FDF2F8,#FCE4EC)"):"#fff",
+        {[{g:"boy",e:"👦",c:"#6C5CE7"},{g:"girl",e:"👧",c:"#E84393"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{
+          padding:16,borderRadius:18,border:"3px solid",
+          borderColor:obG===x.g?x.c:"#E8E8E8",
+          background:obG===x.g?(x.g==="boy"?"#FFF5EB":"#FDF2F8"):"#fff",
           cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:8,transform:obG===x.g?"scale(1.04)":"scale(1)",
-          boxShadow:obG===x.g?`8px 8px 20px ${x.c}30,-4px -4px 12px rgba(255,255,255,0.7),inset 0 2px 4px rgba(255,255,255,0.5)`:"var(--clay-btn)"
+          boxShadow:obG===x.g?`0 4px 16px ${x.c}33`:"none"
         }}>
           <span style={{fontSize:44}}>{x.e}</span>
           <span style={{fontWeight:800,fontSize:15,color:obG===x.g?x.c:"#8E8CA3"}}>{x.g.charAt(0).toUpperCase()+x.g.slice(1)}</span>
@@ -4153,19 +4074,20 @@ export default function App(){
       </div>
       <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:10}}>Pick an avatar</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:"100%",overflow:"hidden"}}>
-        {AVATARS[obG].map((av,i)=><button key={i} data-r="avatar" onClick={()=>setObAv(i)} style={{
-          padding:10,borderRadius:18,border:"none",
+        {AVATARS[obG].map((av,i)=><button key={i} onClick={()=>setObAv(i)} style={{
+          padding:10,borderRadius:16,border:"3px solid",
+          borderColor:obAv===i?"#6C5CE7":"#E8E8E8",
           background:obAv===i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F8F9FB",
           fontSize:28,cursor:"pointer",
           transform:obAv===i?"scale(1.05)":"scale(1)",
           display:"flex",alignItems:"center",justifyContent:"center",
-          boxShadow:obAv===i?"6px 6px 16px rgba(108,92,231,.3),-3px -3px 10px rgba(255,255,255,0.6),inset 0 2px 3px rgba(255,255,255,0.4)":"var(--clay-btn)",
+          boxShadow:obAv===i?"0 4px 12px rgba(108,92,231,.2)":"none",
           minWidth:0,overflow:"hidden"
         }}>{av}</button>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
-        <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:20,border:"none",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",color:"#8E8CA3",boxShadow:"var(--clay-btn)"}}>← Back</button>
-        <button onClick={()=>{sfxTap();setObSt(2);speak("Would you like a quick tour?",{rate:0.85,pitch:1.0});setTeacherMood("happy");}} style={{padding:14,borderRadius:20,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",boxShadow:"6px 6px 18px rgba(108,92,231,0.3),-4px -4px 12px rgba(255,255,255,0.5),inset 0 2px 4px rgba(255,255,255,0.3)"}}>Next →</button>
+        <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:16,border:"2px solid #E8E0D8",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",color:"#8E8CA3"}}>← Back</button>
+        <button onClick={()=>{sfxTap();setObSt(2);speak("Would you like a quick tour?",{rate:0.85,pitch:1.0});setTeacherMood("happy");}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",boxShadow:"var(--shadow-btn)"}}>Next →</button>
       </div>
     </>:
     obSt===2?<>
@@ -4181,7 +4103,7 @@ export default function App(){
           save(newP);speak("Let's get to know you first!",{rate:0.85,pitch:1.0});setTeacherMood("star");
           setScr("questionnaire");setQStep(0);setQAnswers([]);
           localStorage.setItem("lg_want_tour","yes");
-        }} style={{padding:20,borderRadius:24,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"6px 6px 18px rgba(0,210,160,0.3),-4px -4px 12px rgba(255,255,255,0.5),inset 0 2px 4px rgba(255,255,255,0.4),inset 0 -2px 3px rgba(0,0,0,0.06)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+        }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(0,210,160,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
           <span style={{fontSize:32}}>👍</span>
           Yes, show me!
         </button>
@@ -4189,7 +4111,7 @@ export default function App(){
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
           save(newP);speak("Let's go!",{rate:0.85,pitch:1.0});setTeacherMood("star");
           setScr("home");
-        }} style={{padding:20,borderRadius:24,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"6px 6px 18px rgba(255,159,67,0.3),-4px -4px 12px rgba(255,255,255,0.5),inset 0 2px 4px rgba(255,255,255,0.4),inset 0 -2px 3px rgba(0,0,0,0.06)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+        }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(255,159,67,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
           <span style={{fontSize:32}}>🚀</span>
           Skip, let's go!
         </button>
@@ -4201,20 +4123,20 @@ export default function App(){
 
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
-  const showNav=["home","learn","quizzone","phonics","stories","rewards","settings","studyplan"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
-  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"rgba(255,255,255,0.95)",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"8px 8px 24px rgba(166,158,203,0.3),-6px -6px 16px rgba(255,255,255,0.7),inset 0 2px 4px rgba(255,255,255,0.6)",borderRadius:28,padding:"5px",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
+  const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
+  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
     {[
       {id:"home",icon:"🏠",label:"Home"},
-      {id:"learn",icon:"📚",label:"Learn"},
-      {id:"quizzone",icon:"🎯",label:"Quiz"},
-      {id:"stories",icon:"📖",label:"Stories"},
-      {id:"settings",icon:"👤",label:"Profile"},
-    ].map(t=><button key={t.id} onClick={()=>{sfxTap();stop();if(t.id==="home")goHome();else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
+      {id:"parent_nav",icon:"👨‍👩‍👧",label:"Parent"},
+      {id:"homework",icon:"📝",label:"Tasks"},
+      {id:"arena",icon:"🏟️",label:"Arena"},
+      {id:"rewards",icon:"🎁",label:"Rewards"},
+      {id:"settings",icon:"⚙️",label:"Settings"},
+    ].map(t=><button key={t.id} onClick={()=>{sfxTap();stop();if(t.id==="home")goHome();else if(t.id==="parent_nav"){setShowPinModal(true);}else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
       flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,
-      padding:"7px 4px 9px",border:"none",cursor:"pointer",
+      padding:"6px 4px 8px",border:"none",cursor:"pointer",
       background:scr===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"transparent",
-      borderRadius:22,
-      boxShadow:scr===t.id?"4px 4px 12px rgba(108,92,231,0.25),inset 0 1px 3px rgba(255,255,255,0.3)":"none",
+      borderRadius:20,
       borderTop:"none"}}>
       <span style={{fontSize:18,filter:scr===t.id?"none":"grayscale(0.4) opacity(0.5)"}}>{t.icon}</span>
       <span style={{fontSize:9,fontWeight:700,color:scr===t.id?"#fff":"#A4B0BE"}}>{t.label}</span>
@@ -4224,7 +4146,7 @@ export default function App(){
 
   // ═══ QUESTIONNAIRE (first-time only) ═══
   if(scr==="questionnaire")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:32,padding:"28px 20px",maxWidth:400,border:"none",width:"100%",boxShadow:"10px 10px 30px rgba(108,92,231,0.25),-8px -8px 24px rgba(255,255,255,0.6),inset 0 3px 8px rgba(255,255,255,0.7),inset 0 -2px 6px rgba(0,0,0,0.04)",textAlign:"center"}}>
+    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:28,padding:"24px 18px",maxWidth:400,border:"1px solid rgba(255,255,255,0.8)",width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
       <div style={{fontSize:48}}>🦉</div>
       <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Quick Questions!</h2>
       <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:16}}>Question {qStep+1} of {QUESTIONNAIRE.length} — Help Ollie customize your learning!</p>
@@ -4241,7 +4163,7 @@ export default function App(){
           padding:"14px 18px",border:"none",cursor:"pointer",fontFamily:"var(--font)",
           fontSize:14,fontWeight:700,textAlign:"left",
           background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
-          color:"#fff",boxShadow:["6px 6px 16px rgba(108,92,231,0.25),-3px -3px 10px rgba(255,255,255,0.4),inset 0 2px 3px rgba(255,255,255,0.3)","6px 6px 16px rgba(0,210,160,0.25),-3px -3px 10px rgba(255,255,255,0.4),inset 0 2px 3px rgba(255,255,255,0.3)","6px 6px 16px rgba(255,159,67,0.25),-3px -3px 10px rgba(255,255,255,0.4),inset 0 2px 3px rgba(255,255,255,0.3)","6px 6px 16px rgba(84,160,255,0.25),-3px -3px 10px rgba(255,255,255,0.4),inset 0 2px 3px rgba(255,255,255,0.3)"][i%4],
+          color:"#fff",boxShadow:["0 6px 20px rgba(108,92,231,0.25)","0 6px 20px rgba(0,210,160,0.25)","0 6px 20px rgba(255,159,67,0.25)","0 6px 20px rgba(84,160,255,0.25)"][i%4],
           borderRadius:22,
           transition:"all 0.2s"
         }}>{opt}</button>)}
@@ -4260,11 +4182,100 @@ export default function App(){
     </div>
   </div>;
 
-  if(scr==="home")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
+  // ═══ SUB-CATEGORY DATA ═══
+  const SPEAKING_CATS=[
+    {id:"alphabets",icon:"🔤",title:"Alphabets A-Z",scr:"learn",tab:"abc"},
+    {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
+    {id:"animals",icon:"🐾",title:"Animals",scr:"phonics",cat:"animals"},
+    {id:"colors",icon:"🎨",title:"Colors",scr:"colors"},
+    {id:"shapes",icon:"🔷",title:"Shapes",scr:"shapes"},
+    {id:"fruits",icon:"🍎",title:"Fruits & Food",scr:"phonics",cat:"food"},
+    {id:"body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
+    {id:"vehicles",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
+    {id:"family",icon:"👨‍👩‍👧",title:"Family & People",scr:"phonics",cat:"family"},
+    {id:"nature",icon:"🌿",title:"Nature",scr:"phonics",cat:"nature"},
+  ];
+  const LISTENING_CATS=[
+    {id:"numbers",icon:"🔢",title:"Numbers",scr:"learn",tab:"numbers"},
+    {id:"alphabets",icon:"🔤",title:"Alphabets",scr:"learn",tab:"abc"},
+    {id:"animals",icon:"🐾",title:"Animals & Nature",scr:"phonics",cat:"animals"},
+    {id:"colors",icon:"🎨",title:"Colors & Shapes",scr:"learn",tab:"colors"},
+    {id:"food",icon:"🍎",title:"Fruits & Food",scr:"phonics",cat:"food"},
+    {id:"vehicles",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
+    {id:"body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
+    {id:"weather",icon:"🌤️",title:"Weather",scr:"phonics",cat:"weather"},
+    {id:"countries",icon:"🌍",title:"Countries",scr:"phonics",cat:"countries"},
+    {id:"sports",icon:"⚽",title:"Sports",scr:"phonics",cat:"sports"},
+    {id:"places",icon:"🏛️",title:"Places",scr:"phonics",cat:"places"},
+  ];
+  const READING_CATS=[
+    {id:"cvc",icon:"🧩",title:"CVC Words (cat, dog)",scr:"phonics",cat:"cvc"},
+    {id:"blends",icon:"🔗",title:"Blends (stop, clip)",scr:"phonics",cat:"blends"},
+    {id:"sight",icon:"👁️",title:"Sight Words",scr:"phonics",cat:"sight"},
+    {id:"animals",icon:"🐾",title:"Animal Words",scr:"phonics",cat:"animals"},
+    {id:"food",icon:"🍎",title:"Food Words",scr:"phonics",cat:"food"},
+    {id:"nature",icon:"🌿",title:"Nature Words",scr:"phonics",cat:"nature"},
+  ];
+  const WRITING_CATS=[
+    {id:"upper",icon:"🔠",title:"Uppercase A-Z",scr:"quizzone",qtab:"write",wmode:"letters",wcase:"caps"},
+    {id:"lower",icon:"🔡",title:"Lowercase a-z",scr:"quizzone",qtab:"write",wmode:"letters",wcase:"small"},
+    {id:"nums",icon:"🔢",title:"Numbers 0-9",scr:"quizzone",qtab:"write",wmode:"numbers"},
+    {id:"words",icon:"📝",title:"Simple Words",scr:"phonics",cat:"cvc"},
+  ];
+  const MATHS_CATS=[
+    {id:"counting",icon:"🔢",title:"Counting 1-100",scr:"learn",tab:"numbers"},
+    {id:"addition",icon:"➕",title:"Addition",scr:"quizzone",qtab:"math",mop:"+"},
+    {id:"subtraction",icon:"➖",title:"Subtraction",scr:"quizzone",qtab:"math",mop:"-"},
+    {id:"multiply",icon:"✖️",title:"Multiplication",scr:"quizzone",qtab:"math",mop:"×"},
+    {id:"tables",icon:"📋",title:"Times Tables",scr:"quizzone",qtab:"math",mop:"×"},
+    {id:"compare",icon:"⚖️",title:"Number Quiz",scr:"quizzone",qtab:"numquiz"},
+  ];
+  const goSubCat=(cat)=>{
+    sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
+    if(cat.cat)setPhCat(cat.cat);
+    if(cat.tab)setLearnTab(cat.tab);
+    if(cat.mop)setMathOp(cat.mop);
+    if(cat.qtab)setQuizTab(cat.qtab);
+    if(cat.wmode)setWriteMode(cat.wmode);
+    if(cat.wcase)setWriteCase(cat.wcase);
+    setScr(cat.scr);
+  };
+  const SubCatScreen=({title,emoji,cats,onBack})=>(
+    <div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+      <Particles count={6}/>
+      <SubHead title={title} onBack={onBack} points={prof?.points||0}/>
+      <div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}>
+        <div style={{textAlign:"center",fontSize:48,marginBottom:8,animation:"mascotB 2s ease-in-out infinite"}}>{emoji}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+          {cats.map((c,i)=>
+            <button key={c.id} data-r="tile" onClick={()=>goSubCat(c)} style={{
+              display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"18px 10px",
+              borderRadius:22,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",
+              animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`
+            }}>
+              <span style={{fontSize:32}}>{c.icon}</span>
+              <span style={{fontWeight:800,fontSize:13,color:"#2D2B3D"}}>{c.title}</span>
+            </button>
+          )}
+        </div>
+      </div>
+      <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    </div>
+  );
+  if(scr==="speaking")return<SubCatScreen title="Speaking 🗣️" emoji="🗣️" cats={SPEAKING_CATS} onBack={goHome}/>;
+  if(scr==="listening")return<SubCatScreen title="Listening 👂" emoji="👂" cats={LISTENING_CATS} onBack={goHome}/>;
+  if(scr==="reading")return<SubCatScreen title="Reading 📖" emoji="📖" cats={READING_CATS} onBack={goHome}/>;
+  if(scr==="writing")return<SubCatScreen title="Writing ✍️" emoji="✍️" cats={WRITING_CATS} onBack={goHome}/>;
+  if(scr==="maths")return<SubCatScreen title="Maths 🧮" emoji="🧮" cats={MATHS_CATS} onBack={goHome}/>;
+  if(scr==="mixquiz"){setScr("quizzone");return null;}
+  if(scr==="homework")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Homework 📝" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,padding:20}}><span style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>📝</span><h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",textAlign:"center"}}>Coming Soon!</h2><p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,textAlign:"center"}}>Parents will assign homework tasks here</p></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
+
+
+    if(scr==="home")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
     {/* ═══ TOP BAR ═══ */}
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",flexShrink:0,background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 50%,#74B9FF 100%)",borderRadius:"0 0 24px 24px",boxShadow:"6px 6px 20px rgba(108,92,231,0.25),-4px -4px 14px rgba(255,255,255,0.15),inset 0 2px 4px rgba(255,255,255,0.2)"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",flexShrink:0,background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 50%,#74B9FF 100%)",borderRadius:"0 0 20px 20px",boxShadow:"0 4px 24px rgba(108,92,231,0.2)"}}>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:44,height:44,borderRadius:"50%",background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"inset 0 0 0 2px rgba(255,255,255,0.3)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
         <div>
@@ -4280,76 +4291,49 @@ export default function App(){
       </div>
     </div>
 
-    {/* ═══ KHAN-STYLE HOME: Play Button + Library + Differentiators ═══ */}
+    {/* ═══ 7 SKILL TILES HOME ═══ */}
     <div id="home-tiles" style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",padding:"0 0 90px"}}>
-
-      {/* ═══ BIG PLAY BUTTON (Khan Academy Kids style) ═══ */}
-      <div style={{padding:"12px 16px 0"}}>
-        <button data-r="tile" onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
-          const subjects=["learn","phonics","quizzone"];const next=subjects[Math.floor(Math.random()*subjects.length)];
-          speak("Let's start learning with Ollie!",{rate:0.85,pitch:1.0});
-          if(next==="learn"){setLearnTab(["numbers","abc","shapes","colors"][Math.floor(Math.random()*4)]);}
-          setScr(next);
-        }} style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:20,border:"none",background:"var(--green)",borderBottom:"5px solid var(--green-dark)",cursor:"pointer",fontFamily:"var(--font)",textAlign:"left",animation:"continuePulse 3s ease-in-out infinite"}}>
-          <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:"2px solid rgba(255,255,255,0.15)"}}>
-            <span style={{fontSize:20,fontWeight:900,color:"#fff"}}>▶</span>
-          </div>
-          <div style={{flex:1}}><div style={{fontSize:18,fontWeight:800,color:"#fff"}}>Start Learning!</div><div style={{fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.8)",marginTop:2}}>Ollie picks the best lesson for you</div></div>
-          <span style={{fontSize:32}}>🦉</span>
-        </button>
+      <div style={{padding:"14px 16px 8px"}}>
+        <h3 style={{fontSize:18,fontWeight:800,color:"var(--dark)",margin:"0 0 4px"}}>What shall we learn? 🦉</h3>
+        <p style={{fontSize:12,fontWeight:600,color:"var(--gray)"}}>Pick a skill to start!</p>
       </div>
-
-      {/* ═══ DIFFERENTIATORS: Arena + Parents ═══ */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,padding:"10px 16px 0"}}>
-        <button data-r="tile" data-tile="arena" onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");speak("Arena time! Let's play together!",{rate:0.85,pitch:1.0});setScr("arena");}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,padding:"14px 10px",borderRadius:16,border:"2px solid var(--pink-light)",borderBottom:"4px solid var(--pink-light)",background:"#FCE4EC",cursor:"pointer",fontFamily:"var(--font)",animation:"gridPop 0.4s ease 0.08s both"}}>
-          <div style={{width:44,height:44,borderRadius:12,background:"var(--pink)",borderBottom:"3px solid var(--pink-dark)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:22}}>🏟️</span></div>
-          <div style={{fontWeight:800,fontSize:14,color:"var(--pink-dark)"}}>Arena</div>
-          <div style={{fontSize:10,fontWeight:600,color:"var(--pink)"}}>Play with Friends!</div>
-        </button>
-        <button data-r="tile" data-tile="parent" onClick={()=>{sfxTap();setShowPinModal(true);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,padding:"14px 10px",borderRadius:16,border:"2px solid var(--blue-light)",borderBottom:"4px solid var(--blue-light)",background:"#E3F2FD",cursor:"pointer",fontFamily:"var(--font)",animation:"gridPop 0.4s ease 0.12s both"}}>
-          <div style={{width:44,height:44,borderRadius:12,background:"var(--blue)",borderBottom:"3px solid var(--blue-dark)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontSize:22}}>👨‍👩‍👧</span></div>
-          <div style={{fontWeight:800,fontSize:14,color:"var(--blue-dark)"}}>Parents</div>
-          <div style={{fontSize:10,fontWeight:600,color:"var(--blue)"}}>Dashboard & Plans</div>
-        </button>
-      </div>
-
-      {/* ═══ EXPLORE LIBRARY — All topics freely accessible (Khan style) ═══ */}
-      <div style={{padding:"12px 16px 0"}}>
-        <h3 style={{fontSize:16,fontWeight:800,color:"var(--dark)",margin:"0 0 8px"}}>Explore Library 📚</h3>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"0 16px"}}>
         {[
-          {id:"learn",icon:"🔢",title:"Numbers",sub:"Count 1-100",bg:"#E8F5E9",bc:"#C8E6C9",tc:"#2E7D32",tab:"numbers",msg:"Let's learn numbers!"},
-          {id:"learn",icon:"🔤",title:"Alphabet",sub:"A to Z & Sounds",bg:"#E3F2FD",bc:"#BBDEFB",tc:"#1565C0",tab:"abc",msg:"Let's explore the alphabet!"},
-          {id:"phonics",icon:"📖",title:"Phonics",sub:"500+ Words & Sounds",bg:"#FFF3E0",bc:"#FFE0B2",tc:"#E65100",tab:null,msg:"Let's practice reading words!"},
-          {id:"learn",icon:"🔷",title:"Shapes",sub:"Circles, Squares & more",bg:"#EDE7F6",bc:"#D1C4E9",tc:"#4527A0",tab:"shapes",msg:"Let's discover shapes!"},
-          {id:"learn",icon:"🎨",title:"Colors",sub:"Rainbow of Colors",bg:"#FCE4EC",bc:"#F8BBD0",tc:"#AD1457",tab:"colors",msg:"Let's learn colors!"},
-          {id:"quizzone",icon:"🎯",title:"Quiz Zone",sub:"14 Question Types!",bg:"#E0F7FA",bc:"#B2EBF2",tc:"#006064",tab:null,msg:"Quiz time! Let's test your skills!"},
-          {id:"stories",icon:"📚",title:"Stories",sub:"Read & Learn",bg:"#FFF8E1",bc:"#FFE082",tc:"#F57F17",tab:null,msg:"Story time! Let's read!"},
-        ].map((m,i)=><button key={m.title} data-r="tile" onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
-          speak(m.msg,{rate:0.85,pitch:1.0});if(m.tab){setLearnTab(m.tab);}setScr(m.id);
-        }} style={{display:"flex",alignItems:"center",gap:12,width:"100%",padding:"11px 14px",borderRadius:14,border:`2px solid ${m.bc}`,borderBottom:`3px solid ${m.bc}`,background:m.bg,cursor:"pointer",fontFamily:"var(--font)",marginBottom:7,textAlign:"left",animation:`gridPop 0.3s ease ${0.04*i}s both`}}>
-          <div style={{width:42,height:42,borderRadius:12,background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,border:`2px solid ${m.bc}`,flexShrink:0}}>{m.icon}</div>
-          <div style={{flex:1}}><div style={{fontWeight:800,fontSize:14,color:m.tc}}>{m.title}</div><div style={{fontSize:11,fontWeight:600,color:"var(--gray)",marginTop:1}}>{m.sub}</div></div>
-          <span style={{fontSize:16,color:m.bc}}>›</span>
-        </button>)}
+          {id:"speaking",icon:"🗣️",title:"Speaking",sub:"Say words & letters",bg:"linear-gradient(135deg,#6C5CE7,#A29BFE)"},
+          {id:"listening",icon:"👂",title:"Listening",sub:"Hear & understand",bg:"linear-gradient(135deg,#00D2A0,#55EFC4)"},
+          {id:"reading",icon:"📖",title:"Reading",sub:"Match words & spell",bg:"linear-gradient(135deg,#FF9F43,#FECA57)"},
+          {id:"writing",icon:"✍️",title:"Writing",sub:"Trace & write",bg:"linear-gradient(135deg,#54A0FF,#74B9FF)"},
+          {id:"maths",icon:"🧮",title:"Maths",sub:"Count, add & multiply",bg:"linear-gradient(135deg,#FF6B6B,#EE5A5A)"},
+          {id:"mixquiz",icon:"🎯",title:"Mix Quiz",sub:"Test all your skills",bg:"linear-gradient(135deg,#EC407A,#F48FB1)"},
+          {id:"stories",icon:"📚",title:"Stories",sub:"Read & learn",bg:"linear-gradient(135deg,#26C6DA,#4DD0E1)"},
+        ].map((t,i)=>
+          <button key={t.id} data-r="tile" data-tile={t.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
+            speak(t.title+"! Let's go!",{rate:0.85,pitch:1.0});setScr(t.id);
+          }} style={{
+            display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"22px 10px 18px",
+            borderRadius:24,border:"none",background:t.bg,cursor:"pointer",fontFamily:"var(--font)",
+            animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.07}s both`
+          }}>
+            <span style={{fontSize:38,filter:"drop-shadow(0 2px 6px rgba(0,0,0,0.15))"}}>{t.icon}</span>
+            <span style={{fontWeight:800,fontSize:16,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.15)"}}>{t.title}</span>
+            <span style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.85)"}}>{t.sub}</span>
+          </button>
+        )}
       </div>
-
-      {/* ═══ QUICK ACCESS ═══ */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,padding:"4px 16px 12px"}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,padding:"12px 16px"}}>
         {[
-          {id:"studyplan",icon:"📋",title:"Study Plan",bg:"#FFF3E0",bc:"#FFE0B2",tc:"#E65100",msg:"Let's check your study plan!"},
-          {id:"rewards",icon:"🎁",title:"Rewards",bg:"#FFEBEE",bc:"#FFCDD2",tc:"#C62828",msg:"Let's see your rewards!"},
-          {id:"settings",icon:"⚙️",title:"Settings",bg:"#ECEFF1",bc:"#CFD8DC",tc:"#546E7A",msg:"Settings time!"},
-        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
-          speak(m.msg,{rate:0.85,pitch:1.0});setScr(m.id);
-        }} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"10px 4px",borderRadius:12,border:`2px solid ${m.bc}`,borderBottom:`3px solid ${m.bc}`,background:m.bg,cursor:"pointer",fontFamily:"var(--font)",animation:`gridPop 0.3s ease ${0.2+0.04*i}s both`}}>
-          <span style={{fontSize:18}}>{m.icon}</span>
+          {id:"studyplan",icon:"📋",title:"Study Plan",bg:"#FFF3E0",tc:"#E65100"},
+          {id:"arena",icon:"🏟️",title:"Arena",bg:"#FCE4EC",tc:"#AD1457"},
+          {id:"rewards",icon:"🎁",title:"Rewards",bg:"#FFEBEE",tc:"#C62828"},
+        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");setScr(m.id);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"10px 4px",borderRadius:16,border:"none",background:m.bg,cursor:"pointer",fontFamily:"var(--font)",animation:`gridPop 0.3s ease ${0.5+0.04*i}s both`}}>
+          <span style={{fontSize:20}}>{m.icon}</span>
           <span style={{fontSize:10,fontWeight:800,color:m.tc}}>{m.title}</span>
         </button>)}
       </div>
     </div>
-    {/* ═══ PIN MODAL ═══ */}
+        {/* ═══ PIN MODAL ═══ */}
     {showPinModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:32,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"10px 10px 30px rgba(166,158,203,0.35),-8px -8px 24px rgba(255,255,255,0.7),inset 0 3px 8px rgba(255,255,255,0.6)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"var(--shadow-float)"}}>
         <span style={{fontSize:48}}>🔒</span>
         <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
         <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
@@ -6028,7 +6012,7 @@ const CSS=`
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap');
 :root{
-  --bg:#F0EDFF;--bg2:#E6E2FA;--card:#FFFFFF;--card2:#F8F6FF;
+  --bg:#F7F5FF;--bg2:#EEEAFF;--card:#FFFFFF;--card2:#FAFAFF;
   --primary:#7C4DFF;--primary-light:#B388FF;--primary-dark:#651FFF;
   --orange:#FF8A50;--orange-light:#FFB74D;--orange-dark:#E65100;
   --green:#4CAF50;--green-light:#81C784;--green-dark:#2E7D32;
@@ -6038,126 +6022,31 @@ const CSS=`
   --cyan:#26C6DA;--cyan-light:#4DD0E1;--cyan-dark:#00838F;
   --yellow:#FFCA28;--yellow-dark:#FFA000;
   --dark:#1A1A2E;--gray:#78909C;--muted:#B0BEC5;--light:#E8EAF6;
-  --radius:20px;--radius-lg:28px;--radius-xl:36px;
-  /* ═══ CLAYMORPHISM SHADOW SYSTEM ═══ */
-  --clay-out:8px 8px 20px rgba(166,158,203,0.35),-6px -6px 16px rgba(255,255,255,0.85);
-  --clay-card:6px 6px 16px rgba(166,158,203,0.25),-4px -4px 12px rgba(255,255,255,0.8),inset 0 2px 4px rgba(255,255,255,0.6),inset 0 -1px 3px rgba(0,0,0,0.04);
-  --clay-btn:5px 5px 14px rgba(166,158,203,0.3),-3px -3px 10px rgba(255,255,255,0.7),inset 0 2px 3px rgba(255,255,255,0.5),inset 0 -1px 2px rgba(0,0,0,0.06);
-  --clay-btn-press:inset 3px 3px 8px rgba(166,158,203,0.3),inset -2px -2px 6px rgba(255,255,255,0.5);
-  --clay-input:inset 3px 3px 8px rgba(166,158,203,0.2),inset -2px -2px 6px rgba(255,255,255,0.6);
-  --clay-float:10px 10px 28px rgba(166,158,203,0.35),-6px -6px 20px rgba(255,255,255,0.8),inset 0 3px 6px rgba(255,255,255,0.5),inset 0 -2px 4px rgba(0,0,0,0.05);
-  --clay-glow:0 0 24px rgba(124,77,255,0.25),0 0 48px rgba(124,77,255,0.1);
-  --shadow-card:var(--clay-card);
-  --shadow-btn:var(--clay-btn);
-  --shadow-float:var(--clay-float);
-  --shadow-glow:var(--clay-glow);
+  --radius:16px;--radius-lg:24px;--radius-xl:32px;
+  --shadow-card:0 2px 0 rgba(0,0,0,0.06),0 1px 3px rgba(0,0,0,0.05);
+  --shadow-btn:0 4px 0 #5E35B1;
+  --shadow-float:0 8px 24px rgba(0,0,0,0.12),0 2px 4px rgba(0,0,0,0.04);
+  --shadow-glow:0 0 24px rgba(124,77,255,0.2);
   --font:'Nunito','Fredoka',system-ui,-apple-system,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
 html,body{background:var(--bg);overflow-x:hidden;color:var(--dark);font-family:var(--font);-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;}
 *{-webkit-overflow-scrolling:touch;}
-::-webkit-scrollbar{width:5px;}
-::-webkit-scrollbar-thumb{background:var(--primary-light);border-radius:6px;}::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--primary-light);border-radius:4px;}::-webkit-scrollbar-track{background:transparent;}
+button{font-family:var(--font);touch-action:manipulation;-webkit-touch-callout:none;transition:transform 0.1s ease;-webkit-appearance:none;}
+button:active{transform:translateY(2px);}
 
-/* ═══ CLAYMORPHISM GLOBAL BUTTON ═══ */
-button{
-  font-family:var(--font);touch-action:manipulation;-webkit-touch-callout:none;
-  -webkit-appearance:none;
-  transition:transform 0.18s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.18s ease;
-  border-radius:var(--radius) !important;
-}
-button:active{
-  transform:translateY(2px) scale(0.97) !important;
-  box-shadow:var(--clay-btn-press) !important;
-  transition:transform 0.08s ease,box-shadow 0.08s ease !important;
-}
-
-/* ═══ CLAYMORPHISM AUTO-APPLY ═══ */
-/* All data-r elements get clay surfaces */
-[data-r]{
-  box-shadow:var(--clay-card) !important;
-  border-radius:var(--radius) !important;
-  transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.2s ease !important;
-  position:relative;
-  overflow:hidden;
-}
-[data-r]::after{
-  content:'';position:absolute;inset:0;border-radius:inherit;
-  background:linear-gradient(135deg,rgba(255,255,255,0.25) 0%,transparent 50%,rgba(0,0,0,0.02) 100%);
-  pointer-events:none;z-index:1;
-}
-
-/* ═══ REACTIVE HOVER/TOUCH SYSTEM ═══ */
+/* ═══ REACTIVE HOVER SYSTEM ═══ */
 @media(hover:hover){
-  [data-r]{cursor:pointer;}
-  [data-r]:hover{
-    transform:translateY(-4px) scale(1.03);
-    box-shadow:var(--clay-float) !important;
-    z-index:2;
-  }
-  [data-r]:active{
-    transform:translateY(1px) scale(0.98) !important;
-    box-shadow:var(--clay-btn-press) !important;
-  }
+  [data-r]{transition:transform 0.15s ease;cursor:pointer;}
+  [data-r]:hover{transform:translateY(-2px);z-index:2;}
+  [data-r]:active{transform:translateY(2px);}
 }
 @media(hover:none){
   [data-r]{cursor:pointer;-webkit-tap-highlight-color:transparent;}
-  [data-r]:active{
-    transform:translateY(2px) scale(0.96) !important;
-    box-shadow:var(--clay-btn-press) !important;
-    opacity:0.97;
-  }
+  [data-r]:active{transform:translateY(2px);opacity:0.95;}
 }
-
-/* ═══ CLAY SURFACE OVERRIDES ═══ */
-/* Cards / panels with white bg */
-[data-owl]{
-  box-shadow:var(--clay-card);
-  border-radius:var(--radius-lg);
-}
-/* Inputs get inset clay */
-input,textarea,select{
-  box-shadow:var(--clay-input) !important;
-  border-radius:14px !important;
-  border:2px solid rgba(166,158,203,0.15) !important;
-  transition:box-shadow 0.2s ease,border-color 0.2s ease;
-}
-input:focus,textarea:focus{
-  box-shadow:var(--clay-input),0 0 0 3px rgba(124,77,255,0.15) !important;
-  border-color:var(--primary-light) !important;
-  outline:none;
-}
-
-/* ═══ TOUCH TILT EFFECT — finger-following 3D ═══ */
-.clay-tilt{
-  transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
-  transform-style:preserve-3d;
-  perspective:600px;
-}
-.clay-tilt:active{
-  transition:transform 0.06s ease !important;
-}
-
-/* ═══ PREMIUM GRADIENT BACKGROUNDS ═══ */
-body::before{
-  content:'';position:fixed;inset:0;z-index:-1;
-  background:
-    radial-gradient(ellipse at 20% 20%,rgba(179,136,255,0.12) 0%,transparent 50%),
-    radial-gradient(ellipse at 80% 80%,rgba(255,183,77,0.08) 0%,transparent 50%),
-    radial-gradient(ellipse at 50% 50%,rgba(129,199,132,0.06) 0%,transparent 60%),
-    var(--bg);
-  pointer-events:none;
-}
-
-/* ═══ NAV PILLS — clay style ═══ */
-nav button{
-  box-shadow:var(--clay-btn) !important;
-  border:none !important;
-}
-nav button:active{
-  box-shadow:var(--clay-btn-press) !important;
-}
-
 @keyframes continuePulse{0%,100%{box-shadow:0 0 0 0 rgba(76,175,80,0.25)}50%{box-shadow:0 0 0 8px rgba(76,175,80,0)}}
 
 /* ═══ CORE ANIMATIONS ═══ */
@@ -6168,10 +6057,11 @@ nav button:active{
 @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg)}40%{transform:rotate(6deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(3deg)}}
 @keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+/* Animations */
 @keyframes fadeIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}} @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @keyframes splashPop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 @keyframes micPulse{0%,100%{transform:scale(0.96);box-shadow:0 0 0 8px rgba(239,68,68,0.15)}50%{transform:scale(1.02);box-shadow:0 0 0 16px rgba(239,68,68,0.08)}}
-@keyframes micBreathe{0%,100%{transform:scale(1);box-shadow:var(--clay-btn)}50%{transform:scale(1.04);box-shadow:var(--clay-float)}}
+@keyframes micBreathe{0%,100%{transform:scale(1);box-shadow:0 4px 20px rgba(76,175,80,0.3)}50%{transform:scale(1.04);box-shadow:0 4px 28px rgba(76,175,80,0.45)}}
 @keyframes micShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes spinSlow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 @keyframes mascotB{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
