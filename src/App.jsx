@@ -1855,7 +1855,7 @@ const useRec=()=>{
       // Proxy failed — show actual error for debugging
       if(r.error){
         console.warn("Speech proxy failed:",r.error);
-        setErr("Error: "+r.error);
+        setErr("Couldn't hear you clearly — try again!");
       }
       deliver("",[]);
     };
@@ -2303,25 +2303,26 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,count
     </div>
     {/* Mic button — three states: idle (green), active (pulsing red), processing (orange) */}
     <button onClick={()=>{if(idle&&!processing)onTapMic();}} disabled={active||processing} style={{
-      width:100,height:100,borderRadius:"50%",border:"none",cursor:(active||processing)?"default":"pointer",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+      width:110,height:110,borderRadius:"50%",border:"none",cursor:(active||processing)?"default":"pointer",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
       background:active?"linear-gradient(135deg,#EF4444,#DC2626)":processing?"linear-gradient(135deg,#FF8A50,#F57C00)":"linear-gradient(135deg,#4CAF50,#388E3C)",
       borderBottom:active?"6px solid #B71C1C":processing?"6px solid #E65100":"6px solid #2E7D32",
       boxShadow:active?`0 0 0 ${8+Math.round((vol||0)*16)}px rgba(239,68,68,${0.15+(vol||0)*0.25}), 0 0 ${20+(vol||0)*30}px rgba(239,68,68,0.2)`
         :processing?"0 0 20px rgba(255,138,80,0.3)"
-        :"0 4px 20px rgba(76,175,80,0.3), 0 0 0 0px rgba(76,175,80,0)",
+        :"0 4px 20px rgba(76,175,80,0.3)",
       transition:"box-shadow 0.12s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
       transform:idle&&!processing?"scale(1)":"scale(0.96)",
       animation:active?"micPulse 2s ease-in-out infinite":idle&&!processing?"micBreathe 3s ease-in-out infinite":"none"
     }}>
       {active?<>
-        <span style={{fontSize:36,fontWeight:900,color:"#fff",lineHeight:1,textShadow:"0 2px 8px rgba(0,0,0,0.2)"}}>{countdown||"🎤"}</span>
-        <span style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,0.9)",marginTop:2,letterSpacing:1}}>LISTENING...</span>
+        <span style={{fontSize:38,fontWeight:900,color:"#fff",lineHeight:1}}>{countdown||"🎤"}</span>
+        <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.9)",letterSpacing:1,lineHeight:1}}>LISTENING</span>
       </>:processing?<>
         <span style={{fontSize:28,color:"#fff",animation:"spinSlow 1.2s linear infinite"}}>⏳</span>
-        <span style={{fontSize:9,fontWeight:800,color:"rgba(255,255,255,0.9)",marginTop:2}}>ANALYZING</span>
+        <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.9)",lineHeight:1}}>ANALYZING</span>
       </>:<>
-        <span style={{fontSize:42}}>🎤</span>
-        <span style={{fontSize:10,fontWeight:900,color:"#fff",letterSpacing:1}}>TAP TO SPEAK</span>
+        <span style={{fontSize:40,lineHeight:1}}>🎤</span>
+        <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>TAP TO</span>
+        <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>SPEAK</span>
       </>}
     </button>
     {/* Live volume visualization — shows real-time audio feedback */}
@@ -2340,10 +2341,8 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,count
     {/* Live transcript preview */}
     {active&&transcript&&<div style={{padding:"6px 12px",background:"#E8F5E9",borderRadius:10,border:"2px solid #A5D6A7",margin:"6px 0",animation:"fadeIn 0.2s ease-out"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Hearing: "{transcript}"</span></div>}
     {/* Processing state */}
-    {processing&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px",animation:"fadeIn 0.3s ease-out"}}>{engineUsed==="cloud"?"☁️ Cloud AI analyzing your voice...":"🧠 Checking what you said..."}</p>}
+    {processing&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px",animation:"fadeIn 0.3s ease-out"}}>🧠 Checking what you said...</p>}
     {processing&&transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
-    {/* Engine indicator — small subtle badge */}
-    {(active||processing)&&engineUsed&&engineUsed!=="none"&&<div style={{display:"flex",justifyContent:"center",margin:"4px 0"}}><span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:engineUsed==="deepgram"?"#E8F5E9":engineUsed==="cloud"?"#E3F2FD":"#FFF3E0",color:engineUsed==="deepgram"?"#2E7D32":engineUsed==="cloud"?"#1565C0":"#E65100"}}>{engineUsed==="deepgram"?"⚡ Deepgram Nova-3":engineUsed==="cloud"?"☁️ Google Cloud STT":"📱 Device Speech"}</span></div>}
     {/* Idle state */}
     {idle&&!error&&!transcript&&<p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>Tap the microphone, then say <strong>"{expected}"</strong></p>}
     {/* Error display */}
@@ -3063,6 +3062,7 @@ export default function App(){
   const[spellStatus,setSpellStatus]=useState([]); // per-letter: 'waiting'|'listening'|'correct'|'skipped'
   const pRef=useRef(false);
   const nudgeRef=useRef(null);
+  const retryCountRef=useRef(0);
   // Nudge: if kid doesn't tap mic within 10s, remind them
   const startNudge=()=>{clearTimeout(nudgeRef.current);nudgeRef.current=setTimeout(()=>{showTeacher("happy","Tap the 🎤 button to start!");},10000);};
   const clearNudge=()=>clearTimeout(nudgeRef.current);
@@ -3141,12 +3141,20 @@ export default function App(){
   const kidName = prof?.name || "Buddy";
 
   const handleNumResult=(result,alternatives)=>{
-    // Guard: empty result means no speech detected — go back to listening
     if(!result||!result.trim()){
-      setNStep("listening");
-      showTeacher("happy","Tap 🎤 and try again!");startNudge();
+      if(retryCountRef.current<2){
+        retryCountRef.current++;
+        setNStep("listening");
+        showTeacher("happy","Didn't catch that — say it again!");
+        setTimeout(()=>rec.start(handleNumResult,NW[selNum]),800);
+      }else{
+        retryCountRef.current=0;
+        setNStep("listening");
+        showTeacher("happy","Tap 🎤 and try again!");
+      }
       return;
     }
+    retryCountRef.current=0;
     const w=NW[selNum];
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(w,result,alternatives);setSpRes(normalized);setSpAcc(acc);setNStep("result");
@@ -3156,13 +3164,29 @@ export default function App(){
     else if(s>=3) showTeacher("excited",`Great job ${kidName}! 🎉`);
     else if(s>=1) showTeacher("happy",`Nice try ${kidName}! 💪`);
     else{headNo();showTeacher("sad",`Try again ${kidName}! 💫`);}
+    // Voice feedback AFTER result UI is visible (mic already released)
+    setTimeout(()=>{
+      if(s>=4) speak(`${kidName}, wow! Perfect! ${acc} percent!`,{rate:0.85,pitch:1.0});
+      else if(s>=3) speak(`Great job ${kidName}! You scored ${acc} percent!`,{rate:0.85,pitch:1.0});
+      else if(s>=1) speak(`Nice try! You scored ${acc} percent. Try again!`,{rate:0.85,pitch:1.0});
+      else speak(`You scored ${acc} percent. Keep practicing!`,{rate:0.85,pitch:1.0});
+    },600);
   };
   const handlePhResult=(result,alternatives)=>{
     if(!result||!result.trim()){
-      setPhStep("listening");
-      showTeacher("happy","Tap 🎤 and try again!");startNudge();
+      if(retryCountRef.current<2){
+        retryCountRef.current++;
+        setPhStep("listening");
+        showTeacher("happy","Didn't catch that — say it again!");
+        setTimeout(()=>rec.start(handlePhResult,phW?.word),800);
+      }else{
+        retryCountRef.current=0;
+        setPhStep("listening");
+        showTeacher("happy","Tap 🎤 and try again!");
+      }
       return;
     }
+    retryCountRef.current=0;
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(phW.word,result,alternatives);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
@@ -3171,6 +3195,12 @@ export default function App(){
     else if(s>=3) showTeacher("excited",`Great job ${kidName}! 🎉`);
     else if(s>=1) showTeacher("happy",`Nice try ${kidName}! 💪`);
     else showTeacher("sad",`Try again ${kidName}! 💫`);
+    setTimeout(()=>{
+      if(s>=4) speak(`Amazing ${kidName}! ${acc} percent!`,{rate:0.85,pitch:1.0});
+      else if(s>=3) speak(`Great job! You scored ${acc} percent!`,{rate:0.85,pitch:1.0});
+      else if(s>=1) speak(`Nice try! ${acc} percent. You can do better!`,{rate:0.85,pitch:1.0});
+      else speak(`${acc} percent. Keep practicing!`,{rate:0.85,pitch:1.0});
+    },600);
   };
 
   const tapMicNum=()=>{clearNudge();rec.start(handleNumResult,NW[selNum]);};
@@ -3302,7 +3332,7 @@ export default function App(){
   // NUMBER PLAY FLOW
   const playNum=async(num)=>{
     if(pRef.current){stop();pRef.current=false;setNStep("idle");return;}
-    pRef.current=true;setSelNum(num);setSpRes(null);setSpAcc(null);setAPhI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    retryCountRef.current=0;pRef.current=true;setSelNum(num);setSpRes(null);setSpAcc(null);setAPhI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     const w=NW[num];const scene=getScene(num);
 
     // Step 1: Say the number (always)
@@ -3345,8 +3375,8 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(learnModes.speak){
-      showTeacher('listening',`Your turn! Tap 🎤 and say ${w}!`);await wait(300);if(!pRef.current)return;
-      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
+      await speak(`Your turn ${kidName}! Say, ${w}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handleNumResult,NW[selNum]);
     }else{
       pRef.current=false;
       if(!isDone("numbers",num)) awardPoints(5,"numbers",num);
@@ -3354,15 +3384,16 @@ export default function App(){
       setNStep("idle");
     }
   };
-  const retryNum=async()=>{showTeacher("happy","One more time! Tap 🎤");
+  const retryNum=async()=>{
     setSpRes(null);setSpAcc(null);
-    stop();setNStep("listening");startNudge();
+    await speak(`One more time! Say, ${NW[selNum]}!`,{rate:0.85,pitch:1.0});await wait(300);
+    stop();setNStep("listening");rec.start(handleNumResult,NW[selNum]);
   };
 
   // PHONICS PLAY FLOW
   const playPh=async(wd)=>{
     if(pRef.current){stop();pRef.current=false;setPhStep("idle");return;}
-    pRef.current=true;setPhW(wd);setPhRes(null);setPhAcc(null);setPhAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    retryCountRef.current=0;pRef.current=true;setPhW(wd);setPhRes(null);setPhAcc(null);setPhAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
 
     // Step 1: Say the word (always)
     setPhStep("saying_word");
@@ -3402,8 +3433,8 @@ export default function App(){
 
     // Step 5: Speaking practice (if enabled)
     if(phModes.speak){
-      showTeacher('listening',`Your turn! Tap 🎤 and say ${wd.word}!`);await wait(300);if(!pRef.current)return;
-      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
+      await speak(`Your turn ${kidName}! Say, ${wd.word}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handlePhResult,phW?.word);
     }else{
       pRef.current=false;
       if(!isDone("phonics",wd.word)) awardPoints(5,"phonics",wd.word);
@@ -3411,28 +3442,42 @@ export default function App(){
       setPhStep("idle");
     }
   };
-  const retryPh=async()=>{showTeacher("happy","One more try! Tap 🎤");
+  const retryPh=async()=>{
     setPhRes(null);setPhAcc(null);
-    stop();setPhStep("listening");startNudge();
+    await speak(`One more time! Say, ${phW?.word}!`,{rate:0.85,pitch:1.0});await wait(300);
+    stop();setPhStep("listening");rec.start(handlePhResult,phW?.word);
   };
 
   // ═══ SHAPE PLAY FLOW ═══
   const handleShResult=(result,alternatives)=>{
     if(!result||!result.trim()){
-      setShStep("listening");
-      showTeacher("happy","Tap 🎤 and try again!");startNudge();
+      if(retryCountRef.current<2){
+        retryCountRef.current++;
+        setShStep("listening");
+        showTeacher("happy","Didn't catch that — say it again!");
+        setTimeout(()=>rec.start(handleShResult,selShape?.name),800);
+      }else{
+        retryCountRef.current=0;
+        setShStep("listening");
+        showTeacher("happy","Tap 🎤 and try again!");
+      }
       return;
     }
+    retryCountRef.current=0;
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selShape.name,result,alternatives);setShRes(normalized);setShAcc(acc);setShStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"shapes",selShape.name);boom();}else{flashWrong();}
     if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
     else showTeacher("happy",`Nice try ${kidName}! 💪`);
+    setTimeout(()=>{
+      if(s>=3) speak(`${kidName}, you got it! ${acc} percent!`,{rate:0.85,pitch:1.0});
+      else speak(`Nice try! ${acc} percent. Try again!`,{rate:0.85,pitch:1.0});
+    },600);
   };
   const playShape=async(sh)=>{
     if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
-    pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    retryCountRef.current=0;pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setShStep("saying_word");glow("shape-display");
     await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setShStep("spelling");
@@ -3448,29 +3493,42 @@ export default function App(){
       await speak(`Now say it with me, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      showTeacher('listening',`Your turn! Tap 🎤 and say ${sh.name}!`);await wait(300);if(!pRef.current)return;
-      stop();setShStep("listening");pRef.current=false;startNudge();
+      await speak(`Your turn ${kidName}! Say, ${sh.name}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      stop();setShStep("listening");pRef.current=false;rec.start(handleShResult,selShape?.name);
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
-  const retryShape=async()=>{setShRes(null);setShAcc(null);showTeacher("happy","One more time! Tap 🎤");stop();setShStep("listening");startNudge();};
+  const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time! Say, ${selShape?.name}!`,{rate:0.85,pitch:1.0});await wait(300);stop();setShStep("listening");rec.start(handleShResult,selShape?.name);};
 
   // ═══ COLOR PLAY FLOW ═══
   const handleCoResult=(result,alternatives)=>{
     if(!result||!result.trim()){
-      setCoStep("listening");
-      showTeacher("happy","Tap 🎤 and try again!");startNudge();
+      if(retryCountRef.current<2){
+        retryCountRef.current++;
+        setCoStep("listening");
+        showTeacher("happy","Didn't catch that — say it again!");
+        setTimeout(()=>rec.start(handleCoResult,selColor?.name),800);
+      }else{
+        retryCountRef.current=0;
+        setCoStep("listening");
+        showTeacher("happy","Tap 🎤 and try again!");
+      }
       return;
     }
+    retryCountRef.current=0;
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selColor.name,result,alternatives);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"colors",selColor.name);boom();}else{flashWrong();}
     if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
     else showTeacher("happy",`Nice try ${kidName}! 💪`);
+    setTimeout(()=>{
+      if(s>=3) speak(`${kidName}, you got it! ${acc} percent!`,{rate:0.85,pitch:1.0});
+      else speak(`Nice try! ${acc} percent. Try again!`,{rate:0.85,pitch:1.0});
+    },600);
   };
   const playColor=async(co)=>{
     if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
-    pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    retryCountRef.current=0;pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setCoStep("saying_word");glow("color-display");
     await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setCoStep("spelling");
@@ -3486,11 +3544,11 @@ export default function App(){
       await speak(`Now say it with me, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
     }
     if(speakMode){
-      showTeacher('listening',`Your turn! Tap 🎤 and say ${co.name}!`);await wait(300);if(!pRef.current)return;
-      stop();setCoStep("listening");pRef.current=false;startNudge();
+      await speak(`Your turn ${kidName}! Say, ${co.name}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      stop();setCoStep("listening");pRef.current=false;rec.start(handleCoResult,selColor?.name);
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
-  const retryColor=async()=>{setCoRes(null);setCoAcc(null);showTeacher("happy","One more time! Tap 🎤");stop();setCoStep("listening");startNudge();};
+  const retryColor=async()=>{setCoRes(null);setCoAcc(null);await speak(`One more time! Say, ${selColor?.name}!`,{rate:0.85,pitch:1.0});await wait(300);stop();setCoStep("listening");rec.start(handleCoResult,selColor?.name);};
 
 
 
