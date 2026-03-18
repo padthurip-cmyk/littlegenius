@@ -1228,17 +1228,92 @@ const genArenaQ=(diff="easy")=>{const t=ARENA_Q_TYPES[Math.floor(Math.random()*A
 
 // ═══ FIRST-TIME QUESTIONNAIRE ═══
 const QUESTIONNAIRE=[
-  {q:"What's the main goal?",opts:["Numbers & Counting","Letters & Reading","Both equally","Fun & Games"],key:"focus"},
-  {q:"Can they count to 10?",opts:["Yes, easily","Almost there","Just starting","Not yet"],key:"counting"},
-  {q:"Can they recognize A-Z?",opts:["Yes, all letters","Most letters","A few letters","Not yet"],key:"letters"},
-  {q:"Can they read simple words?",opts:["Yes, short words","Starting to","Not yet","Too young"],key:"reading"},
-  {q:"Can they do simple math?",opts:["2+3 = easy!","With help","Not yet","Too young"],key:"math"},
-  {q:"How do they learn best?",opts:["Watching (visual)","Listening (audio)","Doing (hands-on)","Mix of all"],key:"style"},
-  {q:"What topics interest them?",opts:["Animals & Nature","Colors & Shapes","Music & Sounds","Everything!"],key:"interest"},
+  {q:"Which skills matter most?",opts:["Speaking & Pronunciation","Listening & Understanding","Reading & Spelling","Writing Practice"],key:"skill_priority",multi:true},
+  {q:"What topics do they love?",opts:["Animals & Nature","Numbers & Maths","Colors & Shapes","Countries & Places"],key:"topic_love",multi:true},
+  {q:"What should we focus on first?",opts:["Alphabets A-Z","Numbers 1-100","Simple Words (cat, dog)","Sentences & Stories"],key:"focus_first"},
+  {q:"How's their speaking level?",opts:["Says full sentences","Says single words","Just starting sounds","Not speaking yet"],key:"speak_level"},
+  {q:"Can they recognize letters?",opts:["Yes, all A-Z","Most letters","A few letters","Not yet"],key:"letter_level"},
+  {q:"Can they count?",opts:["Counts to 100","Counts to 20","Counts to 10","Just starting"],key:"count_level"},
+  {q:"Pick favourite word topics!",opts:["Animals & Birds","Food & Fruits","Vehicles & Transport","Body Parts & Family"],key:"word_topics",multi:true},
+  {q:"What kind of practice?",opts:["Say words aloud","Listen & repeat","Write & trace","Quiz & games"],key:"practice_style",multi:true},
   {q:"How much daily screen time?",opts:["10-15 min","15-30 min","30-60 min","No limit"],key:"time"},
-  {q:"Want multiplayer quizzes?",opts:["Yes, with family","Yes, with friends","Maybe later","Not interested"],key:"arena"},
   {q:"What motivates them?",opts:["Stars & Points","Praise & Cheers","Unlocking rewards","Just having fun"],key:"motivation"},
 ];
+// ═══ TOUR → MY PLAN MAPPING ═══
+const PLAN_MAPPING={
+  "Speaking & Pronunciation":[
+    {id:"sp_alpha",icon:"🔤",title:"Speak Alphabets",scr:"speaking"},
+    {id:"sp_numbers",icon:"🔢",title:"Speak Numbers",scr:"speaking"},
+  ],
+  "Listening & Understanding":[
+    {id:"li_alpha",icon:"👂",title:"Listen to Letters",scr:"listening"},
+    {id:"li_numbers",icon:"🔢",title:"Listen to Numbers",scr:"listening"},
+  ],
+  "Reading & Spelling":[
+    {id:"rd_cvc",icon:"🧩",title:"Read CVC Words",scr:"reading"},
+    {id:"rd_sight",icon:"👁️",title:"Sight Words",scr:"reading"},
+  ],
+  "Writing Practice":[
+    {id:"wr_upper",icon:"🔠",title:"Write Uppercase",scr:"writing"},
+    {id:"wr_nums",icon:"🔢",title:"Write Numbers",scr:"writing"},
+  ],
+  "Animals & Nature":[
+    {id:"tp_animals",icon:"🐾",title:"Animal Names",scr:"phonics",cat:"animals"},
+    {id:"tp_nature",icon:"🌿",title:"Nature Words",scr:"phonics",cat:"nature"},
+  ],
+  "Numbers & Maths":[
+    {id:"tp_count",icon:"🔢",title:"Counting",scr:"learn",tab:"numbers"},
+    {id:"tp_add",icon:"➕",title:"Addition",scr:"quizzone",qtab:"math",mop:"+"},
+  ],
+  "Colors & Shapes":[
+    {id:"tp_colors",icon:"🎨",title:"Learn Colors",scr:"learn",tab:"colors"},
+    {id:"tp_shapes",icon:"🔷",title:"Learn Shapes",scr:"learn",tab:"shapes"},
+  ],
+  "Countries & Places":[
+    {id:"tp_countries",icon:"🌍",title:"Countries",scr:"phonics",cat:"countries"},
+    {id:"tp_places",icon:"🏛️",title:"Places",scr:"phonics",cat:"places"},
+  ],
+  "Animals & Birds":[
+    {id:"wt_animals",icon:"🐾",title:"Animals",scr:"phonics",cat:"animals"},
+  ],
+  "Food & Fruits":[
+    {id:"wt_food",icon:"🍎",title:"Food & Fruits",scr:"phonics",cat:"food"},
+    {id:"wt_fruits",icon:"🍉",title:"Fruits",scr:"phonics",cat:"fruits"},
+  ],
+  "Vehicles & Transport":[
+    {id:"wt_vehicles",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
+  ],
+  "Body Parts & Family":[
+    {id:"wt_body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
+    {id:"wt_family",icon:"👨‍👩‍👧",title:"Family",scr:"phonics",cat:"family"},
+  ],
+  "Alphabets A-Z":[
+    {id:"ff_alpha",icon:"🔤",title:"Alphabets",scr:"learn",tab:"abc"},
+  ],
+  "Numbers 1-100":[
+    {id:"ff_nums",icon:"🔢",title:"Numbers",scr:"learn",tab:"numbers"},
+  ],
+  "Simple Words (cat, dog)":[
+    {id:"ff_cvc",icon:"🧩",title:"Simple Words",scr:"phonics",cat:"cvc"},
+  ],
+  "Sentences & Stories":[
+    {id:"ff_stories",icon:"📚",title:"Stories",scr:"stories"},
+  ],
+};
+const buildMyPlan=(answers)=>{
+  if(!answers||!Array.isArray(answers))return[];
+  const items=[];const seen=new Set();
+  const Q=QUESTIONNAIRE;
+  answers.forEach((ans,i)=>{
+    if(!ans||ans==="skipped")return;
+    const opts=ans.split("|||");
+    opts.forEach(o=>{
+      const mapped=PLAN_MAPPING[o.trim()];
+      if(mapped)mapped.forEach(m=>{if(!seen.has(m.id)){seen.add(m.id);items.push(m);}});
+    });
+  });
+  return items.slice(0,12);
+};
 
 const STORIES = [
   {id:1,title:"The Lost Kitten",emoji:"🐱",level:"easy",
@@ -2650,6 +2725,8 @@ export default function App(){
   const cRef=useRef(null);const[ptAnim,setPtAnim]=useState(null);
   const[quizAnswers,setQuizAnswers]=useState(()=>{try{const s=localStorage.getItem("lg_quiz_answers");return s?JSON.parse(s):null;}catch(e){return null;}});
   const saveQuizAnswers=(a)=>{setQuizAnswers(a);localStorage.setItem("lg_quiz_answers",JSON.stringify(a));};
+  const[myPlan,setMyPlan]=useState(()=>{try{const s=localStorage.getItem("lg_myplan");return s?JSON.parse(s):[];}catch(e){return[];}});
+  const saveMyPlan=(p)=>{setMyPlan(p);localStorage.setItem("lg_myplan",JSON.stringify(p));};
   const[qStep,setQStep]=useState(0);
   const[qAnswers,setQAnswers]=useState([]);
   // ═══ ARENA MULTIPLAYER STATE (Firebase Realtime DB) ═══
@@ -4123,7 +4200,7 @@ export default function App(){
 
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
-  const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
+  const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","myplan","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
   const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
     {[
       {id:"home",icon:"🏠",label:"Home"},
@@ -4144,36 +4221,55 @@ export default function App(){
   </div>:null;
 
 
-  // ═══ QUESTIONNAIRE (first-time only) ═══
+  // ═══ QUESTIONNAIRE (first-time only — with multi-select support) ═══
+  const[multiSel,setMultiSel]=useState([]);
   if(scr==="questionnaire")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
     <div style={{background:"rgba(255,255,255,0.97)",borderRadius:28,padding:"24px 18px",maxWidth:400,border:"1px solid rgba(255,255,255,0.8)",width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
       <div style={{fontSize:48}}>🦉</div>
-      <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Quick Questions!</h2>
-      <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:16}}>Question {qStep+1} of {QUESTIONNAIRE.length} — Help Ollie customize your learning!</p>
+      <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Let's personalize! 🎯</h2>
+      <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:4}}>Question {qStep+1} of {QUESTIONNAIRE.length}</p>
+      {QUESTIONNAIRE[qStep]?.multi&&<p style={{fontSize:11,color:"#6C5CE7",fontWeight:700,margin:"0 0 8px"}}>✨ Pick as many as you want! Then tap Next</p>}
       
       <div style={{fontSize:16,fontWeight:700,color:"var(--dark)",marginBottom:14}}>{QUESTIONNAIRE[qStep]?.q}</div>
       
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {QUESTIONNAIRE[qStep]?.opts.map((opt,i)=><button key={i} onClick={()=>{
-          sfxTap();
-          const newA=[...qAnswers,opt];setQAnswers(newA);
-          if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
-          else{saveQuizAnswers(newA);setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
-        }} style={{
-          padding:"14px 18px",border:"none",cursor:"pointer",fontFamily:"var(--font)",
-          fontSize:14,fontWeight:700,textAlign:"left",
-          background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
-          color:"#fff",boxShadow:["0 6px 20px rgba(108,92,231,0.25)","0 6px 20px rgba(0,210,160,0.25)","0 6px 20px rgba(255,159,67,0.25)","0 6px 20px rgba(84,160,255,0.25)"][i%4],
-          borderRadius:22,
-          transition:"all 0.2s"
-        }}>{opt}</button>)}
+        {QUESTIONNAIRE[qStep]?.opts.map((opt,i)=>{
+          const isMulti=QUESTIONNAIRE[qStep]?.multi;
+          const isSel=multiSel.includes(opt);
+          return<button key={i} onClick={()=>{
+            sfxTap();
+            if(isMulti){
+              setMultiSel(prev=>prev.includes(opt)?prev.filter(x=>x!==opt):[...prev,opt]);
+            } else {
+              const newA=[...qAnswers,opt];setQAnswers(newA);setMultiSel([]);
+              if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
+              else{const plan=buildMyPlan(newA);saveMyPlan(plan);saveQuizAnswers(newA);setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
+            }
+          }} style={{
+            padding:"14px 18px",border:isSel?"3px solid #fff":"3px solid transparent",cursor:"pointer",fontFamily:"var(--font)",
+            fontSize:14,fontWeight:700,textAlign:"left",
+            background:isSel?"linear-gradient(135deg,#00D2A0,#55EFC4)":["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)","linear-gradient(135deg,#EC407A,#F48FB1)"][i%4],
+            color:"#fff",borderRadius:22,
+            transform:isSel?"scale(1.03)":"scale(1)",
+            boxShadow:isSel?"0 6px 24px rgba(0,210,160,0.4)":"0 4px 16px rgba(0,0,0,0.1)",
+            transition:"all 0.2s"
+          }}>{isSel?"✅ ":""}{opt}</button>;
+        })}
       </div>
       
-      <button onClick={()=>{
+      {QUESTIONNAIRE[qStep]?.multi&&multiSel.length>0&&<button onClick={()=>{
         sfxTap();
+        const joined=multiSel.join("|||");
+        const newA=[...qAnswers,joined];setQAnswers(newA);setMultiSel([]);
+        if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
+        else{const plan=buildMyPlan(newA);saveMyPlan(plan);saveQuizAnswers(newA);setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
+      }} style={{marginTop:12,padding:"12px 32px",borderRadius:20,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 20px rgba(0,210,160,0.3)"}}>Next → ({multiSel.length} selected)</button>}
+      
+      <button onClick={()=>{
+        sfxTap();setMultiSel([]);
         if(qStep<QUESTIONNAIRE.length-1){setQAnswers([...qAnswers,"skipped"]);setQStep(qStep+1);}
-        else{saveQuizAnswers([...qAnswers,"skipped"]);setScr("home");}
-      }} style={{marginTop:12,padding:"8px 16px",borderRadius:12,border:"none",background:"transparent",color:"#A4B0BE",fontSize:12,fontWeight:700,cursor:"pointer"}}>Skip →</button>
+        else{const plan=buildMyPlan([...qAnswers,"skipped"]);saveMyPlan(plan);saveQuizAnswers([...qAnswers,"skipped"]);setScr("home");}
+      }} style={{marginTop:8,padding:"8px 16px",borderRadius:12,border:"none",background:"transparent",color:"#A4B0BE",fontSize:12,fontWeight:700,cursor:"pointer"}}>Skip →</button>
       
       {/* Progress dots */}
       <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:14}}>
@@ -4262,7 +4358,36 @@ export default function App(){
       <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
     </div>
   );
-  if(scr==="speaking")return<SubCatScreen title="Speaking 🗣️" emoji="🗣️" cats={SPEAKING_CATS} onBack={goHome}/>;
+  if(scr==="myplan")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <Particles count={6}/>
+    <SubHead title="My Plan 🎯" onBack={goHome} points={prof?.points||0}/>
+    <div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}>
+      <div style={{textAlign:"center",marginBottom:12}}>
+        <span style={{fontSize:48,display:"block",animation:"mascotB 2s ease-in-out infinite"}}>🎯</span>
+        <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Your Personal Learning Path</h3>
+        <p style={{fontSize:12,color:"var(--gray)",fontWeight:600}}>Based on your answers — tap any tile to start!</p>
+      </div>
+      {myPlan&&myPlan.length>0?<div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
+        {myPlan.map((c,i)=>
+          <button key={c.id} data-r="tile" onClick={()=>goSubCat(c)} style={{
+            display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"18px 10px",
+            borderRadius:22,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",
+            animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.06}s both`
+          }}>
+            <span style={{fontSize:32}}>{c.icon}</span>
+            <span style={{fontWeight:800,fontSize:13,color:"#2D2B3D"}}>{c.title}</span>
+          </button>
+        )}
+      </div>:<div style={{textAlign:"center",padding:30}}>
+        <span style={{fontSize:48}}>📋</span>
+        <p style={{fontSize:14,fontWeight:700,color:"#8E8CA3",marginTop:10}}>No plan yet! Take the tour to build your plan.</p>
+        <button onClick={()=>{sfxTap();setScr("questionnaire");setQStep(0);setQAnswers([]);}} style={{marginTop:12,padding:"12px 24px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🦉 Take the Tour</button>
+      </div>}
+      <button onClick={()=>{sfxTap();setScr("questionnaire");setQStep(0);setQAnswers([]);speak("Let's update your plan!",{rate:0.85,pitch:1.0});}} style={{width:"100%",marginTop:16,padding:"12px",borderRadius:16,border:"2px solid #E8EAF6",background:"#fff",color:"#6C5CE7",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Retake Tour & Update Plan</button>
+    </div>
+    <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+  </div>;
+    if(scr==="speaking")return<SubCatScreen title="Speaking 🗣️" emoji="🗣️" cats={SPEAKING_CATS} onBack={goHome}/>;
   if(scr==="listening")return<SubCatScreen title="Listening 👂" emoji="👂" cats={LISTENING_CATS} onBack={goHome}/>;
   if(scr==="reading")return<SubCatScreen title="Reading 📖" emoji="📖" cats={READING_CATS} onBack={goHome}/>;
   if(scr==="writing")return<SubCatScreen title="Writing ✍️" emoji="✍️" cats={WRITING_CATS} onBack={goHome}/>;
@@ -4293,6 +4418,14 @@ export default function App(){
 
     {/* ═══ 7 SKILL TILES HOME ═══ */}
     <div id="home-tiles" style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",padding:"0 0 90px"}}>
+      {/* ═══ MY PLAN — personalized from tour ═══ */}
+      {myPlan&&myPlan.length>0&&<div style={{padding:"12px 16px 0"}}>
+        <button data-r="tile" data-tile="myplan" onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");speak("Your personal plan! Let's go!",{rate:0.85,pitch:1.0});setScr("myplan");}} style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 18px",borderRadius:22,border:"none",background:"linear-gradient(135deg,#FF6B6B 0%,#EE5A5A 30%,#FF9F43 70%,#FECA57 100%)",cursor:"pointer",fontFamily:"var(--font)",textAlign:"left",animation:"continuePulse 3s ease-in-out infinite"}}>
+          <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:28}}>🎯</div>
+          <div style={{flex:1}}><div style={{fontSize:18,fontWeight:800,color:"#fff"}}>My Learning Plan</div><div style={{fontSize:12,fontWeight:600,color:"rgba(255,255,255,0.85)",marginTop:2}}>{myPlan.length} activities picked just for you!</div></div>
+          <span style={{fontSize:24,color:"rgba(255,255,255,0.8)"}}>→</span>
+        </button>
+      </div>}
       <div style={{padding:"14px 16px 8px"}}>
         <h3 style={{fontSize:18,fontWeight:800,color:"var(--dark)",margin:"0 0 4px"}}>What shall we learn? 🦉</h3>
         <p style={{fontSize:12,fontWeight:600,color:"var(--gray)"}}>Pick a skill to start!</p>
