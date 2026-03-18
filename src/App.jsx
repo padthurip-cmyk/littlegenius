@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+=import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 
 // ═══ FIREBASE CONFIG — Set your project URL here (one-time developer setup) ═══
@@ -4467,172 +4467,232 @@ export default function App(){
 
 
 
-  // ═══════════════════════════════════════════════════
-  // 🗣️ SPEAKING MODULE — Pure: App says → Kid says → Mic → Score
-  // ═══════════════════════════════════════════════════
-  const speakPlay=async(w)=>{
-    if(!w)return;stop();pRef.current=true;setModeStep("playing");setModeRes(null);setModeAcc(null);
-    await speak(`Say this word: ${w.word}!`,{rate:0.85,pitch:1.0});
-    await wait(600);if(!pRef.current)return;
-    await speak(`${w.word}!`,{rate:0.65,pitch:1.0});
-    await wait(500);if(!pRef.current)return;
-    await speak(`Your turn! Say ${w.word}!`,{rate:0.9,pitch:1.0});
-    await wait(300);if(!pRef.current){setModeStep("idle");return;}
-    stop();setModeStep("listening");pRef.current=false;
-    rec.start((result,alternatives)=>{
-      if(!result?.trim()){setModeStep("idle");showTeacher("happy","Tap 🎤 to try again!");return;}
-      const acc=calcAcc(w.word,result,alternatives);setModeRes(normalizeSpoken(result));setModeAcc(acc);setModeStep("result");
-      const s=getStars(acc);const p=getStarPts(s);
-      if(p>0){awardPoints(p,"phonics",w.word);boom();}else{flashWrong();}
-      setTimeout(()=>{
-        if(s>=3)speak(`${kidName}, perfect! ${acc} percent!`,{rate:0.85,pitch:1.0});
-        else speak(`${acc} percent. Keep practicing!`,{rate:0.85,pitch:1.0});
-      },400);
-    },w.word);
-  };
-  const speakRetry=()=>{setModeRes(null);setModeAcc(null);speakPlay(modeWords[modeIdx]);};
-  const speakNext=()=>{const ni=(modeIdx+1)%modeWords.length;setModeIdx(ni);setModeStep("idle");setTimeout(()=>speakPlay(modeWords[ni]),300);};
 
-  if(scr==="speak_play"){const w=modeWords[modeIdx];const cat=WCATS[modeCat];return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+  // ═══════════════════════════════════════════════════
+  // 🗣️ SPEAKING MODULE — App says word → Kid says it back → Mic → Score
+  // ═══════════════════════════════════════════════════
+  const speakModeCb=useRef(null);
+  const doSpeak=useCallback(async(w)=>{
+    if(!w){setModeStep("idle");return;}
+    stop();pRef.current=true;setModeStep("playing");setModeRes(null);setModeAcc(null);
+    setTeacherMood("speaking");
+    await speak(`Say this word!`,{rate:0.9,pitch:1.0});
+    await wait(400);if(!pRef.current){setModeStep("idle");return;}
+    await speak(`${w.word}!`,{rate:0.6,pitch:1.0});
+    await wait(600);if(!pRef.current){setModeStep("idle");return;}
+    await speak(`Now you say it! Say ${w.word}!`,{rate:0.9,pitch:1.0});
+    await wait(400);if(!pRef.current){setModeStep("idle");return;}
+    stop();pRef.current=false;setModeStep("listening");setTeacherMood("happy");
+  },[speak,stop]);
+
+  const handleSpeakResult=useCallback((result,alternatives,expected)=>{
+    const w=modeWords[modeIdx];if(!w)return;
+    if(!result?.trim()){setModeStep("mic_ready");return;}
+    const acc=calcAcc(w.word,result,alternatives);
+    setModeRes(normalizeSpoken(result));setModeAcc(acc);setModeStep("result");
+    const s=getStars(acc);const p=getStarPts(s);
+    if(p>0){awardPoints(p,"phonics",w.word);boom();}else{flashWrong();}
+    setTimeout(()=>{
+      if(s>=3)speak(`${kidName}, perfect! ${acc} percent!`,{rate:0.85,pitch:1.0});
+      else if(s>=1)speak(`${acc} percent. Nice try!`,{rate:0.85,pitch:1.0});
+      else speak(`That was ${acc} percent. Try again!`,{rate:0.85,pitch:1.0});
+    },400);
+  },[modeWords,modeIdx,speak,kidName]);
+
+  if(scr==="speak_play"){const w=modeWords[modeIdx];return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
-    <SubHead title={`Speaking — ${modeCat?.charAt(0).toUpperCase()+(modeCat?.slice(1)||"")} 🗣️`} onBack={()=>{stop();pRef.current=false;setScr("speaking");}} points={prof?.points||0}/>
-    <div style={{padding:"8px 16px",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",flexShrink:0}}>
-      <div style={{textAlign:"center",color:"#fff",fontSize:13,fontWeight:800}}>🗣️ App says the word → You say it back → Get scored!</div>
+    {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
+    <SubHead title={`Speaking 🗣️ — ${(modeCat||"").charAt(0).toUpperCase()+(modeCat||"").slice(1)}`} onBack={()=>{stop();pRef.current=false;setModeStep("idle");setScr("speaking");}} points={prof?.points||0}/>
+    <div style={{padding:"6px 16px",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",flexShrink:0,textAlign:"center"}}>
+      <span style={{color:"#fff",fontSize:12,fontWeight:800}}>🗣️ Listen → Say it back → Get scored! ({modeIdx+1}/{modeWords.length})</span>
     </div>
-    <div style={{padding:"6px 12px",fontSize:11,color:"var(--gray)",fontWeight:700,textAlign:"center"}}>Word {modeIdx+1} of {modeWords.length}</div>
-    <div style={{flex:1,overflow:"auto",padding:"10px 16px",display:"flex",flexDirection:"column",gap:12}}>
-      {w&&<div style={{textAlign:"center",padding:20,background:"#fff",borderRadius:24,boxShadow:"var(--shadow-card)"}}>
-        <div style={{fontSize:64,marginBottom:8}}>{w.img}</div>
-        <div style={{fontSize:32,fontWeight:900,color:"#2D2B3D",fontFamily:"var(--font)",letterSpacing:2}}>{w.word.toUpperCase()}</div>
-        <div style={{fontSize:13,color:"#8E8CA3",fontWeight:600,marginTop:4}}>{w.sentence}</div>
+    <div style={{flex:1,overflow:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:12,WebkitOverflowScrolling:"touch"}}>
+      {/* Word Card */}
+      {w&&<div style={{textAlign:"center",padding:"24px 16px",background:"linear-gradient(180deg,#FFFBF5,#FFF5EB)",borderRadius:24,boxShadow:"var(--shadow-card)",position:"relative"}}>
+        <div style={{fontSize:72,marginBottom:6,animation:modeStep==="playing"?"numPulse 1.5s ease-in-out infinite":"none",filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.15))"}}>{w.img}</div>
+        <div style={{fontSize:36,fontWeight:900,color:"#2D2B3D",fontFamily:"var(--font)",letterSpacing:3,marginBottom:4}}>{w.word.toUpperCase()}</div>
+        <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>
+          {w.word.toUpperCase().split("").map((l,i)=><span key={i} style={{fontSize:18,fontWeight:800,padding:"6px 10px",borderRadius:10,background:"rgba(108,92,231,0.1)",color:"#6C5CE7",fontFamily:"var(--font)"}}>{l}</span>)}
+        </div>
+        <div style={{fontSize:13,color:"#8E8CA3",fontWeight:600,marginTop:8,fontStyle:"italic"}}>{w.sentence}</div>
       </div>}
-      {modeStep==="idle"&&<button onClick={()=>speakPlay(w)} data-r="tile" style={{padding:"18px",borderRadius:20,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",textAlign:"center"}}>🗣️ Start — Say "{w?.word}"</button>}
-      {modeStep==="playing"&&<div style={{textAlign:"center",padding:16,background:"#EDE7F6",borderRadius:18}}><span style={{fontSize:16,fontWeight:700,color:"#6C5CE7"}}>🔊 Listen carefully...</span></div>}
-      {modeStep==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={()=>rec.start((result,alternatives)=>{
-        if(!result?.trim()){setModeStep("idle");return;}
-        const acc=calcAcc(w.word,result,alternatives);setModeRes(normalizeSpoken(result));setModeAcc(acc);setModeStep("result");
-        const s=getStars(acc);const p=getStarPts(s);
-        if(p>0){awardPoints(p,"phonics",w.word);boom();}else{flashWrong();}
-        setTimeout(()=>speak(s>=3?`Perfect! ${acc} percent!`:`${acc} percent.`,{rate:0.85,pitch:1.0}),400);
-      },w.word)} isListening={rec.on} error={rec.err} onType={(t)=>{
-        const acc=calcAcc(w.word,t,[]);setModeRes(t);setModeAcc(acc);setModeStep("result");
-        const s=getStars(acc);const p=getStarPts(s);if(p>0){awardPoints(p,"phonics",w.word);boom();}
-      }} expected={w?.word} phase={rec.phase} engineUsed={rec.engineUsed}/>}
-      {modeStep==="result"&&modeAcc!==null&&<ResultBox acc={modeAcc} result={modeRes} expected={w?.word} onRetry={speakRetry} onDone={speakNext} color="#6C5CE7" kidName={kidName} currentPoints={prof?.points||0}/>}
+
+      {/* STATE: idle — Show start button */}
+      {modeStep==="idle"&&w&&<button onClick={()=>doSpeak(w)} data-r="tile" style={{padding:"20px",borderRadius:22,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",textAlign:"center",boxShadow:"0 6px 24px rgba(108,92,231,0.3)",animation:"micBreathe 3s ease-in-out infinite"}}>🔊 Hear & Say "{w.word}"</button>}
+
+      {/* STATE: playing — App is speaking */}
+      {modeStep==="playing"&&<div style={{textAlign:"center",padding:20,background:"linear-gradient(135deg,#EDE7F6,#F3E8FF)",borderRadius:22,border:"2px solid #D8B4FE"}}>
+        <div style={{fontSize:48,animation:"numPulse 1s ease-in-out infinite"}}>🔊</div>
+        <div style={{fontSize:16,fontWeight:800,color:"#6C5CE7",marginTop:8}}>Ollie is speaking...</div>
+        <div style={{fontSize:13,color:"#8E8CA3",fontWeight:600,marginTop:4}}>Listen carefully to the word!</div>
+      </div>}
+
+      {/* STATE: listening — Mic is open */}
+      {modeStep==="listening"&&w&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol}
+        onTapMic={()=>{rec.start(handleSpeakResult,w.word);}}
+        isListening={rec.on} error={rec.err}
+        onType={(t)=>{const acc=calcAcc(w.word,t,[]);setModeRes(t);setModeAcc(acc);setModeStep("result");const s=getStars(acc);const p=getStarPts(s);if(p>0){awardPoints(p,"phonics",w.word);boom();}}}
+        expected={w.word} phase={rec.phase} engineUsed={rec.engineUsed}/>}
+
+      {/* STATE: mic_ready — Mic failed, show retry */}
+      {modeStep==="mic_ready"&&w&&<div style={{textAlign:"center",padding:16}}>
+        <p style={{fontSize:14,fontWeight:700,color:"#8E8CA3",marginBottom:12}}>Didn't catch that! Tap the mic and say "{w.word}"</p>
+        <button onClick={()=>{rec.start(handleSpeakResult,w.word);setModeStep("listening");}} style={{padding:"18px 32px",borderRadius:20,border:"none",background:"linear-gradient(135deg,#22C55E,#16A34A)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer"}}>🎤 Try Again</button>
+      </div>}
+
+      {/* STATE: result — Show score */}
+      {modeStep==="result"&&modeAcc!==null&&<ResultBox acc={modeAcc} result={modeRes} expected={w?.word}
+        onRetry={()=>{setModeRes(null);setModeAcc(null);doSpeak(w);}}
+        onDone={()=>{const ni=(modeIdx+1)%modeWords.length;setModeIdx(ni);setModeStep("idle");}}
+        color="#6C5CE7" kidName={kidName} currentPoints={prof?.points||0}/>}
     </div>
-    {/* Word picker */}
-    <div style={{padding:"8px 12px",background:"#fff",borderTop:"1px solid #f0f0f0",flexShrink:0}}>
+    {/* Word picker strip */}
+    <div style={{padding:"6px 12px",background:"#fff",borderTop:"1px solid #f0f0f0",flexShrink:0}}>
       <div style={{display:"flex",gap:6,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4}}>
-        {modeWords.slice(0,20).map((mw,mi)=><button key={mi} onClick={()=>{setModeIdx(mi);setModeStep("idle");stop();pRef.current=false;}} style={{padding:"6px 10px",borderRadius:12,border:"none",background:mi===modeIdx?"#6C5CE7":"#F0F4FF",color:mi===modeIdx?"#fff":"#8E8CA3",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",whiteSpace:"nowrap",flexShrink:0}}>{mw.img} {mw.word}</button>)}
+        {modeWords.slice(0,30).map((mw,mi)=><button key={mi} onClick={()=>{stop();pRef.current=false;setModeIdx(mi);setModeStep("idle");}} style={{padding:"6px 10px",borderRadius:12,border:"none",background:mi===modeIdx?"#6C5CE7":"#F0F4FF",color:mi===modeIdx?"#fff":"#8E8CA3",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",whiteSpace:"nowrap",flexShrink:0}}>{mw.img} {mw.word}</button>)}
       </div>
     </div>
     <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;}
 
   // ═══════════════════════════════════════════════════
-  // 👂 LISTENING MODULE — Pure: App says word+sentence → "Repeat after me" → says slowly → Done (NO mic)
+  // 👂 LISTENING MODULE — App says word + context → "Repeat after me" → Done (NO mic)
   // ═══════════════════════════════════════════════════
-  const listenPlay=async(w)=>{
+  const doListen=useCallback(async(w)=>{
     if(!w)return;stop();pRef.current=true;setModeStep("playing");
-    await speak(`${w.word}!`,{rate:0.85,pitch:1.0});
+    setTeacherMood("speaking");
+    await speak(`${w.word}!`,{rate:0.8,pitch:1.0});
     await wait(500);if(!pRef.current){setModeStep("idle");return;}
-    await speak(`This is ${w.img} ${w.word}.`,{rate:0.7,pitch:1.0});
-    await wait(400);if(!pRef.current){setModeStep("idle");return;}
-    await speak(w.sentence,{rate:0.7,pitch:1.0});
-    await wait(500);if(!pRef.current){setModeStep("idle");return;}
+    await speak(`This is ${w.word}. ${w.sentence}`,{rate:0.7,pitch:1.0});
+    await wait(600);if(!pRef.current){setModeStep("idle");return;}
     await speak(`Now repeat after me...`,{rate:0.8,pitch:1.0});
     await wait(400);if(!pRef.current){setModeStep("idle");return;}
-    await speak(`${w.word}`,{rate:0.5,pitch:1.0});
-    await wait(800);if(!pRef.current){setModeStep("idle");return;}
+    setModeStep("repeat");
+    await speak(`${w.word}`,{rate:0.45,pitch:1.0});
+    await wait(1000);if(!pRef.current){setModeStep("idle");return;}
     if(!isDone("phonics",w.word))awardPoints(3,"phonics",w.word);
-    pRef.current=false;setModeStep("done");
-    await wait(1500);
-    // Auto-advance
-    const ni=(modeIdx+1)%modeWords.length;setModeIdx(ni);setModeStep("idle");
-  };
+    pRef.current=false;setModeStep("done");setTeacherMood("star");
+  },[speak,stop]);
 
-  if(scr==="listen_play"){const w=modeWords[modeIdx];const cat=WCATS[modeCat];return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
-    <SubHead title={`Listening — ${modeCat?.charAt(0).toUpperCase()+(modeCat?.slice(1)||"")} 👂`} onBack={()=>{stop();pRef.current=false;setScr("listening");}} points={prof?.points||0}/>
-    <div style={{padding:"8px 16px",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",flexShrink:0}}>
-      <div style={{textAlign:"center",color:"#fff",fontSize:13,fontWeight:800}}>👂 Tap a word → Listen carefully → Repeat after Ollie!</div>
+  if(scr==="listen_play"){const w=modeWords[modeIdx];return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <SubHead title={`Listening 👂 — ${(modeCat||"").charAt(0).toUpperCase()+(modeCat||"").slice(1)}`} onBack={()=>{stop();pRef.current=false;setModeStep("idle");setScr("listening");}} points={prof?.points||0}/>
+    <div style={{padding:"6px 16px",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",flexShrink:0,textAlign:"center"}}>
+      <span style={{color:"#fff",fontSize:12,fontWeight:800}}>👂 Tap → Listen → Repeat after Ollie! ({modeIdx+1}/{modeWords.length})</span>
     </div>
-    <div style={{padding:"6px 12px",fontSize:11,color:"var(--gray)",fontWeight:700,textAlign:"center"}}>Word {modeIdx+1} of {modeWords.length}</div>
-    <div style={{flex:1,overflow:"auto",padding:"10px 16px",display:"flex",flexDirection:"column",gap:12}}>
-      {w&&<div style={{textAlign:"center",padding:20,background:"#fff",borderRadius:24,boxShadow:"var(--shadow-card)"}}>
-        <div style={{fontSize:64,marginBottom:8,animation:modeStep==="playing"?"numPulse 1s ease-in-out infinite":"none"}}>{w.img}</div>
-        <div style={{fontSize:32,fontWeight:900,color:"#2D2B3D",fontFamily:"var(--font)",letterSpacing:2}}>{w.word.toUpperCase()}</div>
-        <div style={{fontSize:13,color:"#8E8CA3",fontWeight:600,marginTop:4}}>{w.sentence}</div>
-        {modeStep==="playing"&&<div style={{marginTop:12,padding:"10px",background:"#E8F5E9",borderRadius:14}}><span style={{fontSize:14,fontWeight:700,color:"#16A34A"}}>👂 Listening... Ollie is speaking!</span></div>}
-        {modeStep==="done"&&<div style={{marginTop:12,padding:"10px",background:"#F0FDF4",borderRadius:14}}><span style={{fontSize:14,fontWeight:700,color:"#22C55E"}}>✅ Great listening! +3 points</span></div>}
+    <div style={{flex:1,overflow:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:12,WebkitOverflowScrolling:"touch"}}>
+      {w&&<div style={{textAlign:"center",padding:"24px 16px",background:"linear-gradient(180deg,#F0FDF4,#ECFDF5)",borderRadius:24,boxShadow:"var(--shadow-card)"}}>
+        <div style={{fontSize:72,marginBottom:6,animation:modeStep==="playing"||modeStep==="repeat"?"numPulse 1.2s ease-in-out infinite":"none",filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.15))"}}>{w.img}</div>
+        <div style={{fontSize:36,fontWeight:900,color:"#2D2B3D",fontFamily:"var(--font)",letterSpacing:3}}>{w.word.toUpperCase()}</div>
+        <div style={{fontSize:13,color:"#8E8CA3",fontWeight:600,marginTop:8,fontStyle:"italic"}}>{w.sentence}</div>
       </div>}
-      {modeStep==="idle"&&<button onClick={()=>listenPlay(w)} data-r="tile" style={{padding:"18px",borderRadius:20,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",textAlign:"center"}}>👂 Listen to "{w?.word}"</button>}
+
+      {modeStep==="idle"&&w&&<button onClick={()=>doListen(w)} data-r="tile" style={{padding:"20px",borderRadius:22,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",textAlign:"center",boxShadow:"0 6px 24px rgba(0,210,160,0.3)"}}>👂 Listen to "{w.word}"</button>}
+
+      {modeStep==="playing"&&<div style={{textAlign:"center",padding:20,background:"#E8F5E9",borderRadius:22,border:"2px solid #A5D6A7"}}>
+        <div style={{fontSize:48,animation:"numPulse 1s ease-in-out infinite"}}>🔊</div>
+        <div style={{fontSize:16,fontWeight:800,color:"#16A34A",marginTop:8}}>Ollie is teaching you...</div>
+        <div style={{fontSize:13,color:"#4ADE80",fontWeight:600}}>Listen carefully!</div>
+      </div>}
+
+      {modeStep==="repeat"&&<div style={{textAlign:"center",padding:20,background:"linear-gradient(135deg,#FEF3C7,#FDE68A)",borderRadius:22,border:"2px solid #FCD34D"}}>
+        <div style={{fontSize:48,animation:"numPulse 0.8s ease-in-out infinite"}}>🗣️</div>
+        <div style={{fontSize:18,fontWeight:800,color:"#B45309",marginTop:8}}>Now YOU say it!</div>
+        <div style={{fontSize:24,fontWeight:900,color:"#92400E",marginTop:4,letterSpacing:4}}>{w?.word.toUpperCase()}</div>
+      </div>}
+
+      {modeStep==="done"&&<div style={{textAlign:"center",padding:20,background:"#F0FDF4",borderRadius:22,border:"2px solid #86EFAC"}}>
+        <div style={{fontSize:48}}>✅</div>
+        <div style={{fontSize:18,fontWeight:800,color:"#22C55E",marginTop:8}}>Great listening! +3 points</div>
+        <div style={{display:"flex",gap:10,justifyContent:"center",marginTop:12}}>
+          <button onClick={()=>doListen(w)} style={{padding:"12px 24px",borderRadius:16,border:"none",background:"#00D2A0",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔁 Hear Again</button>
+          <button onClick={()=>{const ni=(modeIdx+1)%modeWords.length;setModeIdx(ni);setModeStep("idle");}} style={{padding:"12px 24px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>Next →</button>
+        </div>
+      </div>}
     </div>
-    {/* Word grid picker */}
-    <div style={{padding:"8px 12px",background:"#fff",borderTop:"1px solid #f0f0f0",flexShrink:0}}>
+    <div style={{padding:"6px 12px",background:"#fff",borderTop:"1px solid #f0f0f0",flexShrink:0}}>
       <div style={{display:"flex",gap:6,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4}}>
-        {modeWords.slice(0,20).map((mw,mi)=><button key={mi} onClick={()=>{stop();pRef.current=false;setModeIdx(mi);setModeStep("idle");}} style={{padding:"6px 10px",borderRadius:12,border:"none",background:mi===modeIdx?"#00D2A0":"#F0F4FF",color:mi===modeIdx?"#fff":"#8E8CA3",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",whiteSpace:"nowrap",flexShrink:0}}>{mw.img} {mw.word}</button>)}
+        {modeWords.slice(0,30).map((mw,mi)=><button key={mi} onClick={()=>{stop();pRef.current=false;setModeIdx(mi);setModeStep("idle");}} style={{padding:"6px 10px",borderRadius:12,border:"none",background:mi===modeIdx?"#00D2A0":"#F0F4FF",color:mi===modeIdx?"#fff":"#8E8CA3",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",whiteSpace:"nowrap",flexShrink:0}}>{mw.img} {mw.word}</button>)}
       </div>
     </div>
     <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;}
 
   // ═══════════════════════════════════════════════════
-  // 📖 READING MODULE — Pure: Show word → Scrambled letter tap game → Score
+  // 📖 READING MODULE — See word → Scrambled letter tap → Score
   // ═══════════════════════════════════════════════════
-  const readPlay=async(w)=>{
+  const doRead=useCallback(async(w)=>{
     if(!w)return;stop();pRef.current=true;setModeStep("playing");setModeRes(null);setModeAcc(null);
+    setTeacherMood("excited");
     await speak(`Spell this word: ${w.word}!`,{rate:0.85,pitch:1.0});
     await wait(400);if(!pRef.current){setModeStep("idle");return;}
     setActiveSpellIdx(-1);setSpellStatus([]);
     await spellWord(w.word);
     await wait(300);if(!pRef.current){setModeStep("idle");return;}
     if(!isDone("phonics",w.word))awardPoints(5,"phonics",w.word);
-    boom();
+    boom();pRef.current=false;setModeStep("done");setTeacherMood("star");
     await speak(`You spelled ${w.word}! Great job!`,{rate:0.85,pitch:1.0});
-    pRef.current=false;setModeStep("done");
-    await wait(2000);
-    const ni=(modeIdx+1)%modeWords.length;setModeIdx(ni);setModeStep("idle");
-  };
+  },[speak,stop,spellWord]);
 
-  if(scr==="read_play"){const w=modeWords[modeIdx];const cat=WCATS[modeCat];return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+  if(scr==="read_play"){const w=modeWords[modeIdx];return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
-    <SubHead title={`Reading — ${modeCat?.charAt(0).toUpperCase()+(modeCat?.slice(1)||"")} 📖`} onBack={()=>{stop();pRef.current=false;setScr("reading");}} points={prof?.points||0}/>
-    <div style={{padding:"8px 16px",background:"linear-gradient(135deg,#FF9F43,#FECA57)",flexShrink:0}}>
-      <div style={{textAlign:"center",color:"#fff",fontSize:13,fontWeight:800}}>📖 See the word → Tap letters in order → Spell it!</div>
+    {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
+    <SubHead title={`Reading 📖 — ${(modeCat||"").charAt(0).toUpperCase()+(modeCat||"").slice(1)}`} onBack={()=>{stop();pRef.current=false;setModeStep("idle");setScr("reading");}} points={prof?.points||0}/>
+    <div style={{padding:"6px 16px",background:"linear-gradient(135deg,#FF9F43,#FECA57)",flexShrink:0,textAlign:"center"}}>
+      <span style={{color:"#fff",fontSize:12,fontWeight:800}}>📖 See the word → Tap letters in order → Spell it! ({modeIdx+1}/{modeWords.length})</span>
     </div>
-    <div style={{padding:"6px 12px",fontSize:11,color:"var(--gray)",fontWeight:700,textAlign:"center"}}>Word {modeIdx+1} of {modeWords.length}</div>
-    <div style={{flex:1,overflow:"auto",padding:"10px 16px",display:"flex",flexDirection:"column",gap:12}}>
-      {w&&<div style={{textAlign:"center",padding:20,background:"#fff",borderRadius:24,boxShadow:"var(--shadow-card)"}}>
-        <div style={{fontSize:64,marginBottom:8}}>{w.img}</div>
-        <div style={{fontSize:32,fontWeight:900,color:"#2D2B3D",fontFamily:"var(--font)",letterSpacing:2}}>{w.word.toUpperCase()}</div>
+    <div style={{flex:1,overflow:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:12,WebkitOverflowScrolling:"touch"}}>
+      {w&&<div style={{textAlign:"center",padding:"24px 16px",background:"linear-gradient(180deg,#FFFBF5,#FFF8E1)",borderRadius:24,boxShadow:"var(--shadow-card)"}}>
+        <div style={{fontSize:72,marginBottom:6,filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.15))"}}>{w.img}</div>
+        <div style={{fontSize:36,fontWeight:900,color:"#2D2B3D",fontFamily:"var(--font)",letterSpacing:3}}>{w.word.toUpperCase()}</div>
       </div>}
-      {modeStep==="idle"&&<button onClick={()=>readPlay(w)} data-r="tile" style={{padding:"18px",borderRadius:20,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:18,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",textAlign:"center"}}>📖 Spell "{w?.word}"</button>}
-      {modeStep==="playing"&&<div style={{padding:14,background:"#fff",borderRadius:20}}>
-        <div style={{textAlign:"center",fontSize:14,fontWeight:700,color:"#FF9F43",marginBottom:8}}>{spellRound===1?"👀 Watch and listen!":spellRound===2?"👆 Tap the letters in order!":"Spelling..."}</div>
-        <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>
+
+      {modeStep==="idle"&&w&&<button onClick={()=>doRead(w)} data-r="tile" style={{padding:"20px",borderRadius:22,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",textAlign:"center",boxShadow:"0 6px 24px rgba(255,159,67,0.3)"}}>📖 Spell "{w.word}"</button>}
+
+      {modeStep==="playing"&&<div style={{padding:16,background:"#fff",borderRadius:22,boxShadow:"var(--shadow-card)"}}>
+        <div style={{textAlign:"center",fontSize:14,fontWeight:800,color:"#FF9F43",marginBottom:10}}>
+          {spellRound===1?"👀 Watch Ollie spell it first!":spellRound===2?"👆 Your turn! Tap the letters!":"Spelling..."}
+        </div>
+        <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?20:0}}>
           {w?.word.toUpperCase().split("").map((letter,i)=>{
             const st=spellStatus[i]||"waiting";const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;
-            return<div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-              <span style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"8px 12px",borderRadius:14,minWidth:40,textAlign:"center",background:isActive?"#FF9F43":st==="correct"?"#22C55E":"#FFF0E0",color:(isActive||st==="correct")?"#fff":"#ddd",transform:isActive?"scale(1.15)":"scale(1)",transition:"all 0.3s"}}>{letter}</span>
-              {st==="correct"&&!isActive&&<span style={{fontSize:12}}>✅</span>}
-              {isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}
+            return<div key={i} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+              <span style={{fontSize:30,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",
+                background:isActive?"#FF9F43":st==="correct"?"#22C55E":"#FFF0E0",
+                color:(isActive||st==="correct")?"#fff":"#ddd",
+                transform:isActive?"scale(1.15) translateY(-4px)":isTap?"scale(1.05)":"scale(1)",
+                boxShadow:isActive?"0 8px 24px rgba(255,159,67,0.4)":"0 2px 8px rgba(0,0,0,0.04)",
+                transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}>{letter}</span>
+              {st==="correct"&&!isActive&&<span style={{fontSize:14}}>✅</span>}
+              {isTap&&<span style={{fontSize:14,color:"#FF9F43",fontWeight:800,animation:"pulse 1s ease-in-out infinite"}}>👆</span>}
             </div>;
           })}
         </div>
-        {spellRound===2&&<div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",marginTop:8}}>
-          {scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:26,fontFamily:"var(--font)",fontWeight:800,padding:"8px 14px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#FF9F43",background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#2D2B3D",opacity:item.used?0.35:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}
+        {spellRound===2&&scrambledLetters.length>0&&<div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap",marginTop:8}}>
+          {scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{
+            fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"10px 16px",borderRadius:18,minWidth:56,
+            border:"3px solid",cursor:item.used?"default":"pointer",
+            borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#FF9F43",
+            background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",
+            color:item.used?"#ddd":tapWrong===i?"#EF4444":"#2D2B3D",
+            opacity:item.used?0.3:1,
+            transform:tapWrong===i?"scale(0.9) rotate(-5deg)":item.used?"scale(0.8)":"scale(1)",
+            transition:"all 0.2s cubic-bezier(0.34,1.56,0.64,1)"}}>{item.letter}</button>)}
         </div>}
       </div>}
-      {modeStep==="done"&&<div style={{textAlign:"center",padding:20,background:"#F0FDF4",borderRadius:20}}>
-        <span style={{fontSize:48}}>🎉</span>
-        <div style={{fontSize:18,fontWeight:800,color:"#22C55E",marginTop:8}}>You spelled "{w?.word}"!</div>
-        <div style={{fontSize:13,color:"#16A34A",fontWeight:600}}>+5 points! Next word coming...</div>
+
+      {modeStep==="done"&&<div style={{textAlign:"center",padding:24,background:"linear-gradient(135deg,#F0FDF4,#DCFCE7)",borderRadius:22,border:"2px solid #86EFAC"}}>
+        <div style={{fontSize:56}}>🎉</div>
+        <div style={{fontSize:20,fontWeight:800,color:"#22C55E",marginTop:8}}>You spelled "{w?.word}"!</div>
+        <div style={{fontSize:13,color:"#16A34A",fontWeight:600,marginTop:4}}>+5 points!</div>
+        <div style={{display:"flex",gap:10,justifyContent:"center",marginTop:14}}>
+          <button onClick={()=>doRead(w)} style={{padding:"12px 24px",borderRadius:16,border:"none",background:"#FF9F43",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>🔁 Spell Again</button>
+          <button onClick={()=>{const ni=(modeIdx+1)%modeWords.length;setModeIdx(ni);setModeStep("idle");}} style={{padding:"12px 24px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer"}}>Next →</button>
+        </div>
       </div>}
     </div>
-    {/* Word picker */}
-    <div style={{padding:"8px 12px",background:"#fff",borderTop:"1px solid #f0f0f0",flexShrink:0}}>
+    <div style={{padding:"6px 12px",background:"#fff",borderTop:"1px solid #f0f0f0",flexShrink:0}}>
       <div style={{display:"flex",gap:6,overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:4}}>
-        {modeWords.slice(0,20).map((mw,mi)=><button key={mi} onClick={()=>{stop();pRef.current=false;setModeIdx(mi);setModeStep("idle");}} style={{padding:"6px 10px",borderRadius:12,border:"none",background:mi===modeIdx?"#FF9F43":"#F0F4FF",color:mi===modeIdx?"#fff":"#8E8CA3",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",whiteSpace:"nowrap",flexShrink:0}}>{mw.img} {mw.word}</button>)}
+        {modeWords.slice(0,30).map((mw,mi)=><button key={mi} onClick={()=>{stop();pRef.current=false;setModeIdx(mi);setModeStep("idle");}} style={{padding:"6px 10px",borderRadius:12,border:"none",background:mi===modeIdx?"#FF9F43":"#F0F4FF",color:mi===modeIdx?"#fff":"#8E8CA3",fontSize:11,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",whiteSpace:"nowrap",flexShrink:0}}>{mw.img} {mw.word}</button>)}
       </div>
     </div>
     <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
