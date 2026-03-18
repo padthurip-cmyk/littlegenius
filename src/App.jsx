@@ -1,4 +1,4 @@
-=import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 
 // ═══ FIREBASE CONFIG — Set your project URL here (one-time developer setup) ═══
