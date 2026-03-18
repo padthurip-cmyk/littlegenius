@@ -35,7 +35,7 @@ export default async (req) => {
 
     // Add keyword boosting for expected word
     if (expectedWord) {
-      params.append("keywords", expectedWord);
+      params.append("keyterm", expectedWord);
     }
 
     // Forward to Deepgram
