@@ -2293,79 +2293,78 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,count
   const active=isListening&&phase==="listening";
   const processing=phase==="processing";
   const idle=!isListening&&phase!=="processing";
-  // Show tap button only after 2s if still idle — auto-start should kick in before that
+  // Show tap button only after 3s if still idle (auto-start should fire within 1s)
   useEffect(()=>{
     if(idle&&!active&&!processing){
-      const t=setTimeout(()=>setShowTapBtn(true),2000);
+      const t=setTimeout(()=>setShowTapBtn(true),3000);
       return()=>clearTimeout(t);
-    }else{
-      setShowTapBtn(false);
-    }
+    }else{setShowTapBtn(false);}
   },[idle,active,processing]);
-  // Animated volume bars with requestAnimationFrame feel
   const volBars=useMemo(()=>Array.from({length:14},(_,i)=>({id:i,offset:i*0.07})),[]);
   return <div data-owl="mic-area" style={{textAlign:"center",padding:16,background:"#fff",borderRadius:22,border:"2.5px solid #E8EAF6",animation:"slideUp 0.3s ease-out"}}>
-    {/* Target word — large, clear, always visible */}
+    {/* Target word */}
     <div style={{padding:"10px 16px",background:"linear-gradient(135deg,#FFF8E1,#FFFDE7)",borderRadius:14,border:"2.5px solid #FFE082",marginBottom:14,position:"relative",overflow:"hidden"}}>
       <div style={{fontSize:9,fontWeight:800,color:"#78909C",textTransform:"uppercase",letterSpacing:2}}>Say this word:</div>
       <div style={{fontSize:28,fontWeight:900,color:"#1A1A2E",marginTop:4,letterSpacing:3,fontFamily:"var(--font)"}}>{expected?.toUpperCase()}</div>
       {active&&<div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:"linear-gradient(90deg,#4CAF50,#81C784,#4CAF50)",backgroundSize:"200% 100%",animation:"micShimmer 1.5s ease-in-out infinite"}}/>}
     </div>
-    {/* Mic button — three states: idle (green), active (pulsing red), processing (orange) */}
-    <button onClick={()=>{if(idle&&!processing)onTapMic();}} disabled={active||processing} style={{
-      width:110,height:110,borderRadius:"50%",border:"none",cursor:(active||processing)?"default":"pointer",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
-      background:active?"linear-gradient(135deg,#EF4444,#DC2626)":processing?"linear-gradient(135deg,#FF8A50,#F57C00)":"linear-gradient(135deg,#4CAF50,#388E3C)",
-      borderBottom:active?"6px solid #B71C1C":processing?"6px solid #E65100":"6px solid #2E7D32",
-      boxShadow:active?`0 0 0 ${8+Math.round((vol||0)*16)}px rgba(239,68,68,${0.15+(vol||0)*0.25}), 0 0 ${20+(vol||0)*30}px rgba(239,68,68,0.2)`
-        :processing?"0 0 20px rgba(255,138,80,0.3)"
-        :"0 4px 20px rgba(76,175,80,0.3)",
-      transition:"box-shadow 0.12s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1)",
-      transform:idle&&!processing?"scale(1)":"scale(0.96)",
-      animation:active?"micPulse 2s ease-in-out infinite":idle&&!processing?"micBreathe 3s ease-in-out infinite":"none"
-    }}>
-      {active?<>
+
+    {/* ═══ ACTIVE: Recording in progress ═══ */}
+    {active&&<>
+      <div style={{width:110,height:110,borderRadius:"50%",border:"none",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
+        background:"linear-gradient(135deg,#EF4444,#DC2626)",borderBottom:"6px solid #B71C1C",
+        boxShadow:`0 0 0 ${8+Math.round((vol||0)*16)}px rgba(239,68,68,${0.15+(vol||0)*0.25}), 0 0 ${20+(vol||0)*30}px rgba(239,68,68,0.2)`,
+        animation:"micPulse 2s ease-in-out infinite"}}>
         <span style={{fontSize:38,fontWeight:900,color:"#fff",lineHeight:1}}>{countdown||"🎤"}</span>
         <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.9)",letterSpacing:1,lineHeight:1}}>LISTENING</span>
-      </>:processing?<>
+      </div>
+      <div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:34,margin:"8px 0 4px"}}>
+        {volBars.map((bar)=>{const v=vol||0;const h=Math.max(4,Math.min(30,v*38+Math.sin(Date.now()*0.005+bar.offset*10)*3));
+          return<div key={bar.id} style={{width:5,height:h,borderRadius:3,background:v>0.15?"linear-gradient(180deg,#66BB6A,#4CAF50)":v>0.05?"#FFB74D":"#E0E0E0",transition:"height 0.1s ease, background 0.2s ease"}}/>;
+        })}
+      </div>
+      {(vol||0)>0.15&&<p style={{fontSize:12,fontWeight:800,color:"#4CAF50",margin:"0 0 4px"}}>✅ I can hear you!</p>}
+      {(vol||0)>0&&(vol||0)<=0.15&&<p style={{fontSize:12,fontWeight:800,color:"#FFB74D",margin:"0 0 4px"}}>🎙️ Speak up a little!</p>}
+      {(vol||0)===0&&countdown>4&&<p style={{fontSize:12,fontWeight:800,color:"#90A4AE",margin:"0 0 4px"}}>👂 Say "{expected}" now!</p>}
+      {(vol||0)===0&&countdown<=4&&countdown>0&&<p style={{fontSize:12,fontWeight:800,color:"#EF5350",margin:"0 0 4px"}}>🗣️ Speak now!</p>}
+      {transcript&&<div style={{padding:"6px 12px",background:"#E8F5E9",borderRadius:10,border:"2px solid #A5D6A7",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Hearing: "{transcript}"</span></div>}
+    </>}
+
+    {/* ═══ PROCESSING: Deepgram analyzing ═══ */}
+    {processing&&<>
+      <div style={{width:110,height:110,borderRadius:"50%",border:"none",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
+        background:"linear-gradient(135deg,#FF8A50,#F57C00)",borderBottom:"6px solid #E65100",
+        boxShadow:"0 0 20px rgba(255,138,80,0.3)"}}>
         <span style={{fontSize:28,color:"#fff",animation:"spinSlow 1.2s linear infinite"}}>⏳</span>
         <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.9)",lineHeight:1}}>ANALYZING</span>
-      </>:<>
-        {showTapBtn?<>
+      </div>
+      <p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px"}}>🧠 Checking what you said...</p>
+      {transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
+    </>}
+
+    {/* ═══ IDLE: Preparing or fallback tap ═══ */}
+    {idle&&!active&&!processing&&<>
+      {showTapBtn?<>
+        <button onClick={()=>onTapMic()} style={{width:110,height:110,borderRadius:"50%",border:"none",cursor:"pointer",margin:"0 auto 8px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,
+          background:"linear-gradient(135deg,#4CAF50,#388E3C)",borderBottom:"6px solid #2E7D32",
+          boxShadow:"0 4px 20px rgba(76,175,80,0.3)",animation:"micBreathe 3s ease-in-out infinite"}}>
           <span style={{fontSize:40,lineHeight:1}}>🎤</span>
           <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>TAP TO</span>
           <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>SPEAK</span>
-        </>:<>
-          <span style={{fontSize:28,color:"#fff",animation:"micPulse 1.5s ease-in-out infinite"}}>🎙️</span>
-          <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.9)",lineHeight:1}}>STARTING</span>
-        </>}
+        </button>
+        <p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>Tap the microphone, then say <strong>"{expected}"</strong></p>
+      </>:<>
+        <div style={{padding:"20px 0",margin:"0 auto 8px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            <span style={{fontSize:24,animation:"micPulse 1.2s ease-in-out infinite"}}>🎙️</span>
+            <span style={{fontSize:14,fontWeight:800,color:"#4CAF50",animation:"pulse 1.5s ease-in-out infinite"}}>Getting ready...</span>
+          </div>
+        </div>
       </>}
-    </button>
-    {/* Live volume visualization — shows real-time audio feedback */}
-    {active&&<div style={{display:"flex",alignItems:"end",justifyContent:"center",gap:3,height:34,margin:"8px 0 4px"}}>
-      {volBars.map((bar)=>{
-        const v=vol||0;
-        const h=Math.max(4,Math.min(30,v*38+Math.sin(Date.now()*0.005+bar.offset*10)*3));
-        return<div key={bar.id} style={{width:5,height:h,borderRadius:3,background:v>0.15?"linear-gradient(180deg,#66BB6A,#4CAF50)":v>0.05?"#FFB74D":"#E0E0E0",transition:"height 0.1s ease, background 0.2s ease"}}/>;
-      })}
-    </div>}
-    {/* Live status messages */}
-    {active&&(vol||0)>0.15&&<p style={{fontSize:12,fontWeight:800,color:"#4CAF50",margin:"0 0 4px",animation:"fadeIn 0.2s ease-out"}}>✅ I can hear you! Keep going!</p>}
-    {active&&(vol||0)>0&&(vol||0)<=0.15&&<p style={{fontSize:12,fontWeight:800,color:"#FFB74D",margin:"0 0 4px"}}>🎙️ Speak up a little!</p>}
-    {active&&(vol||0)===0&&countdown>4&&<p style={{fontSize:12,fontWeight:800,color:"#90A4AE",margin:"0 0 4px"}}>👂 Listening... say "{expected}" clearly</p>}
-    {active&&(vol||0)===0&&countdown<=4&&countdown>0&&<p style={{fontSize:12,fontWeight:800,color:"#EF5350",margin:"0 0 4px"}}>🗣️ Speak now!</p>}
-    {/* Live transcript preview */}
-    {active&&transcript&&<div style={{padding:"6px 12px",background:"#E8F5E9",borderRadius:10,border:"2px solid #A5D6A7",margin:"6px 0",animation:"fadeIn 0.2s ease-out"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Hearing: "{transcript}"</span></div>}
-    {/* Processing state */}
-    {processing&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px",animation:"fadeIn 0.3s ease-out"}}>🧠 Checking what you said...</p>}
-    {processing&&transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
-    {/* Idle state */}
-    {idle&&!error&&!transcript&&<p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>{showTapBtn?<>Tap the microphone, then say <strong>"{expected}"</strong></>:"Getting ready to listen..."}</p>}
-    {/* Error display */}
-    {error&&idle&&<div style={{padding:"8px 14px",background:"#FFF3E0",borderRadius:12,margin:"8px 0 4px",border:"2px solid #FFE0B2"}}><span style={{fontSize:12,fontWeight:700,color:"#E65100"}}>{error}</span><br/><span style={{fontSize:11,fontWeight:600,color:"#BF360C"}}>Tap 🎤 to try again!</span></div>}
-    {/* Heard result in idle (shouldn't normally show because result handler fires fast) */}
-    {transcript&&idle&&!error&&<div style={{padding:"8px 14px",background:"#E8F5E9",borderRadius:10,border:"2px solid #C8E6C9",margin:"8px 0 4px"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Heard: "{transcript}"</span></div>}
-    {idle&&!error&&showTapBtn&&<p style={{fontSize:10,fontWeight:600,color:"#B0BEC5",margin:"0 0 6px"}}>Didn't work? Tap 🎤 again</p>}
-    {/* Type fallback — always available */}
+      {error&&<div style={{padding:"8px 14px",background:"#FFF3E0",borderRadius:12,margin:"8px 0 4px",border:"2px solid #FFE0B2"}}><span style={{fontSize:12,fontWeight:700,color:"#E65100"}}>{error}</span></div>}
+    </>}
+
+    {/* Type fallback */}
     <div style={{display:"flex",gap:6,marginTop:8}}>
       <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type the word here..."
         style={{flex:1,padding:"9px 12px",borderRadius:12,border:"2px solid #E8EAF6",fontSize:13,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box"}}
@@ -2468,9 +2467,9 @@ export default function App(){
       }
     },180);
     return()=>clearInterval(iv);
+  },[]);
 
   // ═══ TOUCH TILT — 3D finger-following effect on all buttons/cards ═══
-  },[cloudPlayingRef]);
   useEffect(()=>{
     const handler=(e)=>{
       const touch=e.touches?.[0];if(!touch)return;
@@ -4104,7 +4103,7 @@ export default function App(){
     <div style={{textAlign:"center",zIndex:2,animation:"splashPop 0.8s cubic-bezier(0.34,1.56,0.64,1)"}}>
       <h1 style={{fontSize:48,fontWeight:900,color:"#fff",margin:0,letterSpacing:-1,textShadow:"0 3px 12px rgba(0,0,0,0.15)"}}>Little Genius 🦉</h1>
       <p style={{color:"rgba(255,255,255,0.85)",fontSize:14,fontWeight:700,letterSpacing:3,textTransform:"uppercase",marginTop:8}}>Learn • Play • Grow</p>
-      <button style={{marginTop:32,padding:"18px 48px",borderRadius:50,border:"3px solid rgba(255,255,255,0.3)",background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 8px 32px rgba(0,0,0,0.15)",backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)",animation:"numPulse 2s ease-in-out infinite"}}>Tap to Start! 🦉</button>
+      <button style={{marginTop:32,padding:"18px 48px",borderRadius:50,border:"none",background:"rgba(255,255,255,0.25)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"8px 8px 24px rgba(0,0,0,0.15),-6px -6px 16px rgba(255,255,255,0.3),inset 0 2px 6px rgba(255,255,255,0.4),inset 0 -2px 4px rgba(0,0,0,0.1)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",animation:"numPulse 2s ease-in-out infinite",letterSpacing:1}}>Tap to Start! 🦉</button>
     </div>
     {TeacherBubble}<style>{CSS}</style>
   </div>;
@@ -4112,7 +4111,7 @@ export default function App(){
 
   if(scr==="onboard")return<div style={{height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,position:"relative",fontFamily:"var(--font)"}}>
     <Particles count={6} emojis={["🌸","🦋","⭐","🌈"]}/>
-    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:28,padding:"24px 18px",maxWidth:400,width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2),0 4px 12px rgba(0,0,0,0.06)",zIndex:2,animation:"slideUp 0.5s ease-out",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
+    <div style={{background:"rgba(255,255,255,0.95)",borderRadius:32,padding:"28px 20px",maxWidth:400,width:"100%",boxShadow:"10px 10px 30px rgba(108,92,231,0.25),-8px -8px 24px rgba(255,255,255,0.6),inset 0 3px 8px rgba(255,255,255,0.7),inset 0 -2px 6px rgba(0,0,0,0.04)",zIndex:2,animation:"slideUp 0.5s ease-out",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)"}}>
     {obSt===0?<>
       {/* Step 1: Name + Age */}
       <div style={{textAlign:"center",marginBottom:20}}>
@@ -4124,16 +4123,15 @@ export default function App(){
       <input value={obN} onChange={e=>setObN(e.target.value)} placeholder="Type your name..." style={{width:"100%",padding:"14px 16px",border:"2px solid #DFE6E9",borderRadius:18,fontSize:17,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#F8FAFF"}}/>
       <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",margin:"20px 0 10px"}}>How old are you?</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:8}}>
-        {[3,4,5,6,7,8].map(a=><button key={a} onClick={()=>setObA(a)} style={{
-          padding:"14px 0",borderRadius:16,border:"3px solid",
-          borderColor:obA===a?"#6C5CE7":"#DFE6E9",
+        {[3,4,5,6,7,8].map(a=><button key={a} data-r="age" onClick={()=>setObA(a)} style={{
+          padding:"14px 0",borderRadius:18,border:"none",
           background:obA===a?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#fff",
           color:obA===a?"#fff":"#1C1C2B",fontSize:20,fontWeight:900,
           fontFamily:"var(--font)",cursor:"pointer",transform:obA===a?"scale(1.08)":"scale(1)",
-          boxShadow:obA===a?"0 4px 12px rgba(252,128,25,.3)":"none"
+          boxShadow:obA===a?"6px 6px 18px rgba(108,92,231,0.35),-4px -4px 12px rgba(255,255,255,0.6),inset 0 2px 4px rgba(255,255,255,0.4)":"var(--clay-btn)"
         }}>{a}</button>)}
       </div>
-      <button onClick={()=>{sfxTap();setObSt(1);speak("Great! Now select your style!",{rate:0.85,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,boxShadow:"var(--shadow-btn)",letterSpacing:0.5}}>Next →</button>
+      <button onClick={()=>{sfxTap();setObSt(1);speak("Great! Now select your style!",{rate:0.85,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:22,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,boxShadow:"6px 6px 18px rgba(108,92,231,0.3),-4px -4px 12px rgba(255,255,255,0.5),inset 0 2px 4px rgba(255,255,255,0.3),inset 0 -2px 3px rgba(0,0,0,0.08)",letterSpacing:0.5}}>Next →</button>
     </>:
     obSt===1?<>
       {/* Step 2: Gender + Avatar */}
@@ -4143,12 +4141,11 @@ export default function App(){
       </div>
       <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:6}}>I am a...</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
-        {[{g:"boy",e:"👦",c:"#6C5CE7"},{g:"girl",e:"👧",c:"#E84393"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{
-          padding:16,borderRadius:18,border:"3px solid",
-          borderColor:obG===x.g?x.c:"#E8E8E8",
-          background:obG===x.g?(x.g==="boy"?"#FFF5EB":"#FDF2F8"):"#fff",
+        {[{g:"boy",e:"👦",c:"#6C5CE7"},{g:"girl",e:"👧",c:"#E84393"}].map(x=><button key={x.g} data-r="gender" onClick={()=>setObG(x.g)} style={{
+          padding:16,borderRadius:22,border:"none",
+          background:obG===x.g?(x.g==="boy"?"linear-gradient(135deg,#EDE7F6,#FFF5EB)":"linear-gradient(135deg,#FDF2F8,#FCE4EC)"):"#fff",
           cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:8,transform:obG===x.g?"scale(1.04)":"scale(1)",
-          boxShadow:obG===x.g?`0 4px 16px ${x.c}33`:"none"
+          boxShadow:obG===x.g?`8px 8px 20px ${x.c}30,-4px -4px 12px rgba(255,255,255,0.7),inset 0 2px 4px rgba(255,255,255,0.5)`:"var(--clay-btn)"
         }}>
           <span style={{fontSize:44}}>{x.e}</span>
           <span style={{fontWeight:800,fontSize:15,color:obG===x.g?x.c:"#8E8CA3"}}>{x.g.charAt(0).toUpperCase()+x.g.slice(1)}</span>
@@ -4156,20 +4153,19 @@ export default function App(){
       </div>
       <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:10}}>Pick an avatar</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,maxWidth:"100%",overflow:"hidden"}}>
-        {AVATARS[obG].map((av,i)=><button key={i} onClick={()=>setObAv(i)} style={{
-          padding:10,borderRadius:16,border:"3px solid",
-          borderColor:obAv===i?"#6C5CE7":"#E8E8E8",
+        {AVATARS[obG].map((av,i)=><button key={i} data-r="avatar" onClick={()=>setObAv(i)} style={{
+          padding:10,borderRadius:18,border:"none",
           background:obAv===i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F8F9FB",
           fontSize:28,cursor:"pointer",
           transform:obAv===i?"scale(1.05)":"scale(1)",
           display:"flex",alignItems:"center",justifyContent:"center",
-          boxShadow:obAv===i?"0 4px 12px rgba(108,92,231,.2)":"none",
+          boxShadow:obAv===i?"6px 6px 16px rgba(108,92,231,.3),-3px -3px 10px rgba(255,255,255,0.6),inset 0 2px 3px rgba(255,255,255,0.4)":"var(--clay-btn)",
           minWidth:0,overflow:"hidden"
         }}>{av}</button>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
-        <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:16,border:"2px solid #E8E0D8",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",color:"#8E8CA3"}}>← Back</button>
-        <button onClick={()=>{sfxTap();setObSt(2);speak("Would you like a quick tour?",{rate:0.85,pitch:1.0});setTeacherMood("happy");}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",boxShadow:"var(--shadow-btn)"}}>Next →</button>
+        <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:20,border:"none",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",color:"#8E8CA3",boxShadow:"var(--clay-btn)"}}>← Back</button>
+        <button onClick={()=>{sfxTap();setObSt(2);speak("Would you like a quick tour?",{rate:0.85,pitch:1.0});setTeacherMood("happy");}} style={{padding:14,borderRadius:20,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",boxShadow:"6px 6px 18px rgba(108,92,231,0.3),-4px -4px 12px rgba(255,255,255,0.5),inset 0 2px 4px rgba(255,255,255,0.3)"}}>Next →</button>
       </div>
     </>:
     obSt===2?<>
@@ -4185,7 +4181,7 @@ export default function App(){
           save(newP);speak("Let's get to know you first!",{rate:0.85,pitch:1.0});setTeacherMood("star");
           setScr("questionnaire");setQStep(0);setQAnswers([]);
           localStorage.setItem("lg_want_tour","yes");
-        }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(0,210,160,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+        }} style={{padding:20,borderRadius:24,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"6px 6px 18px rgba(0,210,160,0.3),-4px -4px 12px rgba(255,255,255,0.5),inset 0 2px 4px rgba(255,255,255,0.4),inset 0 -2px 3px rgba(0,0,0,0.06)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
           <span style={{fontSize:32}}>👍</span>
           Yes, show me!
         </button>
@@ -4193,7 +4189,7 @@ export default function App(){
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
           save(newP);speak("Let's go!",{rate:0.85,pitch:1.0});setTeacherMood("star");
           setScr("home");
-        }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(255,159,67,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+        }} style={{padding:20,borderRadius:24,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"6px 6px 18px rgba(255,159,67,0.3),-4px -4px 12px rgba(255,255,255,0.5),inset 0 2px 4px rgba(255,255,255,0.4),inset 0 -2px 3px rgba(0,0,0,0.06)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
           <span style={{fontSize:32}}>🚀</span>
           Skip, let's go!
         </button>
@@ -4206,7 +4202,7 @@ export default function App(){
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
   const showNav=["home","learn","quizzone","phonics","stories","rewards","settings","studyplan"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
-  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
+  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"rgba(255,255,255,0.95)",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"8px 8px 24px rgba(166,158,203,0.3),-6px -6px 16px rgba(255,255,255,0.7),inset 0 2px 4px rgba(255,255,255,0.6)",borderRadius:28,padding:"5px",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)"}}>
     {[
       {id:"home",icon:"🏠",label:"Home"},
       {id:"learn",icon:"📚",label:"Learn"},
@@ -4215,9 +4211,10 @@ export default function App(){
       {id:"settings",icon:"👤",label:"Profile"},
     ].map(t=><button key={t.id} onClick={()=>{sfxTap();stop();if(t.id==="home")goHome();else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
       flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,
-      padding:"6px 4px 8px",border:"none",cursor:"pointer",
+      padding:"7px 4px 9px",border:"none",cursor:"pointer",
       background:scr===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"transparent",
-      borderRadius:20,
+      borderRadius:22,
+      boxShadow:scr===t.id?"4px 4px 12px rgba(108,92,231,0.25),inset 0 1px 3px rgba(255,255,255,0.3)":"none",
       borderTop:"none"}}>
       <span style={{fontSize:18,filter:scr===t.id?"none":"grayscale(0.4) opacity(0.5)"}}>{t.icon}</span>
       <span style={{fontSize:9,fontWeight:700,color:scr===t.id?"#fff":"#A4B0BE"}}>{t.label}</span>
@@ -4227,7 +4224,7 @@ export default function App(){
 
   // ═══ QUESTIONNAIRE (first-time only) ═══
   if(scr==="questionnaire")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:28,padding:"24px 18px",maxWidth:400,border:"1px solid rgba(255,255,255,0.8)",width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
+    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:32,padding:"28px 20px",maxWidth:400,border:"none",width:"100%",boxShadow:"10px 10px 30px rgba(108,92,231,0.25),-8px -8px 24px rgba(255,255,255,0.6),inset 0 3px 8px rgba(255,255,255,0.7),inset 0 -2px 6px rgba(0,0,0,0.04)",textAlign:"center"}}>
       <div style={{fontSize:48}}>🦉</div>
       <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Quick Questions!</h2>
       <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:16}}>Question {qStep+1} of {QUESTIONNAIRE.length} — Help Ollie customize your learning!</p>
@@ -4244,7 +4241,7 @@ export default function App(){
           padding:"14px 18px",border:"none",cursor:"pointer",fontFamily:"var(--font)",
           fontSize:14,fontWeight:700,textAlign:"left",
           background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
-          color:"#fff",boxShadow:["0 6px 20px rgba(108,92,231,0.25)","0 6px 20px rgba(0,210,160,0.25)","0 6px 20px rgba(255,159,67,0.25)","0 6px 20px rgba(84,160,255,0.25)"][i%4],
+          color:"#fff",boxShadow:["6px 6px 16px rgba(108,92,231,0.25),-3px -3px 10px rgba(255,255,255,0.4),inset 0 2px 3px rgba(255,255,255,0.3)","6px 6px 16px rgba(0,210,160,0.25),-3px -3px 10px rgba(255,255,255,0.4),inset 0 2px 3px rgba(255,255,255,0.3)","6px 6px 16px rgba(255,159,67,0.25),-3px -3px 10px rgba(255,255,255,0.4),inset 0 2px 3px rgba(255,255,255,0.3)","6px 6px 16px rgba(84,160,255,0.25),-3px -3px 10px rgba(255,255,255,0.4),inset 0 2px 3px rgba(255,255,255,0.3)"][i%4],
           borderRadius:22,
           transition:"all 0.2s"
         }}>{opt}</button>)}
@@ -4267,7 +4264,7 @@ export default function App(){
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
     {/* ═══ TOP BAR ═══ */}
-    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",flexShrink:0,background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 50%,#74B9FF 100%)",borderRadius:"0 0 20px 20px",boxShadow:"0 4px 24px rgba(108,92,231,0.2)"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",flexShrink:0,background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 50%,#74B9FF 100%)",borderRadius:"0 0 24px 24px",boxShadow:"6px 6px 20px rgba(108,92,231,0.25),-4px -4px 14px rgba(255,255,255,0.15),inset 0 2px 4px rgba(255,255,255,0.2)"}}>
       <div style={{display:"flex",alignItems:"center",gap:12}}>
         <div style={{width:44,height:44,borderRadius:"50%",background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:"inset 0 0 0 2px rgba(255,255,255,0.3)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</div>
         <div>
@@ -4352,7 +4349,7 @@ export default function App(){
     </div>
     {/* ═══ PIN MODAL ═══ */}
     {showPinModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"var(--shadow-float)"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:32,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"10px 10px 30px rgba(166,158,203,0.35),-8px -8px 24px rgba(255,255,255,0.7),inset 0 3px 8px rgba(255,255,255,0.6)"}}>
         <span style={{fontSize:48}}>🔒</span>
         <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
         <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
