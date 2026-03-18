@@ -1469,118 +1469,32 @@ const getPhoneticVariants=(word)=>{
   return[...new Set(variants)];
 };
 
-const transcribeWithCloudSTT=async(audioBlob,apiKey,expectedWord)=>{
+// ═══ DEEPGRAM PROXY — calls our Netlify serverless function ═══
+// API key lives on server, never exposed to users
+const transcribeViaProxy=async(audioBlob,expectedWord)=>{
   try{
-    // Convert blob to base64
-    const base64=await new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onloadend=()=>resolve(reader.result.split(",")[1]);
-      reader.onerror=()=>reject(new Error("Read failed"));
-      reader.readAsDataURL(audioBlob);
-    });
-
-    const mimeType=audioBlob.type||"audio/webm";
-    const encoding=mimeType.includes("webm")?"WEBM_OPUS":mimeType.includes("ogg")?"OGG_OPUS":"MP3";
-    // Detect sample rate: webm/opus typically 48000, others 16000
-    const sampleRate=mimeType.includes("webm")||mimeType.includes("ogg")?48000:16000;
-
-    // Build speech contexts — tell Google EXACTLY what word to listen for
-    // Boost = 15 means this word is 15x more likely to be recognized
-    const phrases=expectedWord?[expectedWord,...getPhoneticVariants(expectedWord)]:[];
-
-    const resp=await fetch(`https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
-        config:{
-          encoding,
-          sampleRateHertz:sampleRate,
-          languageCode:"en-US",
-          model:"command_and_search", // optimized for short commands/words
-          useEnhanced:true,
-          maxAlternatives:5,
-          enableAutomaticPunctuation:false,
-          speechContexts:phrases.length?[{phrases,boost:15}]:[]
-        },
-        audio:{content:base64}
-      })
-    });
-
-    if(!resp.ok){
-      const errData=await resp.json().catch(()=>({}));
-      console.warn("Cloud STT error:",resp.status,errData);
-      return{transcript:"",alternatives:[],confidence:0,error:"api_error"};
-    }
-
-    const data=await resp.json();
-    if(data.results?.length){
-      const alts=[];
-      let topConfidence=0;
-      data.results.forEach(r=>{
-        r.alternatives?.forEach(a=>{
-          if(a.transcript){
-            alts.push(a.transcript.toLowerCase().trim());
-            if(a.confidence>topConfidence)topConfidence=a.confidence;
-          }
-        });
-      });
-      return{transcript:alts[0]||"",alternatives:alts,confidence:topConfidence};
-    }
-    return{transcript:"",alternatives:[],confidence:0};
-  }catch(e){
-    console.warn("Cloud STT exception:",e.message);
-    return{transcript:"",alternatives:[],confidence:0,error:e.message};
-  }
-};
-
-// ═══ DEEPGRAM NOVA-3 ENGINE ═══
-// Premium pay-per-use STT — $0.0077/min — best accuracy for children's voices
-// Simple REST API: send audio blob, get transcript back
-const transcribeWithDeepgram=async(audioBlob,apiKey,expectedWord)=>{
-  try{
-    const mimeType=audioBlob.type||"audio/webm";
-    // Build query params — Nova-3 with smart formatting
-    const params=new URLSearchParams({
-      model:"nova-3",
-      language:"en",
-      smart_format:"true",
-      punctuate:"false",        // Kids saying single words don't need punctuation
-      diarize:"false",
-      alternatives:5,           // Get 5 alternatives for better matching
-    });
-    // Add keyword boosting if we know the expected word
-    if(expectedWord){
-      params.append("keywords",expectedWord);
-      // Add phonetic variants too
-      const variants=getPhoneticVariants(expectedWord);
-      variants.forEach(v=>{if(v!==expectedWord)params.append("keywords",v);});
-    }
-
-    const resp=await fetch(`https://api.deepgram.com/v1/listen?${params.toString()}`,{
+    const resp=await fetch("/api/transcribe",{
       method:"POST",
       headers:{
-        "Authorization":`Token ${apiKey}`,
-        "Content-Type":mimeType,
+        "Content-Type":audioBlob.type||"audio/webm",
+        "X-Expected-Word":expectedWord||"",
       },
       body:audioBlob,
     });
 
     if(!resp.ok){
-      const errData=await resp.json().catch(()=>({}));
-      console.warn("Deepgram error:",resp.status,errData);
-      return{transcript:"",alternatives:[],confidence:0,error:"deepgram_error_"+resp.status};
+      return{transcript:"",alternatives:[],confidence:0,error:"proxy_error_"+resp.status};
     }
 
     const data=await resp.json();
-    const channel=data?.results?.channels?.[0];
-    if(channel?.alternatives?.length){
-      const alts=channel.alternatives.map(a=>(a.transcript||"").toLowerCase().trim()).filter(Boolean);
-      const confidence=channel.alternatives[0]?.confidence||0;
-      return{transcript:alts[0]||"",alternatives:alts,confidence};
-    }
-    return{transcript:"",alternatives:[],confidence:0};
+    return{
+      transcript:data.transcript||"",
+      alternatives:data.alternatives||[],
+      confidence:data.confidence||0,
+      error:data.error||null,
+    };
   }catch(e){
-    console.warn("Deepgram exception:",e.message);
+    console.warn("Proxy transcribe error:",e.message);
     return{transcript:"",alternatives:[],confidence:0,error:e.message};
   }
 };
@@ -1663,12 +1577,10 @@ const useSpeech=()=>{const[v,setV]=useState([]);
   const cloudAudioRef=useRef(null); // current cloud Audio element
   const cloudPlayingRef=useRef(false); // for lip sync polling
   const[ttsKey,setTtsKey]=useState("");
-  const[dgKey,setDgKey]=useState("");
 
-  // Load API keys from storage on mount
-  useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4_tts_key");if(r?.value)setTtsKey(r.value);}catch(e){}try{const r2=await window.storage.get("lg4_dg_key");if(r2?.value)setDgKey(r2.value);}catch(e){}})();},[]);
+  // Load API key from storage on mount
+  useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4_tts_key");if(r?.value)setTtsKey(r.value);}catch(e){}})();},[]);
   const saveTtsKey=useCallback(async(key)=>{setTtsKey(key);try{await window.storage.set("lg4_tts_key",key);}catch(e){}},[]);
-  const saveDgKey=useCallback(async(key)=>{setDgKey(key);try{await window.storage.set("lg4_dg_key",key);}catch(e){}},[]);
 
   // Browser voices setup
   useEffect(()=>{const l=()=>{const x=speechSynthesis.getVoices();if(x.length)setV(x);};l();speechSynthesis.onvoiceschanged=l;return()=>{speechSynthesis.onvoiceschanged=null;};},[]);
@@ -1770,174 +1682,52 @@ const useSpeech=()=>{const[v,setV]=useState([]);
     cloudPlayingRef.current=false;
   },[]);
 
-  return{speak,stop:stopAll,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey,dgKey,saveDgKey};
+  return{speak,stop:stopAll,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey};
 };
 // ═══ WHISPER AI HOOK — On-Device Speech Recognition ═══
 // Loads OpenAI Whisper model in a Web Worker (off main thread)
-// Model: whisper-tiny.en quantized (~15MB) — cached in IndexedDB forever after first download
-const useWhisper=()=>{
-  const[status,setStatus]=useState("idle"); // idle | loading | ready | error
-  const[progress,setProgress]=useState(0);
-  const[loadMsg,setLoadMsg]=useState("");
-  const workerRef=useRef(null);
-  const resolveRef=useRef(null);
-  const readyRef=useRef(false);
-
-  // Create worker and start model load on mount
-  useEffect(()=>{
-    try{
-      const worker=new Worker(new URL('./whisper-worker.js',import.meta.url),{type:'module'});
-      workerRef.current=worker;
-
-      worker.onmessage=(e)=>{
-        const d=e.data;
-        if(d.type==='loading'){
-          setStatus("loading");
-          setProgress(d.progress||0);
-          setLoadMsg(d.message||"Loading...");
-        }else if(d.type==='ready'){
-          setStatus("ready");
-          readyRef.current=true;
-          setProgress(100);
-          setLoadMsg("Whisper AI ready!");
-        }else if(d.type==='error'){
-          setStatus("error");
-          setLoadMsg(d.error||"Failed to load");
-          console.warn("Whisper worker error:",d.error);
-        }else if(d.type==='result'){
-          if(resolveRef.current){
-            resolveRef.current({transcript:d.transcript||"",error:d.error||null});
-            resolveRef.current=null;
-          }
-        }
-      };
-
-      worker.onerror=(err)=>{
-        console.warn("Whisper worker crash:",err);
-        setStatus("error");
-        setLoadMsg("AI worker failed to start");
-      };
-
-      // Start loading the model immediately
-      worker.postMessage({type:'load'});
-    }catch(err){
-      console.warn("Cannot create Whisper worker:",err);
-      setStatus("error");
-    }
-
-    return()=>{
-      try{workerRef.current?.terminate();}catch(e){}
-    };
-  },[]);
-
-  // Resample audio blob to 16kHz mono Float32Array
-  const preprocessAudio=useCallback(async(audioBlob)=>{
-    const arrayBuffer=await audioBlob.arrayBuffer();
-    // Decode audio using AudioContext
-    const audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    let decoded;
-    try{
-      decoded=await audioCtx.decodeAudioData(arrayBuffer);
-    }catch(e){
-      audioCtx.close();
-      throw new Error("Cannot decode audio: "+e.message);
-    }
-
-    // Resample to 16kHz mono using OfflineAudioContext
-    const targetRate=16000;
-    const numSamples=Math.ceil(decoded.duration*targetRate);
-    if(numSamples<100){audioCtx.close();throw new Error("Audio too short");}
-
-    const offlineCtx=new OfflineAudioContext(1,numSamples,targetRate);
-    const source=offlineCtx.createBufferSource();
-    source.buffer=decoded;
-    source.connect(offlineCtx.destination);
-    source.start(0);
-    const resampled=await offlineCtx.startRendering();
-    audioCtx.close();
-    return resampled.getChannelData(0); // Float32Array at 16kHz
-  },[]);
-
-  // Transcribe audio blob — returns {transcript, error}
-  const transcribe=useCallback(async(audioBlob)=>{
-    if(!readyRef.current||!workerRef.current){
-      return{transcript:"",error:"Whisper not ready"};
-    }
-    try{
-      const float32=await preprocessAudio(audioBlob);
-      return new Promise((resolve)=>{
-        resolveRef.current=resolve;
-        // Transfer the Float32Array buffer to avoid copying
-        workerRef.current.postMessage(
-          {type:'transcribe',audioData:float32,sampleRate:16000},
-          [float32.buffer]
-        );
-        // Safety timeout — 15 seconds max for inference
-        setTimeout(()=>{
-          if(resolveRef.current){
-            resolveRef.current({transcript:"",error:"Whisper timed out"});
-            resolveRef.current=null;
-          }
-        },15000);
-      });
-    }catch(e){
-      return{transcript:"",error:e.message};
-    }
-  },[preprocessAudio]);
-
-  return{status,progress,loadMsg,transcribe,isReady:status==="ready"};
-};
-
-const useRec=(googleApiKey,whisper,dgKey)=>{
+// ═══ SPEECH RECOGNITION HOOK — CLEAN SINGLE-ENGINE DESIGN ═══
+// Rule: ONE engine per mic tap. No parallel. No overlap. No fighting.
+// With Deepgram key → MediaRecorder + Deepgram API (best accuracy)
+// Without key → Web Speech API only (browser built-in)
+const useRec=()=>{
   const[on,setOn]=useState(false);
   const[txt,setTxt]=useState("");
   const[err,setErr]=useState("");
   const[countdown,setCountdown]=useState(0);
   const[vol,setVol]=useState(0);
   const[phase,setPhase]=useState("idle"); // idle | listening | processing | done
-  const[engineUsed,setEngineUsed]=useState("none"); // cloud | web | none
+  const[engineUsed,setEngineUsed]=useState("none");
 
-  const hasMic=typeof navigator!=="undefined"&&!!navigator.mediaDevices?.getUserMedia;
-  const hasWebSpeech=typeof window!=="undefined"&&!!(window.SpeechRecognition||window.webkitSpeechRecognition);
-  const supported=hasMic||hasWebSpeech;
+  const supported=typeof navigator!=="undefined"&&(!!navigator.mediaDevices?.getUserMedia||!!(window.SpeechRecognition||window.webkitSpeechRecognition));
 
   const cbRef=useRef(null);
   const expectedRef=useRef("");
   const deliveredRef=useRef(false);
-  const bestRef=useRef("");
-  const altsRef=useRef([]);
 
-  // MediaRecorder refs
+  // Recording refs
   const streamRef=useRef(null);
   const recorderRef=useRef(null);
   const chunksRef=useRef([]);
-
-  // Web Speech API ref (parallel fallback)
   const webRecRef=useRef(null);
-  const webBestRef=useRef("");
-  const webAltsRef=useRef([]);
 
-  // Audio analysis refs (real volume)
+  // Volume monitoring
   const audioCtxRef=useRef(null);
   const analyserRef=useRef(null);
-  const animFrameRef=useRef(null);
+  const rafRef=useRef(null);
 
   // Timers
   const cdRef=useRef(null);
-  const maxTimerRef=useRef(null);
-  const vadTimerRef=useRef(null);
+  const hardTimerRef=useRef(null);
 
-  // VAD (Voice Activity Detection) state
+  // VAD
   const speechDetectedRef=useRef(false);
   const silenceStartRef=useRef(0);
-  const permRef=useRef(false);
 
-  // Beep
   const beep=useCallback((freq=880,dur=150,type="sine")=>{
     try{
       const ctx=new(window.AudioContext||window.webkitAudioContext)();
-      const osc=ctx.createOscillator();
-      const gain=ctx.createGain();
+      const osc=ctx.createOscillator();const gain=ctx.createGain();
       osc.type=type;osc.frequency.value=freq;gain.gain.value=0.3;
       osc.connect(gain);gain.connect(ctx.destination);osc.start();
       gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+dur/1000);
@@ -1946,346 +1736,261 @@ const useRec=(googleApiKey,whisper,dgKey)=>{
     }catch(e){}
   },[]);
 
-  // ═══ CLEANUP — release all resources ═══
+  // ═══ FULL CLEANUP ═══
   const cleanup=useCallback(()=>{
     clearInterval(cdRef.current);
-    clearTimeout(maxTimerRef.current);
-    cancelAnimationFrame(animFrameRef.current);
-    clearInterval(vadTimerRef.current);
+    clearTimeout(hardTimerRef.current);
+    cancelAnimationFrame(rafRef.current);
     try{recorderRef.current?.stop();}catch(e){}
     try{webRecRef.current?.abort();}catch(e){}
-    if(streamRef.current){
-      streamRef.current.getTracks().forEach(t=>t.stop());
-      streamRef.current=null;
-    }
-    if(audioCtxRef.current&&audioCtxRef.current.state!=="closed"){
-      try{audioCtxRef.current.close();}catch(e){}
-    }
-    audioCtxRef.current=null;
-    analyserRef.current=null;
-    recorderRef.current=null;
-    webRecRef.current=null;
+    if(streamRef.current){streamRef.current.getTracks().forEach(t=>t.stop());streamRef.current=null;}
+    if(audioCtxRef.current&&audioCtxRef.current.state!=="closed"){try{audioCtxRef.current.close();}catch(e){}}
+    audioCtxRef.current=null;analyserRef.current=null;recorderRef.current=null;webRecRef.current=null;
   },[]);
 
-  // ═══ DELIVER RESULT — guaranteed exactly once per start() ═══
+  // ═══ DELIVER — exactly once per start() ═══
   const deliver=useCallback((transcript,alternatives)=>{
     if(deliveredRef.current)return;
     deliveredRef.current=true;
     cleanup();
-
     const result=transcript||"";
-    const alts=alternatives||[];
-
-    if(result){
-      beep(800,100,"sine"); // success beep
-      setTxt(result);
-    }else{
-      beep(400,200,"triangle"); // no-speech beep
-      setTxt("");
-    }
-    setPhase("done");setOn(false);setCountdown(0);setVol(0);
-
-    // Deliver to callback after brief visual pause
-    setTimeout(()=>cbRef.current?.(result,alts),120);
+    if(result)beep(800,100,"sine");
+    else beep(400,200,"triangle");
+    setTxt(result);setPhase("done");setOn(false);setCountdown(0);setVol(0);
+    setTimeout(()=>cbRef.current?.(result,alternatives||[]),100);
   },[cleanup,beep]);
 
-  // ═══ REAL VOLUME MONITORING via AnalyserNode ═══
-  const startVolumeMonitor=useCallback((stream)=>{
+  // ═══ VOLUME MONITOR (runs alongside any engine) ═══
+  const startVolume=useCallback((stream)=>{
     try{
       const ctx=new(window.AudioContext||window.webkitAudioContext)();
-      const source=ctx.createMediaStreamSource(stream);
-      const analyser=ctx.createAnalyser();
-      analyser.fftSize=256;
-      analyser.smoothingTimeConstant=0.8;
-      source.connect(analyser);
-      audioCtxRef.current=ctx;
-      analyserRef.current=analyser;
-
-      const dataArray=new Uint8Array(analyser.frequencyBinCount);
-      const SPEECH_THRESHOLD=18; // RMS threshold for voice detection
-      const SILENCE_DURATION=900; // ms of silence after speech → auto-stop
-
+      const src=ctx.createMediaStreamSource(stream);
+      const an=ctx.createAnalyser();an.fftSize=256;an.smoothingTimeConstant=0.8;
+      src.connect(an);audioCtxRef.current=ctx;analyserRef.current=an;
+      const buf=new Uint8Array(an.frequencyBinCount);
       const poll=()=>{
         if(!analyserRef.current||deliveredRef.current)return;
-        analyser.getByteFrequencyData(dataArray);
-
-        // Calculate RMS volume (0-1 normalized)
-        let sum=0;
-        for(let i=0;i<dataArray.length;i++)sum+=dataArray[i]*dataArray[i];
-        const rms=Math.sqrt(sum/dataArray.length);
-        const normalized=Math.min(1,rms/100);
-        setVol(normalized);
-
-        // Voice Activity Detection
-        if(rms>SPEECH_THRESHOLD){
-          speechDetectedRef.current=true;
-          silenceStartRef.current=0;
-        }else if(speechDetectedRef.current){
+        an.getByteFrequencyData(buf);
+        let sum=0;for(let i=0;i<buf.length;i++)sum+=buf[i]*buf[i];
+        const rms=Math.sqrt(sum/buf.length);
+        setVol(Math.min(1,rms/100));
+        // VAD: detect speech end
+        if(rms>18){speechDetectedRef.current=true;silenceStartRef.current=0;}
+        else if(speechDetectedRef.current){
           if(!silenceStartRef.current)silenceStartRef.current=Date.now();
-          else if(Date.now()-silenceStartRef.current>SILENCE_DURATION){
-            // Speech ended — stop recording immediately for fast response
-            if(!deliveredRef.current){
-              try{recorderRef.current?.stop();}catch(e){}
-              // Don't deliver yet — let onstop handler process the audio
-            }
-            return; // stop polling
+          else if(Date.now()-silenceStartRef.current>1200){
+            // Speech ended — stop recording early for fast response
+            try{recorderRef.current?.stop();}catch(e){}
+            return;
           }
         }
-
-        animFrameRef.current=requestAnimationFrame(poll);
+        rafRef.current=requestAnimationFrame(poll);
       };
-      animFrameRef.current=requestAnimationFrame(poll);
-    }catch(e){
-      console.warn("Volume monitor failed:",e.message);
-    }
-  },[deliver]);
+      rafRef.current=requestAnimationFrame(poll);
+    }catch(e){}
+  },[]);
 
-  // ═══ START WEB SPEECH API (parallel/fallback engine) ═══
-  const startWebSpeech=useCallback((expected)=>{
-    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(!SR)return;
+  // ═══ PATH A: MediaRecorder → Deepgram/Google Cloud ═══
+  const startCloudPath=useCallback(async(cb,expected)=>{
+    let stream;
     try{
-      const r=new SR();
-      r.continuous=false;
-      r.interimResults=true;
-      r.lang="en-US";
-      r.maxAlternatives=5;
-      webRecRef.current=r;
-      webBestRef.current="";
-      webAltsRef.current=[];
-
-      r.onresult=(e)=>{
-        const newAlts=[];
-        let final="",interim="";
-        for(let i=0;i<e.results.length;i++){
-          for(let a=0;a<e.results[i].length;a++){
-            const t=e.results[i][a].transcript.toLowerCase().trim();
-            if(t&&!newAlts.includes(t))newAlts.push(t);
-          }
-          if(e.results[i].isFinal)final+=e.results[i][0].transcript;
-          else interim+=e.results[i][0].transcript;
-        }
-        const current=(final||interim).toLowerCase().trim();
-        if(current){
-          webBestRef.current=current;
-          webAltsRef.current=[...new Set([...webAltsRef.current,...newAlts])];
-          // Update live transcript if cloud hasn't delivered yet
-          if(!deliveredRef.current)setTxt(current);
-        }
-      };
-      r.onerror=()=>{};
-      r.onend=()=>{};
-
-      r.start();
+      stream=await navigator.mediaDevices.getUserMedia({
+        audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true,channelCount:1}
+      });
+      streamRef.current=stream;
     }catch(e){
-      console.warn("Web Speech parallel start failed:",e.message);
+      setErr("Microphone blocked — allow mic access in browser settings");
+      setOn(false);setPhase("idle");return;
     }
-  },[]);
 
-  const warmUp=useCallback(()=>{
-    if(permRef.current)return;
-    if(navigator.mediaDevices?.getUserMedia){
-      navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{
-        s.getTracks().forEach(t=>t.stop());permRef.current=true;
-      }).catch(()=>{});
+    beep(1200,120,"sine");
+    await new Promise(r=>setTimeout(r,180));
+
+    startVolume(stream);
+
+    const mime=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?"audio/webm;codecs=opus"
+      :MediaRecorder.isTypeSupported("audio/webm")?"audio/webm"
+      :MediaRecorder.isTypeSupported("audio/mp4")?"audio/mp4":"";
+
+    if(!mime){
+      // Can\'t record — fall back to Web Speech
+      cleanup();
+      startWebPath(cb,expected);
+      return;
     }
-  },[]);
 
-  // ═══ MAIN START ═══
-  const start=useCallback(async(cb,expected)=>{
-    // Clean up any previous session
-    cleanup();
-
-    // Reset all state
-    cbRef.current=cb;
-    expectedRef.current=(expected||"").toLowerCase().trim();
-    deliveredRef.current=false;
-    bestRef.current="";altsRef.current=[];
-    webBestRef.current="";webAltsRef.current=[];
+    const recorder=new MediaRecorder(stream,{mimeType:mime});
+    recorderRef.current=recorder;
     chunksRef.current=[];
-    speechDetectedRef.current=false;
-    silenceStartRef.current=0;
-    setTxt("");setErr("");setVol(0);setPhase("idle");setEngineUsed("none");
 
-    // Wait for any TTS to finish
+    recorder.ondataavailable=(e)=>{if(e.data?.size>0)chunksRef.current.push(e.data);};
+
+    recorder.onstop=async()=>{
+      if(deliveredRef.current)return;
+      setPhase("processing");
+      const blob=new Blob(chunksRef.current,{type:mime});
+
+      if(blob.size<500){deliver("",[]);return;}
+
+      // Send to server proxy → Deepgram Nova-3
+      setEngineUsed("deepgram");
+      const r=await transcribeViaProxy(blob,expectedRef.current);
+      if(r.transcript){deliver(r.transcript,r.alternatives);return;}
+      // Proxy failed — deliver empty
+      deliver("",[]);
+    };
+
+    recorder.start();
+    setEngineUsed("deepgram");
+    setOn(true);setPhase("listening");
+
+    // Countdown from 7
+    let sec=7;setCountdown(7);
+    cdRef.current=setInterval(()=>{
+      sec--;setCountdown(Math.max(0,sec));
+      if(sec<=0)clearInterval(cdRef.current);
+    },1000);
+
+    // Hard stop at 7s
+    hardTimerRef.current=setTimeout(()=>{
+      if(!deliveredRef.current){try{recorder.stop();}catch(e){}}
+    },7000);
+  },[beep,cleanup,deliver,startVolume]);
+
+  // ═══ PATH B: Web Speech API only (no API keys) ═══
+  const startWebPath=useCallback(async(cb,expected)=>{
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if(!SR){setErr("Speech not supported in this browser");return;}
+
+    // Cancel any TTS first
     try{speechSynthesis.cancel();}catch(e){}
     await new Promise(r=>{
       const ck=()=>{if(!speechSynthesis.speaking&&!speechSynthesis.pending)r();else setTimeout(ck,50);};ck();
     });
-    await new Promise(r=>setTimeout(r,120));
+    await new Promise(r=>setTimeout(r,150));
 
-    // ─── Request microphone ───
-    let stream;
-    try{
-      stream=await navigator.mediaDevices.getUserMedia({
-        audio:{
-          echoCancellation:true,
-          noiseSuppression:true,
-          autoGainControl:true, // critical for kids speaking softly
-          channelCount:1,
-          sampleRate:48000
-        }
-      });
-      streamRef.current=stream;
-      permRef.current=true;
-    }catch(e){
-      setErr("Microphone blocked — tap your browser's address bar to allow mic access");
-      setOn(false);setPhase("idle");
-      return;
-    }
-
-    // START BEEP
     beep(1200,120,"sine");
-    await new Promise(r=>setTimeout(r,180));
+    await new Promise(r=>setTimeout(r,200));
 
-    const LISTEN_SECONDS=7; // generous for kids
-    const canUseCloud=!!googleApiKey;
+    const r=new SR();
+    r.continuous=false;
+    r.interimResults=true;
+    r.lang="en-US";
+    r.maxAlternatives=5;
+    webRecRef.current=r;
 
-    // ─── Start real volume monitoring ───
-    startVolumeMonitor(stream);
+    let best="";const alts=[];let hasFinal=false;
 
-    // ─── Start MediaRecorder (for cloud STT) ───
-    let mediaRecorderStarted=false;
-    if(canUseCloud){
-      try{
-        // Pick best supported format
-        const mimeType=MediaRecorder.isTypeSupported("audio/webm;codecs=opus")?"audio/webm;codecs=opus"
-          :MediaRecorder.isTypeSupported("audio/webm")?"audio/webm"
-          :MediaRecorder.isTypeSupported("audio/mp4")?"audio/mp4"
-          :"";
-
-        if(mimeType){
-          const recorder=new MediaRecorder(stream,{mimeType});
-          recorderRef.current=recorder;
-          chunksRef.current=[];
-
-          recorder.ondataavailable=(e)=>{
-            if(e.data&&e.data.size>0)chunksRef.current.push(e.data);
-          };
-
-          recorder.onstop=async()=>{
-            if(deliveredRef.current)return;
-            setPhase("processing");
-
-            // Build audio blob from chunks
-            const blob=new Blob(chunksRef.current,{type:mimeType});
-
-            if(blob.size<500){
-              // Too small — probably no speech
-              const webResult=webBestRef.current;
-              if(webResult){setEngineUsed("web");deliver(webResult,webAltsRef.current);}
-              else deliver("",[]);
-              return;
-            }
-
-            // ─── TIER 1: Deepgram Nova-3 (if API key — best accuracy) ───
-            if(dgKey){
-              setEngineUsed("deepgram");
-              const dgResult=await transcribeWithDeepgram(blob,dgKey,expectedRef.current);
-              if(dgResult.transcript){deliver(dgResult.transcript,dgResult.alternatives);return;}
-              if(dgResult.error)console.warn("Deepgram error:",dgResult.error);
-            }
-
-            // ─── TIER 2: Google Cloud Speech-to-Text (if API key) ───
-            if(canUseCloud){
-              setEngineUsed("cloud");
-              const result=await transcribeWithCloudSTT(blob,googleApiKey,expectedRef.current);
-              if(result.transcript){deliver(result.transcript,result.alternatives);return;}
-              if(result.error)console.warn("Cloud STT error:",result.error);
-            }
-
-            // ─── TIER 3: Whisper AI on-device (if model loaded) ───
-            if(whisper?.isReady){
-              setEngineUsed("whisper");
-              const wResult=await whisper.transcribe(blob);
-              if(wResult.transcript){
-                deliver(wResult.transcript,[wResult.transcript]);
-                return;
-              }
-              if(wResult.error)console.warn("Whisper error:",wResult.error);
-            }
-
-            // ─── TIER 4: Web Speech API fallback ───
-            const webResult=webBestRef.current;
-            if(webResult){
-              setEngineUsed("web");
-              deliver(webResult,webAltsRef.current);
-            }else{
-              deliver("",[]);
-            }
-          };
-
-          recorder.start(); // collect data continuously
-          mediaRecorderStarted=true;
+    r.onresult=(e)=>{
+      let final="",interim="";
+      for(let i=0;i<e.results.length;i++){
+        for(let a=0;a<e.results[i].length;a++){
+          const t=e.results[i][a].transcript.toLowerCase().trim();
+          if(t&&!alts.includes(t))alts.push(t);
         }
-      }catch(e){
-        console.warn("MediaRecorder failed:",e.message);
+        if(e.results[i].isFinal){final+=e.results[i][0].transcript;hasFinal=true;}
+        else interim+=e.results[i][0].transcript;
+      }
+      const current=(final||interim).toLowerCase().trim();
+      if(current){best=current;setTxt(current);}
+      // Deliver immediately on final result
+      if(hasFinal&&best&&!deliveredRef.current){
+        clearInterval(cdRef.current);clearTimeout(hardTimerRef.current);
+        deliver(best,alts);
+      }
+    };
+
+    r.onspeechstart=()=>{setVol(0.6);};
+    r.onspeechend=()=>{setVol(0.15);};
+    r.onaudiostart=()=>{setVol(0.25);};
+
+    r.onend=()=>{
+      if(!deliveredRef.current){
+        // Recognition ended — deliver what we have
+        if(best)deliver(best,alts);
+        else{
+          // No result — wait briefly then deliver empty
+          setTimeout(()=>{if(!deliveredRef.current)deliver("",[]);},500);
+        }
+      }
+    };
+
+    r.onerror=(e)=>{
+      if(e.error==="not-allowed"){
+        setErr("Microphone blocked — allow mic in browser settings");
+        deliveredRef.current=true;setOn(false);setPhase("idle");return;
+      }
+    };
+
+    try{r.start();}catch(e){
+      // Try getting mic permission first
+      try{
+        const s=await navigator.mediaDevices.getUserMedia({audio:true});
+        s.getTracks().forEach(t=>t.stop());
+        r.start();
+      }catch(e2){
+        setErr("Microphone denied");setOn(false);setPhase("idle");return;
       }
     }
 
-    // ─── Start Web Speech API in parallel ───
-    // Even when cloud is primary, web speech runs alongside for:
-    // 1. Live transcript preview while recording
-    // 2. Fallback if cloud fails
-    if(hasWebSpeech){
-      // Small delay so mic is warm
-      setTimeout(()=>{
-        if(!deliveredRef.current)startWebSpeech(expected);
-      },200);
-    }
+    setEngineUsed("web");
+    setOn(true);setPhase("listening");
 
-    // If NO cloud and NO MediaRecorder, use pure Web Speech as primary
-    if(!mediaRecorderStarted&&!canUseCloud){
-      setEngineUsed("web");
-      // Override: web speech result IS the final result
-      // Wait for timeout, then deliver web speech result
-    }
-
-    setOn(true);setCountdown(LISTEN_SECONDS);setPhase("listening");
-
-    // ─── Visual countdown ───
-    let sec=LISTEN_SECONDS;
+    // Countdown from 7
+    let sec=7;setCountdown(7);
     cdRef.current=setInterval(()=>{
-      sec--;
-      setCountdown(Math.max(0,sec));
+      sec--;setCountdown(Math.max(0,sec));
       if(sec<=0)clearInterval(cdRef.current);
     },1000);
 
-    // ─── HARD TIMEOUT — max listen duration ───
-    maxTimerRef.current=setTimeout(()=>{
-      if(deliveredRef.current)return;
-
-      if(mediaRecorderStarted){
-        // Stop MediaRecorder → triggers onstop → processes audio
-        try{recorderRef.current?.stop();}catch(e){}
-      }else{
-        // Pure web speech mode — deliver what we have
-        setPhase("processing");
-        // Give web speech a final moment
-        setTimeout(()=>{
-          if(!deliveredRef.current){
-            try{webRecRef.current?.stop();}catch(e){}
-            setTimeout(()=>{
-              if(!deliveredRef.current){
-                const webResult=webBestRef.current;
-                deliver(webResult||"",webAltsRef.current);
-              }
-            },800);
-          }
-        },500);
+    // Hard stop at 8s (give extra 1s for Web Speech to process)
+    hardTimerRef.current=setTimeout(()=>{
+      if(!deliveredRef.current){
+        try{r.stop();}catch(e){}
+        setTimeout(()=>{if(!deliveredRef.current)deliver(best||"",[]);},1000);
       }
-    },LISTEN_SECONDS*1000);
+    },8000);
+  },[beep,deliver]);
 
-  },[googleApiKey,whisper,dgKey,beep,cleanup,deliver,startVolumeMonitor,startWebSpeech,hasWebSpeech]);
-
-  // ═══ STOP (manual) ═══
-  const stop=useCallback(()=>{
+  // ═══ MAIN START — picks the right engine ═══
+  const start=useCallback(async(cb,expected)=>{
     cleanup();
-    deliveredRef.current=true; // prevent any pending deliveries
+    cbRef.current=cb;
+    expectedRef.current=(expected||"").toLowerCase().trim();
+    deliveredRef.current=false;
+    speechDetectedRef.current=false;
+    silenceStartRef.current=0;
+    chunksRef.current=[];
+    setTxt("");setErr("");setVol(0);setPhase("idle");setEngineUsed("none");
+
+    // Cancel any TTS
+    try{speechSynthesis.cancel();}catch(e){}
+    await new Promise(r=>{
+      const ck=()=>{if(!speechSynthesis.speaking&&!speechSynthesis.pending)r();else setTimeout(ck,50);};ck();
+    });
+    await new Promise(r=>setTimeout(r,100));
+
+    // Always try cloud path (proxy) — fall back to web speech only if MediaRecorder not available
+    if(navigator.mediaDevices?.getUserMedia){
+      startCloudPath(cb,expected);
+    }else{
+      startWebPath(cb,expected);
+    }
+  },[cleanup,startCloudPath,startWebPath]);
+
+  const stop=useCallback(()=>{
+    cleanup();deliveredRef.current=true;
     setOn(false);setCountdown(0);setVol(0);setPhase("idle");
   },[cleanup]);
 
-  // ═══ QUICK LISTEN (used for misc features) ═══
+  const warmUp=useCallback(()=>{
+    if(navigator.mediaDevices?.getUserMedia){
+      navigator.mediaDevices.getUserMedia({audio:true}).then(s=>{
+        s.getTracks().forEach(t=>t.stop());
+      }).catch(()=>{});
+    }
+  },[]);
+
   const quickListen=useCallback((ms=5000)=>{
     return new Promise((res)=>{
       const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -2618,7 +2323,7 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,count
     {processing&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px",animation:"fadeIn 0.3s ease-out"}}>{engineUsed==="cloud"?"☁️ Cloud AI analyzing your voice...":"🧠 Checking what you said..."}</p>}
     {processing&&transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
     {/* Engine indicator — small subtle badge */}
-    {(active||processing)&&engineUsed&&engineUsed!=="none"&&<div style={{display:"flex",justifyContent:"center",margin:"4px 0"}}><span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:engineUsed==="deepgram"?"#E8F5E9":engineUsed==="cloud"?"#E3F2FD":engineUsed==="whisper"?"#F3E5F5":"#FFF3E0",color:engineUsed==="deepgram"?"#2E7D32":engineUsed==="cloud"?"#1565C0":engineUsed==="whisper"?"#7B1FA2":"#E65100"}}>{engineUsed==="deepgram"?"⚡ Deepgram Nova-3":engineUsed==="cloud"?"☁️ Google Cloud STT":engineUsed==="whisper"?"🧠 Whisper AI (on-device)":"📱 Device Speech"}</span></div>}
+    {(active||processing)&&engineUsed&&engineUsed!=="none"&&<div style={{display:"flex",justifyContent:"center",margin:"4px 0"}}><span style={{fontSize:9,fontWeight:700,padding:"2px 8px",borderRadius:8,background:engineUsed==="deepgram"?"#E8F5E9":engineUsed==="cloud"?"#E3F2FD":"#FFF3E0",color:engineUsed==="deepgram"?"#2E7D32":engineUsed==="cloud"?"#1565C0":"#E65100"}}>{engineUsed==="deepgram"?"⚡ Deepgram Nova-3":engineUsed==="cloud"?"☁️ Google Cloud STT":"📱 Device Speech"}</span></div>}
     {/* Idle state */}
     {idle&&!error&&!transcript&&<p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>Tap the microphone, then say <strong>"{expected}"</strong></p>}
     {/* Error display */}
@@ -2688,7 +2393,7 @@ const PH_STEPS=[{id:"saying_word",icon:"🔊",label:"Word"},{id:"spelling",icon:
 // 🎮 MAIN APP
 // ═══════════════════════════════════════════════════════════════
 export default function App(){
-  const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey,dgKey,saveDgKey}=useSpeech();const whisper=useWhisper();const rec=useRec(ttsKey,whisper,dgKey);
+  const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey}=useSpeech();const rec=useRec();
   const[scr,setScr]=useState("splash");
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
   const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn");
@@ -3652,8 +3357,7 @@ export default function App(){
   };
   const retryNum=async()=>{showTeacher("happy","Try again! You can do it! 💪");
     setSpRes(null);setSpAcc(null);
-    setNStep("countdown");
-    await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);
+    await speak(`One more time! Tap the microphone!`,{rate:0.75,pitch:1.0});await wait(200);
     stop();setNStep("listening");startNudge();
   };
 
@@ -3711,8 +3415,7 @@ export default function App(){
   };
   const retryPh=async()=>{showTeacher("happy","One more try! I believe in you! 🌈");
     setPhRes(null);setPhAcc(null);
-    setPhStep("countdown");
-    await speak(`One more time!`,{rate:0.75,pitch:1.0});await wait(200);
+    await speak(`One more time! Tap the microphone!`,{rate:0.75,pitch:1.0});await wait(200);
     stop();setPhStep("listening");startNudge();
   };
 
@@ -6213,37 +5916,13 @@ export default function App(){
 {/* Voice Settings */}
 <div style={{marginTop:16,padding:16,background:"#fff",borderRadius:20,border:"none"}}>
 <div style={{fontSize:13,fontWeight:800,color:"#6C5CE7",marginBottom:8}}>🔊 Voice Settings</div>
-{/* Whisper AI Status */}
-<div style={{padding:"10px 14px",background:whisper.status==="ready"?"#F3E8FD":whisper.status==="loading"?"#FFF8E1":"#FFF3E0",borderRadius:14,border:`2px solid ${whisper.status==="ready"?"#CE93D8":whisper.status==="loading"?"#FFE082":"#FFCC80"}`,marginBottom:12}}>
-<div style={{display:"flex",alignItems:"center",gap:8}}>
-<span style={{fontSize:18}}>{whisper.status==="ready"?"🧠":whisper.status==="loading"?"⏳":"⚠️"}</span>
-<div style={{flex:1}}>
-<div style={{fontSize:12,fontWeight:800,color:whisper.status==="ready"?"#7B1FA2":whisper.status==="loading"?"#F57F17":"#E65100"}}>{whisper.status==="ready"?"Whisper AI Ready":whisper.status==="loading"?"Loading Whisper AI...":"Whisper AI Unavailable"}</div>
-<div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>{whisper.status==="ready"?"OpenAI Whisper runs on-device — Alexa-like accuracy, no API key needed!":whisper.status==="loading"?`${whisper.loadMsg} (first time only — cached forever after)`:"Your browser may not support AI workers. Speech will use fallback engine."}</div>
-</div>
-</div>
-{whisper.status==="loading"&&<div style={{marginTop:8,height:6,borderRadius:3,background:"#FFF3E0",overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:"linear-gradient(90deg,#7B1FA2,#CE93D8)",width:`${whisper.progress}%`,transition:"width 0.3s ease"}}/></div>}
-</div>
-<div style={{fontSize:13,fontWeight:800,color:"#6C5CE7",marginBottom:8}}>🔊 Voice Settings</div>
-<p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{ttsKey?"Using Google Cloud for voice + premium speech recognition. Whisper AI also active as backup!":"Whisper AI handles speech recognition on-device. Optionally add a Google Cloud API key for premium voice + even better recognition."}</p>
+<p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{ttsKey?"Using Google Cloud voice (sweet Ollie voice on all devices!)":"Using your device's built-in voice. Add a Google Cloud API key for a consistent sweet voice."}</p>
 <input value={ttsKey} onChange={e=>saveTtsKey(e.target.value.trim())} placeholder="Paste Google Cloud API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E0D8",borderRadius:12,fontSize:12,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
 <div style={{display:"flex",gap:8,marginTop:8}}>
 <button onClick={()=>{speak("Hi! I'm Ollie! This is how I sound!",{rate:0.92,pitch:1.05});}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:ttsKey?"linear-gradient(135deg,#FF8C42,#FFB066)":"#E8E8E8",color:ttsKey?"#fff":"#666",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Test Voice</button>
 {ttsKey&&<button onClick={()=>saveTtsKey("")} style={{padding:"10px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#fff",color:"#E23744",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Remove</button>}
 </div>
 {ttsKey&&<p style={{fontSize:10,color:"#22C55E",fontWeight:700,marginTop:6}}>✅ Cloud voice + speech recognition active</p>}
-</div>
-{/* Deepgram Speech Recognition */}
-<div style={{marginTop:12,padding:16,background:"#fff",borderRadius:20,border:dgKey?"2px solid #66BB6A":"none"}}>
-<div style={{fontSize:13,fontWeight:800,color:"#2E7D32",marginBottom:8}}>⚡ Deepgram Speech Recognition</div>
-<p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{dgKey?"Deepgram Nova-3 active — best accuracy for children's voices! ($0.0077/min)":"Add a Deepgram API key for Alexa-level speech recognition. Sign up free at deepgram.com — you get $200 free credits!"}</p>
-<input value={dgKey} onChange={e=>saveDgKey(e.target.value.trim())} placeholder="Paste Deepgram API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E0D8",borderRadius:12,fontSize:12,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
-<div style={{display:"flex",gap:8,marginTop:8}}>
-<a href="https://deepgram.com" target="_blank" rel="noopener" style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#2E7D32,#66BB6A)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",textDecoration:"none",textAlign:"center"}}>🌐 Get Free Key</a>
-{dgKey&&<button onClick={()=>saveDgKey("")} style={{padding:"10px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#fff",color:"#E23744",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Remove</button>}
-</div>
-{dgKey&&<p style={{fontSize:10,color:"#2E7D32",fontWeight:700,marginTop:6}}>✅ Deepgram Nova-3 active — top priority engine</p>}
-{!dgKey&&<div style={{marginTop:8,padding:"8px 12px",background:"#FFF8E1",borderRadius:10,border:"1.5px solid #FFE082"}}><p style={{fontSize:10,fontWeight:700,color:"#F57F17",margin:0}}>💡 Recommended: Deepgram gives $200 free credits on signup — enough for ~430 hours of speech recognition. Best option for kids' voices.</p></div>}
 </div>
 <button onClick={()=>{if(window.confirm("Are you sure? This will delete all your progress and points!")){save(null);setScr("onboard");setObSt(0);}}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#FEE2E2",color:"#DC2626",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:8}}>🗑️ Reset</button></div><div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style></div>;
 
