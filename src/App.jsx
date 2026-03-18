@@ -3416,14 +3416,14 @@ export default function App(){
       return;
     }
 
-    // ═══ SPEAKING MODE: Say number → mic → score ═══
+    // ═══ SPEAKING MODE: Show number → App says it → Big mic appears → Kid taps & speaks → Score ═══
     if(activeMode==="speaking"){
       setNStep("saying_number");glow("num-display");
-      await speak(`What number is this? ${num}!`,{rate:0.8,pitch:1.0});
-      await wait(400);if(!pRef.current)return;
-      await speak(`Your turn ${kidName}! Say, ${w}!`,{rate:0.85,pitch:1.0});
-      await wait(400);if(!pRef.current)return;
-      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handleNumResult,NW[num]);
+      await speak(`${w}! This is the number ${num}.`,{rate:0.7,pitch:1.0});
+      await wait(800);if(!pRef.current)return;
+      await speak(`Now you say it! Tap the microphone and say, ${w}!`,{rate:0.85,pitch:1.0});
+      await wait(300);if(!pRef.current)return;
+      stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");
       return;
     }
 
@@ -3521,14 +3521,16 @@ export default function App(){
       return;
     }
 
-    // ═══ SPEAKING MODE: Say word → mic → score ═══
+    // ═══ SPEAKING MODE: Show word + spelling → App says it → Big mic appears → Kid taps & speaks → Score ═══
     if(activeMode==="speaking"){
       setPhStep("saying_word");glow("ph-word");
-      await speak(`Say this word: ${wd.word}!`,{rate:0.8,pitch:1.0});
-      await wait(400);if(!pRef.current)return;
-      await speak(`Your turn ${kidName}! Say, ${wd.word}!`,{rate:0.85,pitch:1.0});
-      await wait(400);if(!pRef.current)return;
-      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");rec.start(handlePhResult,wd.word);
+      await speak(`${wd.word}!`,{rate:0.7,pitch:1.0});
+      await wait(800);if(!pRef.current)return;
+      await speak(`Now you say it! Tap the microphone and say, ${wd.word}!`,{rate:0.85,pitch:1.0});
+      await wait(300);if(!pRef.current)return;
+      stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");
+      // Do NOT auto-call rec.start — mobile browsers need a user tap gesture
+      // The ListeningBox mic button handles it via tapMicPh
       return;
     }
 
@@ -3619,7 +3621,36 @@ export default function App(){
   };
   const playShape=async(sh)=>{
     if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
-    pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    retryCountRef.current=0;pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+
+    // ═══ LISTENING MODE ═══
+    if(activeMode==="listening"){
+      setShStep("saying_word");glow("shape-display");
+      await speak(`${sh.name}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`This shape is called ${sh.name}. ${sh.desc}`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+      await speak(sh.sentence,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+      await speak(`Repeat after me... ${sh.name}`,{rate:0.55,pitch:1.0});await wait(800);if(!pRef.current)return;
+      if(!isDone("shapes",sh.name))awardPoints(3,"shapes",sh.name);
+      pRef.current=false;setShStep("idle");return;
+    }
+    // ═══ SPEAKING MODE ═══
+    if(activeMode==="speaking"){
+      setShStep("saying_word");glow("shape-display");
+      await speak(`What shape is this? ${sh.emoji}`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Say ${sh.name}!`,{rate:0.85,pitch:1.0});await wait(400);if(!pRef.current)return;
+      stop();setShStep("listening");pRef.current=false;rec.start(handleShResult,sh.name);return;
+    }
+    // ═══ READING MODE ═══
+    if(activeMode==="reading"){
+      setShStep("saying_word");glow("shape-display");
+      await speak(`Spell: ${sh.name}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      setShStep("spelling");await spellWord(sh.name);await wait(400);if(!pRef.current)return;
+      if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);boom();
+      await speak(`You spelled ${sh.name}!`,{rate:0.85,pitch:1.0});
+      pRef.current=false;setShStep("idle");return;
+    }
+
+    // ═══ DEFAULT / PHONICS MODE ═══
     setShStep("saying_word");glow("shape-display");
     await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setShStep("spelling");
@@ -3661,7 +3692,36 @@ export default function App(){
   };
   const playColor=async(co)=>{
     if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
-    pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+    retryCountRef.current=0;pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
+
+    // ═══ LISTENING MODE ═══
+    if(activeMode==="listening"){
+      setCoStep("saying_word");glow("color-display");
+      await speak(`${co.name}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`This color is ${co.name}. ${co.things.join(", ")} are ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+      await speak(co.sentence,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+      await speak(`Repeat after me... ${co.name}`,{rate:0.55,pitch:1.0});await wait(800);if(!pRef.current)return;
+      if(!isDone("colors",co.name))awardPoints(3,"colors",co.name);
+      pRef.current=false;setCoStep("idle");return;
+    }
+    // ═══ SPEAKING MODE ═══
+    if(activeMode==="speaking"){
+      setCoStep("saying_word");glow("color-display");
+      await speak(`What color is ${co.emoji}?`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Say ${co.name}!`,{rate:0.85,pitch:1.0});await wait(400);if(!pRef.current)return;
+      stop();setCoStep("listening");pRef.current=false;rec.start(handleCoResult,co.name);return;
+    }
+    // ═══ READING MODE ═══
+    if(activeMode==="reading"){
+      setCoStep("saying_word");glow("color-display");
+      await speak(`Spell: ${co.name}!`,{rate:0.8,pitch:1.0});await wait(400);if(!pRef.current)return;
+      setCoStep("spelling");await spellWord(co.name);await wait(400);if(!pRef.current)return;
+      if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);boom();
+      await speak(`You spelled ${co.name}!`,{rate:0.85,pitch:1.0});
+      pRef.current=false;setCoStep("idle");return;
+    }
+
+    // ═══ DEFAULT / PHONICS MODE ═══
     setCoStep("saying_word");glow("color-display");
     await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
     setCoStep("spelling");
@@ -3747,36 +3807,65 @@ export default function App(){
   // ═══ ALPHABET FUNCTIONS ═══
   const alphaRef=useRef("");
   const playLetter=async(letter)=>{
-    // STOP everything from previous letter
-    stop(); // cancel all TTS
-    pRef.current=true; // mark as playing
-    alphaRef.current=letter; // track which letter is active
-    setSelLetter(letter);
+    stop();pRef.current=true;alphaRef.current=letter;setSelLetter(letter);
     const d=ALPHA_DATA[letter];if(!d)return;
-    await wait(200); // let cancel settle
-    // Check if still on this letter after each step
+    await wait(200);
     const ok=()=>alphaRef.current===letter&&pRef.current;
-    glow("letter-big");
-    await speak(`${letter}!`,{rate:0.85,pitch:1.0});
-    if(!ok())return;
-    await wait(200);
-    if(!ok())return;
-    await speak(`${letter} says`,{rate:0.85,pitch:1.0});
-    await wait(200);
-    glow("letter-sound");
-    await speak(`${d.ph}`,{rate:0.5,pitch:1.0});
-    if(!ok())return;
-    await wait(300);
-    for(let ei=0;ei<d.examples.length;ei++){
-      const ex=d.examples[ei];
-      if(!ok())return;
-      glow("letter-ex-"+ei);
-      await speak(`${letter} for ${ex.w}!`,{rate:0.8,pitch:1.0});
-      if(!ok())return;
-      await wait(500);
+
+    // ═══ LISTENING MODE: hear letter + sound + examples → repeat ═══
+    if(activeMode==="listening"){
+      glow("letter-big");
+      await speak(`${letter}!`,{rate:0.8,pitch:1.0});if(!ok())return;await wait(300);
+      await speak(`${letter} says ${d.ph}`,{rate:0.7,pitch:1.0});if(!ok())return;await wait(300);
+      const ex=d.examples[0];
+      await speak(`${letter} for ${ex.w}!`,{rate:0.75,pitch:1.0});if(!ok())return;await wait(400);
+      await speak(`Repeat after me... ${letter}`,{rate:0.55,pitch:1.0});if(!ok())return;await wait(600);
+      if(!isDone("alphabet",letter))awardPoints(3,"alphabet",letter);
+      return;
     }
-    if(!ok())return;
-    await wait(200);
+    // ═══ SPEAKING MODE: hear letter → say it back → score ═══
+    if(activeMode==="speaking"){
+      glow("letter-big");
+      await speak(`Say this letter: ${letter}!`,{rate:0.8,pitch:1.0});if(!ok())return;await wait(400);
+      // We reuse the shape mic handler for simplicity — score the letter name
+      stop();pRef.current=false;
+      setShRes(null);setShAcc(null);setShStep("listening");
+      const handleLetterMic=(result,alternatives)=>{
+        const acc=calcAcc(letter.toLowerCase(),result,alternatives);
+        const s=getStars(acc);const p=getStarPts(s);
+        if(p>0){awardPoints(p,"alphabet",letter);boom();}else{flashWrong();}
+        speak(s>=3?`Perfect! That's ${letter}!`:`Nice try! The letter is ${letter}.`,{rate:0.85,pitch:1.0});
+        setShStep("idle");
+      };
+      rec.start(handleLetterMic,letter.toLowerCase());
+      return;
+    }
+    // ═══ READING MODE: see letter → spell it (for letter combos/words) ═══
+    if(activeMode==="reading"){
+      glow("letter-big");
+      await speak(`This is the letter ${letter}!`,{rate:0.8,pitch:1.0});if(!ok())return;await wait(300);
+      await speak(`${letter} says ${d.ph}`,{rate:0.7,pitch:1.0});if(!ok())return;await wait(300);
+      for(let ei=0;ei<Math.min(d.examples.length,3);ei++){
+        const ex=d.examples[ei];if(!ok())return;
+        glow("letter-ex-"+ei);
+        await speak(`${letter} for ${ex.w}!`,{rate:0.8,pitch:1.0});if(!ok())return;await wait(400);
+      }
+      if(!isDone("alphabet",letter))awardPoints(3,"alphabet",letter);
+      return;
+    }
+
+    // ═══ DEFAULT / PHONICS MODE: full comprehensive ═══
+    glow("letter-big");
+    await speak(`${letter}!`,{rate:0.85,pitch:1.0});if(!ok())return;await wait(200);
+    await speak(`${letter} says`,{rate:0.85,pitch:1.0});await wait(200);
+    glow("letter-sound");
+    await speak(`${d.ph}`,{rate:0.5,pitch:1.0});if(!ok())return;await wait(300);
+    for(let ei=0;ei<d.examples.length;ei++){
+      const ex=d.examples[ei];if(!ok())return;
+      glow("letter-ex-"+ei);
+      await speak(`${letter} for ${ex.w}!`,{rate:0.8,pitch:1.0});if(!ok())return;await wait(500);
+    }
+    if(!ok())return;await wait(200);
     await speak(`And that's the letter ${letter}!`,{rate:0.85,pitch:1.0});
   };
   const closeLetter=()=>{stop();pRef.current=false;alphaRef.current="";setSelLetter(null);};
@@ -5077,20 +5166,20 @@ export default function App(){
       </div>
 
       {/* Phonemes */}
-      {phs&&(nStep==="saying_phonics"||nStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8,animation:"slideUp 0.4s ease-out"}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{phs.map((ph,i)=>{const d=gPh(ph);const act=aPhI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?color:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${color}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
+      {phs&&!activeMode&&(nStep==="saying_phonics"||nStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8,animation:"slideUp 0.4s ease-out"}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{phs.map((ph,i)=>{const d=gPh(ph);const act=aPhI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?color:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${color}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
 
       {/* Play controls */}
       <div style={{marginTop:12}}>
         {nStep==="idle"&&<>
           <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:8}}>
-            {/* Speech Toggle */}
-            <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}>
+            {/* Speech Toggle — hidden in activeMode */}
+            {!activeMode&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}>
               <span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span>
               <button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}>
                 <div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
               </button>
               <span style={{fontSize:11,color:speakMode?"#22C55E":"#8E8CA3",fontWeight:600}}>{speakMode?"Speak ON":"Speak OFF"}</span>
-            </div>
+            </div>}
             <button onClick={()=>playNum(selNum)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${color},${color}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button>
           </div>
         </>}
@@ -5675,6 +5764,21 @@ export default function App(){
       s.id==="saying_word"||(s.id==="spelling"&&phModes.spelling)||(s.id==="saying_sentence"&&phModes.sentence)||(s.id==="saying_phonics"&&phModes.phonics)||(s.id==="countdown"&&phModes.speak)||(s.id==="result"&&phModes.speak)
     )}/>}
     <div style={{padding:"6px 10px"}}>
+      {/* ═══ WORD DISPLAY — Mode-aware ═══ */}
+      {activeMode==="speaking"||activeMode==="listening"?(
+        <div style={{textAlign:"center",padding:"20px 16px",background:"linear-gradient(135deg,#FFFBF5,#FFF5EB)",borderRadius:20,margin:"0 4px",...glowStyle("ph-word")}}>
+          <div style={{fontSize:72,animation:"scene_floatBob 2s ease-in-out infinite",filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.15))"}}>{phW.img}</div>
+          <div style={{fontSize:42,fontWeight:900,fontFamily:"var(--font)",color:cc,letterSpacing:4,marginTop:8,lineHeight:1}}>{phW.word.toUpperCase()}</div>
+          <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:10,flexWrap:"wrap"}}>
+            {phW.word.toUpperCase().split("").map((l,i)=>
+              <span key={i} style={{fontSize:20,fontWeight:800,fontFamily:"var(--font)",padding:"4px 10px",borderRadius:10,background:"#fff",color:cc,border:`2px solid ${cc}33`,animation:`gridPop 0.3s ease ${i*0.05}s both`}}>{l}</span>
+            )}
+          </div>
+          {phStep==="saying_word"&&<div style={{marginTop:12,padding:"8px 14px",background:"rgba(108,92,231,0.1)",borderRadius:12,animation:"pulse 1.5s ease-in-out infinite"}}><span style={{fontSize:14,fontWeight:800,color:"#6C5CE7"}}>🔊 Listen carefully...</span></div>}
+          {phStep==="saying_sentence"&&<div style={{marginTop:12,padding:"10px 14px",background:"#fff",borderRadius:14,border:"2px solid #FFE082",animation:"slideUp 0.3s"}}><span style={{fontSize:14,fontWeight:700,color:"#6C5CE7"}}>💬 {phW.sentence}</span></div>}
+        </div>
+      ):(
+        <div>
       {/* Animated Scene for phonics word */}
       {(()=>{
         const catBg={animals:"linear-gradient(180deg,#87CEEB,#90EE90,#228B22)",food:"linear-gradient(180deg,#FFECD2,#FCB69F,#FF9A9E)",nature:"linear-gradient(180deg,#87CEEB,#B0E0E6,#98FB98)",things:"linear-gradient(180deg,#FFF5EB,#C7D2FE,#A5B4FC)",colors:"linear-gradient(180deg,#FF9A9E,#FECFEF,#FBC2EB)"};
@@ -5682,23 +5786,30 @@ export default function App(){
         const bg=catBg[phCat]||catBg.things;
         const extras=catEmojis[phCat]||catEmojis.things;
         return <div style={{position:"relative",width:"100%",height:120,borderRadius:16,overflow:"hidden",background:bg,boxShadow:"inset 0 0 40px rgba(0,0,0,0.1)",...glowStyle("ph-word")}}>
-          {/* Main word emoji - big, bouncing */}
           <div style={{position:"absolute",left:"50%",top:"40%",transform:"translate(-50%,-50%)",fontSize:56,zIndex:3,animation:"scene_floatBob 2s ease-in-out infinite",filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.2))"}}>{phW.img}</div>
-          {/* Category ambient elements */}
           {extras.map((e,i)=><div key={i} style={{position:"absolute",left:`${15+i*18}%`,top:`${10+Math.sin(i)*20+15}%`,fontSize:20+Math.random()*12,zIndex:1,opacity:0.6,animation:`scene_${["floatBob","sway","twinkle","sparkle","cloudDrift"][i%5]} ${2+i*0.5}s ease-in-out ${i*0.3}s infinite`}}>{e}</div>)}
-          {/* Word label overlay */}
           <div style={{position:"absolute",bottom:0,left:0,right:0,padding:"24px 16px 12px",background:"linear-gradient(transparent,rgba(0,0,0,0.5))",zIndex:10,textAlign:"center"}}>
             <h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",letterSpacing:3,margin:0,textShadow:"0 2px 8px rgba(0,0,0,0.3)"}}>{phW.word.toUpperCase()}{phStep==="saying_word"&&<span style={{animation:"pulse 0.5s infinite",fontSize:20,marginLeft:8}}>🔊</span>}</h2>
           </div>
-          {/* Sentence overlay */}
           {phStep==="saying_sentence"&&<div style={{position:"absolute",top:8,left:8,right:8,padding:"8px 14px",background:"#fff",borderRadius:14,zIndex:11,animation:"slideUp 0.3s ease-out",...glowStyle("ph-sentence")}}><span style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>💬 {phW.sentence}</span></div>}
         </div>;
       })()}
-      {/* Phoneme chips */}
-      <div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{phW.ph.map((ph,i)=>{const d=gPh(ph);const act=phAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:46,background:act?cc:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${cc}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div>
+        </div>
+      )}
+      {/* Phoneme chips — hidden in speaking/listening mode */}
+      {!activeMode&&<div style={{marginTop:12,display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>{phW.ph.map((ph,i)=>{const d=gPh(ph);const act=phAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:46,background:act?cc:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",boxShadow:act?`0 8px 24px ${cc}55`:"0 2px 8px rgba(0,0,0,0.04)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div>}
       <div style={{marginTop:14}}>
         {phStep==="idle"&&<>
-          <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
+          {activeMode==="speaking"?<div style={{display:"flex",gap:8}}>
+            <button onClick={()=>playPh(phW)} style={{flex:1,padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Hear & Speak Again</button>
+            <button onClick={()=>{const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),300);}} style={{padding:"14px 20px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next →</button>
+          </div>:activeMode==="listening"?<div style={{display:"flex",gap:8}}>
+            <button onClick={()=>playPh(phW)} style={{flex:1,padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Listen Again</button>
+            <button onClick={()=>{const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),300);}} style={{padding:"14px 20px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#54A0FF,#74B9FF)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next →</button>
+          </div>:activeMode==="reading"?<div style={{display:"flex",gap:8}}>
+            <button onClick={()=>playPh(phW)} style={{flex:1,padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>📖 Spell Again</button>
+            <button onClick={()=>{const ws=WCATS[phCat]?.words||[];const idx=ws.findIndex(x=>x.word===phW?.word);const next=ws[(idx+1)%ws.length];setPhW(next);setPhStep("idle");setTimeout(()=>playPh(next),300);}} style={{padding:"14px 20px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next →</button>
+          </div>:<div style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
             <div style={{display:"flex",gap:4,flex:1,flexWrap:"wrap"}}>
               {phModes.spelling&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔤 Spelling</span>}
               {phModes.phonics&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🔡 Sounds</span>}
@@ -5706,9 +5817,9 @@ export default function App(){
               {phModes.speak&&<span style={{fontSize:10,fontWeight:700,background:"#FFF5EB",color:"#16A34A",padding:"4px 8px",borderRadius:8}}>🎤 Speak</span>}
             </div>
             <button onClick={()=>playPh(phW)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${cc},${cc}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button>
-          </div>
+          </div>}
         </>}
-        {phStep==="saying_word"&&<Mascot mood="speaking" msg={`Listen! "${phW.word.toUpperCase()}" 🔊`}/>}
+        {phStep==="saying_word"&&<Mascot mood="speaking" msg={activeMode==="speaking"?`Listen to "${phW.word.toUpperCase()}" then say it! 🎤`:activeMode==="listening"?`Listen carefully to "${phW.word.toUpperCase()}" 👂`:activeMode==="reading"?`Get ready to spell "${phW.word.toUpperCase()}" 📖`:`Listen! "${phW.word.toUpperCase()}" 🔊`}/>}
         {phStep==="spelling"&&(
           <div style={{animation:"slideUp 0.3s ease-out"}}>
             <Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters in order! 👆":"🔤"}/>
@@ -5809,7 +5920,7 @@ export default function App(){
 
   // ═══ SHAPES ═══
   // ═══ SHAPE DETAIL ═══
-  if((scr==="shapes"||scr==="learn")&&selShape){const sh=selShape;const shColor="#A855F7";return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={sh.name} onBack={()=>{stop();pRef.current=false;setSelShape(null);setShStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
+  if((scr==="shapes"||scr==="learn")&&selShape){const sh=selShape;const shColor="#A855F7";return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={activeMode?({speaking:"Speaking 🗣️",listening:"Listening 👂",reading:"Reading 📖",writing:"Writing ✍️"}[activeMode]||sh.name):sh.name} onBack={()=>{stop();pRef.current=false;setSelShape(null);setShStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
     {shStep!=="idle"&&<FlowSteps current={shStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
@@ -5820,7 +5931,7 @@ export default function App(){
       <div style={{textAlign:"center",marginTop:4}}><span style={{fontSize:30}}>{sh.emoji}</span><div style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{sh.name}</div>{sh.sides>0&&<span style={{fontSize:12,fontWeight:700,background:"#fff",color:"#6C5CE7",padding:"4px 12px",borderRadius:10}}>{sh.sides} sides</span>}</div>
       {sh.ph&&(shStep==="saying_phonics"||shStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{sh.ph.map((ph,i)=>{const d=gPh(ph);const act=shAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?shColor:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
       <div style={{marginTop:12}}>
-        {shStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playShape(sh)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${shColor},${shColor}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
+        {shStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}>{!activeMode&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div>}<button onClick={()=>playShape(sh)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${shColor},${shColor}dd)`,flex:activeMode?1:undefined,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{activeMode==="speaking"?"🎤 Say it!":activeMode==="listening"?"👂 Listen!":activeMode==="reading"?"📖 Spell it!":"🔄 Replay"}</button></div>}
         {shStep==="saying_word"&&<Mascot mood="speaking" msg={`This is a ${sh.name}! 🔊`}/>}
         {shStep==="spelling"&&<div data-owl="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{sh.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-owl={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?shColor:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":"#FF8C42",background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>👀 Watch and listen!</p></div>}</div></div>}
         {shStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
@@ -5837,7 +5948,7 @@ export default function App(){
 
   // ═══ COLORS ═══
   // ═══ COLOR DETAIL ═══
-  if((scr==="colors"||scr==="learn")&&selColor){const co=selColor;return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={co.name} onBack={()=>{stop();pRef.current=false;setSelColor(null);setCoStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
+  if((scr==="colors"||scr==="learn")&&selColor){const co=selColor;return<div style={{fontFamily:"var(--font)",height:"100vh",overflowY:"auto",overflowX:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={activeMode?({speaking:"Speaking 🗣️",listening:"Listening 👂",reading:"Reading 📖",writing:"Writing ✍️"}[activeMode]||co.name):co.name} onBack={()=>{stop();pRef.current=false;setSelColor(null);setCoStep("idle");if(prevScrRef.current==="learn")setScr("learn");}} points={prof?.points||0}/>
     {coStep!=="idle"&&<FlowSteps current={coStep} steps={PH_STEPS}/>}
     <div style={{padding:"6px 10px"}}>
       {/* Animated Scene */}
@@ -5848,7 +5959,7 @@ export default function App(){
       <div style={{textAlign:"center",marginTop:4}}><div style={{width:50,height:50,borderRadius:16,background:co.hex,margin:"0 auto 8px",boxShadow:`0 8px 24px ${co.hex}44`}}/><div style={{fontFamily:"var(--font)",fontSize:18,fontWeight:700,textTransform:"capitalize"}}>{co.name}</div><div style={{display:"flex",gap:6,justifyContent:"center",marginTop:6}}>{co.things.map((t,j)=><span key={j} style={{fontSize:11,fontWeight:700,background:"#fff",color:"#6C5CE7",padding:"4px 10px",borderRadius:8}}>{t}</span>)}</div></div>
       {co.ph&&(coStep==="saying_phonics"||coStep==="idle")&&<div style={{marginTop:6,background:"#fff",borderRadius:14,padding:8}}><div style={{fontSize:11,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>🗣️ Say each sound</div><div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}}>{co.ph.map((ph,i)=>{const d=gPh(ph);const act=coAI===i;return<button key={i} onClick={()=>{if(!pRef.current)speak(d.s,{rate:0.5,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"6px 10px 5px",borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",minWidth:44,background:act?co.hex:"#FFF0E0",color:act?"#fff":"#333",transform:act?"scale(1.3) translateY(-4px)":"scale(1)",transition:"all 0.3s cubic-bezier(0.34,1.56,0.64,1)"}}><span style={{fontSize:16,fontWeight:900,fontFamily:"var(--font)"}}>{ph.toUpperCase()}</span><span style={{fontSize:9,fontWeight:700,color:act?"#fffc":"#999",marginTop:2}}>{d.d}</span></button>;})}</div></div>}
       <div style={{marginTop:12}}>
-        {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div><button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,display:"flex",alignItems:"center",gap:6}}>🔄 Replay</button></div>}
+        {coStep==="idle"&&<div style={{display:"flex",gap:10,alignItems:"center"}}>{!activeMode&&<div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"#fff",borderRadius:14,flex:1}}><span style={{fontSize:12,fontWeight:700,color:speakMode?"#22C55E":"#999"}}>🎤</span><button onClick={()=>setSpeakMode(!speakMode)} style={{width:40,height:22,borderRadius:11,border:"none",cursor:"pointer",background:speakMode?"#22C55E":"#ddd",position:"relative",transition:"background 0.3s"}}><div style={{width:18,height:18,borderRadius:9,background:"#fff",position:"absolute",top:2,left:speakMode?20:2,transition:"left 0.3s"}}/></button><span style={{fontSize:11,color:"#8E8CA3",fontWeight:600}}>{speakMode?"ON":"OFF"}</span></div>}<button onClick={()=>playColor(co)} style={{padding:"10px 20px",borderRadius:14,border:"none",color:"#2D2B3D",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",background:`linear-gradient(135deg,${co.hex},${co.hex}dd)`,flex:activeMode?1:undefined,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>{activeMode==="speaking"?"🎤 Say it!":activeMode==="listening"?"👂 Listen!":activeMode==="reading"?"📖 Spell it!":"🔄 Replay"}</button></div>}
         {coStep==="saying_word"&&<Mascot mood="speaking" msg={`This color is ${co.name}! 🔊`}/>}
         {coStep==="spelling"&&<div data-owl="spell-area" style={{animation:"slideUp 0.3s ease-out"}}><Mascot mood="thinking" msg={spellRound===1?"Watch and listen! 🔤":spellRound===2?"Tap the letters! 👆":"🔤"}/><div style={{padding:10,background:"#fff",borderRadius:16}}><div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap",marginBottom:spellRound===2?16:0}}>{co.name.toUpperCase().split('').map((letter,i)=>{const st=spellStatus[i]||'waiting';const isActive=activeSpellIdx===i;const isTap=spellRound===2&&i===tapIndex;return<div key={i} data-owl={isActive?"spell-letter":undefined} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}><span style={{fontSize:32,fontFamily:"var(--font)",fontWeight:800,padding:"10px 14px",borderRadius:16,minWidth:44,textAlign:"center",background:isActive?co.hex:st==='correct'?"#22C55E":st==='wrong'?"#EF4444":"#FFF0E0",color:(isActive||st==='correct'||st==='wrong')?"#fff":"#ddd",transform:isActive?"scale(1.2) translateY(-4px)":"scale(1)"}}>{letter}</span>{st==='correct'&&!isActive&&<span style={{fontSize:12}}>✅</span>}{isTap&&<span style={{fontSize:12,animation:"pulse 1s infinite"}}>👆</span>}</div>;})}</div>{spellRound===2&&<div><div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap each letter:</div><div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>{scrambledLetters.map((item,i)=><button key={item.id} disabled={item.used} onClick={()=>!item.used&&handleLetterTap(item.letter,i)} style={{fontSize:28,fontFamily:"var(--font)",fontWeight:800,padding:"6px 10px",borderRadius:16,border:"3px solid",borderColor:tapWrong===i?"#EF4444":item.used?"#ddd":co.hex,background:tapWrong===i?"#FEE2E2":item.used?"#f9fafb":"#fff",color:item.used?"#ddd":"#1a1a2e",opacity:item.used?0.4:1,cursor:item.used?"default":"pointer"}}>{item.letter}</button>)}</div></div>}{spellRound===1&&<div style={{textAlign:"center",marginTop:12,padding:"8px",background:"#fff",borderRadius:12}}><p style={{fontSize:13,fontWeight:700,color:"#6C5CE7"}}>👀 Watch and listen!</p></div>}</div></div>}
         {coStep==="saying_sentence"&&<Mascot mood="excited" msg="Listen! 💬"/>}
