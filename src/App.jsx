@@ -1772,7 +1772,7 @@ const useRec=()=>{
     if(result)beep(800,100,"sine");
     else beep(400,200,"triangle");
     setTxt(result);setPhase("done");setOn(false);setCountdown(0);setVol(0);
-    setTimeout(()=>cbRef.current?.(result,alternatives||[]),100);
+    setTimeout(()=>cbRef.current?.(result,alternatives||[],expectedRef.current),100);
   },[cleanup,beep]);
 
   // ═══ VOLUME MONITOR (runs alongside any engine) ═══
@@ -2289,9 +2289,19 @@ const SubHead=({title,onBack,points})=><div style={{display:"flex",alignItems:"c
 const FlowSteps=({current,steps})=><div style={{display:"flex",gap:4,justifyContent:"center",margin:"2px 6px 2px",flexWrap:"wrap"}}>{steps.map((s,i)=>{const done=steps.findIndex(x=>x.id===current)>i;const act=current===s.id;return<div key={s.id} style={{display:"flex",alignItems:"center",gap:3}}><div style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:800,fontFamily:"var(--font)",background:act?"linear-gradient(135deg,#FF8C42,#FF8C42)":done?"#22C55E":"#e5e7eb",color:(act||done)?"#fff":"#aaa",transform:act?"scale(1.08)":"scale(1)"}}>{s.icon} {s.label}</div>{i<steps.length-1&&<span style={{color:"#D4D5D9",fontSize:10}}>→</span>}</div>;})}</div>;
 const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,countdown,vol,phase,engineUsed})=>{
   const[typed,setTyped]=useState("");
+  const[showTapBtn,setShowTapBtn]=useState(false);
   const active=isListening&&phase==="listening";
   const processing=phase==="processing";
   const idle=!isListening&&phase!=="processing";
+  // Show tap button only after 2s if still idle — auto-start should kick in before that
+  useEffect(()=>{
+    if(idle&&!active&&!processing){
+      const t=setTimeout(()=>setShowTapBtn(true),2000);
+      return()=>clearTimeout(t);
+    }else{
+      setShowTapBtn(false);
+    }
+  },[idle,active,processing]);
   // Animated volume bars with requestAnimationFrame feel
   const volBars=useMemo(()=>Array.from({length:14},(_,i)=>({id:i,offset:i*0.07})),[]);
   return <div data-owl="mic-area" style={{textAlign:"center",padding:16,background:"#fff",borderRadius:22,border:"2.5px solid #E8EAF6",animation:"slideUp 0.3s ease-out"}}>
@@ -2320,9 +2330,14 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,count
         <span style={{fontSize:28,color:"#fff",animation:"spinSlow 1.2s linear infinite"}}>⏳</span>
         <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.9)",lineHeight:1}}>ANALYZING</span>
       </>:<>
-        <span style={{fontSize:40,lineHeight:1}}>🎤</span>
-        <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>TAP TO</span>
-        <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>SPEAK</span>
+        {showTapBtn?<>
+          <span style={{fontSize:40,lineHeight:1}}>🎤</span>
+          <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>TAP TO</span>
+          <span style={{fontSize:9,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>SPEAK</span>
+        </>:<>
+          <span style={{fontSize:28,color:"#fff",animation:"micPulse 1.5s ease-in-out infinite"}}>🎙️</span>
+          <span style={{fontSize:8,fontWeight:800,color:"rgba(255,255,255,0.9)",lineHeight:1}}>STARTING</span>
+        </>}
       </>}
     </button>
     {/* Live volume visualization — shows real-time audio feedback */}
@@ -2344,12 +2359,12 @@ const ListeningBox=({transcript,onTapMic,isListening,error,onType,expected,count
     {processing&&<p style={{fontSize:12,fontWeight:800,color:"#FF8A50",margin:"8px 0 4px",animation:"fadeIn 0.3s ease-out"}}>🧠 Checking what you said...</p>}
     {processing&&transcript&&<div style={{padding:"6px 12px",background:"#FFF3E0",borderRadius:10,border:"2px solid #FFE0B2",margin:"6px 0"}}><span style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Heard: "{transcript}"</span></div>}
     {/* Idle state */}
-    {idle&&!error&&!transcript&&<p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>Tap the microphone, then say <strong>"{expected}"</strong></p>}
+    {idle&&!error&&!transcript&&<p style={{fontSize:13,fontWeight:700,color:"#78909C",margin:"8px 0 4px"}}>{showTapBtn?<>Tap the microphone, then say <strong>"{expected}"</strong></>:"Getting ready to listen..."}</p>}
     {/* Error display */}
     {error&&idle&&<div style={{padding:"8px 14px",background:"#FFF3E0",borderRadius:12,margin:"8px 0 4px",border:"2px solid #FFE0B2"}}><span style={{fontSize:12,fontWeight:700,color:"#E65100"}}>{error}</span><br/><span style={{fontSize:11,fontWeight:600,color:"#BF360C"}}>Tap 🎤 to try again!</span></div>}
     {/* Heard result in idle (shouldn't normally show because result handler fires fast) */}
     {transcript&&idle&&!error&&<div style={{padding:"8px 14px",background:"#E8F5E9",borderRadius:10,border:"2px solid #C8E6C9",margin:"8px 0 4px"}}><span style={{fontSize:13,fontWeight:800,color:"#2E7D32"}}>Heard: "{transcript}"</span></div>}
-    {idle&&!error&&<p style={{fontSize:10,fontWeight:600,color:"#B0BEC5",margin:"0 0 6px"}}>Didn't work? Tap 🎤 again</p>}
+    {idle&&!error&&showTapBtn&&<p style={{fontSize:10,fontWeight:600,color:"#B0BEC5",margin:"0 0 6px"}}>Didn't work? Tap 🎤 again</p>}
     {/* Type fallback — always available */}
     <div style={{display:"flex",gap:6,marginTop:8}}>
       <input value={typed} onChange={e=>setTyped(e.target.value)} placeholder="Or type the word here..."
@@ -2453,6 +2468,34 @@ export default function App(){
       }
     },180);
     return()=>clearInterval(iv);
+
+  // ═══ TOUCH TILT — 3D finger-following effect on all buttons/cards ═══
+  },[cloudPlayingRef]);
+  useEffect(()=>{
+    const handler=(e)=>{
+      const touch=e.touches?.[0];if(!touch)return;
+      const el=e.target.closest('[data-r]');if(!el)return;
+      const rect=el.getBoundingClientRect();
+      const x=(touch.clientX-rect.left)/rect.width;
+      const y=(touch.clientY-rect.top)/rect.height;
+      const tiltX=(y-0.5)*-8;
+      const tiltY=(x-0.5)*8;
+      el.style.transform=`perspective(600px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale(1.02)`;
+      el.style.transition='transform 0.08s ease';
+    };
+    const reset=(e)=>{
+      const el=e.target.closest('[data-r]');if(!el)return;
+      el.style.transform='';
+      el.style.transition='transform 0.3s cubic-bezier(0.34,1.56,0.64,1)';
+    };
+    document.addEventListener('touchmove',handler,{passive:true});
+    document.addEventListener('touchend',reset,{passive:true});
+    document.addEventListener('touchcancel',reset,{passive:true});
+    return()=>{
+      document.removeEventListener('touchmove',handler);
+      document.removeEventListener('touchend',reset);
+      document.removeEventListener('touchcancel',reset);
+    };
   },[]);
   // Head reactions
   const headYes=()=>{setHeadShake("yes");setTeacherMood("star");setTimeout(()=>{setHeadShake("");setTeacherMood("happy");},1500);};
@@ -3140,13 +3183,14 @@ export default function App(){
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
 
-  const handleNumResult=(result,alternatives)=>{
+  const handleNumResult=(result,alternatives,expectedWord)=>{
+    const w=expectedWord||NW[selNum];
     if(!result||!result.trim()){
       if(retryCountRef.current<2){
         retryCountRef.current++;
         setNStep("listening");
         showTeacher("happy","Didn't catch that — say it again!");
-        setTimeout(()=>rec.start(handleNumResult,NW[selNum]),800);
+        setTimeout(()=>rec.start(handleNumResult,w),800);
       }else{
         retryCountRef.current=0;
         setNStep("listening");
@@ -3155,7 +3199,6 @@ export default function App(){
       return;
     }
     retryCountRef.current=0;
-    const w=NW[selNum];
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(w,result,alternatives);setSpRes(normalized);setSpAcc(acc);setNStep("result");
     const s=getStars(acc);const p=getStarPts(s);
@@ -3172,13 +3215,14 @@ export default function App(){
       else speak(`You scored ${acc} percent. Keep practicing!`,{rate:0.85,pitch:1.0});
     },600);
   };
-  const handlePhResult=(result,alternatives)=>{
+  const handlePhResult=(result,alternatives,expectedWord)=>{
+    const w=expectedWord||phW?.word;
     if(!result||!result.trim()){
       if(retryCountRef.current<2){
         retryCountRef.current++;
         setPhStep("listening");
         showTeacher("happy","Didn't catch that — say it again!");
-        setTimeout(()=>rec.start(handlePhResult,phW?.word),800);
+        setTimeout(()=>rec.start(handlePhResult,w),800);
       }else{
         retryCountRef.current=0;
         setPhStep("listening");
@@ -3188,7 +3232,7 @@ export default function App(){
     }
     retryCountRef.current=0;
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(phW.word,result,alternatives);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
+    const acc=calcAcc(w,result,alternatives);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"phonics",phW.word);boom();}else{flashWrong();}
     if(s>=4) showTeacher("cheering",`Amazing ${kidName}! ⭐`);
@@ -3449,13 +3493,14 @@ export default function App(){
   };
 
   // ═══ SHAPE PLAY FLOW ═══
-  const handleShResult=(result,alternatives)=>{
+  const handleShResult=(result,alternatives,expectedWord)=>{
+    const w=expectedWord||selShape?.name;
     if(!result||!result.trim()){
       if(retryCountRef.current<2){
         retryCountRef.current++;
         setShStep("listening");
         showTeacher("happy","Didn't catch that — say it again!");
-        setTimeout(()=>rec.start(handleShResult,selShape?.name),800);
+        setTimeout(()=>rec.start(handleShResult,w),800);
       }else{
         retryCountRef.current=0;
         setShStep("listening");
@@ -3465,7 +3510,7 @@ export default function App(){
     }
     retryCountRef.current=0;
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(selShape.name,result,alternatives);setShRes(normalized);setShAcc(acc);setShStep("result");
+    const acc=calcAcc(w,result,alternatives);setShRes(normalized);setShAcc(acc);setShStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"shapes",selShape.name);boom();}else{flashWrong();}
     if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
@@ -3500,13 +3545,14 @@ export default function App(){
   const retryShape=async()=>{setShRes(null);setShAcc(null);await speak(`One more time! Say, ${selShape?.name}!`,{rate:0.85,pitch:1.0});await wait(300);stop();setShStep("listening");rec.start(handleShResult,selShape?.name);};
 
   // ═══ COLOR PLAY FLOW ═══
-  const handleCoResult=(result,alternatives)=>{
+  const handleCoResult=(result,alternatives,expectedWord)=>{
+    const w=expectedWord||selColor?.name;
     if(!result||!result.trim()){
       if(retryCountRef.current<2){
         retryCountRef.current++;
         setCoStep("listening");
         showTeacher("happy","Didn't catch that — say it again!");
-        setTimeout(()=>rec.start(handleCoResult,selColor?.name),800);
+        setTimeout(()=>rec.start(handleCoResult,w),800);
       }else{
         retryCountRef.current=0;
         setCoStep("listening");
@@ -3516,7 +3562,7 @@ export default function App(){
     }
     retryCountRef.current=0;
     const normalized=normalizeSpoken(result);
-    const acc=calcAcc(selColor.name,result,alternatives);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
+    const acc=calcAcc(w,result,alternatives);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"colors",selColor.name);boom();}else{flashWrong();}
     if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
@@ -5985,7 +6031,7 @@ const CSS=`
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap');
 :root{
-  --bg:#F7F5FF;--bg2:#EEEAFF;--card:#FFFFFF;--card2:#FAFAFF;
+  --bg:#F0EDFF;--bg2:#E6E2FA;--card:#FFFFFF;--card2:#F8F6FF;
   --primary:#7C4DFF;--primary-light:#B388FF;--primary-dark:#651FFF;
   --orange:#FF8A50;--orange-light:#FFB74D;--orange-dark:#E65100;
   --green:#4CAF50;--green-light:#81C784;--green-dark:#2E7D32;
@@ -5995,31 +6041,126 @@ const CSS=`
   --cyan:#26C6DA;--cyan-light:#4DD0E1;--cyan-dark:#00838F;
   --yellow:#FFCA28;--yellow-dark:#FFA000;
   --dark:#1A1A2E;--gray:#78909C;--muted:#B0BEC5;--light:#E8EAF6;
-  --radius:16px;--radius-lg:24px;--radius-xl:32px;
-  --shadow-card:0 2px 0 rgba(0,0,0,0.06),0 1px 3px rgba(0,0,0,0.05);
-  --shadow-btn:0 4px 0 #5E35B1;
-  --shadow-float:0 8px 24px rgba(0,0,0,0.12),0 2px 4px rgba(0,0,0,0.04);
-  --shadow-glow:0 0 24px rgba(124,77,255,0.2);
+  --radius:20px;--radius-lg:28px;--radius-xl:36px;
+  /* ═══ CLAYMORPHISM SHADOW SYSTEM ═══ */
+  --clay-out:8px 8px 20px rgba(166,158,203,0.35),-6px -6px 16px rgba(255,255,255,0.85);
+  --clay-card:6px 6px 16px rgba(166,158,203,0.25),-4px -4px 12px rgba(255,255,255,0.8),inset 0 2px 4px rgba(255,255,255,0.6),inset 0 -1px 3px rgba(0,0,0,0.04);
+  --clay-btn:5px 5px 14px rgba(166,158,203,0.3),-3px -3px 10px rgba(255,255,255,0.7),inset 0 2px 3px rgba(255,255,255,0.5),inset 0 -1px 2px rgba(0,0,0,0.06);
+  --clay-btn-press:inset 3px 3px 8px rgba(166,158,203,0.3),inset -2px -2px 6px rgba(255,255,255,0.5);
+  --clay-input:inset 3px 3px 8px rgba(166,158,203,0.2),inset -2px -2px 6px rgba(255,255,255,0.6);
+  --clay-float:10px 10px 28px rgba(166,158,203,0.35),-6px -6px 20px rgba(255,255,255,0.8),inset 0 3px 6px rgba(255,255,255,0.5),inset 0 -2px 4px rgba(0,0,0,0.05);
+  --clay-glow:0 0 24px rgba(124,77,255,0.25),0 0 48px rgba(124,77,255,0.1);
+  --shadow-card:var(--clay-card);
+  --shadow-btn:var(--clay-btn);
+  --shadow-float:var(--clay-float);
+  --shadow-glow:var(--clay-glow);
   --font:'Nunito','Fredoka',system-ui,-apple-system,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;}
 html,body{background:var(--bg);overflow-x:hidden;color:var(--dark);font-family:var(--font);-webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;}
 *{-webkit-overflow-scrolling:touch;}
-::-webkit-scrollbar{width:4px;}
-::-webkit-scrollbar-thumb{background:var(--primary-light);border-radius:4px;}::-webkit-scrollbar-track{background:transparent;}
-button{font-family:var(--font);touch-action:manipulation;-webkit-touch-callout:none;transition:transform 0.1s ease;-webkit-appearance:none;}
-button:active{transform:translateY(2px);}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--primary-light);border-radius:6px;}::-webkit-scrollbar-track{background:transparent;}
 
-/* ═══ REACTIVE HOVER SYSTEM ═══ */
+/* ═══ CLAYMORPHISM GLOBAL BUTTON ═══ */
+button{
+  font-family:var(--font);touch-action:manipulation;-webkit-touch-callout:none;
+  -webkit-appearance:none;
+  transition:transform 0.18s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.18s ease;
+  border-radius:var(--radius) !important;
+}
+button:active{
+  transform:translateY(2px) scale(0.97) !important;
+  box-shadow:var(--clay-btn-press) !important;
+  transition:transform 0.08s ease,box-shadow 0.08s ease !important;
+}
+
+/* ═══ CLAYMORPHISM AUTO-APPLY ═══ */
+/* All data-r elements get clay surfaces */
+[data-r]{
+  box-shadow:var(--clay-card) !important;
+  border-radius:var(--radius) !important;
+  transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.2s ease !important;
+  position:relative;
+  overflow:hidden;
+}
+[data-r]::after{
+  content:'';position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(135deg,rgba(255,255,255,0.25) 0%,transparent 50%,rgba(0,0,0,0.02) 100%);
+  pointer-events:none;z-index:1;
+}
+
+/* ═══ REACTIVE HOVER/TOUCH SYSTEM ═══ */
 @media(hover:hover){
-  [data-r]{transition:transform 0.15s ease;cursor:pointer;}
-  [data-r]:hover{transform:translateY(-2px);z-index:2;}
-  [data-r]:active{transform:translateY(2px);}
+  [data-r]{cursor:pointer;}
+  [data-r]:hover{
+    transform:translateY(-4px) scale(1.03);
+    box-shadow:var(--clay-float) !important;
+    z-index:2;
+  }
+  [data-r]:active{
+    transform:translateY(1px) scale(0.98) !important;
+    box-shadow:var(--clay-btn-press) !important;
+  }
 }
 @media(hover:none){
   [data-r]{cursor:pointer;-webkit-tap-highlight-color:transparent;}
-  [data-r]:active{transform:translateY(2px);opacity:0.95;}
+  [data-r]:active{
+    transform:translateY(2px) scale(0.96) !important;
+    box-shadow:var(--clay-btn-press) !important;
+    opacity:0.97;
+  }
 }
+
+/* ═══ CLAY SURFACE OVERRIDES ═══ */
+/* Cards / panels with white bg */
+[data-owl]{
+  box-shadow:var(--clay-card);
+  border-radius:var(--radius-lg);
+}
+/* Inputs get inset clay */
+input,textarea,select{
+  box-shadow:var(--clay-input) !important;
+  border-radius:14px !important;
+  border:2px solid rgba(166,158,203,0.15) !important;
+  transition:box-shadow 0.2s ease,border-color 0.2s ease;
+}
+input:focus,textarea:focus{
+  box-shadow:var(--clay-input),0 0 0 3px rgba(124,77,255,0.15) !important;
+  border-color:var(--primary-light) !important;
+  outline:none;
+}
+
+/* ═══ TOUCH TILT EFFECT — finger-following 3D ═══ */
+.clay-tilt{
+  transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+  transform-style:preserve-3d;
+  perspective:600px;
+}
+.clay-tilt:active{
+  transition:transform 0.06s ease !important;
+}
+
+/* ═══ PREMIUM GRADIENT BACKGROUNDS ═══ */
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;
+  background:
+    radial-gradient(ellipse at 20% 20%,rgba(179,136,255,0.12) 0%,transparent 50%),
+    radial-gradient(ellipse at 80% 80%,rgba(255,183,77,0.08) 0%,transparent 50%),
+    radial-gradient(ellipse at 50% 50%,rgba(129,199,132,0.06) 0%,transparent 60%),
+    var(--bg);
+  pointer-events:none;
+}
+
+/* ═══ NAV PILLS — clay style ═══ */
+nav button{
+  box-shadow:var(--clay-btn) !important;
+  border:none !important;
+}
+nav button:active{
+  box-shadow:var(--clay-btn-press) !important;
+}
+
 @keyframes continuePulse{0%,100%{box-shadow:0 0 0 0 rgba(76,175,80,0.25)}50%{box-shadow:0 0 0 8px rgba(76,175,80,0)}}
 
 /* ═══ CORE ANIMATIONS ═══ */
@@ -6030,11 +6171,10 @@ button:active{transform:translateY(2px);}
 @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-6deg)}40%{transform:rotate(6deg)}60%{transform:rotate(-4deg)}80%{transform:rotate(3deg)}}
 @keyframes gradientMove{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
-/* Animations */
 @keyframes fadeIn{from{opacity:0;transform:scale(0.8)}to{opacity:1;transform:scale(1)}} @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @keyframes splashPop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 @keyframes micPulse{0%,100%{transform:scale(0.96);box-shadow:0 0 0 8px rgba(239,68,68,0.15)}50%{transform:scale(1.02);box-shadow:0 0 0 16px rgba(239,68,68,0.08)}}
-@keyframes micBreathe{0%,100%{transform:scale(1);box-shadow:0 4px 20px rgba(76,175,80,0.3)}50%{transform:scale(1.04);box-shadow:0 4px 28px rgba(76,175,80,0.45)}}
+@keyframes micBreathe{0%,100%{transform:scale(1);box-shadow:var(--clay-btn)}50%{transform:scale(1.04);box-shadow:var(--clay-float)}}
 @keyframes micShimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes spinSlow{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 @keyframes mascotB{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
