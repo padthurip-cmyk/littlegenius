@@ -4435,46 +4435,126 @@ export default function App(){
     const ok=()=>token&&!token.cancelled; // check cancellation
 
     if(m==="speakback"){
-      stop();await speak(item.say,{rate:0.72,pitch:1.0});
+      // Mode A: Say the word clearly, pause, then ask kid
+      stop();await speak("This is "+item.say,{rate:0.72,pitch:1.0});
+      if(!ok())return;await wait(300);
+      stop();await speak(item.say,{rate:0.6,pitch:0.95});
       if(!ok())return;await wait(350);
     } else if(m==="pronounce"){
-      stop();await speak(item.say,{rate:0.72,pitch:1.0});
+      // Mode B: Say word, spell each letter by name, then say word again
+      stop();await speak("This word is "+item.say,{rate:0.72,pitch:1.0});
+      if(!ok())return;await wait(300);
+      stop();await speak("Let me spell it for you",{rate:0.85,pitch:1.0});
       if(!ok())return;await wait(250);
       const letters=item.say.split("");
       for(let i=0;i<letters.length;i++){
         if(!ok())return;
-        stop();await speak(letters[i].toUpperCase(),{rate:0.6,pitch:1.05});
-        if(!ok())return;await wait(350);
+        stop();await speak(letters[i].toUpperCase(),{rate:0.55,pitch:1.05});
+        if(!ok())return;await wait(400);
       }
       if(!ok())return;
-      stop();await speak(item.say,{rate:0.78,pitch:1.0});
+      stop();await speak(item.say+"!",{rate:0.72,pitch:1.0});
       if(!ok())return;await wait(250);
     } else if(m==="phonics"){
-      stop();await speak(item.say,{rate:0.72,pitch:1.0});
-      if(!ok())return;await wait(250);
-      // Find phonics for this word from WCATS
-      let phs=null;
-      for(const cat of Object.values(WCATS)){
-        const w=cat.words.find(w=>w.word.toLowerCase()===item.say.toLowerCase());
-        if(w){phs=w.ph;break;}
-      }
-      if(phs&&phs.length>0){
-        stop();await speak("Sounds like",{rate:0.85,pitch:1.0});
-        if(!ok())return;await wait(200);
-        for(let i=0;i<phs.length;i++){
+      // Mode C: Stanford-level phonics — announce, sound out each phoneme, blend
+      const isLetter=item.say.length===1&&/[A-Za-z]/.test(item.say);
+      const isNumber=!isNaN(item.say)&&item.say.length<=3;
+
+      if(isLetter){
+        // SINGLE LETTER: "This is the letter A. It makes the sound... aaah. A says aaah!"
+        const letterUpper=item.say.toUpperCase();
+        const letterLower=item.say.toLowerCase();
+        const phData=gPh(letterLower);
+        stop();await speak("This is the letter "+letterUpper,{rate:0.7,pitch:1.0});
+        if(!ok())return;await wait(400);
+        stop();await speak("It makes the sound",{rate:0.82,pitch:1.0});
+        if(!ok())return;await wait(300);
+        // Say the phoneme sound slowly and clearly
+        stop();await speak(phData.s,{rate:0.35,pitch:0.9});
+        if(!ok())return;await wait(500);
+        // Repeat phoneme
+        stop();await speak(phData.s,{rate:0.4,pitch:0.92});
+        if(!ok())return;await wait(400);
+        // "A says aaah!"
+        stop();await speak(letterUpper+" says "+phData.s,{rate:0.7,pitch:1.0});
+        if(!ok())return;await wait(350);
+        // If there's an example word, use it
+        if(item.sub){
+          stop();await speak(letterUpper+" for "+item.sub,{rate:0.75,pitch:1.0});
+          if(!ok())return;await wait(300);
+        }
+      } else if(isNumber){
+        // NUMBER: Just say it clearly
+        stop();await speak("This is the number "+item.say,{rate:0.7,pitch:1.0});
+        if(!ok())return;await wait(300);
+        stop();await speak(item.say,{rate:0.55,pitch:0.95});
+        if(!ok())return;await wait(350);
+      } else {
+        // WORD: Full phonics breakdown
+        // Step 1: Announce the word
+        stop();await speak("This is the word "+item.say,{rate:0.7,pitch:1.0});
+        if(!ok())return;await wait(350);
+
+        // Step 2: Find phoneme breakdown from WCATS
+        let phs=null;
+        for(const cat of Object.values(WCATS)){
+          const w=cat.words.find(w=>w.word.toLowerCase()===item.say.toLowerCase());
+          if(w){phs=w.ph;break;}
+        }
+
+        if(phs&&phs.length>0){
+          // Step 3: Explain we'll sound it out
+          stop();await speak("Let me sound it out the right way",{rate:0.82,pitch:1.0});
+          if(!ok())return;await wait(300);
+
+          // Step 4: Say each phoneme slowly and clearly
+          for(let i=0;i<phs.length;i++){
+            if(!ok())return;
+            const phData=gPh(phs[i]);
+            stop();await speak(phData.s,{rate:0.35,pitch:0.9});
+            if(!ok())return;await wait(550);
+          }
           if(!ok())return;
-          const phData=gPh(phs[i]);
-          stop();await speak(phData.s,{rate:0.45,pitch:0.95});
-          if(!ok())return;await wait(450);
+
+          // Step 5: Blend them together
+          stop();await speak("Now blend them together",{rate:0.82,pitch:1.0});
+          if(!ok())return;await wait(250);
+
+          // Step 6: Say each phoneme faster, then the full word
+          for(let i=0;i<phs.length;i++){
+            if(!ok())return;
+            const phData=gPh(phs[i]);
+            stop();await speak(phData.s,{rate:0.55,pitch:0.95});
+            if(!ok())return;await wait(220);
+          }
+          if(!ok())return;
+          stop();await speak(item.say+"!",{rate:0.65,pitch:1.0});
+          if(!ok())return;await wait(300);
+        } else {
+          // No phonics data — try letter-by-letter phoneme sounds
+          stop();await speak("Let me sound it out",{rate:0.82,pitch:1.0});
+          if(!ok())return;await wait(250);
+          const chars=item.say.toLowerCase().split("");
+          for(let i=0;i<chars.length;i++){
+            if(!ok())return;
+            const phData=gPh(chars[i]);
+            stop();await speak(phData.s,{rate:0.4,pitch:0.9});
+            if(!ok())return;await wait(450);
+          }
+          if(!ok())return;
+          stop();await speak(item.say+"!",{rate:0.68,pitch:1.0});
+          if(!ok())return;await wait(300);
         }
       }
-      if(!ok())return;
-      stop();await speak(item.say,{rate:0.78,pitch:1.0});
-      if(!ok())return;await wait(250);
     } else if(m==="sentences"){
+      // Mode D: Say sentence with the word, then repeat sentence
       const sentence=item.sub||item.say+" is great!";
-      stop();await speak(sentence,{rate:0.75,pitch:1.0});
-      if(!ok())return;await wait(350);
+      stop();await speak("Listen to this sentence",{rate:0.82,pitch:1.0});
+      if(!ok())return;await wait(250);
+      stop();await speak(sentence,{rate:0.7,pitch:1.0});
+      if(!ok())return;await wait(400);
+      stop();await speak("Now you say it",{rate:0.85,pitch:1.0});
+      if(!ok())return;await wait(300);
     }
 
     if(!ok())return;
@@ -4874,6 +4954,22 @@ export default function App(){
           {sfMode&&<div style={{marginTop:6,padding:"4px 10px",background:"rgba(108,92,231,0.06)",borderRadius:10,display:"inline-block"}}><span style={{fontSize:10,fontWeight:700,color:"#6C5CE7"}}>{sfMode==="speakback"?"🗣️ Say it back":sfMode==="pronounce"?"🔤 Spell & Say":sfMode==="phonics"?"🔡 Sound it out":"💬 Say the sentence"}</span></div>}
           {/* Phonics IPA visualization */}
           {sfMode==="phonics"&&item&&(()=>{
+            const isLetter=item.say.length===1&&/[A-Za-z]/.test(item.say);
+            if(isLetter){
+              const phData=gPh(item.say.toLowerCase());
+              return<div style={{marginTop:10,padding:"12px 14px",background:"rgba(108,92,231,0.05)",borderRadius:16}}>
+                <div style={{fontSize:9,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>Letter Sound</div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16}}>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"10px 18px",background:"#fff",borderRadius:16,border:"2px solid #6C5CE733",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+                    <span style={{fontSize:36,fontWeight:900,color:"#6C5CE7",fontFamily:"var(--font)"}}>{item.say.toUpperCase()}{item.say.toLowerCase()}</span>
+                    <span style={{fontSize:14,fontWeight:700,color:"#FF9F43"}}>{phData.d}</span>
+                    <span style={{fontSize:12,fontWeight:800,color:"#00D2A0",fontStyle:"italic"}}>"{phData.s}"</span>
+                  </div>
+                </div>
+                {phData.mouth&&<div style={{fontSize:10,fontWeight:600,color:"#8E8CA3",textAlign:"center",marginTop:8}}>💋 {phData.mouth}</div>}
+                {phData.ex&&<div style={{fontSize:9,fontWeight:600,color:"#B0B0C0",textAlign:"center",marginTop:4}}>Examples: {phData.ex}</div>}
+              </div>;
+            }
             let phs=null;
             for(const cat of Object.values(WCATS)){const w=cat.words.find(w=>w.word.toLowerCase()===item.say.toLowerCase());if(w){phs=w.ph;break;}}
             if(!phs||!phs.length)return null;
