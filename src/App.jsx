@@ -1678,8 +1678,10 @@ const useSpeech=()=>{const[v,setV]=useState([]);
   // Main speak function: cloud if key available, else browser
   const speak=useCallback((t,o={})=>{
     if(onSpeakRef.current)onSpeakRef.current(t);
-    if(ttsKey) return speakCloud(t,o);
-    return speakBrowser(t,o);
+    // Wrap in timeout so speak() can NEVER hang more than 8 seconds
+    const speakPromise=ttsKey?speakCloud(t,o):speakBrowser(t,o);
+    const timeout=new Promise(r=>setTimeout(r,8000));
+    return Promise.race([speakPromise,timeout]);
   },[ttsKey,speakCloud,speakBrowser]);
 
   // Stop both cloud and browser
@@ -2469,10 +2471,7 @@ export default function App(){
       {id:"mixquiz",msg:"Mix Quiz! Test everything with fun quizzes!"},
       {id:"stories",msg:"Stories! Read fun tales and answer questions!"},
     ];
-    // Claymorphism highlight style for tour tiles
     const clayOn="0 6px 24px rgba(255,140,66,0.45), 0 2px 8px rgba(255,140,66,0.3), inset 0 2px 4px rgba(255,255,255,0.35), inset 0 -2px 6px rgba(0,0,0,0.08), 0 0 0 3px rgba(255,159,67,0.5)";
-    const clayOff="";
-    // Dark overlay — tap to skip
     const backdrop=document.createElement("div");
     backdrop.id="tour-overlay";
     backdrop.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;opacity:0;transition:opacity 0.3s;cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;";
@@ -2481,52 +2480,47 @@ export default function App(){
     skip.style.cssText="color:rgba(255,255,255,0.7);font-size:13px;font-weight:600;font-family:'Fredoka',sans-serif;pointer-events:none;";
     backdrop.appendChild(skip);
     const cleanup=()=>{
-      guideTourRef.current=false;stop();
-      backdrop.style.opacity="0";setTimeout(()=>backdrop.remove(),300);
+      guideTourRef.current=false;try{stop();}catch(e){}
+      try{backdrop.style.opacity="0";setTimeout(()=>{try{backdrop.remove();}catch(e){}},300);}catch(e){try{backdrop.remove();}catch(e2){}}
       const hp=document.getElementById("home-tiles");if(hp){hp.style.zIndex="";hp.style.position="";}
-      document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.overflow="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});
+      try{document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.overflow="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});}catch(e){}
       setGuideTour(false);setTeacherMood("happy");
     };
     backdrop.onclick=cleanup;
     document.body.appendChild(backdrop);
-    // Elevate the grid parent above the overlay
     const hp=document.getElementById("home-tiles");
     if(hp){hp.style.zIndex="200";hp.style.position="relative";}
     await wait(50);backdrop.style.opacity="1";
 
-    for(const tile of tiles){
-      if(!guideTourRef.current)break;
-      const el=document.querySelector('[data-tile="'+tile.id+'"]');
-      if(!el)continue;
-      el.scrollIntoView({behavior:"smooth",block:"center"});
-      await wait(400);
-      if(!guideTourRef.current)break;
-      el.style.transition="transform 0.4s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.4s ease, filter 0.3s ease";
-      el.style.zIndex="10";
-      el.style.overflow="visible";
-      el.style.transform="scale(1.12)";
-      el.style.boxShadow=clayOn;
-      el.style.borderRadius="22px";
-      el.style.filter="brightness(1.08)";
-      el.style.animation="tourClay 1.6s ease-in-out infinite";
-      setTeacherMood("excited");
-      stop(); // cancel any lingering speech
-      await wait(100);
-      await speak(tile.msg,{rate:0.85,pitch:1.0});
-      if(!guideTourRef.current)break;
-      await wait(300);
-      el.style.transform="scale(1)";
-      el.style.boxShadow=clayOff;
-      el.style.filter="";
-      el.style.borderRadius="";
-      el.style.animation="";
-      await wait(500);
-      el.style.zIndex="";el.style.transition="";el.style.overflow="";
-    }
-    if(guideTourRef.current){
-      setTeacherMood("star");
-      await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});
-      await wait(300);
+    try{
+      for(const tile of tiles){
+        if(!guideTourRef.current)break;
+        const el=document.querySelector('[data-tile="'+tile.id+'"]');
+        if(!el)continue;
+        try{el.scrollIntoView({behavior:"smooth",block:"center"});}catch(e){}
+        await wait(400);
+        if(!guideTourRef.current)break;
+        el.style.transition="transform 0.4s ease, box-shadow 0.4s ease";
+        el.style.zIndex="10";el.style.overflow="visible";
+        el.style.transform="scale(1.12)";el.style.boxShadow=clayOn;
+        el.style.borderRadius="22px";el.style.filter="brightness(1.08)";
+        setTeacherMood("excited");
+        try{stop();await wait(100);await speak(tile.msg,{rate:0.85,pitch:1.0});}catch(e){}
+        if(!guideTourRef.current)break;
+        await wait(300);
+        el.style.transform="scale(1)";el.style.boxShadow="";
+        el.style.filter="";el.style.borderRadius="";el.style.animation="";
+        await wait(500);
+        el.style.zIndex="";el.style.transition="";el.style.overflow="";
+      }
+      if(guideTourRef.current){
+        setTeacherMood("star");
+        try{await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});}catch(e){}
+        await wait(300);
+      }
+    }catch(e){
+      // Tour crashed — force cleanup so app doesn't freeze
+      console.warn("Tour error:",e);
     }
     cleanup();
   };
@@ -4116,11 +4110,12 @@ export default function App(){
         </button>
         <button onClick={()=>{sfxTap();
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
-          save(newP);speak("Let's go!",{rate:0.85,pitch:1.0});setTeacherMood("star");
-          setScr("home");
+          save(newP);setTeacherMood("star");
+          // Go through questionnaire too (customizes home), but skip tour after
+          setScr("questionnaire");setQStep(0);setQAnswers([]);
         }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(255,159,67,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
           <span style={{fontSize:32}}>🚀</span>
-          Skip, let's go!
+          Skip tour, let's go!
         </button>
       </div>
     </>:null}
