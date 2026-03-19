@@ -258,9 +258,111 @@ const NumberHero = ({num, word, color, active, sentence}) => {
 // ═══════════════════════════════════════════════════════════════
 // REST OF APP DATA
 // ═══════════════════════════════════════════════════════════════
-const PM={b:{s:"buh",d:"/b/"},c:{s:"kuh",d:"/k/"},d:{s:"duh",d:"/d/"},f:{s:"fff",d:"/f/"},g:{s:"guh",d:"/g/"},h:{s:"hah",d:"/h/"},j:{s:"juh",d:"/dʒ/"},k:{s:"kuh",d:"/k/"},l:{s:"lll",d:"/l/"},m:{s:"mmm",d:"/m/"},n:{s:"nnn",d:"/n/"},p:{s:"puh",d:"/p/"},r:{s:"rrr",d:"/r/"},s:{s:"sss",d:"/s/"},t:{s:"tuh",d:"/t/"},v:{s:"vvv",d:"/v/"},w:{s:"wuh",d:"/w/"},x:{s:"ks",d:"/ks/"},y:{s:"yuh",d:"/j/"},z:{s:"zzz",d:"/z/"},a:{s:"aaah",d:"/æ/"},e:{s:"ehhh",d:"/ɛ/"},i:{s:"iiih",d:"/ɪ/"},o:{s:"ohhh",d:"/ɒ/"},u:{s:"uhhh",d:"/ʌ/"}};
-const DM={sh:{s:"shhhh",d:"/ʃ/"},ch:{s:"chuh",d:"/tʃ/"},th:{s:"thhhh",d:"/θ/"},ck:{s:"kuh",d:"/k/"},ng:{s:"nnnng",d:"/ŋ/"},ee:{s:"eeee",d:"/iː/"},oo:{s:"oooo",d:"/uː/"},ai:{s:"aaay",d:"/eɪ/"},ow:{s:"owww",d:"/aʊ/"},ar:{s:"aaar",d:"/ɑːr/"},er:{s:"errr",d:"/ɜːr/"},ir:{s:"errr",d:"/ɜːr/"},or:{s:"ooor",d:"/ɔːr/"},ea:{s:"eeee",d:"/iː/"},igh:{s:"eyee",d:"/aɪ/"},air:{s:"airrr",d:"/ɛər/"},ear:{s:"eerrr",d:"/ɪər/"},oa:{s:"ohhh",d:"/əʊ/"},oi:{s:"oyyyy",d:"/ɔɪ/"},ur:{s:"errr",d:"/ɜːr/"},wh:{s:"wuh",d:"/w/"},q:{s:"kwuh",d:"/kw/"}};
-const gPh=(ph)=>{const l=ph.toLowerCase();return DM[l]||PM[l]||{s:l,d:l};};
+// ═══ STANFORD-LEVEL ENGLISH PHONEME SYSTEM (44 phonemes) ═══
+// Based on IPA (International Phonetic Alphabet), CMU Pronouncing Dictionary,
+// and Systematic Synthetic Phonics methodology
+// 24 consonant phonemes + 7 short vowels + 5 long vowels + 8 diphthongs/R-controlled
+
+// CONSONANT PHONEMES (24)
+const PM={
+  // Plosives (stop consonants)
+  b:{s:"buh",d:"/b/",type:"voiced plosive",mouth:"lips together, burst open",ex:"ball,baby,tub"},
+  p:{s:"puh",d:"/p/",type:"voiceless plosive",mouth:"lips together, puff of air",ex:"pan,puppy,cup"},
+  d:{s:"duh",d:"/d/",type:"voiced plosive",mouth:"tongue tip on ridge behind teeth",ex:"dog,daddy,red"},
+  t:{s:"tuh",d:"/t/",type:"voiceless plosive",mouth:"tongue tip on ridge, puff of air",ex:"top,tiger,cat"},
+  g:{s:"guh",d:"/ɡ/",type:"voiced plosive",mouth:"back of tongue on soft palate",ex:"go,game,dog"},
+  k:{s:"kuh",d:"/k/",type:"voiceless plosive",mouth:"back of tongue, puff of air",ex:"cat,kite,duck"},
+  // Fricatives (continuous friction)
+  f:{s:"fff",d:"/f/",type:"voiceless fricative",mouth:"top teeth on lower lip, blow",ex:"fun,fish,leaf"},
+  v:{s:"vvv",d:"/v/",type:"voiced fricative",mouth:"top teeth on lower lip, vibrate",ex:"van,love,five"},
+  s:{s:"sss",d:"/s/",type:"voiceless fricative",mouth:"tongue near ridge, hiss like snake",ex:"sun,bus,city"},
+  z:{s:"zzz",d:"/z/",type:"voiced fricative",mouth:"tongue near ridge, buzz like bee",ex:"zoo,buzz,is"},
+  h:{s:"hah",d:"/h/",type:"voiceless glottal",mouth:"open mouth, breathe out",ex:"hat,hello,who"},
+  // Affricates (stop + fricative)
+  j:{s:"juh",d:"/dʒ/",type:"voiced affricate",mouth:"tongue on ridge then release",ex:"jam,jump,bridge"},
+  // Nasals (air through nose)
+  m:{s:"mmm",d:"/m/",type:"voiced nasal",mouth:"lips together, hum through nose",ex:"mum,me,ham"},
+  n:{s:"nnn",d:"/n/",type:"voiced nasal",mouth:"tongue on ridge, hum through nose",ex:"no,sun,pen"},
+  // Approximants
+  r:{s:"rrr",d:"/ɹ/",type:"voiced approximant",mouth:"tongue curled back, don't touch roof",ex:"red,run,car"},
+  l:{s:"lll",d:"/l/",type:"voiced lateral",mouth:"tongue tip on ridge, air around sides",ex:"leg,let,ball"},
+  w:{s:"wuh",d:"/w/",type:"voiced approximant",mouth:"round lips then open",ex:"wet,we,swim"},
+  y:{s:"yuh",d:"/j/",type:"voiced approximant",mouth:"tongue near palate, slide away",ex:"yes,you,beyond"},
+  x:{s:"ks",d:"/ks/",type:"voiceless cluster",mouth:"k then s quickly",ex:"fox,box,six"},
+  c:{s:"kuh",d:"/k/",type:"voiceless plosive",mouth:"same as k",ex:"cat,cup,come"},
+  // SHORT VOWELS (7)
+  a:{s:"aah",d:"/æ/",type:"short front vowel",mouth:"mouth wide, tongue low front",ex:"cat,hat,man"},
+  e:{s:"eh",d:"/ɛ/",type:"short front vowel",mouth:"mouth medium open",ex:"bed,red,pen"},
+  i:{s:"ih",d:"/ɪ/",type:"short front vowel",mouth:"mouth slightly open, tongue high",ex:"sit,pig,fish"},
+  o:{s:"oh",d:"/ɒ/",type:"short back vowel",mouth:"lips slightly rounded",ex:"hot,dog,box"},
+  u:{s:"uh",d:"/ʌ/",type:"short central vowel",mouth:"mouth relaxed, slightly open",ex:"cup,bus,sun"},
+};
+// DIGRAPHS & COMPLEX PHONEMES (consonant digraphs, long vowels, diphthongs, R-controlled)
+const DM={
+  // Consonant digraphs
+  sh:{s:"shhhh",d:"/ʃ/",type:"voiceless fricative",mouth:"lips pushed forward, blow",ex:"ship,fish,push"},
+  ch:{s:"chuh",d:"/tʃ/",type:"voiceless affricate",mouth:"tongue on ridge, quick release",ex:"chin,church,match"},
+  th:{s:"thhhh",d:"/θ/",type:"voiceless dental fricative",mouth:"tongue between teeth, blow",ex:"thin,bath,three"},
+  dh:{s:"thhhh",d:"/ð/",type:"voiced dental fricative",mouth:"tongue between teeth, vibrate",ex:"this,that,mother"},
+  ck:{s:"kuh",d:"/k/",type:"voiceless plosive",mouth:"same as k",ex:"duck,kick,back"},
+  ng:{s:"nng",d:"/ŋ/",type:"voiced nasal",mouth:"back of tongue on soft palate, nose",ex:"ring,song,king"},
+  wh:{s:"wuh",d:"/w/",type:"voiceless approximant",mouth:"round lips, slight breath",ex:"when,what,white"},
+  ph:{s:"fff",d:"/f/",type:"voiceless fricative",mouth:"same as f",ex:"phone,photo,graph"},
+  wr:{s:"rrr",d:"/ɹ/",type:"voiced approximant",mouth:"silent w, just r",ex:"write,wrong,wrap"},
+  kn:{s:"nnn",d:"/n/",type:"voiced nasal",mouth:"silent k, just n",ex:"know,knee,knife"},
+  gn:{s:"nnn",d:"/n/",type:"voiced nasal",mouth:"silent g, just n",ex:"gnat,gnaw,sign"},
+  mb:{s:"mmm",d:"/m/",type:"voiced nasal",mouth:"silent b, just m",ex:"lamb,climb,thumb"},
+  // LONG VOWELS (5)
+  ee:{s:"eeee",d:"/iː/",type:"long front vowel",mouth:"lips spread wide, tongue high",ex:"see,tree,bee"},
+  oo:{s:"oooo",d:"/uː/",type:"long back vowel",mouth:"lips very round, small opening",ex:"moon,food,blue"},
+  aa:{s:"ahhh",d:"/ɑː/",type:"long back vowel",mouth:"mouth wide open",ex:"arm,car,father"},
+  aw:{s:"awww",d:"/ɔː/",type:"long back vowel",mouth:"lips round, jaw drops",ex:"saw,paw,ball"},
+  // DIPHTHONGS (8) — two vowel sounds gliding together
+  ai:{s:"ayyyy",d:"/eɪ/",type:"diphthong",mouth:"start eh, glide to ee",ex:"rain,play,cake"},
+  ow:{s:"owww",d:"/aʊ/",type:"diphthong",mouth:"start ah, glide to oo",ex:"cow,now,house"},
+  oa:{s:"ohhh",d:"/əʊ/",type:"diphthong",mouth:"start uh, glide to oo",ex:"boat,road,go"},
+  oi:{s:"oyyy",d:"/ɔɪ/",type:"diphthong",mouth:"start aw, glide to ee",ex:"boy,coin,toy"},
+  igh:{s:"eyee",d:"/aɪ/",type:"diphthong",mouth:"start ah, glide to ee",ex:"light,my,tie"},
+  ew:{s:"yoooo",d:"/juː/",type:"diphthong",mouth:"start y, glide to oo",ex:"new,few,cute"},
+  ea:{s:"eeee",d:"/iː/",type:"long vowel",mouth:"same as ee",ex:"sea,read,dream"},
+  ou:{s:"owww",d:"/aʊ/",type:"diphthong",mouth:"same as ow",ex:"out,house,found"},
+  // R-CONTROLLED VOWELS (6) — vowel + r modifies the sound
+  ar:{s:"aaar",d:"/ɑːr/",type:"R-controlled",mouth:"open mouth, add r curl",ex:"car,star,farm"},
+  er:{s:"errr",d:"/ɜːr/",type:"R-controlled",mouth:"relaxed mouth, tongue curled",ex:"her,fern,term"},
+  ir:{s:"errr",d:"/ɜːr/",type:"R-controlled",mouth:"same as er",ex:"bird,girl,stir"},
+  or:{s:"ooor",d:"/ɔːr/",type:"R-controlled",mouth:"round lips, add r",ex:"for,horse,corn"},
+  ur:{s:"errr",d:"/ɜːr/",type:"R-controlled",mouth:"same as er",ex:"burn,fur,nurse"},
+  air:{s:"airrr",d:"/ɛər/",type:"R-controlled",mouth:"start eh, glide to r",ex:"fair,chair,hair"},
+  ear:{s:"eerrr",d:"/ɪər/",type:"R-controlled",mouth:"start ee, glide to r",ex:"near,hear,deer"},
+  // CONSONANT BLENDS (common blends for phonics mode)
+  bl:{s:"bluh",d:"/bl/",type:"blend",mouth:"b then l quickly",ex:"blue,black,blow"},
+  br:{s:"bruh",d:"/bɹ/",type:"blend",mouth:"b then r quickly",ex:"brown,bring,bread"},
+  cl:{s:"cluh",d:"/kl/",type:"blend",mouth:"k then l quickly",ex:"clap,clean,cloud"},
+  cr:{s:"cruh",d:"/kɹ/",type:"blend",mouth:"k then r quickly",ex:"crab,crown,cry"},
+  dr:{s:"druh",d:"/dɹ/",type:"blend",mouth:"d then r quickly",ex:"drum,drive,dream"},
+  fl:{s:"fluh",d:"/fl/",type:"blend",mouth:"f then l quickly",ex:"fly,flag,flower"},
+  fr:{s:"fruh",d:"/fɹ/",type:"blend",mouth:"f then r quickly",ex:"frog,free,friend"},
+  gl:{s:"gluh",d:"/ɡl/",type:"blend",mouth:"g then l quickly",ex:"glad,glow,glass"},
+  gr:{s:"gruh",d:"/ɡɹ/",type:"blend",mouth:"g then r quickly",ex:"green,grow,grape"},
+  pl:{s:"pluh",d:"/pl/",type:"blend",mouth:"p then l quickly",ex:"play,plane,please"},
+  pr:{s:"pruh",d:"/pɹ/",type:"blend",mouth:"p then r quickly",ex:"print,prize,proud"},
+  sk:{s:"skuh",d:"/sk/",type:"blend",mouth:"s then k quickly",ex:"skip,sky,skin"},
+  sl:{s:"sluh",d:"/sl/",type:"blend",mouth:"s then l quickly",ex:"slip,slow,sleep"},
+  sm:{s:"smuh",d:"/sm/",type:"blend",mouth:"s then m quickly",ex:"small,smile,smoke"},
+  sn:{s:"snuh",d:"/sn/",type:"blend",mouth:"s then n quickly",ex:"snap,snow,snake"},
+  sp:{s:"spuh",d:"/sp/",type:"blend",mouth:"s then p quickly",ex:"spin,spot,spoon"},
+  st:{s:"stuh",d:"/st/",type:"blend",mouth:"s then t quickly",ex:"stop,star,step"},
+  sw:{s:"swuh",d:"/sw/",type:"blend",mouth:"s then w quickly",ex:"swim,sweet,swing"},
+  tr:{s:"truh",d:"/tɹ/",type:"blend",mouth:"t then r quickly",ex:"tree,trip,train"},
+  tw:{s:"twuh",d:"/tw/",type:"blend",mouth:"t then w quickly",ex:"twin,twelve,twist"},
+  str:{s:"struh",d:"/stɹ/",type:"trigraph blend",mouth:"s then t then r",ex:"string,strong,street"},
+  spl:{s:"spluh",d:"/spl/",type:"trigraph blend",mouth:"s then p then l",ex:"splash,split,splat"},
+  scr:{s:"scruh",d:"/skɹ/",type:"trigraph blend",mouth:"s then k then r",ex:"scratch,scream,scrub"},
+  q:{s:"kwuh",d:"/kw/",type:"blend",mouth:"k then w quickly",ex:"queen,quick,quiz"},
+  // Schwa (unstressed vowel)
+  schwa:{s:"uh",d:"/ə/",type:"unstressed vowel",mouth:"relaxed, barely open",ex:"about,taken,pencil"},
+};
+const gPh=(ph)=>{const l=ph.toLowerCase();return DM[l]||PM[l]||{s:l,d:l,type:"unknown",mouth:"",ex:""};};
 
 const WCATS={
   animals:{emoji:"🐾",color:"#FF6B6B",words:[
@@ -4306,6 +4408,8 @@ export default function App(){
     return [];
   };
   const startSpeakFlow=(topic,mode)=>{
+    // Cancel any existing flow first
+    sfPlayingRef.current=false;
     stop();rec.stop();
     const m=mode||sfMode||"speakback";
     setSfMode(m);
@@ -4313,39 +4417,41 @@ export default function App(){
     if(!items.length){speak("No items found!",{rate:0.9});return;}
     setSfItems(items);setSfIdx(0);setSfScore(0);setSfTotal(0);setSfTopic(topic);
     setSfPhase("idle");setSfRes(null);setSfAcc(null);
-    sfPlayingRef.current=false;
     setScr("speakflow");
     movePandaTo("bottomRight");setTeacherMood("excited");
-    setTimeout(()=>playSfItem(items,0,m),600);
+    // Use a unique token to prevent stale callbacks
+    const token={cancelled:false};
+    sfPlayingRef.current=token;
+    setTimeout(()=>{if(sfPlayingRef.current===token)playSfItem(items,0,m,token);},700);
   };
-  const playSfItem=async(items,idx,mode)=>{
-    if(idx>=items.length||sfPlayingRef.current)return;
-    sfPlayingRef.current=true;
+  const playSfItem=async(items,idx,mode,token)=>{
+    // Safety: if cancelled or out of bounds, stop
+    if(!token||token.cancelled||idx>=items.length)return;
     const item=items[idx];
     const m=mode||sfMode;
-    setSfPhase("speaking");setSfRes(null);setSfAcc(null);
+    setSfPhase("speaking");setSfRes(null);setSfAcc(null);setSfIdx(idx);
     setTeacherMood("speaking");
 
+    const ok=()=>token&&!token.cancelled; // check cancellation
+
     if(m==="speakback"){
-      // Mode A: Just say the word, then kid repeats
-      await speak(item.say,{rate:0.7,pitch:1.0});
-      await wait(400);
+      stop();await speak(item.say,{rate:0.72,pitch:1.0});
+      if(!ok())return;await wait(350);
     } else if(m==="pronounce"){
-      // Mode B: Spell each letter then say the word
-      await speak(item.say,{rate:0.7,pitch:1.0});
-      await wait(300);
+      stop();await speak(item.say,{rate:0.72,pitch:1.0});
+      if(!ok())return;await wait(250);
       const letters=item.say.split("");
       for(let i=0;i<letters.length;i++){
-        if(!sfPlayingRef.current)return;
-        await speak(letters[i].toUpperCase(),{rate:0.6,pitch:1.0});
-        await wait(400);
+        if(!ok())return;
+        stop();await speak(letters[i].toUpperCase(),{rate:0.6,pitch:1.05});
+        if(!ok())return;await wait(350);
       }
-      await speak(item.say+"!",{rate:0.75,pitch:1.0});
-      await wait(300);
+      if(!ok())return;
+      stop();await speak(item.say,{rate:0.78,pitch:1.0});
+      if(!ok())return;await wait(250);
     } else if(m==="phonics"){
-      // Mode C: Show phonic sounds
-      await speak(item.say,{rate:0.7,pitch:1.0});
-      await wait(300);
+      stop();await speak(item.say,{rate:0.72,pitch:1.0});
+      if(!ok())return;await wait(250);
       // Find phonics for this word from WCATS
       let phs=null;
       for(const cat of Object.values(WCATS)){
@@ -4353,38 +4459,39 @@ export default function App(){
         if(w){phs=w.ph;break;}
       }
       if(phs&&phs.length>0){
-        await speak("Sounds like",{rate:0.85,pitch:1.0});
-        await wait(200);
+        stop();await speak("Sounds like",{rate:0.85,pitch:1.0});
+        if(!ok())return;await wait(200);
         for(let i=0;i<phs.length;i++){
-          if(!sfPlayingRef.current)return;
-          await speak(gPh(phs[i]).s,{rate:0.5,pitch:1.0});
-          await wait(500);
+          if(!ok())return;
+          const phData=gPh(phs[i]);
+          stop();await speak(phData.s,{rate:0.45,pitch:0.95});
+          if(!ok())return;await wait(450);
         }
       }
-      await speak(item.say+"!",{rate:0.75,pitch:1.0});
-      await wait(300);
+      if(!ok())return;
+      stop();await speak(item.say,{rate:0.78,pitch:1.0});
+      if(!ok())return;await wait(250);
     } else if(m==="sentences"){
-      // Mode D: Say a sentence with the word
       const sentence=item.sub||item.say+" is great!";
-      await speak(sentence,{rate:0.75,pitch:1.0});
-      await wait(400);
+      stop();await speak(sentence,{rate:0.75,pitch:1.0});
+      if(!ok())return;await wait(350);
     }
 
+    if(!ok())return;
     setTeacherMood("listening");
-    await speak("Your turn!",{rate:0.95,pitch:1.1});
-    await wait(300);
+    stop();await speak("Your turn!",{rate:0.95,pitch:1.1});
+    if(!ok())return;
+    await wait(250);
     setSfPhase("listening");
-    sfPlayingRef.current=false;
-    // AUTO-START MIC — no tap needed!
+    // AUTO-START MIC
     const expected=m==="sentences"?(item.sub||item.say):item.say;
-    setTimeout(()=>{rec.start(handleSfMicResult,expected);},400);
+    setTimeout(()=>{if(ok())rec.start(handleSfMicResult,expected);},350);
   };
   const handleSfMicResult=(result,alternatives)=>{
     const items=sfItems;const idx=sfIdx;
     if(!result||!result.trim()){setSfPhase("listening");showTeacher("happy","Tap 🎤 and try again!");return;}
     const item=items[idx];if(!item)return;
     const normalized=normalizeSpoken(result);
-    // In sentence mode, match against the sentence instead of just the word
     const expected=sfMode==="sentences"?(item.sub||item.say):item.say;
     const acc=calcAcc(expected,result,alternatives);
     setSfRes(normalized);setSfAcc(acc);setSfPhase("result");setSfTotal(t=>t+1);
@@ -4395,8 +4502,16 @@ export default function App(){
     }else{flashWrong();headNo();speak("Try harder next time!",{rate:0.9,pitch:1.0});}
     setTimeout(()=>{
       const next=idx+1;
-      if(next<items.length){setSfIdx(next);setSfRes(null);setSfAcc(null);setSfPhase("idle");setTimeout(()=>playSfItem(items,next,sfMode),500);}
-      else{setSfPhase("done");sfPlayingRef.current=false;speak("All done! You scored "+sfScore+" out of "+items.length+"!",{rate:0.85,pitch:1.0});}
+      if(next<items.length){
+        setSfRes(null);setSfAcc(null);setSfPhase("idle");
+        // Create fresh token for next item
+        const token={cancelled:false};
+        sfPlayingRef.current=token;
+        setTimeout(()=>{if(sfPlayingRef.current===token)playSfItem(items,next,sfMode,token);},500);
+      } else {
+        setSfPhase("done");sfPlayingRef.current=false;
+        speak("All done! Great job!",{rate:0.85,pitch:1.0});
+      }
     },2200);
   };
   const sfTapMic=()=>{
@@ -4738,7 +4853,7 @@ export default function App(){
     return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
       <Confetti key={celebKey} active={confetti} type={celebType}/>
       {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
-      <SubHead title={topicLabel+" Speaking"} onBack={()=>{stop();rec.stop();sfPlayingRef.current=false;setSfPhase("idle");goHome();}} points={prof?.points||0}/>
+      <SubHead title={topicLabel+" Speaking"} onBack={()=>{stop();rec.stop();if(sfPlayingRef.current&&sfPlayingRef.current.cancelled!==undefined)sfPlayingRef.current.cancelled=true;sfPlayingRef.current=false;setSfPhase("idle");goHome();}} points={prof?.points||0}/>
       {/* Progress bar */}
       <div style={{padding:"0 16px"}}>
         <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0"}}>
@@ -4757,6 +4872,30 @@ export default function App(){
           {item.sub&&<div style={{fontSize:14,fontWeight:600,color:"#8E8CA3",marginTop:4}}>{item.sub}</div>}
           {sfMode==="sentences"&&item.sub&&<div style={{marginTop:8,padding:"8px 12px",background:"rgba(108,92,231,0.08)",borderRadius:14}}><div style={{fontSize:10,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1}}>Say this sentence:</div><div style={{fontSize:16,fontWeight:700,color:"#2D2B3D",marginTop:4}}>"{item.sub}"</div></div>}
           {sfMode&&<div style={{marginTop:6,padding:"4px 10px",background:"rgba(108,92,231,0.06)",borderRadius:10,display:"inline-block"}}><span style={{fontSize:10,fontWeight:700,color:"#6C5CE7"}}>{sfMode==="speakback"?"🗣️ Say it back":sfMode==="pronounce"?"🔤 Spell & Say":sfMode==="phonics"?"🔡 Sound it out":"💬 Say the sentence"}</span></div>}
+          {/* Phonics IPA visualization */}
+          {sfMode==="phonics"&&item&&(()=>{
+            let phs=null;
+            for(const cat of Object.values(WCATS)){const w=cat.words.find(w=>w.word.toLowerCase()===item.say.toLowerCase());if(w){phs=w.ph;break;}}
+            if(!phs||!phs.length)return null;
+            const colors=["#6C5CE7","#00D2A0","#FF9F43","#54A0FF","#EC407A","#FF6B6B","#26C6DA","#A29BFE"];
+            return<div style={{marginTop:10,padding:"10px 14px",background:"rgba(108,92,231,0.05)",borderRadius:16}}>
+              <div style={{fontSize:9,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Phoneme Breakdown</div>
+              <div style={{display:"flex",gap:6,justifyContent:"center",flexWrap:"wrap"}}>
+                {phs.map((ph,i)=>{const p=gPh(ph);return<div key={i} style={{
+                  display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"6px 10px",
+                  background:"#fff",borderRadius:12,border:`2px solid ${colors[i%colors.length]}22`,
+                  minWidth:44,boxShadow:"0 2px 8px rgba(0,0,0,0.04)"
+                }}>
+                  <span style={{fontSize:18,fontWeight:900,color:colors[i%colors.length],fontFamily:"var(--font)"}}>{ph}</span>
+                  <span style={{fontSize:8,fontWeight:700,color:"#8E8CA3"}}>{p.d}</span>
+                  <span style={{fontSize:7,fontWeight:600,color:"#B0B0C0",fontStyle:"italic"}}>{p.s}</span>
+                </div>;})}
+              </div>
+              <div style={{fontSize:9,fontWeight:600,color:"#B0B0C0",textAlign:"center",marginTop:6}}>
+                {phs.map(ph=>gPh(ph).s).join(" · ")} → {item.say}
+              </div>
+            </div>;
+          })()}
         </div>}
         {/* Speaking phase */}
         {sfPhase==="speaking"&&<div style={{textAlign:"center",padding:16,background:"#EDE9FE",borderRadius:20,animation:"slideUp 0.3s"}}>
@@ -4797,9 +4936,9 @@ export default function App(){
           <div style={{fontSize:18,fontWeight:800,color:"#6C5CE7",margin:"8px 0"}}>{sfScore} / {sfItems.length} correct</div>
           {sfScore>0&&<div style={{fontSize:16,fontWeight:700,color:"#22C55E"}}>+{sfScore*5} points earned!</div>}
           <div style={{display:"flex",gap:10,marginTop:16}}>
-            <button onClick={()=>{stop();rec.stop();sfPlayingRef.current=false;setSfIdx(0);setSfScore(0);setSfTotal(0);setSfPhase("idle");setSfRes(null);setSfAcc(null);setTimeout(()=>playSfItem(sfItems,0,sfMode),500);}} style={{flex:1,padding:"14px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Again</button>
-            <button onClick={()=>{stop();rec.stop();sfPlayingRef.current=false;setScr("speaking");}} style={{flex:1,padding:"14px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>📚 Topics</button>
-            <button onClick={()=>{stop();rec.stop();sfPlayingRef.current=false;goHome();}} style={{flex:1,padding:"14px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🏠 Home</button>
+            <button onClick={()=>{stop();rec.stop();sfPlayingRef.current=false;setSfIdx(0);setSfScore(0);setSfTotal(0);setSfPhase("idle");setSfRes(null);setSfAcc(null);const tok={cancelled:false};sfPlayingRef.current=tok;setTimeout(()=>{if(sfPlayingRef.current===tok)playSfItem(sfItems,0,sfMode,tok);},600);}} style={{flex:1,padding:"14px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Again</button>
+            <button onClick={()=>{stop();rec.stop();if(sfPlayingRef.current&&sfPlayingRef.current.cancelled!==undefined)sfPlayingRef.current.cancelled=true;sfPlayingRef.current=false;setScr("speaking");}} style={{flex:1,padding:"14px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>📚 Topics</button>
+            <button onClick={()=>{stop();rec.stop();if(sfPlayingRef.current&&sfPlayingRef.current.cancelled!==undefined)sfPlayingRef.current.cancelled=true;sfPlayingRef.current=false;goHome();}} style={{flex:1,padding:"14px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🏠 Home</button>
           </div>
         </div>}
         {/* Idle phase */}
