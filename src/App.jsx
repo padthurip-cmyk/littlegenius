@@ -3968,7 +3968,7 @@ export default function App(){
       </div>
       <label style={{fontSize:12,fontWeight:800,color:"#6C5CE7",textTransform:"uppercase",letterSpacing:1.5,display:"block",marginBottom:6}}>I am a...</label>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:16}}>
-        {[{g:"boy",e:"👦",c:"#6C5CE7"},{g:"girl",e:"👧",c:"#E84393"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{
+        {(()=>{const baseTiles=[{g:"boy",e:"👦",c:"#6C5CE7"},{g:"girl",e:"👧",c:"#E84393"}].map(x=><button key={x.g} onClick={()=>setObG(x.g)} style={{
           padding:16,borderRadius:18,border:"3px solid",
           borderColor:obG===x.g?x.c:"#E8E8E8",
           background:obG===x.g?(x.g==="boy"?"#FFF5EB":"#FDF2F8"):"#fff",
@@ -4099,6 +4099,20 @@ export default function App(){
     {id:"pronounce",icon:"🗣️",title:"Pronounce",desc:"Learn to spell & say words",mode:"pronounce"},
     {id:"phonics_mode",icon:"🔡",title:"Phonics",desc:"Break words into sounds",mode:"phonics"},
     {id:"sentences",icon:"💬",title:"Word Sentences",desc:"Say full sentences aloud",mode:"sentences"},
+  ];
+  const SPEAKING_TOPICS=[
+    {id:"alphabets",icon:"🔤",title:"A-Z Letters",scr:"learn",tab:"abc"},
+    {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
+    {id:"animals",icon:"🐾",title:"Animals",scr:"phonics",cat:"animals"},
+    {id:"food",icon:"🍎",title:"Food & Fruits",scr:"phonics",cat:"food"},
+    {id:"nature",icon:"🌿",title:"Nature",scr:"phonics",cat:"nature"},
+    {id:"body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
+    {id:"transport",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
+    {id:"family",icon:"👨‍👩‍👧",title:"Family & People",scr:"phonics",cat:"family"},
+    {id:"colors",icon:"🎨",title:"Colors",scr:"colors"},
+    {id:"shapes",icon:"🔷",title:"Shapes",scr:"shapes"},
+    {id:"clothes",icon:"👕",title:"Clothes",scr:"phonics",cat:"clothes"},
+    {id:"feelings",icon:"😊",title:"Feelings",scr:"phonics",cat:"feelings"},
   ];
   const SPEAKING_TOPICS=[
     {id:"alphabets",icon:"🔤",title:"A-Z Letters",scr:"learn",tab:"abc"},
@@ -4343,7 +4357,7 @@ const LISTENING_CATS=[
           </button>
         )}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,padding:"12px 16px"}}>
+      <div style={{display:"none",gridTemplateColumns:"1fr 1fr 1fr",gap:8,padding:"12px 16px"}}>
         {[
           {id:"studyplan",icon:"📋",title:"Study Plan",bg:"#FFF3E0",tc:"#E65100"},
           {id:"arena",icon:"🏟️",title:"Arena",bg:"#FCE4EC",tc:"#AD1457"},
@@ -4364,7 +4378,7 @@ const LISTENING_CATS=[
           {[1,2,3,4];const priority=typeof localStorage!=="undefined"?localStorage.getItem("lg_priority_tile"):null;const sorted=priority?[...baseTiles].sort((a,b)=>a.id===priority?-1:b.id===priority?1:0):baseTiles;return sorted;})().map(i=><div key={i} style={{width:44,height:44,borderRadius:12,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9",boxShadow:"var(--shadow-card)"}}>{pinInput.length>=i?"●":"○"}</div>)}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:240,margin:"0 auto"}}>
-          {[1,2,3,4,5,6,7,8,9,0,"⌫"].map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
+          {[1,2,3,4,5,6,7,8,9,0,"⌫"];const priority=typeof localStorage!=="undefined"?localStorage.getItem("lg_priority_tile"):null;const sorted=priority?[...baseTiles].sort((a,b)=>a.id===priority?-1:b.id===priority?1:0):baseTiles;return sorted;})().map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
             sfxTap();
             if(n==="⌫"){setPinInput(p=>p.slice(0,-1));}
             else{const np=pinInput+n;setPinInput(np);
