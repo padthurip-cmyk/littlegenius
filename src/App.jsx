@@ -1228,17 +1228,13 @@ const genArenaQ=(diff="easy")=>{const t=ARENA_Q_TYPES[Math.floor(Math.random()*A
 
 // ═══ FIRST-TIME QUESTIONNAIRE ═══
 const QUESTIONNAIRE=[
-  {q:"What's the main goal?",opts:["Numbers & Counting","Letters & Reading","Both equally","Fun & Games"],key:"focus"},
-  {q:"Can they count to 10?",opts:["Yes, easily","Almost there","Just starting","Not yet"],key:"counting"},
-  {q:"Can they recognize A-Z?",opts:["Yes, all letters","Most letters","A few letters","Not yet"],key:"letters"},
-  {q:"Can they read simple words?",opts:["Yes, short words","Starting to","Not yet","Too young"],key:"reading"},
-  {q:"Can they do simple math?",opts:["2+3 = easy!","With help","Not yet","Too young"],key:"math"},
-  {q:"How do they learn best?",opts:["Watching (visual)","Listening (audio)","Doing (hands-on)","Mix of all"],key:"style"},
-  {q:"What topics interest them?",opts:["Animals & Nature","Colors & Shapes","Music & Sounds","Everything!"],key:"interest"},
-  {q:"How much daily screen time?",opts:["10-15 min","15-30 min","30-60 min","No limit"],key:"time"},
-  {q:"Want multiplayer quizzes?",opts:["Yes, with family","Yes, with friends","Maybe later","Not interested"],key:"arena"},
-  {q:"What motivates them?",opts:["Stars & Points","Praise & Cheers","Unlocking rewards","Just having fun"],key:"motivation"},
-];
+  {q:"Which skill needs the most work?",opts:["Speaking clearly","Listening & understanding","Reading words","Writing letters & numbers"],key:"weakSkill"},
+  {q:"What topics does your child love?",opts:["Animals & Nature","Numbers & Counting","Colors & Shapes","Words & Stories"],key:"interest"},
+  {q:"Can they read simple words?",opts:["Yes, full sentences!","Short words (cat, dog)","Just letters","Not yet"],key:"readLevel"},
+  {q:"How far can they count?",opts:["Up to 100!","Up to 20","Up to 10","Just starting"],key:"countLevel"},
+  {q:"How do they learn best?",opts:["Watching & seeing","Listening & repeating","Hands-on practice","A mix of everything"],key:"learnStyle"},
+  {q:"Daily learning time?",opts:["10-15 minutes","15-30 minutes","30-60 minutes","Flexible"],key:"screenTime"},
+]
 
 const STORIES = [
   {id:1,title:"The Lost Kitten",emoji:"🐱",level:"easy",
@@ -2466,12 +2462,12 @@ export default function App(){
     guideTourRef.current=true;
     movePandaTo("bottomRight");
     const tiles=[
-      {id:"learn",msg:"Learn! Numbers, letters, shapes and colors!"},
-      {id:"phonics",msg:"Phonics! Learn to read over 500 words!"},
-      {id:"quizzone",msg:"Quiz Zone! Test what you've learned!"},
+      {id:"speaking",msg:"Speaking! Practice saying words, letters and sentences!"},
+      {id:"listening",msg:"Listening! Hear and learn over 500 words in 30 topics!"},
+      {id:"reading",msg:"Reading! Match and spell words to learn to read!"},
+      {id:"writing",msg:"Writing! Trace letters and numbers with your finger!"},
+      {id:"mixquiz",msg:"Mix Quiz! Test everything with fun quizzes!"},
       {id:"stories",msg:"Stories! Read fun tales and answer questions!"},
-      {id:"rewards",msg:"Rewards! Spend your points on cool prizes!"},
-      {id:"settings",msg:"And Settings! You can change your look here!"},
     ];
     // Claymorphism highlight style for tour tiles
     const clayOn="0 6px 24px rgba(255,140,66,0.45), 0 2px 8px rgba(255,140,66,0.3), inset 0 2px 4px rgba(255,255,255,0.35), inset 0 -2px 6px rgba(0,0,0,0.08), 0 0 0 3px rgba(255,159,67,0.5)";
@@ -4123,12 +4119,12 @@ export default function App(){
 
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
-  const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
+  const showNav=["home","speaking","listening","reading","writing","learn","quizzone","phonics","stories","rewards","settings","studyplan"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
   const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
     {[
       {id:"home",icon:"🏠",label:"Home"},
       {id:"parent_nav",icon:"👨‍👩‍👧",label:"Parent"},
-      {id:"homework",icon:"📝",label:"Tasks"},
+      {id:"studyplan",icon:"📋",label:"Plan"},
       {id:"arena",icon:"🏟️",label:"Arena"},
       {id:"rewards",icon:"🎁",label:"Rewards"},
       {id:"settings",icon:"⚙️",label:"Settings"},
@@ -4158,7 +4154,11 @@ export default function App(){
           sfxTap();
           const newA=[...qAnswers,opt];setQAnswers(newA);
           if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
-          else{saveQuizAnswers(newA);setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
+          else{
+            saveQuizAnswers(newA);
+            const weakMap={"Speaking clearly":"speaking","Listening & understanding":"listening","Reading words":"reading","Writing letters & numbers":"writing"};
+            const weakAnswer=newA[0];if(weakMap[weakAnswer])try{localStorage.setItem("lg_priority_tile",weakMap[weakAnswer]);}catch(e){}
+            setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
         }} style={{
           padding:"14px 18px",border:"none",cursor:"pointer",fontFamily:"var(--font)",
           fontSize:14,fontWeight:700,textAlign:"left",
@@ -4184,30 +4184,57 @@ export default function App(){
 
   // ═══ SUB-CATEGORY DATA ═══
   const SPEAKING_CATS=[
-    {id:"alphabets",icon:"🔤",title:"Alphabets A-Z",scr:"learn",tab:"abc"},
+    {id:"speakback",icon:"🎤",title:"Speak Back",desc:"Hear it, say it, get scored!",mode:"speakback"},
+    {id:"pronounce",icon:"🗣️",title:"Pronounce",desc:"Learn to spell & say words",mode:"pronounce"},
+    {id:"phonics_mode",icon:"🔡",title:"Phonics",desc:"Break words into sounds",mode:"phonics"},
+    {id:"sentences",icon:"💬",title:"Word Sentences",desc:"Say full sentences aloud",mode:"sentences"},
+  ];
+  const SPEAKING_TOPICS=[
+    {id:"alphabets",icon:"🔤",title:"A-Z Letters",scr:"learn",tab:"abc"},
     {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
     {id:"animals",icon:"🐾",title:"Animals",scr:"phonics",cat:"animals"},
+    {id:"food",icon:"🍎",title:"Food & Fruits",scr:"phonics",cat:"food"},
+    {id:"nature",icon:"🌿",title:"Nature",scr:"phonics",cat:"nature"},
+    {id:"body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
+    {id:"transport",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
+    {id:"family",icon:"👨‍👩‍👧",title:"Family & People",scr:"phonics",cat:"family"},
     {id:"colors",icon:"🎨",title:"Colors",scr:"colors"},
     {id:"shapes",icon:"🔷",title:"Shapes",scr:"shapes"},
-    {id:"fruits",icon:"🍎",title:"Fruits & Food",scr:"phonics",cat:"food"},
-    {id:"body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
-    {id:"vehicles",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
-    {id:"family",icon:"👨‍👩‍👧",title:"Family & People",scr:"phonics",cat:"family"},
-    {id:"nature",icon:"🌿",title:"Nature",scr:"phonics",cat:"nature"},
-  ];
+    {id:"clothes",icon:"👕",title:"Clothes",scr:"phonics",cat:"clothes"},
+    {id:"feelings",icon:"😊",title:"Feelings",scr:"phonics",cat:"feelings"},
+  ]
   const LISTENING_CATS=[
-    {id:"numbers",icon:"🔢",title:"Numbers",scr:"learn",tab:"numbers"},
-    {id:"alphabets",icon:"🔤",title:"Alphabets",scr:"learn",tab:"abc"},
-    {id:"animals",icon:"🐾",title:"Animals & Nature",scr:"phonics",cat:"animals"},
-    {id:"colors",icon:"🎨",title:"Colors & Shapes",scr:"learn",tab:"colors"},
-    {id:"food",icon:"🍎",title:"Fruits & Food",scr:"phonics",cat:"food"},
-    {id:"vehicles",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
+    {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
+    {id:"alphabets",icon:"🔤",title:"A-Z Letters",scr:"learn",tab:"abc"},
+    {id:"animals",icon:"🐾",title:"Animals",scr:"phonics",cat:"animals"},
+    {id:"food",icon:"🍎",title:"Food",scr:"phonics",cat:"food"},
+    {id:"fruits",icon:"🍉",title:"Fruits",scr:"phonics",cat:"fruits"},
+    {id:"vegetables",icon:"🥬",title:"Vegetables",scr:"phonics",cat:"vegetables"},
+    {id:"nature",icon:"🌿",title:"Nature",scr:"phonics",cat:"nature"},
     {id:"body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
-    {id:"weather",icon:"🌤️",title:"Weather",scr:"phonics",cat:"weather"},
-    {id:"countries",icon:"🌍",title:"Countries",scr:"phonics",cat:"countries"},
+    {id:"family",icon:"👨‍👩‍👧",title:"Family",scr:"phonics",cat:"family"},
+    {id:"clothes",icon:"👕",title:"Clothes",scr:"phonics",cat:"clothes"},
+    {id:"transport",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
+    {id:"school",icon:"🏫",title:"School",scr:"phonics",cat:"school"},
     {id:"sports",icon:"⚽",title:"Sports",scr:"phonics",cat:"sports"},
+    {id:"countries",icon:"🌍",title:"Countries",scr:"phonics",cat:"countries"},
+    {id:"actions",icon:"🏃",title:"Actions",scr:"phonics",cat:"actions"},
+    {id:"feelings",icon:"😊",title:"Feelings",scr:"phonics",cat:"feelings"},
+    {id:"things",icon:"🎒",title:"Things",scr:"phonics",cat:"things"},
     {id:"places",icon:"🏛️",title:"Places",scr:"phonics",cat:"places"},
-  ];
+    {id:"music",icon:"🎵",title:"Music",scr:"phonics",cat:"music"},
+    {id:"weather",icon:"🌤️",title:"Weather",scr:"phonics",cat:"weather"},
+    {id:"home",icon:"🏠",title:"Home",scr:"phonics",cat:"home"},
+    {id:"ocean",icon:"🐚",title:"Ocean",scr:"phonics",cat:"ocean"},
+    {id:"garden",icon:"🌱",title:"Garden",scr:"phonics",cat:"garden"},
+    {id:"toys",icon:"🧸",title:"Toys",scr:"phonics",cat:"toys"},
+    {id:"opposites",icon:"↔️",title:"Opposites",scr:"phonics",cat:"opposites"},
+    {id:"time",icon:"⏰",title:"Time",scr:"phonics",cat:"time"},
+    {id:"colors",icon:"🎨",title:"Colors",scr:"learn",tab:"colors"},
+    {id:"shapes",icon:"🔷",title:"Shapes",scr:"learn",tab:"shapes"},
+    {id:"math",icon:"➕",title:"Math Words",scr:"phonics",cat:"math"},
+    {id:"sight",icon:"👁️",title:"Sight Words",scr:"phonics",cat:"sight"},
+  ]
   const READING_CATS=[
     {id:"cvc",icon:"🧩",title:"CVC Words (cat, dog)",scr:"phonics",cat:"cvc"},
     {id:"blends",icon:"🔗",title:"Blends (stop, clip)",scr:"phonics",cat:"blends"},
@@ -4215,13 +4242,16 @@ export default function App(){
     {id:"animals",icon:"🐾",title:"Animal Words",scr:"phonics",cat:"animals"},
     {id:"food",icon:"🍎",title:"Food Words",scr:"phonics",cat:"food"},
     {id:"nature",icon:"🌿",title:"Nature Words",scr:"phonics",cat:"nature"},
-  ];
+    {id:"body",icon:"🫁",title:"Body Part Words",scr:"phonics",cat:"body"},
+    {id:"family",icon:"👨‍👩‍👧",title:"People Words",scr:"phonics",cat:"family"},
+    {id:"transport",icon:"🚗",title:"Vehicle Words",scr:"phonics",cat:"transport"},
+    {id:"clothes",icon:"👕",title:"Clothes Words",scr:"phonics",cat:"clothes"},
+  ]
   const WRITING_CATS=[
     {id:"upper",icon:"🔠",title:"Uppercase A-Z",scr:"quizzone",qtab:"write",wmode:"letters",wcase:"caps"},
     {id:"lower",icon:"🔡",title:"Lowercase a-z",scr:"quizzone",qtab:"write",wmode:"letters",wcase:"small"},
     {id:"nums",icon:"🔢",title:"Numbers 0-9",scr:"quizzone",qtab:"write",wmode:"numbers"},
-    {id:"words",icon:"📝",title:"Simple Words",scr:"phonics",cat:"cvc"},
-  ];
+  ]
   const MATHS_CATS=[
     {id:"counting",icon:"🔢",title:"Counting 1-100",scr:"learn",tab:"numbers"},
     {id:"addition",icon:"➕",title:"Addition",scr:"quizzone",qtab:"math",mop:"+"},
@@ -4262,13 +4292,13 @@ export default function App(){
       <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
     </div>
   );
-  if(scr==="speaking")return<SubCatScreen title="Speaking 🗣️" emoji="🗣️" cats={SPEAKING_CATS} onBack={goHome}/>;
+  if(scr==="speaking")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={6}/><SubHead title="Speaking 🗣️" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}><div style={{textAlign:"center",fontSize:48,marginBottom:4,animation:"mascotB 2s ease-in-out infinite"}}>🗣️</div><h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--dark)",textAlign:"center",margin:"0 0 4px"}}>Choose a Speaking Mode</h3><p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:12}}>Pick how you want to practice, then choose a topic!</p><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>{SPEAKING_CATS.map((c,i)=><button key={c.id} onClick={()=>{sfxTap();if(c.mode==="speakback")setPhModes({spelling:false,phonics:false,sentence:false,speak:true});else if(c.mode==="pronounce")setPhModes({spelling:true,phonics:false,sentence:false,speak:false});else if(c.mode==="phonics")setPhModes({spelling:false,phonics:true,sentence:false,speak:false});else if(c.mode==="sentences")setPhModes({spelling:false,phonics:false,sentence:true,speak:true});speak(c.title+"! Now pick a topic!",{rate:0.85,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"20px 10px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:"var(--font)",background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],boxShadow:"0 4px 14px rgba(0,0,0,0.1)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both`}}><span style={{fontSize:36}}>{c.icon}</span><span style={{fontWeight:800,fontSize:14,color:"#fff"}}>{c.title}</span><span style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.85)",textAlign:"center"}}>{c.desc}</span></button>)}</div><h4 style={{fontFamily:"var(--font)",fontSize:14,fontWeight:800,color:"var(--dark)",margin:"0 0 8px"}}>📚 Pick a Topic</h4><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>{SPEAKING_TOPICS.map((t,i)=><button key={t.id} onClick={()=>goSubCat(t)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"14px 6px",borderRadius:18,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-card)",animation:`gridPop 0.3s ease ${0.3+i*0.04}s both`}}><span style={{fontSize:24}}>{t.icon}</span><span style={{fontWeight:700,fontSize:11,color:"#2D2B3D",textAlign:"center"}}>{t.title}</span></button>)}</div></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
   if(scr==="listening")return<SubCatScreen title="Listening 👂" emoji="👂" cats={LISTENING_CATS} onBack={goHome}/>;
   if(scr==="reading")return<SubCatScreen title="Reading 📖" emoji="📖" cats={READING_CATS} onBack={goHome}/>;
   if(scr==="writing")return<SubCatScreen title="Writing ✍️" emoji="✍️" cats={WRITING_CATS} onBack={goHome}/>;
-  if(scr==="maths")return<SubCatScreen title="Maths 🧮" emoji="🧮" cats={MATHS_CATS} onBack={goHome}/>;
+  if(scr==="maths"){setScr("quizzone");setQuizTab("math");return null;}
   if(scr==="mixquiz"){setScr("quizzone");return null;}
-  if(scr==="homework")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Homework 📝" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,padding:20}}><span style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>📝</span><h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",textAlign:"center"}}>Coming Soon!</h2><p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,textAlign:"center"}}>Parents will assign homework tasks here</p></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
+  
 
 
     if(scr==="home")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
@@ -4298,15 +4328,15 @@ export default function App(){
         <p style={{fontSize:12,fontWeight:600,color:"var(--gray)"}}>Pick a skill to start!</p>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"0 16px"}}>
-        {[
-          {id:"speaking",icon:"🗣️",title:"Speaking",sub:"Say words & letters",bg:"linear-gradient(135deg,#6C5CE7,#A29BFE)"},
-          {id:"listening",icon:"👂",title:"Listening",sub:"Hear & understand",bg:"linear-gradient(135deg,#00D2A0,#55EFC4)"},
-          {id:"reading",icon:"📖",title:"Reading",sub:"Match words & spell",bg:"linear-gradient(135deg,#FF9F43,#FECA57)"},
-          {id:"writing",icon:"✍️",title:"Writing",sub:"Trace & write",bg:"linear-gradient(135deg,#54A0FF,#74B9FF)"},
-          {id:"maths",icon:"🧮",title:"Maths",sub:"Count, add & multiply",bg:"linear-gradient(135deg,#FF6B6B,#EE5A5A)"},
-          {id:"mixquiz",icon:"🎯",title:"Mix Quiz",sub:"Test all your skills",bg:"linear-gradient(135deg,#EC407A,#F48FB1)"},
-          {id:"stories",icon:"📚",title:"Stories",sub:"Read & learn",bg:"linear-gradient(135deg,#26C6DA,#4DD0E1)"},
-        ].map((t,i)=>
+        {(()=>{const baseTiles=[
+          {id:"speaking",icon:"🗣️",title:"Speaking",sub:"Speak back, pronounce & phonics",bg:"linear-gradient(135deg,#6C5CE7,#A29BFE)"},
+          {id:"listening",icon:"👂",title:"Listening",sub:"Hear & understand 30+ topics",bg:"linear-gradient(135deg,#00D2A0,#55EFC4)"},
+          {id:"reading",icon:"📖",title:"Reading",sub:"Spell & match words",bg:"linear-gradient(135deg,#FF9F43,#FECA57)"},
+          {id:"writing",icon:"✍️",title:"Writing",sub:"Trace letters & numbers",bg:"linear-gradient(135deg,#54A0FF,#74B9FF)"},
+
+          {id:"mixquiz",icon:"🎯",title:"Mix Quiz",sub:"Numbers, math, letters & more!",bg:"linear-gradient(135deg,#EC407A,#F48FB1)"},
+          {id:"stories",icon:"📚",title:"Stories",sub:"Read fun tales & learn",bg:"linear-gradient(135deg,#26C6DA,#4DD0E1)"},
+        ];const priority=typeof localStorage!=="undefined"?localStorage.getItem("lg_priority_tile"):null;const sorted=priority?[...baseTiles].sort((a,b)=>a.id===priority?-1:b.id===priority?1:0):baseTiles;return sorted;})().map((t,i)=>
           <button key={t.id} data-r="tile" data-tile={t.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
             speak(t.title+"! Let's go!",{rate:0.85,pitch:1.0});setScr(t.id);
           }} style={{
