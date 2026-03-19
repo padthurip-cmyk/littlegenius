@@ -1234,32 +1234,6 @@ const QUESTIONNAIRE=[
   {q:"How far can they count?",opts:["Up to 100!","Up to 20","Up to 10","Just starting"],key:"countLevel"},
   {q:"How do they learn best?",opts:["Watching & seeing","Listening & repeating","Hands-on practice","A mix of everything"],key:"learnStyle"},
   {q:"Daily learning time?",opts:["10-15 minutes","15-30 minutes","30-60 minutes","Flexible"],key:"screenTime"},
-]const SHAPES=[
-  {name:"circle",emoji:"🔵",desc:"Round like a ball!",sides:0,ph:["s","ir","c","l"],sentence:"A circle is round like a ball!",
-    scene:{bg:"linear-gradient(180deg,#87CEEB,#B0E0E6,#98FB98)",elements:[{emoji:"🔵",size:70,x:50,y:35,anim:"floatBob",dur:2},{emoji:"⚽",size:30,x:25,y:55,anim:"ballBounce",dur:1.5},{emoji:"🍩",size:28,x:75,y:55,anim:"eggWobble",dur:2},{emoji:"🌕",size:32,x:50,y:15,anim:"moonGlow",dur:3}]}},
-  {name:"square",emoji:"🟧",desc:"Four equal sides!",sides:4,ph:["s","q","air"],sentence:"A square has four equal sides!",
-    scene:{bg:"linear-gradient(180deg,#FFECD2,#FCB69F,#FF9A9E)",elements:[{emoji:"🟧",size:70,x:50,y:35,anim:"eggWobble",dur:2},{emoji:"📦",size:30,x:25,y:60,anim:"floatBob",dur:2},{emoji:"🧱",size:28,x:75,y:60,anim:"floatBob",dur:2.5,delay:0.3}]}},
-  {name:"triangle",emoji:"🔺",desc:"Three corners!",sides:3,ph:["t","r","igh","a","ng","l"],sentence:"A triangle has three corners!",
-    scene:{bg:"linear-gradient(180deg,#A8E6CF,#DCEDC1,#FFD3B6)",elements:[{emoji:"🔺",size:70,x:50,y:35,anim:"floatBob",dur:2},{emoji:"⛰️",size:40,x:25,y:55,anim:"sway",dur:3},{emoji:"🏔️",size:44,x:75,y:50,anim:"sway",dur:3.5,delay:0.3}]}},
-  {name:"star",emoji:"⭐",desc:"Twinkle twinkle!",sides:5,ph:["s","t","ar"],sentence:"Stars twinkle in the night sky!",
-    scene:{bg:"linear-gradient(180deg,#0D1B2A,#1B2838,#2C3E50)",elements:[...Array.from({length:12},(_,i)=>({emoji:"⭐",size:12+Math.random()*20,x:5+Math.random()*90,y:5+Math.random()*70,anim:"twinkle",dur:1+Math.random()*2,delay:Math.random()*2})),{emoji:"🌙",size:40,x:80,y:15,anim:"moonGlow",dur:3}]}},
-  {name:"heart",emoji:"❤️",desc:"Full of love!",sides:0,ph:["h","ar","t"],sentence:"A heart means love!",
-    scene:{bg:"linear-gradient(180deg,#FFE4E1,#FFC0CB,#FF69B4)",elements:[...Array.from({length:6},(_,i)=>({emoji:["❤️","💕","💗","💖"][i%4],size:18+Math.random()*20,x:10+Math.random()*80,y:10+Math.random()*60,anim:"floatBob",dur:2+Math.random()*2,delay:i*0.3}))]}},
-  {name:"diamond",emoji:"💎",desc:"Sparkly!",sides:4,ph:["d","igh","m","u","n","d"],sentence:"A diamond sparkles in the light!",
-    scene:{bg:"linear-gradient(180deg,#1B1B4B,#2B1B5B,#4B0082)",elements:[{emoji:"💎",size:60,x:50,y:35,anim:"sunPulse",dur:2},...Array.from({length:8},(_,i)=>({emoji:"✨",size:10+Math.random()*16,x:10+Math.random()*80,y:10+Math.random()*70,anim:"twinkle",dur:1+Math.random()*2,delay:i*0.2}))]}},
-
-  {name:"oval",emoji:"🥚",desc:"Like an egg!",sides:0,ph:["o","v","a","l"],sentence:"An oval is shaped like an egg!",
-    scene:{bg:"linear-gradient(180deg,#FFF8DC,#FAFAD2,#EEE8AA)",elements:[{emoji:"🥚",size:50,x:40,y:35,anim:"eggWobble",dur:2},{emoji:"🏈",size:36,x:65,y:50,anim:"floatBob",dur:2.5},{emoji:"🪞",size:28,x:25,y:55,anim:"sway",dur:3}]}},
-  {name:"rectangle",emoji:"📦",desc:"Like a door!",sides:4,ph:["r","e","c","t","a","ng","l"],sentence:"A rectangle is like a door!",
-    scene:{bg:"linear-gradient(180deg,#E8F5E9,#C8E6C9,#A5D6A7)",elements:[{emoji:"📦",size:50,x:40,y:35,anim:"floatBob",dur:2},{emoji:"🚪",size:40,x:65,y:45,anim:"sway",dur:3},{emoji:"📱",size:28,x:25,y:55,anim:"eggWobble",dur:2}]}},
-  {name:"pentagon",emoji:"⬠",desc:"Five sides!",sides:5,ph:["p","e","n","t","a","g","o","n"],sentence:"A pentagon has five sides!",
-    scene:{bg:"linear-gradient(180deg,#E3F2FD,#BBDEFB,#90CAF9)",elements:[{emoji:"⬠",size:60,x:50,y:35,anim:"floatBob",dur:2},{emoji:"🏠",size:36,x:25,y:55,anim:"sway",dur:3},{emoji:"⭐",size:24,x:75,y:25,anim:"twinkle",dur:2}]}},
-  {name:"hexagon",emoji:"⬡",desc:"Six sides like a honeycomb!",sides:6,ph:["h","e","x","a","g","o","n"],sentence:"Bees make hexagon shapes!",
-    scene:{bg:"linear-gradient(180deg,#FFF8E1,#FFECB3,#FFD54F)",elements:[{emoji:"⬡",size:50,x:50,y:35,anim:"floatBob",dur:2},{emoji:"🐝",size:30,x:30,y:50,anim:"birdFly",dur:3},{emoji:"🍯",size:28,x:70,y:55,anim:"eggWobble",dur:2}]}},
-  {name:"arrow",emoji:"➡️",desc:"Points the way!",sides:0,ph:["a","r","ow"],sentence:"An arrow shows which way to go!",
-    scene:{bg:"linear-gradient(180deg,#F3E5F5,#E1BEE7,#CE93D8)",elements:[{emoji:"➡️",size:50,x:50,y:35,anim:"truckDrive",dur:3},{emoji:"⬆️",size:24,x:30,y:25,anim:"floatBob",dur:2},{emoji:"⬇️",size:24,x:70,y:60,anim:"floatBob",dur:2.5}]}},
-  {name:"crescent",emoji:"🌙",desc:"Like the moon!",sides:0,ph:["c","r","e","s","e","n","t"],sentence:"The crescent moon shines at night!",
-    scene:{bg:"linear-gradient(180deg,#1A237E,#283593,#3949AB)",elements:[{emoji:"🌙",size:60,x:50,y:30,anim:"moonGlow",dur:3},...Array.from({length:8},(_,i)=>({emoji:"⭐",size:8+Math.random()*12,x:5+Math.random()*90,y:5+Math.random()*60,anim:"twinkle",dur:1+Math.random()*2,delay:Math.random()*2}))]}},
 ];
 const COLORSDATA=[
   {name:"red",hex:"#EF4444",emoji:"🍎",things:["apple","fire truck","strawberry"],ph:["r","e","d"],sentence:"Red is the color of a fire truck!",
@@ -4058,7 +4032,7 @@ export default function App(){
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
   const showNav=["home","speaking","listening","reading","writing","learn","quizzone","phonics","stories","rewards","settings","studyplan","speakflow"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
   const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
-    {[
+    {(()=>{const baseTiles=[
       {id:"home",icon:"🏠",label:"Home"},
       {id:"parent_nav",icon:"👨‍👩‍👧",label:"Parent"},
       {id:"studyplan",icon:"📋",label:"Plan"},
@@ -4139,7 +4113,7 @@ export default function App(){
     {id:"shapes",icon:"🔷",title:"Shapes",scr:"shapes"},
     {id:"clothes",icon:"👕",title:"Clothes",scr:"phonics",cat:"clothes"},
     {id:"feelings",icon:"😊",title:"Feelings",scr:"phonics",cat:"feelings"},
-  ]
+  ];
   const SPEAKING_TOPICS=[
     {id:"alphabets",icon:"🔤",title:"A-Z Letters",scr:"learn",tab:"abc"},
     {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
@@ -4153,8 +4127,22 @@ export default function App(){
     {id:"shapes",icon:"🔷",title:"Shapes",scr:"shapes"},
     {id:"clothes",icon:"👕",title:"Clothes",scr:"phonics",cat:"clothes"},
     {id:"feelings",icon:"😊",title:"Feelings",scr:"phonics",cat:"feelings"},
-  ]
-  const LISTENING_CATS=[
+  ];
+const SPEAKING_TOPICS=[
+    {id:"alphabets",icon:"🔤",title:"A-Z Letters",scr:"learn",tab:"abc"},
+    {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
+    {id:"animals",icon:"🐾",title:"Animals",scr:"phonics",cat:"animals"},
+    {id:"food",icon:"🍎",title:"Food & Fruits",scr:"phonics",cat:"food"},
+    {id:"nature",icon:"🌿",title:"Nature",scr:"phonics",cat:"nature"},
+    {id:"body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
+    {id:"transport",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
+    {id:"family",icon:"👨‍👩‍👧",title:"Family & People",scr:"phonics",cat:"family"},
+    {id:"colors",icon:"🎨",title:"Colors",scr:"colors"},
+    {id:"shapes",icon:"🔷",title:"Shapes",scr:"shapes"},
+    {id:"clothes",icon:"👕",title:"Clothes",scr:"phonics",cat:"clothes"},
+    {id:"feelings",icon:"😊",title:"Feelings",scr:"phonics",cat:"feelings"},
+  ];
+const LISTENING_CATS=[
     {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
     {id:"alphabets",icon:"🔤",title:"A-Z Letters",scr:"learn",tab:"abc"},
     {id:"animals",icon:"🐾",title:"Animals",scr:"phonics",cat:"animals"},
@@ -4185,7 +4173,7 @@ export default function App(){
     {id:"shapes",icon:"🔷",title:"Shapes",scr:"learn",tab:"shapes"},
     {id:"math",icon:"➕",title:"Math Words",scr:"phonics",cat:"math"},
     {id:"sight",icon:"👁️",title:"Sight Words",scr:"phonics",cat:"sight"},
-  ]
+  ];
   const READING_CATS=[
     {id:"cvc",icon:"🧩",title:"CVC Words (cat, dog)",scr:"phonics",cat:"cvc"},
     {id:"blends",icon:"🔗",title:"Blends (stop, clip)",scr:"phonics",cat:"blends"},
@@ -4373,7 +4361,7 @@ export default function App(){
         <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
         <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
         <div style={{display:"flex",gap:8,justifyContent:"center",margin:"16px 0"}}>
-          {[1,2,3,4].map(i=><div key={i} style={{width:44,height:44,borderRadius:12,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9",boxShadow:"var(--shadow-card)"}}>{pinInput.length>=i?"●":"○"}</div>)}
+          {[1,2,3,4];const priority=typeof localStorage!=="undefined"?localStorage.getItem("lg_priority_tile"):null;const sorted=priority?[...baseTiles].sort((a,b)=>a.id===priority?-1:b.id===priority?1:0):baseTiles;return sorted;})().map(i=><div key={i} style={{width:44,height:44,borderRadius:12,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9",boxShadow:"var(--shadow-card)"}}>{pinInput.length>=i?"●":"○"}</div>)}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:240,margin:"0 auto"}}>
           {[1,2,3,4,5,6,7,8,9,0,"⌫"].map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
