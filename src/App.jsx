@@ -1605,6 +1605,9 @@ const useSpeech=()=>{const[v,setV]=useState([]);
 
   // Browser TTS (fallback)
   const speakBrowser=useCallback((t,o={})=>new Promise(r=>{
+    // SAFETY: Never hang forever — resolve after 8 seconds max
+    const safetyTimer=setTimeout(()=>{try{speechSynthesis.cancel();}catch(e){}r();},8000);
+    const done=()=>{clearTimeout(safetyTimer);r();};
     const u=new SpeechSynthesisUtterance(t);
     let voice=getV();
     if(!voice){
@@ -1615,15 +1618,18 @@ const useSpeech=()=>{const[v,setV]=useState([]);
     }
     if(voice)u.voice=voice;
     u.rate=o.rate||0.92;u.pitch=o.pitch||1.05;u.lang="en-US";u.volume=1;
-    u.onend=()=>{if(onDoneRef.current)onDoneRef.current();r();};
-    u.onerror=()=>{r();};
+    u.onend=()=>{if(onDoneRef.current)onDoneRef.current();done();};
+    u.onerror=()=>{done();};
     // ALWAYS cancel previous speech — no exceptions
     speechSynthesis.cancel();
-    setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){r();}},250);
+    setTimeout(()=>{try{speechSynthesis.speak(u);}catch(e){done();}},250);
   }),[getV]);
 
   // Google Cloud TTS — sweet female voice, consistent across all devices
   const speakCloud=useCallback((t,o={})=>new Promise(async(r)=>{
+    // SAFETY: Never hang forever
+    const safetyTimer=setTimeout(()=>{try{if(cloudAudioRef.current){cloudAudioRef.current.pause();cloudAudioRef.current=null;}cloudPlayingRef.current=false;}catch(e){}r();},10000);
+    const done=()=>{clearTimeout(safetyTimer);r();};
     try{
       // ALWAYS cancel previous — cloud audio + browser TTS
       if(cloudAudioRef.current){
@@ -1660,18 +1666,18 @@ const useSpeech=()=>{const[v,setV]=useState([]);
         cloudPlayingRef.current=false;
         cloudAudioRef.current=null;
         if(onDoneRef.current)onDoneRef.current();
-        r();
+        done();
       };
       audio.onerror=()=>{
         cloudPlayingRef.current=false;
         cloudAudioRef.current=null;
-        r();
+        done();
       };
       await audio.play();
     }catch(e){
       console.log("Cloud TTS error, falling back to browser:",e.message);
       // Fallback to browser TTS
-      speakBrowser(t,o).then(r);
+      speakBrowser(t,o).then(done);
     }
   }),[ttsKey,speakBrowser]);
 
@@ -2505,7 +2511,7 @@ export default function App(){
         el.style.transform="scale(1.12)";el.style.boxShadow=clayOn;
         el.style.borderRadius="22px";el.style.filter="brightness(1.08)";
         setTeacherMood("excited");
-        try{stop();await wait(100);await speak(tile.msg,{rate:0.85,pitch:1.0});}catch(e){}
+        try{stop();await wait(100);await Promise.race([speak(tile.msg,{rate:0.85,pitch:1.0}),wait(6000)]);}catch(e){}
         if(!guideTourRef.current)break;
         await wait(300);
         el.style.transform="scale(1)";el.style.boxShadow="";
@@ -2515,7 +2521,7 @@ export default function App(){
       }
       if(guideTourRef.current){
         setTeacherMood("star");
-        try{await speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0});}catch(e){}
+        try{await Promise.race([speak("What do you wanna learn? Pick anything!",{rate:0.85,pitch:1.0}),wait(5000)]);}catch(e){}
         await wait(300);
       }
     }catch(e){
@@ -2615,6 +2621,11 @@ export default function App(){
     // Position owl based on screen
     const pos={home:"bottomRight",numbers:"bottomRight",phonics:"bottomRight",shapes:"bottomRight",colors:"bottomRight",alphabet:"bottomRight",basics:"bottomRight",rewards:"bottomRight",stories:"bottomRight",settings:"bottomRight",splash:"center",onboard:"bottomRight"};
     setTimeout(()=>movePandaTo(pos[scr]||"bottomRight"),100);
+  },[scr]);
+  // Redirect maths/mixquiz to quizzone (useEffect prevents infinite re-render)
+  useEffect(()=>{
+    if(scr==="maths"){setScr("quizzone");setQuizTab("math");}
+    if(scr==="mixquiz"){setScr("quizzone");}
   },[scr]);
   // Basics state
   const[basicsTab,setBasicsTab]=useState("explore"); // legacy
@@ -4596,8 +4607,7 @@ export default function App(){
     <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
   if(scr==="writing")return<SubCatScreen title="Writing ✍️" emoji="✍️" cats={WRITING_CATS} onBack={goHome}/>;
-  if(scr==="maths"){setScr("quizzone");setQuizTab("math");return null;}
-  if(scr==="mixquiz"){setScr("quizzone");return null;}
+  // maths and mixquiz both route to quizzone - handled in useEffect below
   if(scr==="homework")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Homework 📝" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,padding:20}}><span style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>📝</span><h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",textAlign:"center"}}>Coming Soon!</h2><p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,textAlign:"center"}}>Parents will assign homework tasks here</p></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
 
 
