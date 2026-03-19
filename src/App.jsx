@@ -4130,7 +4130,7 @@ export default function App(){
 
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
-  const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework","speakflow"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
+  const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework","speakflow","listenflow","readflow"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
   const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
     {[
       {id:"home",icon:"🏠",label:"Home"},
@@ -4223,38 +4223,36 @@ export default function App(){
     {id:"things",icon:"🎒",title:"Things",cat:"things"},
   ];
   const LISTENING_CATS=[
-    {id:"abc",icon:"🔤",title:"Alphabets A-Z",scr:"learn",tab:"abc"},
-    {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
-    {id:"animals",icon:"🐾",title:"Animals",scr:"phonics",cat:"animals"},
-    {id:"food",icon:"🍎",title:"Food",scr:"phonics",cat:"food"},
-    {id:"fruits",icon:"🍉",title:"Fruits",scr:"phonics",cat:"fruits"},
-    {id:"vegetables",icon:"🥬",title:"Vegetables",scr:"phonics",cat:"vegetables"},
-    {id:"nature",icon:"🌿",title:"Nature",scr:"phonics",cat:"nature"},
-    {id:"body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
-    {id:"family",icon:"👨‍👩‍👧",title:"Family & People",scr:"phonics",cat:"family"},
-    {id:"clothes",icon:"👕",title:"Clothes",scr:"phonics",cat:"clothes"},
-    {id:"transport",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
-    {id:"school",icon:"🏫",title:"School",scr:"phonics",cat:"school"},
-    {id:"sports",icon:"⚽",title:"Sports",scr:"phonics",cat:"sports"},
-    {id:"countries",icon:"🌍",title:"Countries",scr:"phonics",cat:"countries"},
-    {id:"actions",icon:"🏃",title:"Actions",scr:"phonics",cat:"actions"},
-    {id:"feelings",icon:"😊",title:"Feelings",scr:"phonics",cat:"feelings"},
-    {id:"things",icon:"🎒",title:"Things",scr:"phonics",cat:"things"},
-    {id:"places",icon:"🏛️",title:"Places",scr:"phonics",cat:"places"},
-    {id:"music",icon:"🎵",title:"Music",scr:"phonics",cat:"music"},
-    {id:"weather",icon:"🌤️",title:"Weather",scr:"phonics",cat:"weather"},
-    {id:"home",icon:"🏠",title:"Home Items",scr:"phonics",cat:"home"},
-    {id:"ocean",icon:"🐚",title:"Ocean",scr:"phonics",cat:"ocean"},
-    {id:"garden",icon:"🌱",title:"Garden",scr:"phonics",cat:"garden"},
-    {id:"toys",icon:"🧸",title:"Toys",scr:"phonics",cat:"toys"},
-    {id:"opposites",icon:"↔️",title:"Opposites",scr:"phonics",cat:"opposites"},
-    {id:"time",icon:"⏰",title:"Time",scr:"phonics",cat:"time"},
-    {id:"colors",icon:"🎨",title:"Colors",scr:"learn",tab:"colors"},
-    {id:"shapes",icon:"🔷",title:"Shapes",scr:"learn",tab:"shapes"},
-    {id:"math",icon:"➕",title:"Math Words",scr:"phonics",cat:"math"},
-    {id:"sight",icon:"👁️",title:"Sight Words",scr:"phonics",cat:"sight"},
-    {id:"cvc",icon:"🧩",title:"CVC Words",scr:"phonics",cat:"cvc"},
-    {id:"blends",icon:"🔗",title:"Blends",scr:"phonics",cat:"blends"},
+    {id:"abc",icon:"🔤",title:"A-Z Letters",cat:"abc"},
+    {id:"numbers",icon:"🔢",title:"Numbers",cat:"numbers"},
+    {id:"animals",icon:"🐾",title:"Animals",cat:"animals"},
+    {id:"food",icon:"🍎",title:"Food",cat:"food"},
+    {id:"fruits",icon:"🍉",title:"Fruits",cat:"fruits"},
+    {id:"vegetables",icon:"🥬",title:"Vegetables",cat:"vegetables"},
+    {id:"nature",icon:"🌿",title:"Nature",cat:"nature"},
+    {id:"body",icon:"🫁",title:"Body Parts",cat:"body"},
+    {id:"family",icon:"👨‍👩‍👧",title:"Family",cat:"family"},
+    {id:"clothes",icon:"👕",title:"Clothes",cat:"clothes"},
+    {id:"transport",icon:"🚗",title:"Vehicles",cat:"transport"},
+    {id:"school",icon:"🏫",title:"School",cat:"school"},
+    {id:"sports",icon:"⚽",title:"Sports",cat:"sports"},
+    {id:"countries",icon:"🌍",title:"Countries",cat:"countries"},
+    {id:"actions",icon:"🏃",title:"Actions",cat:"actions"},
+    {id:"feelings",icon:"😊",title:"Feelings",cat:"feelings"},
+    {id:"things",icon:"🎒",title:"Things",cat:"things"},
+    {id:"places",icon:"🏛️",title:"Places",cat:"places"},
+    {id:"music",icon:"🎵",title:"Music",cat:"music"},
+    {id:"weather",icon:"🌤️",title:"Weather",cat:"weather"},
+    {id:"home_items",icon:"🏠",title:"Home Items",cat:"home"},
+    {id:"ocean",icon:"🐚",title:"Ocean",cat:"ocean"},
+    {id:"garden",icon:"🌱",title:"Garden",cat:"garden"},
+    {id:"toys",icon:"🧸",title:"Toys",cat:"toys"},
+    {id:"opposites",icon:"↔️",title:"Opposites",cat:"opposites"},
+    {id:"time",icon:"⏰",title:"Time",cat:"time"},
+    {id:"colors",icon:"🎨",title:"Colors",cat:"colors"},
+    {id:"shapes",icon:"🔷",title:"Shapes",cat:"shapes"},
+    {id:"math",icon:"➕",title:"Math Words",cat:"math"},
+    {id:"sight",icon:"👁️",title:"Sight Words",cat:"sight"},
   ];
   const READING_CATS=[
     {id:"cvc",icon:"🧩",title:"CVC Words (cat, dog)",scr:"phonics",cat:"cvc"},
@@ -4361,6 +4359,9 @@ export default function App(){
     await wait(300);
     setSfPhase("listening");
     sfPlayingRef.current=false;
+    // AUTO-START MIC — no tap needed!
+    const expected=m==="sentences"?(item.sub||item.say):item.say;
+    setTimeout(()=>{rec.start(handleSfMicResult,expected);},400);
   };
   const handleSfMicResult=(result,alternatives)=>{
     const items=sfItems;const idx=sfIdx;
@@ -4388,6 +4389,95 @@ export default function App(){
   };
   const sfTypeFallback=(typed)=>{handleSfMicResult(typed,[]);};
 
+  // ═══ LISTEN FLOW — Pure listen-only, no mic ═══
+  const[lfItems,setLfItems]=useState([]);
+  const[lfIdx,setLfIdx]=useState(0);
+  const[lfTopic,setLfTopic]=useState("");
+  const[lfPlaying,setLfPlaying]=useState(false);
+  const lfRef=useRef(false);
+
+  const startListenFlow=(topic)=>{
+    stop();rec.stop();
+    const items=buildSpeakItems(topic);
+    if(!items.length){speak("No items found!",{rate:0.9});return;}
+    setLfItems(items);setLfIdx(0);setLfTopic(topic);setLfPlaying(false);
+    lfRef.current=false;
+    setScr("listenflow");
+    movePandaTo("bottomRight");setTeacherMood("excited");
+    setTimeout(()=>playLfItem(items,0),600);
+  };
+  const playLfItem=async(items,idx)=>{
+    if(idx>=items.length){setLfPlaying(false);lfRef.current=false;speak("All done! Great listening!",{rate:0.85,pitch:1.0});return;}
+    lfRef.current=true;setLfPlaying(true);setLfIdx(idx);
+    const item=items[idx];
+    setTeacherMood("speaking");
+    await speak(item.say,{rate:0.7,pitch:1.0});
+    await wait(300);
+    if(item.sub){
+      await speak(item.sub,{rate:0.8,pitch:1.0});
+      await wait(400);
+    }
+    if(!lfRef.current)return;
+    setLfPlaying(false);
+    // Auto-advance after 1.5s
+    setTimeout(()=>{if(lfRef.current)playLfItem(items,idx+1);},1500);
+  };
+  const lfPause=()=>{stop();lfRef.current=false;setLfPlaying(false);};
+  const lfResume=()=>{lfRef.current=true;playLfItem(lfItems,lfIdx);};
+  const lfTapItem=(idx)=>{stop();lfRef.current=false;setLfPlaying(false);setLfIdx(idx);const item=lfItems[idx];if(item){setTeacherMood("speaking");speak(item.say,{rate:0.7,pitch:1.0});}};
+
+  // ═══ READING FLOW — Spelling match game ═══
+  const[rfItems,setRfItems]=useState([]);
+  const[rfIdx,setRfIdx]=useState(0);
+  const[rfTopic,setRfTopic]=useState("");
+  const[rfPhase,setRfPhase]=useState("idle"); // idle | scramble | result
+  const[rfScore,setRfScore]=useState(0);
+  const[rfScrambled,setRfScrambled]=useState([]);
+  const[rfTapIdx,setRfTapIdx]=useState(0);
+  const[rfWrong,setRfWrong]=useState(-1);
+
+  const startReadFlow=(topic)=>{
+    stop();rec.stop();
+    const items=buildSpeakItems(topic);
+    if(!items.length){speak("No items found!",{rate:0.9});return;}
+    setRfItems(items);setRfIdx(0);setRfScore(0);setRfTopic(topic);
+    setRfPhase("idle");
+    setScr("readflow");
+    movePandaTo("bottomRight");setTeacherMood("excited");
+    setTimeout(()=>showRfItem(items,0),600);
+  };
+  const showRfItem=async(items,idx)=>{
+    if(idx>=items.length){setRfPhase("done");speak("All done! You scored "+rfScore+" out of "+items.length+"!",{rate:0.85});return;}
+    const item=items[idx];setRfIdx(idx);
+    setTeacherMood("speaking");
+    await speak(item.say,{rate:0.75,pitch:1.0});
+    await wait(300);
+    // Scramble the letters
+    const letters=item.say.toUpperCase().split("");
+    const shuffled=[...letters].map((l,i)=>({letter:l,id:i,used:false}));
+    for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+    setRfScrambled(shuffled);setRfTapIdx(0);setRfWrong(-1);setRfPhase("scramble");
+    await speak("Spell it! Tap the letters in order!",{rate:0.85,pitch:1.0});
+  };
+  const rfTapLetter=(letter,tappedIdx)=>{
+    const item=rfItems[rfIdx];if(!item)return;
+    const expected=item.say.toUpperCase()[rfTapIdx];
+    speak(letter,{rate:0.8,pitch:1.0});
+    if(letter===expected){
+      setRfScrambled(prev=>prev.map((s,i)=>i===tappedIdx?{...s,used:true}:s));
+      const next=rfTapIdx+1;setRfTapIdx(next);
+      if(next>=item.say.length){
+        setRfPhase("result");boom();setRfScore(s=>s+1);headYes();
+        awardPoints(3,"reading",item.say);
+        speak("Correct! "+item.say+"!",{rate:0.85});
+        setTimeout(()=>showRfItem(rfItems,rfIdx+1),2000);
+      }
+    } else {
+      setRfWrong(tappedIdx);flashWrong();headNo();
+      setTimeout(()=>setRfWrong(-1),600);
+    }
+  };
+
   const goSubCat=(cat)=>{
     sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
     if(cat.cat)setPhCat(cat.cat);
@@ -4397,6 +4487,17 @@ export default function App(){
     if(cat.wmode)setWriteMode(cat.wmode);
     if(cat.wcase)setWriteCase(cat.wcase);
     setScr(cat.scr);
+  };
+  // Listening-only routing: forces ALL modes to listen-only (no spelling, no mic, no phonics)
+  const goListenCat=(cat)=>{
+    sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("happy");
+    // Force listen-only modes
+    setLearnModes({spelling:false,phonics:false,sentence:true,speak:false});
+    setPhModes({spelling:false,phonics:false,sentence:true,speak:false});
+    if(cat.cat)setPhCat(cat.cat);
+    if(cat.tab)setLearnTab(cat.tab);
+    setScr(cat.scr);
+    speak("Listen carefully!",{rate:0.85,pitch:1.0});
   };
   const SubCatScreen=({title,emoji,cats,onBack})=>(
     <div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
@@ -4424,32 +4525,28 @@ export default function App(){
     <Particles count={6}/>
     <SubHead title="Speaking 🗣️" onBack={goHome} points={prof?.points||0}/>
     <div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}>
-      <div style={{textAlign:"center",fontSize:48,marginBottom:4,animation:"mascotB 2s ease-in-out infinite"}}>🗣️</div>
-      <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--dark)",textAlign:"center",margin:"0 0 4px"}}>Choose a Speaking Mode</h3>
-      <p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:12}}>Pick how you want to practice, then choose a topic!</p>
-      {/* 4 Speaking Modes */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
-        {SPEAKING_MODES.map((c,i)=><button key={c.id} onClick={()=>{sfxTap();setSfMode(c.mode);speak(c.title+"! Now pick a topic!",{rate:0.85,pitch:1.0});}} style={{
-          display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"18px 10px",
-          borderRadius:22,border:sfMode===c.mode?"3px solid #fff":"3px solid transparent",cursor:"pointer",fontFamily:"var(--font)",
-          background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
-          boxShadow:sfMode===c.mode?"0 6px 20px rgba(108,92,231,0.3)":"0 4px 14px rgba(0,0,0,0.1)",
-          transform:sfMode===c.mode?"scale(1.05)":"scale(1)",
-          animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both`
+      {/* Compact mode selector — inside header area, no shaking */}
+      <div style={{display:"flex",gap:4,marginBottom:12,background:"#fff",borderRadius:16,padding:4,boxShadow:"var(--shadow-card)"}}>
+        {SPEAKING_MODES.map((c)=><button key={c.id} onClick={()=>{sfxTap();setSfMode(c.mode);}} style={{
+          flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"10px 4px",
+          borderRadius:12,border:"none",cursor:"pointer",fontFamily:"var(--font)",
+          background:sfMode===c.mode?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"transparent",
+          color:sfMode===c.mode?"#fff":"#8E8CA3"
         }}>
-          <span style={{fontSize:32}}>{c.icon}</span>
-          <span style={{fontWeight:800,fontSize:14,color:"#fff"}}>{c.title}</span>
-          <span style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.85)",textAlign:"center"}}>{c.desc}</span>
+          <span style={{fontSize:18}}>{c.icon}</span>
+          <span style={{fontWeight:800,fontSize:9}}>{c.title}</span>
         </button>)}
       </div>
-      {/* Topic Grid */}
-      <h4 style={{fontFamily:"var(--font)",fontSize:14,fontWeight:800,color:"var(--dark)",margin:"0 0 8px"}}>📚 Pick a Topic</h4>
+      <p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:10}}>
+        {sfMode==="speakback"?"🗣️ Hear it, then say it back!":sfMode==="pronounce"?"🔤 Learn to spell & pronounce!":sfMode==="phonics"?"🔡 Sound out each part!":"💬 Practice full sentences!"}
+      </p>
+      {/* Topic Grid — NO animation, no shaking */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
-        {SPEAKING_CATS.map((t,i)=>
+        {SPEAKING_CATS.map((t)=>
           <button key={t.id} onClick={()=>{sfxTap();startSpeakFlow(t.cat||t.id,sfMode);}} style={{
             display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"12px 4px",
             borderRadius:16,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",
-            boxShadow:"var(--shadow-card)",animation:`gridPop 0.3s ease ${0.3+i*0.03}s both`
+            boxShadow:"var(--shadow-card)"
           }}>
             <span style={{fontSize:22}}>{t.icon}</span>
             <span style={{fontWeight:700,fontSize:9,color:"#2D2B3D",textAlign:"center"}}>{t.title}</span>
@@ -4459,13 +4556,178 @@ export default function App(){
     </div>
     <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
-  if(scr==="listening")return<SubCatScreen title="Listening 👂" emoji="👂" cats={LISTENING_CATS} onBack={goHome}/>;
-  if(scr==="reading")return<SubCatScreen title="Reading 📖" emoji="📖" cats={READING_CATS} onBack={goHome}/>;
+  if(scr==="listening")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <Particles count={6}/>
+    <SubHead title="Listening 👂" onBack={goHome} points={prof?.points||0}/>
+    <div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}>
+      <div style={{textAlign:"center",fontSize:48,marginBottom:4,animation:"mascotB 2s ease-in-out infinite"}}>👂</div>
+      <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--dark)",textAlign:"center",margin:"0 0 4px"}}>What do you want to hear?</h3>
+      <p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:12}}>Pick a topic and listen carefully! 🔊</p>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+        {LISTENING_CATS.map((t,i)=>
+          <button key={t.id} onClick={()=>{sfxTap();startListenFlow(t.cat);}} style={{
+            display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"14px 6px",
+            borderRadius:18,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",
+            boxShadow:"var(--shadow-card)"
+          }}>
+            <span style={{fontSize:24}}>{t.icon}</span>
+            <span style={{fontWeight:700,fontSize:10,color:"#2D2B3D",textAlign:"center"}}>{t.title}</span>
+          </button>
+        )}
+      </div>
+    </div>
+    <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+  </div>;
+  if(scr==="reading")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <Particles count={6}/>
+    <SubHead title="Reading 📖" onBack={goHome} points={prof?.points||0}/>
+    <div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}>
+      <div style={{textAlign:"center",fontSize:48,marginBottom:4,animation:"mascotB 2s ease-in-out infinite"}}>📖</div>
+      <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--dark)",textAlign:"center",margin:"0 0 4px"}}>Spell & Match Words!</h3>
+      <p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:12}}>Pick a topic — see the word, then tap letters to spell it!</p>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+        {READING_CATS.map((t,i)=>
+          <button key={t.id} onClick={()=>{sfxTap();startReadFlow(t.cat);}} style={{
+            display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"18px 10px",
+            borderRadius:22,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",
+            boxShadow:"var(--shadow-card)"
+          }}>
+            <span style={{fontSize:28}}>{t.icon}</span>
+            <span style={{fontWeight:700,fontSize:12,color:"#2D2B3D",textAlign:"center"}}>{t.title}</span>
+          </button>
+        )}
+      </div>
+    </div>
+    <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+  </div>;
   if(scr==="writing")return<SubCatScreen title="Writing ✍️" emoji="✍️" cats={WRITING_CATS} onBack={goHome}/>;
   if(scr==="maths"){setScr("quizzone");setQuizTab("math");return null;}
   if(scr==="mixquiz"){setScr("quizzone");return null;}
   if(scr==="homework")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Homework 📝" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,padding:20}}><span style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>📝</span><h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",textAlign:"center"}}>Coming Soon!</h2><p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,textAlign:"center"}}>Parents will assign homework tasks here</p></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
 
+
+  // ═══ LISTEN FLOW SCREEN — Pure listen, no mic ═══
+  if(scr==="listenflow"&&lfItems.length>0){
+    const item=lfItems[lfIdx];
+    const topicLabel=lfTopic==="abc"?"A-Z Letters":lfTopic==="numbers"?"Numbers":lfTopic==="colors"?"Colors":lfTopic==="shapes"?"Shapes":(lfTopic.charAt(0).toUpperCase()+lfTopic.slice(1));
+    const progress=lfItems.length>0?Math.round(((lfIdx)/(lfItems.length))*100):0;
+    return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+      <SubHead title={topicLabel+" — Listen"} onBack={()=>{stop();lfRef.current=false;goHome();}} points={prof?.points||0}/>
+      <div style={{padding:"0 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0"}}>
+          <div style={{flex:1,height:8,borderRadius:4,background:"#E8EAF6",overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#00D2A0,#55EFC4)",width:`${progress}%`,transition:"width 0.5s"}}/>
+          </div>
+          <span style={{fontSize:13,fontWeight:800,color:"#00D2A0"}}>{lfIdx+1}/{lfItems.length}</span>
+        </div>
+      </div>
+      <div style={{flex:1,display:"flex",flexDirection:"column",padding:"8px 16px",overflow:"auto"}}>
+        {/* Current item card */}
+        {item&&<div style={{textAlign:"center",padding:"32px 20px",background:"linear-gradient(145deg,#fff,#F0FFF4)",borderRadius:28,boxShadow:"0 8px 32px rgba(0,210,160,0.12)",marginBottom:14}}>
+          <div style={{fontSize:80,animation:"mascotB 2s ease-in-out infinite",filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.15))"}}>{item.emoji}</div>
+          <div style={{fontSize:42,fontWeight:900,color:"#2D2B3D",fontFamily:"var(--font)",marginTop:8,letterSpacing:2,textTransform:"capitalize"}}>{item.display}</div>
+          {item.sub&&<div style={{fontSize:14,fontWeight:600,color:"#8E8CA3",marginTop:4}}>{item.sub}</div>}
+          {lfPlaying&&<div style={{marginTop:12,padding:8,background:"#E8F5E9",borderRadius:14}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#2E7D32"}}>🔊 Listening...</div>
+            <SoundWave/>
+          </div>}
+        </div>}
+        {/* Controls */}
+        <div style={{display:"flex",gap:10,marginTop:8}}>
+          <button onClick={()=>{stop();lfRef.current=false;setLfPlaying(false);const item2=lfItems[lfIdx];if(item2)speak(item2.say,{rate:0.7});}} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Hear Again</button>
+          {lfPlaying?
+            <button onClick={lfPause} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>⏸ Pause</button>:
+            <button onClick={lfResume} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>▶ Play All</button>
+          }
+        </div>
+        {/* Item list — tap any to hear */}
+        <div style={{marginTop:14}}>
+          <div style={{fontSize:12,fontWeight:800,color:"var(--dark)",marginBottom:6}}>All {topicLabel}:</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+            {lfItems.map((it,i)=><button key={i} onClick={()=>lfTapItem(i)} style={{
+              display:"flex",flexDirection:"column",alignItems:"center",padding:"8px 4px",borderRadius:14,border:"none",cursor:"pointer",
+              background:i===lfIdx?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#fff",
+              color:i===lfIdx?"#fff":"#2D2B3D",fontFamily:"var(--font)",boxShadow:"var(--shadow-card)"
+            }}>
+              <span style={{fontSize:20}}>{it.emoji}</span>
+              <span style={{fontSize:8,fontWeight:700,textAlign:"center"}}>{it.display}</span>
+            </button>)}
+          </div>
+        </div>
+      </div>
+      <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    </div>;
+  }
+
+  // ═══ READ FLOW SCREEN — Spelling match game ═══
+  if(scr==="readflow"&&rfItems.length>0){
+    const item=rfItems[rfIdx];
+    const topicLabel=rfTopic==="abc"?"A-Z Letters":rfTopic==="numbers"?"Numbers":(rfTopic.charAt(0).toUpperCase()+rfTopic.slice(1));
+    const progress=rfItems.length>0?Math.round(((rfIdx)/(rfItems.length))*100):0;
+    return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+      <Confetti key={celebKey} active={confetti} type={celebType}/>
+      {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
+      <SubHead title={topicLabel+" — Read & Spell"} onBack={()=>{stop();goHome();}} points={prof?.points||0}/>
+      <div style={{padding:"0 16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0"}}>
+          <div style={{flex:1,height:8,borderRadius:4,background:"#E8EAF6",overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#FF9F43,#FECA57)",width:`${progress}%`,transition:"width 0.5s"}}/>
+          </div>
+          <span style={{fontSize:13,fontWeight:800,color:"#FF9F43"}}>{rfIdx+1}/{rfItems.length}</span>
+          <span style={{fontSize:13,fontWeight:800,color:"#22C55E"}}>🏆 {rfScore}</span>
+        </div>
+      </div>
+      <div style={{flex:1,display:"flex",flexDirection:"column",padding:"8px 16px",overflow:"auto"}}>
+        {rfPhase==="done"?<div style={{textAlign:"center",padding:"32px 20px",background:"#fff",borderRadius:28,boxShadow:"var(--shadow-float)"}}>
+          <div style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>🎉</div>
+          <h2 style={{fontFamily:"var(--font)",fontSize:24,fontWeight:800,color:"#2D2B3D",margin:"8px 0"}}>All Done!</h2>
+          <Stars count={rfScore>=rfItems.length?5:rfScore>=rfItems.length*0.7?4:3}/>
+          <div style={{fontSize:18,fontWeight:800,color:"#FF9F43",margin:"8px 0"}}>{rfScore} / {rfItems.length} spelled correctly</div>
+          <div style={{display:"flex",gap:10,marginTop:16}}>
+            <button onClick={()=>{stop();startReadFlow(rfTopic);}} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Again</button>
+            <button onClick={()=>{stop();setScr("reading");}} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>📚 Topics</button>
+            <button onClick={()=>{stop();goHome();}} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🏠 Home</button>
+          </div>
+        </div>:<>
+          {/* Word card with emoji */}
+          {item&&<div style={{textAlign:"center",padding:"24px 20px",background:"linear-gradient(145deg,#fff,#FFF8F0)",borderRadius:28,boxShadow:"0 8px 32px rgba(255,159,67,0.12)",marginBottom:14}}>
+            <div style={{fontSize:64,filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.15))"}}>{item.emoji}</div>
+            {rfPhase==="result"&&<div style={{fontSize:32,fontWeight:900,color:"#22C55E",fontFamily:"var(--font)",marginTop:8,letterSpacing:3}}>{item.display.toUpperCase()}</div>}
+            {rfPhase==="idle"&&<div style={{fontSize:14,fontWeight:700,color:"#8E8CA3",marginTop:8}}>Loading...</div>}
+          </div>}
+          {/* Letter slots showing progress */}
+          {rfPhase==="scramble"&&item&&<div style={{marginBottom:14}}>
+            <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:16}}>
+              {item.say.toUpperCase().split("").map((l,i)=><div key={i} style={{
+                width:40,height:48,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",
+                fontSize:24,fontWeight:900,fontFamily:"var(--font)",
+                background:i<rfTapIdx?"#22C55E":"#F0F4FF",
+                color:i<rfTapIdx?"#fff":"#ddd",
+                border:i===rfTapIdx?"3px solid #FF9F43":"2px solid #E8EAF6",
+                boxShadow:i===rfTapIdx?"0 4px 16px rgba(255,159,67,0.3)":"none"
+              }}>{i<rfTapIdx?l:"?"}</div>)}
+            </div>
+            {/* Scrambled letters to tap */}
+            <div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#6C5CE7",marginBottom:10}}>Tap the letters in order:</div>
+            <div style={{display:"flex",gap:10,justifyContent:"center",flexWrap:"wrap"}}>
+              {rfScrambled.map((s,i)=><button key={s.id} disabled={s.used} onClick={()=>!s.used&&rfTapLetter(s.letter,i)} style={{
+                fontSize:28,fontFamily:"var(--font)",fontWeight:800,
+                padding:"8px 14px",borderRadius:16,minWidth:50,
+                border:"3px solid",cursor:s.used?"default":"pointer",
+                borderColor:rfWrong===i?"#EF4444":s.used?"#ddd":"#FF9F43",
+                background:rfWrong===i?"#FEE2E2":s.used?"#f9fafb":"#fff",
+                color:s.used?"#ddd":rfWrong===i?"#EF4444":"#2D2B3D",
+                opacity:s.used?0.3:1,
+                transform:rfWrong===i?"scale(0.9)":"scale(1)",
+                boxShadow:!s.used&&rfWrong!==i?"0 4px 12px rgba(255,159,67,0.15)":"none"
+              }}>{s.letter}</button>)}
+            </div>
+          </div>}
+        </>}
+      </div>
+      <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    </div>;
+  }
 
   // ═══ SPEAK FLOW SCREEN ═══
   if(scr==="speakflow"&&sfItems.length>0){
@@ -4574,6 +4836,38 @@ export default function App(){
         <h3 style={{fontSize:18,fontWeight:800,color:"var(--dark)",margin:"0 0 4px"}}>What shall we learn? 🦉</h3>
         <p style={{fontSize:12,fontWeight:600,color:"var(--gray)"}}>Pick a skill to start!</p>
       </div>
+      {/* ═══ MY CHOICE — Quick-access tile from questionnaire ═══ */}
+      {(()=>{
+        try{
+          const qa=JSON.parse(localStorage.getItem("lg_quiz_answers")||"null");
+          if(!qa||!qa[1])return null;
+          const interest=qa[1];
+          const choiceMap={
+            "Animals & Nature":{icon:"🐾",title:"Animals & Nature",route:()=>{setPhCat("animals");setLearnModes({spelling:false,phonics:false,sentence:true,speak:false});setScr("phonics");}},
+            "Numbers & Counting":{icon:"🔢",title:"Numbers & Counting",route:()=>{setLearnTab("numbers");setScr("learn");}},
+            "Colors & Shapes":{icon:"🎨",title:"Colors & Shapes",route:()=>{setLearnTab("colors");setScr("learn");}},
+            "Words & Stories":{icon:"📖",title:"Words & Stories",route:()=>{setScr("stories");}},
+          };
+          const choice=choiceMap[interest];
+          if(!choice)return null;
+          return<div style={{padding:"0 16px 8px"}}>
+            <button onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");speak("Let's go to your favorite!",{rate:0.85,pitch:1.0});choice.route();}} style={{
+              width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 20px",
+              borderRadius:22,border:"none",cursor:"pointer",fontFamily:"var(--font)",
+              background:"linear-gradient(135deg,#FF9F43,#FECA57)",
+              boxShadow:"0 6px 20px rgba(255,159,67,0.3)",
+              animation:"gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both"
+            }}>
+              <span style={{fontSize:36}}>{choice.icon}</span>
+              <div style={{flex:1,textAlign:"left"}}>
+                <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,0.8)",textTransform:"uppercase",letterSpacing:1}}>⭐ My Choice</div>
+                <div style={{fontSize:18,fontWeight:800,color:"#fff"}}>{choice.title}</div>
+              </div>
+              <span style={{fontSize:24,color:"#fff"}}>→</span>
+            </button>
+          </div>;
+        }catch(e){return null;}
+      })()}
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,padding:"0 16px"}}>
         {(()=>{const baseTiles=[
           {id:"speaking",icon:"🗣️",title:"Speaking",sub:"Speak back, pronounce & phonics",bg:"linear-gradient(135deg,#6C5CE7,#A29BFE)"},
