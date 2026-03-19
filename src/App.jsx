@@ -1234,80 +1234,7 @@ const QUESTIONNAIRE=[
   {q:"How far can they count?",opts:["Up to 100!","Up to 20","Up to 10","Just starting"],key:"countLevel"},
   {q:"How do they learn best?",opts:["Watching & seeing","Listening & repeating","Hands-on practice","A mix of everything"],key:"learnStyle"},
   {q:"Daily learning time?",opts:["10-15 minutes","15-30 minutes","30-60 minutes","Flexible"],key:"screenTime"},
-]
-
-const STORIES = [
-  {id:1,title:"The Lost Kitten",emoji:"🐱",level:"easy",
-    text:"A small kitten sat under a big tree. It was cold and wet from the rain. A kind girl named Mia saw the kitten. She picked it up gently. She took it home and gave it warm milk. Now the kitten has a cozy bed and a best friend!",
-    questions:[
-      {q:"Where was the kitten sitting?",opts:["Under a tree","On a roof","In a box","By the river"],answer:0},
-      {q:"How was the weather?",opts:["Sunny","Snowy","Rainy","Windy"],answer:2},
-      {q:"What did Mia give the kitten?",opts:["A toy","Warm milk","A hat","Some fish"],answer:1},
-    ]},
-  {id:2,title:"The Magic Garden",emoji:"🌻",level:"easy",
-    text:"Tom planted a tiny seed in his garden. He watered it every single day. One morning he saw a green shoot! It grew and grew. Soon it became the tallest sunflower on the whole street. All the birds came to visit!",
-    questions:[
-      {q:"What did Tom plant?",opts:["A flower","A tree","A seed","A bush"],answer:2},
-      {q:"What did the seed become?",opts:["A rose","A sunflower","An apple tree","A daisy"],answer:1},
-      {q:"Who came to visit the flower?",opts:["Dogs","Cats","Birds","Fish"],answer:2},
-    ]},
-  {id:3,title:"The Brave Little Boat",emoji:"⛵",level:"easy",
-    text:"A small blue boat sat by the lake. It wanted to cross to the other side. The wind was strong but the boat was brave. It sailed across the big waves. When it reached the shore, all the ducks cheered!",
-    questions:[
-      {q:"What color was the boat?",opts:["Red","Green","Yellow","Blue"],answer:3},
-      {q:"How was the wind?",opts:["Calm","Strong","Cold","Hot"],answer:1},
-      {q:"Who cheered for the boat?",opts:["Fish","Frogs","Ducks","Swans"],answer:2},
-    ]},
-  {id:4,title:"Bedtime for Bear",emoji:"🐻",level:"easy",
-    text:"Little Bear did not want to sleep. He played with his toys. He read a book. He drew a picture. Then Mama Bear sang a soft song. Little Bear yawned. His eyes got heavy. Soon he was fast asleep and dreaming of honey!",
-    questions:[
-      {q:"What did Little Bear not want to do?",opts:["Eat","Play","Sleep","Sing"],answer:2},
-      {q:"What did Mama Bear do?",opts:["Read a book","Sang a song","Made food","Told a joke"],answer:1},
-      {q:"What did Bear dream about?",opts:["Stars","Friends","Honey","Toys"],answer:2},
-    ]},
-  {id:5,title:"The Rainbow Cake",emoji:"🎂",level:"medium",
-    text:"Lily wanted to bake a special cake for her mom. She mixed red, orange, yellow, green, blue and purple batter. She put each color in the pan one by one. When the cake was done she put white frosting on top. Mom was so surprised! It was a rainbow inside! Everyone got a colorful slice.",
-    questions:[
-      {q:"Who was the cake for?",opts:["Her dad","Her friend","Her mom","Her teacher"],answer:2},
-      {q:"How many colors did Lily use?",opts:["Three","Four","Five","Six"],answer:3},
-      {q:"What was on top of the cake?",opts:["Sprinkles","White frosting","Chocolate","Fruit"],answer:1},
-    ]},
-  {id:6,title:"The Helpful Robot",emoji:"🤖",level:"medium",
-    text:"Sam built a robot from boxes and tape. He called it Beep. Sam told Beep to clean his room. Beep picked up all the toys and put them in the right places. Then Beep folded the clothes. Mom came in and could not believe her eyes. The room was perfectly clean!",
-    questions:[
-      {q:"What was the robot made from?",opts:["Metal","Wood","Boxes and tape","Plastic"],answer:2},
-      {q:"What was the robot's name?",opts:["Buzz","Beep","Bolt","Bop"],answer:1},
-      {q:"What did Beep do first?",opts:["Folded clothes","Made the bed","Picked up toys","Swept the floor"],answer:2},
-    ]},
-  {id:7,title:"The Moon Visit",emoji:"🌙",level:"medium",
-    text:"One clear night Maya looked up at the moon. She wished she could visit it. She closed her eyes tight. When she opened them she was standing on the moon! The ground was soft and gray. She bounced very high because the moon has less gravity. She could see the whole Earth below, blue and beautiful.",
-    questions:[
-      {q:"When did Maya look at the moon?",opts:["Morning","Afternoon","Night","Noon"],answer:2},
-      {q:"Why could Maya bounce high?",opts:["She had wings","Less gravity","She was strong","The ground was bouncy"],answer:1},
-      {q:"What color was Earth from the moon?",opts:["Green","Red","Blue","Yellow"],answer:2},
-    ]},
-  {id:8,title:"The Sharing Squirrel",emoji:"🐿️",level:"easy",
-    text:"Nutkin the squirrel found a huge pile of acorns. He wanted to keep them all. But then he saw his friend Robin shivering in the cold with no food. Nutkin gave Robin half of his acorns. Robin smiled and shared some berries with Nutkin. Now they both had a yummy dinner!",
-    questions:[
-      {q:"What did Nutkin find?",opts:["Berries","Nuts","Acorns","Seeds"],answer:2},
-      {q:"Why was Robin sad?",opts:["He was lost","He had no food","He was hurt","He was tired"],answer:1},
-      {q:"What did Robin share with Nutkin?",opts:["Acorns","Honey","Berries","Bread"],answer:2},
-    ]},
-  {id:9,title:"The Flying Umbrella",emoji:"☂️",level:"medium",
-    text:"On a very windy day Zara held her red umbrella tight. But a big gust of wind lifted her off the ground! She flew over the park and the school. She waved to her friends below. When the wind calmed down she landed gently in her own backyard. What an adventure!",
-    questions:[
-      {q:"What color was the umbrella?",opts:["Blue","Yellow","Red","Green"],answer:2},
-      {q:"What lifted Zara up?",opts:["A bird","A balloon","A gust of wind","A plane"],answer:2},
-      {q:"Where did Zara land?",opts:["At school","In the park","On a roof","In her backyard"],answer:3},
-    ]},
-  {id:10,title:"The Treasure Map",emoji:"🗺️",level:"hard",
-    text:"Ben found an old map in his attic. It had a red X on it. He followed the map through the garden past the big oak tree and behind the shed. He dug where the X was. He found a small metal box! Inside was a note from his grandpa that said: The real treasure is the adventure. And a bag of gold chocolate coins!",
-    questions:[
-      {q:"Where did Ben find the map?",opts:["In the garden","Under his bed","In the attic","At school"],answer:2},
-      {q:"What was behind the shed?",opts:["A dog","The treasure spot","A door","A pond"],answer:1},
-      {q:"What was in the box?",opts:["Real gold","A toy","A note and chocolate coins","A key"],answer:2},
-    ]},
-];const SHAPES=[
+]const SHAPES=[
   {name:"circle",emoji:"🔵",desc:"Round like a ball!",sides:0,ph:["s","ir","c","l"],sentence:"A circle is round like a ball!",
     scene:{bg:"linear-gradient(180deg,#87CEEB,#B0E0E6,#98FB98)",elements:[{emoji:"🔵",size:70,x:50,y:35,anim:"floatBob",dur:2},{emoji:"⚽",size:30,x:25,y:55,anim:"ballBounce",dur:1.5},{emoji:"🍩",size:28,x:75,y:55,anim:"eggWobble",dur:2},{emoji:"🌕",size:32,x:50,y:15,anim:"moonGlow",dur:3}]}},
   {name:"square",emoji:"🟧",desc:"Four equal sides!",sides:4,ph:["s","q","air"],sentence:"A square has four equal sides!",
@@ -3074,6 +3001,16 @@ export default function App(){
   const[storyAnswers,setStoryAnswers]=useState([]);
   const[storyScore,setStoryScore]=useState(0);
   const[storyPicked,setStoryPicked]=useState(null);
+  // ═══ SPEAK FLOW STATE ═══
+  const[sfItems,setSfItems]=useState([]);
+  const[sfIdx,setSfIdx]=useState(0);
+  const[sfPhase,setSfPhase]=useState("idle");
+  const[sfRes,setSfRes]=useState(null);
+  const[sfAcc,setSfAcc]=useState(null);
+  const[sfScore,setSfScore]=useState(0);
+  const[sfTotal,setSfTotal]=useState(0);
+  const[sfTopic,setSfTopic]=useState("");
+  const sfPlayingRef=useRef(false);
 
   const initDone=useRef(false);
   const welcomeSpoken=useRef(false);
@@ -4119,7 +4056,7 @@ export default function App(){
 
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
-  const showNav=["home","speaking","listening","reading","writing","learn","quizzone","phonics","stories","rewards","settings","studyplan"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
+  const showNav=["home","speaking","listening","reading","writing","learn","quizzone","phonics","stories","rewards","settings","studyplan","speakflow"].includes(scr)&&!selNum&&!selShape&&!selColor&&!phW;
   const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
     {[
       {id:"home",icon:"🏠",label:"Home"},
@@ -4203,6 +4140,20 @@ export default function App(){
     {id:"clothes",icon:"👕",title:"Clothes",scr:"phonics",cat:"clothes"},
     {id:"feelings",icon:"😊",title:"Feelings",scr:"phonics",cat:"feelings"},
   ]
+  const SPEAKING_TOPICS=[
+    {id:"alphabets",icon:"🔤",title:"A-Z Letters",scr:"learn",tab:"abc"},
+    {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
+    {id:"animals",icon:"🐾",title:"Animals",scr:"phonics",cat:"animals"},
+    {id:"food",icon:"🍎",title:"Food & Fruits",scr:"phonics",cat:"food"},
+    {id:"nature",icon:"🌿",title:"Nature",scr:"phonics",cat:"nature"},
+    {id:"body",icon:"🫁",title:"Body Parts",scr:"phonics",cat:"body"},
+    {id:"transport",icon:"🚗",title:"Vehicles",scr:"phonics",cat:"transport"},
+    {id:"family",icon:"👨‍👩‍👧",title:"Family & People",scr:"phonics",cat:"family"},
+    {id:"colors",icon:"🎨",title:"Colors",scr:"colors"},
+    {id:"shapes",icon:"🔷",title:"Shapes",scr:"shapes"},
+    {id:"clothes",icon:"👕",title:"Clothes",scr:"phonics",cat:"clothes"},
+    {id:"feelings",icon:"😊",title:"Feelings",scr:"phonics",cat:"feelings"},
+  ]
   const LISTENING_CATS=[
     {id:"numbers",icon:"🔢",title:"Numbers 1-100",scr:"learn",tab:"numbers"},
     {id:"alphabets",icon:"🔤",title:"A-Z Letters",scr:"learn",tab:"abc"},
@@ -4246,20 +4197,71 @@ export default function App(){
     {id:"family",icon:"👨‍👩‍👧",title:"People Words",scr:"phonics",cat:"family"},
     {id:"transport",icon:"🚗",title:"Vehicle Words",scr:"phonics",cat:"transport"},
     {id:"clothes",icon:"👕",title:"Clothes Words",scr:"phonics",cat:"clothes"},
-  ]
+  ];
   const WRITING_CATS=[
     {id:"upper",icon:"🔠",title:"Uppercase A-Z",scr:"quizzone",qtab:"write",wmode:"letters",wcase:"caps"},
     {id:"lower",icon:"🔡",title:"Lowercase a-z",scr:"quizzone",qtab:"write",wmode:"letters",wcase:"small"},
     {id:"nums",icon:"🔢",title:"Numbers 0-9",scr:"quizzone",qtab:"write",wmode:"numbers"},
-  ]
-  const MATHS_CATS=[
-    {id:"counting",icon:"🔢",title:"Counting 1-100",scr:"learn",tab:"numbers"},
-    {id:"addition",icon:"➕",title:"Addition",scr:"quizzone",qtab:"math",mop:"+"},
-    {id:"subtraction",icon:"➖",title:"Subtraction",scr:"quizzone",qtab:"math",mop:"-"},
-    {id:"multiply",icon:"✖️",title:"Multiplication",scr:"quizzone",qtab:"math",mop:"×"},
-    {id:"tables",icon:"📋",title:"Times Tables",scr:"quizzone",qtab:"math",mop:"×"},
-    {id:"compare",icon:"⚖️",title:"Number Quiz",scr:"quizzone",qtab:"numquiz"},
   ];
+  // ═══ SPEAK FLOW HELPERS ═══
+  const buildSpeakItems=(topic)=>{
+    if(topic==="abc") return ALPHA_LETTERS.map(l=>({display:l,say:l,emoji:ALPHA_DATA[l]?.examples[0]?.e||"🔤",sub:ALPHA_DATA[l]?.examples[0]?.w||""}));
+    if(topic==="numbers"){const mx=aCfg?.max||20;return Array.from({length:mx},(_,i)=>({display:String(i+1),say:NW[i+1],emoji:NUM_EMOJI[i+1]||"🔢",sub:NW[i+1]}));}
+    if(topic==="colors") return COLORSDATA.map(c=>({display:c.name,say:c.name,emoji:c.emoji,sub:c.things?.[0]||""}));
+    if(topic==="shapes") return SHAPES.map(s=>({display:s.name,say:s.name,emoji:s.emoji,sub:s.desc||""}));
+    const cat=WCATS[topic];
+    if(cat) return cat.words.map(w=>({display:w.word,say:w.word,emoji:w.img,sub:w.sentence||""}));
+    return [];
+  };
+  const startSpeakFlow=(topic)=>{
+    stop();rec.stop();
+    const items=buildSpeakItems(topic);
+    if(!items.length){speak("No items found!",{rate:0.9});return;}
+    setSfItems(items);setSfIdx(0);setSfScore(0);setSfTotal(0);setSfTopic(topic);
+    setSfPhase("idle");setSfRes(null);setSfAcc(null);
+    sfPlayingRef.current=false;
+    setScr("speakflow");
+    movePandaTo("bottomRight");setTeacherMood("excited");
+    setTimeout(()=>playSfItem(items,0),600);
+  };
+  const playSfItem=async(items,idx)=>{
+    if(idx>=items.length||sfPlayingRef.current)return;
+    sfPlayingRef.current=true;
+    const item=items[idx];
+    setSfPhase("speaking");setSfRes(null);setSfAcc(null);
+    setTeacherMood("speaking");
+    await speak(item.say,{rate:0.7,pitch:1.0});
+    await wait(400);
+    setTeacherMood("listening");
+    await speak("Your turn!",{rate:0.95,pitch:1.1});
+    await wait(300);
+    setSfPhase("listening");
+    sfPlayingRef.current=false;
+  };
+  const handleSfMicResult=(result,alternatives)=>{
+    const items=sfItems;const idx=sfIdx;
+    if(!result||!result.trim()){setSfPhase("listening");showTeacher("happy","Tap 🎤 and try again!");return;}
+    const item=items[idx];if(!item)return;
+    const normalized=normalizeSpoken(result);
+    const acc=calcAcc(item.say,result,alternatives);
+    setSfRes(normalized);setSfAcc(acc);setSfPhase("result");setSfTotal(t=>t+1);
+    const s=getStars(acc);const p=getStarPts(s);
+    if(p>0){awardPoints(p,"speaking",item.say);boom();setSfScore(sc=>sc+1);headYes();
+      if(s>=4)speak("Perfect! "+acc+" percent!",{rate:0.9,pitch:1.0});
+      else speak("Good! "+acc+" percent!",{rate:0.9,pitch:1.0});
+    }else{flashWrong();headNo();speak("Try harder next time!",{rate:0.9,pitch:1.0});}
+    setTimeout(()=>{
+      const next=idx+1;
+      if(next<items.length){setSfIdx(next);setSfRes(null);setSfAcc(null);setSfPhase("idle");setTimeout(()=>playSfItem(items,next),500);}
+      else{setSfPhase("done");sfPlayingRef.current=false;speak("All done! You scored "+sfScore+" out of "+items.length+"!",{rate:0.85,pitch:1.0});}
+    },2200);
+  };
+  const sfTapMic=()=>{
+    const item=sfItems[sfIdx];if(!item)return;
+    rec.start(handleSfMicResult,item.say);
+  };
+  const sfTypeFallback=(typed)=>{handleSfMicResult(typed,[]);};
+
   const goSubCat=(cat)=>{
     sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
     if(cat.cat)setPhCat(cat.cat);
@@ -4292,7 +4294,7 @@ export default function App(){
       <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
     </div>
   );
-  if(scr==="speaking")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={6}/><SubHead title="Speaking 🗣️" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}><div style={{textAlign:"center",fontSize:48,marginBottom:4,animation:"mascotB 2s ease-in-out infinite"}}>🗣️</div><h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--dark)",textAlign:"center",margin:"0 0 4px"}}>Choose a Speaking Mode</h3><p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:12}}>Pick how you want to practice, then choose a topic!</p><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>{SPEAKING_CATS.map((c,i)=><button key={c.id} onClick={()=>{sfxTap();if(c.mode==="speakback")setPhModes({spelling:false,phonics:false,sentence:false,speak:true});else if(c.mode==="pronounce")setPhModes({spelling:true,phonics:false,sentence:false,speak:false});else if(c.mode==="phonics")setPhModes({spelling:false,phonics:true,sentence:false,speak:false});else if(c.mode==="sentences")setPhModes({spelling:false,phonics:false,sentence:true,speak:true});speak(c.title+"! Now pick a topic!",{rate:0.85,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"20px 10px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:"var(--font)",background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],boxShadow:"0 4px 14px rgba(0,0,0,0.1)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both`}}><span style={{fontSize:36}}>{c.icon}</span><span style={{fontWeight:800,fontSize:14,color:"#fff"}}>{c.title}</span><span style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.85)",textAlign:"center"}}>{c.desc}</span></button>)}</div><h4 style={{fontFamily:"var(--font)",fontSize:14,fontWeight:800,color:"var(--dark)",margin:"0 0 8px"}}>📚 Pick a Topic</h4><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>{SPEAKING_TOPICS.map((t,i)=><button key={t.id} onClick={()=>goSubCat(t)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"14px 6px",borderRadius:18,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-card)",animation:`gridPop 0.3s ease ${0.3+i*0.04}s both`}}><span style={{fontSize:24}}>{t.icon}</span><span style={{fontWeight:700,fontSize:11,color:"#2D2B3D",textAlign:"center"}}>{t.title}</span></button>)}</div></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="speaking")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={6}/><SubHead title="Speaking 🗣️" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,overflow:"auto",padding:"12px 16px",WebkitOverflowScrolling:"touch"}}><div style={{textAlign:"center",fontSize:48,marginBottom:4,animation:"mascotB 2s ease-in-out infinite"}}>🗣️</div><h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--dark)",textAlign:"center",margin:"0 0 4px"}}>Choose a Speaking Mode</h3><p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:12}}>Pick how you want to practice, then choose a topic!</p><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>{SPEAKING_CATS.map((c,i)=><button key={c.id} onClick={()=>{sfxTap();if(c.mode==="speakback")setPhModes({spelling:false,phonics:false,sentence:false,speak:true});else if(c.mode==="pronounce")setPhModes({spelling:true,phonics:false,sentence:false,speak:false});else if(c.mode==="phonics")setPhModes({spelling:false,phonics:true,sentence:false,speak:false});else if(c.mode==="sentences")setPhModes({spelling:false,phonics:false,sentence:true,speak:true});speak(c.title+"! Now pick a topic!",{rate:0.85,pitch:1.0});}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,padding:"20px 10px",borderRadius:22,border:"none",cursor:"pointer",fontFamily:"var(--font)",background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],boxShadow:"0 4px 14px rgba(0,0,0,0.1)",animation:`gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) ${i*0.08}s both`}}><span style={{fontSize:36}}>{c.icon}</span><span style={{fontWeight:800,fontSize:14,color:"#fff"}}>{c.title}</span><span style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.85)",textAlign:"center"}}>{c.desc}</span></button>)}</div><h4 style={{fontFamily:"var(--font)",fontSize:14,fontWeight:800,color:"var(--dark)",margin:"0 0 8px"}}>📚 Pick a Topic</h4><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>{SPEAKING_TOPICS.map((t,i)=><button key={t.id} onClick={()=>{sfxTap();const topicKey=t.cat||t.tab||t.id;startSpeakFlow(topicKey);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"14px 6px",borderRadius:18,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-card)",animation:`gridPop 0.3s ease ${0.3+i*0.04}s both`}}><span style={{fontSize:24}}>{t.icon}</span><span style={{fontWeight:700,fontSize:11,color:"#2D2B3D",textAlign:"center"}}>{t.title}</span></button>)}</div></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
   if(scr==="listening")return<SubCatScreen title="Listening 👂" emoji="👂" cats={LISTENING_CATS} onBack={goHome}/>;
   if(scr==="reading")return<SubCatScreen title="Reading 📖" emoji="📖" cats={READING_CATS} onBack={goHome}/>;
   if(scr==="writing")return<SubCatScreen title="Writing ✍️" emoji="✍️" cats={WRITING_CATS} onBack={goHome}/>;
@@ -4301,7 +4303,10 @@ export default function App(){
   
 
 
-    if(scr==="home")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
+  // ═══ SPEAK FLOW SCREEN ═══
+  if(scr==="speakflow"&&sfItems.length>0){const item=sfItems[sfIdx];const topicLabel=sfTopic==="abc"?"A-Z Letters":sfTopic==="numbers"?"Numbers":sfTopic==="colors"?"Colors":sfTopic==="shapes"?"Shapes":(sfTopic.charAt(0).toUpperCase()+sfTopic.slice(1));const progress=sfItems.length>0?Math.round(((sfIdx)/(sfItems.length))*100):0;return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Confetti key={celebKey} active={confetti} type={celebType}/>{ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}<SubHead title={topicLabel+" Speaking"} onBack={()=>{stop();rec.stop();sfPlayingRef.current=false;setSfPhase("idle");goHome();}} points={prof?.points||0}/><div style={{padding:"0 16px"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0"}}><div style={{flex:1,height:8,borderRadius:4,background:"#E8EAF6",overflow:"hidden"}}><div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#6C5CE7,#A29BFE)",width:`${progress}%`,transition:"width 0.5s"}}/></div><span style={{fontSize:13,fontWeight:800,color:"#6C5CE7",whiteSpace:"nowrap"}}>{sfIdx+1}/{sfItems.length}</span><span style={{fontSize:13,fontWeight:800,color:"#22C55E",whiteSpace:"nowrap"}}>🏆 {sfScore}</span></div></div><div style={{flex:1,display:"flex",flexDirection:"column",padding:"8px 16px",overflow:"auto"}}>{sfPhase!=="done"&&item&&<div style={{textAlign:"center",padding:"28px 20px",background:"linear-gradient(145deg,#fff,#F8FAFF)",borderRadius:28,boxShadow:"0 8px 32px rgba(108,92,231,0.12)",marginBottom:14,animation:"slideUp 0.3s ease-out"}}><div style={{fontSize:80,animation:"mascotB 2s ease-in-out infinite",filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.15))"}}>{item.emoji}</div><div style={{fontSize:42,fontWeight:900,color:"#2D2B3D",fontFamily:"var(--font)",marginTop:8,letterSpacing:2,textTransform:"capitalize"}}>{item.display}</div>{item.sub&&<div style={{fontSize:14,fontWeight:600,color:"#8E8CA3",marginTop:4}}>{item.sub}</div>}</div>}{sfPhase==="speaking"&&<div style={{textAlign:"center",padding:16,background:"#EDE9FE",borderRadius:20,animation:"slideUp 0.3s"}}><div style={{fontSize:14,fontWeight:700,color:"#6C5CE7"}}>🔊 Listen carefully...</div><div style={{display:"flex",justifyContent:"center",gap:3,marginTop:10}}>{(()=>{const baseTiles=[1,2,3,4,5].map(i=><div key={i} style={{width:4,background:"#6C5CE7",borderRadius:4,animation:`sndWave 0.8s ease-in-out ${i*0.08}s infinite`}}/>)}</div></div>}{sfPhase==="listening"&&<ListeningBox transcript={rec.txt} countdown={rec.countdown} vol={rec.vol} onTapMic={sfTapMic} isListening={rec.on} error={rec.err} onType={sfTypeFallback} expected={item?.say||""} phase={rec.phase} engineUsed={rec.engineUsed}/>}{sfPhase==="result"&&sfRes!==null&&<div style={{padding:16,background:"#fff",borderRadius:22,boxShadow:"var(--shadow-float)",animation:"resBounce 0.5s cubic-bezier(0.34,1.56,0.64,1)"}}><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12}}><Stars count={getStars(sfAcc)}/><div style={{position:"relative",display:"inline-block"}}><ProgressRing pct={sfAcc} color={sfAcc>=50?"#22C55E":"#F59E0B"}/><div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,color:sfAcc>=50?"#22C55E":"#F59E0B"}}>{sfAcc}%</span></div></div></div><div style={{display:"flex",gap:6,margin:"10px 0"}}><div style={{flex:1,padding:"8px 10px",borderRadius:14,background:sfAcc>=50?"#F0FDF4":"#FEF2F2",border:sfAcc>=50?"2px solid #22C55E33":"2px solid #EF444433",textAlign:"center"}}><div style={{fontSize:9,fontWeight:800,color:"#78909C",textTransform:"uppercase",letterSpacing:1}}>You said</div><div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:sfAcc>=50?"#16A34A":"#DC2626",marginTop:2}}>"{sfRes}"</div></div><div style={{flex:1,padding:"8px 10px",borderRadius:14,background:"#fff",border:"2px solid #6C5CE733",textAlign:"center"}}><div style={{fontSize:9,fontWeight:800,color:"#78909C",textTransform:"uppercase",letterSpacing:1}}>Correct</div><div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"#6C5CE7",marginTop:2}}>"{item?.say}"</div></div></div>{getStarPts(getStars(sfAcc))>0&&<div style={{fontSize:16,fontWeight:800,color:"#22C55E",fontFamily:"var(--font)",textAlign:"center"}}>+{getStarPts(getStars(sfAcc))} points! 💰</div>}<div style={{textAlign:"center",marginTop:8,fontSize:12,fontWeight:700,color:"#8E8CA3"}}>Next in a moment...</div></div>}{sfPhase==="done"&&<div style={{textAlign:"center",padding:"32px 20px",background:"#fff",borderRadius:28,boxShadow:"var(--shadow-float)",animation:"resBounce 0.5s ease-out"}}><div style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>🎉</div><h2 style={{fontFamily:"var(--font)",fontSize:24,fontWeight:800,color:"#2D2B3D",margin:"8px 0"}}>All Done!</h2><Stars count={sfScore>=sfItems.length?5:sfScore>=sfItems.length*0.7?4:sfScore>=sfItems.length*0.5?3:sfScore>=sfItems.length*0.3?2:1}/><div style={{fontSize:18,fontWeight:800,color:"#6C5CE7",margin:"8px 0"}}>{sfScore} / {sfItems.length} correct</div>{sfScore>0&&<div style={{fontSize:16,fontWeight:700,color:"#22C55E"}}>+{sfScore*5} points earned!</div>}<div style={{display:"flex",gap:10,marginTop:16}}><button onClick={()=>{stop();rec.stop();sfPlayingRef.current=false;setSfIdx(0);setSfScore(0);setSfTotal(0);setSfPhase("idle");setSfRes(null);setSfAcc(null);setTimeout(()=>playSfItem(sfItems,0),500);}} style={{flex:1,padding:"14px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Again</button><button onClick={()=>{stop();rec.stop();sfPlayingRef.current=false;setScr("speaking");}} style={{flex:1,padding:"14px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>📚 Topics</button><button onClick={()=>{stop();rec.stop();sfPlayingRef.current=false;goHome();}} style={{flex:1,padding:"14px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🏠 Home</button></div></div>}{sfPhase==="idle"&&item&&<div style={{textAlign:"center",padding:16}}><div style={{fontSize:14,fontWeight:700,color:"#8E8CA3",animation:"pulse 1.5s ease-in-out infinite"}}>Getting ready...</div></div>}</div>{TeacherBubble}<style>{CSS}</style></div>;}
+
+      if(scr==="home")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",position:"relative",display:"flex",flexDirection:"column"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
     {/* ═══ TOP BAR ═══ */}
@@ -4355,7 +4360,7 @@ export default function App(){
           {id:"studyplan",icon:"📋",title:"Study Plan",bg:"#FFF3E0",tc:"#E65100"},
           {id:"arena",icon:"🏟️",title:"Arena",bg:"#FCE4EC",tc:"#AD1457"},
           {id:"rewards",icon:"🎁",title:"Rewards",bg:"#FFEBEE",tc:"#C62828"},
-        ].map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");setScr(m.id);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"10px 4px",borderRadius:16,border:"none",background:m.bg,cursor:"pointer",fontFamily:"var(--font)",animation:`gridPop 0.3s ease ${0.5+0.04*i}s both`}}>
+        ];const priority=typeof localStorage!=="undefined"?localStorage.getItem("lg_priority_tile"):null;const sorted=priority?[...baseTiles].sort((a,b)=>a.id===priority?-1:b.id===priority?1:0):baseTiles;return sorted;})().map((m,i)=><button key={m.id} data-r="tile" data-tile={m.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");setScr(m.id);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,padding:"10px 4px",borderRadius:16,border:"none",background:m.bg,cursor:"pointer",fontFamily:"var(--font)",animation:`gridPop 0.3s ease ${0.5+0.04*i}s both`}}>
           <span style={{fontSize:20}}>{m.icon}</span>
           <span style={{fontSize:10,fontWeight:800,color:m.tc}}>{m.title}</span>
         </button>)}
