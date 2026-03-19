@@ -2622,11 +2622,6 @@ export default function App(){
     const pos={home:"bottomRight",numbers:"bottomRight",phonics:"bottomRight",shapes:"bottomRight",colors:"bottomRight",alphabet:"bottomRight",basics:"bottomRight",rewards:"bottomRight",stories:"bottomRight",settings:"bottomRight",splash:"center",onboard:"bottomRight"};
     setTimeout(()=>movePandaTo(pos[scr]||"bottomRight"),100);
   },[scr]);
-  // Redirect maths/mixquiz to quizzone (useEffect prevents infinite re-render)
-  useEffect(()=>{
-    if(scr==="maths"){setScr("quizzone");setQuizTab("math");}
-    if(scr==="mixquiz"){setScr("quizzone");}
-  },[scr]);
   // Basics state
   const[basicsTab,setBasicsTab]=useState("explore"); // legacy
   const[learnTab,setLearnTab]=useState("numbers");
@@ -3090,6 +3085,21 @@ export default function App(){
   const[sfTopic,setSfTopic]=useState("");
   const[sfMode,setSfMode]=useState("speakback"); // speakback | pronounce | phonics | sentences
   const sfPlayingRef=useRef(false);
+  // ═══ LISTEN FLOW STATE ═══
+  const[lfItems,setLfItems]=useState([]);
+  const[lfIdx,setLfIdx]=useState(0);
+  const[lfTopic,setLfTopic]=useState("");
+  const[lfPlaying,setLfPlaying]=useState(false);
+  const lfRef=useRef(false);
+  // ═══ READING FLOW STATE ═══
+  const[rfItems,setRfItems]=useState([]);
+  const[rfIdx,setRfIdx]=useState(0);
+  const[rfTopic,setRfTopic]=useState("");
+  const[rfPhase,setRfPhase]=useState("idle");
+  const[rfScore,setRfScore]=useState(0);
+  const[rfScrambled,setRfScrambled]=useState([]);
+  const[rfTapIdx,setRfTapIdx]=useState(0);
+  const[rfWrong,setRfWrong]=useState(-1);
 
   const initDone=useRef(false);
   const welcomeSpoken=useRef(false);
@@ -4395,12 +4405,7 @@ export default function App(){
   };
   const sfTypeFallback=(typed)=>{handleSfMicResult(typed,[]);};
 
-  // ═══ LISTEN FLOW — Pure listen-only, no mic ═══
-  const[lfItems,setLfItems]=useState([]);
-  const[lfIdx,setLfIdx]=useState(0);
-  const[lfTopic,setLfTopic]=useState("");
-  const[lfPlaying,setLfPlaying]=useState(false);
-  const lfRef=useRef(false);
+  // ═══ LISTEN FLOW FUNCTIONS ═══
 
   const startListenFlow=(topic)=>{
     stop();rec.stop();
@@ -4432,15 +4437,7 @@ export default function App(){
   const lfResume=()=>{lfRef.current=true;playLfItem(lfItems,lfIdx);};
   const lfTapItem=(idx)=>{stop();lfRef.current=false;setLfPlaying(false);setLfIdx(idx);const item=lfItems[idx];if(item){setTeacherMood("speaking");speak(item.say,{rate:0.7,pitch:1.0});}};
 
-  // ═══ READING FLOW — Spelling match game ═══
-  const[rfItems,setRfItems]=useState([]);
-  const[rfIdx,setRfIdx]=useState(0);
-  const[rfTopic,setRfTopic]=useState("");
-  const[rfPhase,setRfPhase]=useState("idle"); // idle | scramble | result
-  const[rfScore,setRfScore]=useState(0);
-  const[rfScrambled,setRfScrambled]=useState([]);
-  const[rfTapIdx,setRfTapIdx]=useState(0);
-  const[rfWrong,setRfWrong]=useState(-1);
+  // ═══ READING FLOW FUNCTIONS ═══
 
   const startReadFlow=(topic)=>{
     stop();rec.stop();
@@ -4607,7 +4604,6 @@ export default function App(){
     <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
   if(scr==="writing")return<SubCatScreen title="Writing ✍️" emoji="✍️" cats={WRITING_CATS} onBack={goHome}/>;
-  // maths and mixquiz both route to quizzone - handled in useEffect below
   if(scr==="homework")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Homework 📝" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,padding:20}}><span style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>📝</span><h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",textAlign:"center"}}>Coming Soon!</h2><p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,textAlign:"center"}}>Parents will assign homework tasks here</p></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
 
 
@@ -5633,7 +5629,7 @@ export default function App(){
   </div>;
 
   // ═══ QUIZ ZONE ═══
-  if(scr==="quizzone")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch"}}>
+  if(scr==="quizzone"||scr==="maths"||scr==="mixquiz")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column",WebkitOverflowScrolling:"touch"}}>
     <Confetti key={celebKey} active={confetti} type={celebType}/>
     <SubHead title="Quiz Zone 🎯" onBack={goHome} points={prof?.points||0}/>
     {/* Tab bar */}
