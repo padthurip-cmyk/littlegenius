@@ -4262,12 +4262,11 @@ export default function App(){
         </button>
         <button onClick={()=>{sfxTap();
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
-          save(newP);setTeacherMood("star");
-          // Go through questionnaire too (customizes home), but skip tour after
-          setScr("questionnaire");setQStep(0);setQAnswers([]);
+          save(newP);killAllFlows();speak("Let's go!",{rate:0.85,pitch:1.0});setTeacherMood("star");
+          setScr("home");
         }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(255,159,67,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
           <span style={{fontSize:32}}>🚀</span>
-          Skip tour, let's go!
+          Skip, let's go!
         </button>
       </div>
     </>:null}
@@ -4300,45 +4299,52 @@ export default function App(){
 
   // ═══ QUESTIONNAIRE (first-time only) ═══
   if(scr==="questionnaire")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 40%,#74B9FF 100%)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:28,padding:"24px 18px",maxWidth:400,border:"1px solid rgba(255,255,255,0.8)",width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
-      <div style={{fontSize:48}}>🦉</div>
-      <h2 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",margin:"8px 0 4px"}}>Quick Questions!</h2>
-      <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600,marginBottom:16}}>Question {qStep+1} of {QUESTIONNAIRE.length} — Help Ollie customize your learning!</p>
+    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:32,padding:"28px 20px",maxWidth:420,border:"1px solid rgba(255,255,255,0.8)",width:"100%",boxShadow:"0 20px 60px rgba(108,92,231,0.2)",textAlign:"center"}}>
+      <div style={{fontSize:52,animation:"mascotB 2s ease-in-out infinite"}}>🦉</div>
+      <h2 style={{fontFamily:"var(--font)",fontSize:24,fontWeight:900,color:"var(--dark)",margin:"8px 0 4px"}}>Quick Questions!</h2>
+      <p style={{fontFamily:"var(--font)",fontSize:14,color:"#8E8CA3",fontWeight:700,marginBottom:18}}>Question {qStep+1} of {QUESTIONNAIRE.length}</p>
       
-      <div style={{fontSize:16,fontWeight:700,color:"var(--dark)",marginBottom:14}}>{QUESTIONNAIRE[qStep]?.q}</div>
+      <div style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"#2D2B3D",marginBottom:16,lineHeight:1.3}}>{QUESTIONNAIRE[qStep]?.q}</div>
       
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        {QUESTIONNAIRE[qStep]?.opts.map((opt,i)=><button key={i} onClick={()=>{
-          sfxTap();
-          const newA=[...qAnswers,opt];setQAnswers(newA);
-          if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
-          else{saveQuizAnswers(newA);
-            // Derive priority tile from Q1 (primaryFocus)
-            const focusMap={"Speaking & Pronunciation":"speaking","Listening & Understanding":"listening","Reading & Spelling":"reading","Writing Letters & Numbers":"writing"};
-            const focus=newA[0];if(focusMap[focus])try{localStorage.setItem("lg_priority_tile",focusMap[focus]);}catch(e){}
-            // Save favourite as structured data for My Favourite tile
-            const favData={focus:newA[0],topic:newA[1],level:newA[2],goal:newA[3],style:newA[4]};
-            try{localStorage.setItem("lg_favourite",JSON.stringify(favData));}catch(e){}
-            setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
-        }} style={{
-          padding:"14px 18px",border:"none",cursor:"pointer",fontFamily:"var(--font)",
-          fontSize:14,fontWeight:700,textAlign:"left",
-          background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],
-          color:"#fff",boxShadow:["0 6px 20px rgba(108,92,231,0.25)","0 6px 20px rgba(0,210,160,0.25)","0 6px 20px rgba(255,159,67,0.25)","0 6px 20px rgba(84,160,255,0.25)"][i%4],
-          borderRadius:22,
-          transition:"all 0.2s"
-        }}>{opt}</button>)}
+      {/* Multiple choice claymorphism tiles */}
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {QUESTIONNAIRE[qStep]?.opts.map((opt,i)=>{
+          const emojis=["🗣️","👂","📖","✍️","🐾","🔢","🔤","🎨","⭐","📚","🎯","🎮","👀","🎧","🕹️","🌈","💪","🧠","📝","🏆"];
+          const em=emojis[(qStep*4+i)%emojis.length];
+          return<button key={i} onClick={()=>{
+            sfxTap();
+            const newA=[...qAnswers,opt];setQAnswers(newA);
+            if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
+            else{saveQuizAnswers(newA);
+              const focusMap={"Speaking & Pronunciation":"speaking","Listening & Understanding":"listening","Reading & Spelling":"reading","Writing Letters & Numbers":"writing"};
+              const focus=newA[0];if(focusMap[focus])try{localStorage.setItem("lg_priority_tile",focusMap[focus]);}catch(e){}
+              const favData={focus:newA[0],topic:newA[1],level:newA[2],goal:newA[3],style:newA[4]};
+              try{localStorage.setItem("lg_favourite",JSON.stringify(favData));}catch(e){}
+              setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
+          }} style={{
+            display:"flex",alignItems:"center",gap:14,padding:"16px 18px",border:"none",cursor:"pointer",fontFamily:"var(--font)",
+            fontSize:17,fontWeight:800,textAlign:"left",
+            background:"#fff",color:"#2D2B3D",
+            borderRadius:22,
+            boxShadow:"0 4px 16px rgba(108,92,231,0.08), inset 0 2px 4px rgba(255,255,255,0.8), inset 0 -2px 4px rgba(0,0,0,0.04)",
+            transition:"all 0.15s",
+          }}>
+            <div style={{width:44,height:44,borderRadius:14,background:["linear-gradient(135deg,#6C5CE7,#A29BFE)","linear-gradient(135deg,#00D2A0,#55EFC4)","linear-gradient(135deg,#FF9F43,#FECA57)","linear-gradient(135deg,#54A0FF,#74B9FF)"][i%4],display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,boxShadow:"0 3px 10px rgba(0,0,0,0.1)"}}>{em}</div>
+            <span style={{flex:1,lineHeight:1.2}}>{opt}</span>
+            <div style={{width:26,height:26,borderRadius:13,border:"3px solid #E0E0E0",flexShrink:0}}/>
+          </button>;
+        })}
       </div>
       
       <button onClick={()=>{
         sfxTap();
         if(qStep<QUESTIONNAIRE.length-1){setQAnswers([...qAnswers,"skipped"]);setQStep(qStep+1);}
         else{saveQuizAnswers([...qAnswers,"skipped"]);setScr("home");}
-      }} style={{marginTop:12,padding:"8px 16px",borderRadius:12,border:"none",background:"transparent",color:"#A4B0BE",fontSize:12,fontWeight:700,cursor:"pointer"}}>Skip →</button>
+      }} style={{marginTop:14,padding:"10px 20px",borderRadius:14,border:"none",background:"transparent",color:"#A4B0BE",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>Skip →</button>
       
       {/* Progress dots */}
       <div style={{display:"flex",gap:6,justifyContent:"center",marginTop:14}}>
-        {QUESTIONNAIRE.map((_,i)=><div key={i} style={{width:i===qStep?20:8,height:8,borderRadius:4,background:i<qStep?"#00D2A0":i===qStep?"#6C5CE7":"#E0E0E0",transition:"all 0.3s"}}/>)}
+        {QUESTIONNAIRE.map((_,i)=><div key={i} style={{width:i===qStep?24:10,height:10,borderRadius:5,background:i<qStep?"#00D2A0":i===qStep?"#6C5CE7":"#E0E0E0",transition:"all 0.3s"}}/>)}
       </div>
     </div>
   </div>;
@@ -5582,15 +5588,20 @@ export default function App(){
               width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 18px",
               borderRadius:22,border:"none",cursor:"pointer",fontFamily:"var(--font)",
               background:fr.color,
-              boxShadow:"0 6px 24px rgba(108,92,231,0.25)"
+              backgroundSize:"200% 100%",
+              boxShadow:"0 6px 24px rgba(108,92,231,0.25)",
+              animation:"favGlow 2s ease-in-out infinite, favPulse 3s ease-in-out infinite",
+              position:"relative",overflow:"hidden"
             }}>
-              <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>{tr.icon}</div>
-              <div style={{flex:1,textAlign:"left"}}>
-                <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",letterSpacing:1.5}}>⭐ My Favourite</div>
-                <div style={{fontSize:16,fontWeight:800,color:"#fff"}}>{fr.label}</div>
-                <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.75)",marginTop:1}}>{tr.sub} · {fav.level==="I know lots of words!"?"Advanced":fav.level==="I know some words"?"Intermediate":"Beginner"}</div>
+              {/* Shimmer overlay */}
+              <div style={{position:"absolute",inset:0,background:"linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.3) 50%,transparent 100%)",backgroundSize:"200% 100%",animation:"favShine 3s ease-in-out infinite",pointerEvents:"none",borderRadius:22}}/>
+              <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,position:"relative",zIndex:1,boxShadow:"inset 0 2px 4px rgba(255,255,255,0.3),inset 0 -2px 4px rgba(0,0,0,0.05)"}}>{tr.icon}</div>
+              <div style={{flex:1,textAlign:"left",position:"relative",zIndex:1}}>
+                <div style={{fontSize:11,fontWeight:800,color:"rgba(255,255,255,0.9)",textTransform:"uppercase",letterSpacing:1.5}}>⭐ My Favourite</div>
+                <div style={{fontSize:18,fontWeight:900,color:"#fff",fontFamily:"var(--font)"}}>{fr.label}</div>
+                <div style={{fontSize:12,fontWeight:700,color:"rgba(255,255,255,0.8)",marginTop:1}}>{tr.sub} · {fav.level==="I know lots of words!"?"Advanced":fav.level==="I know some words"?"Intermediate":"Beginner"}</div>
               </div>
-              <span style={{fontSize:22,color:"rgba(255,255,255,0.9)"}}>→</span>
+              <span style={{fontSize:24,color:"rgba(255,255,255,0.9)",position:"relative",zIndex:1,animation:"numPulse 1.5s ease-in-out infinite"}}>→</span>
             </button>
           </div>;
         }catch(e){return null;}
@@ -7411,6 +7422,9 @@ button:active{transform:translateY(2px);}
 @keyframes tipW{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
 @keyframes readyP{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
 @keyframes gridPop{0%{opacity:0;transform:scale(0.9)}100%{opacity:1;transform:scale(1)}}
+@keyframes favShine{0%{background-position:200% center}100%{background-position:-200% center}}
+@keyframes favGlow{0%,100%{box-shadow:0 4px 20px rgba(108,92,231,0.2),0 0 0 0 rgba(108,92,231,0)}50%{box-shadow:0 6px 30px rgba(108,92,231,0.35),0 0 20px 4px rgba(108,92,231,0.15)}}
+@keyframes favPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
 @keyframes tourClay{0%,100%{box-shadow:0 6px 24px rgba(255,140,66,0.45),0 2px 8px rgba(255,140,66,0.3),inset 0 2px 4px rgba(255,255,255,0.35),inset 0 -2px 6px rgba(0,0,0,0.08),0 0 0 3px rgba(255,159,67,0.5)}50%{box-shadow:0 8px 32px rgba(255,140,66,0.6),0 3px 12px rgba(255,140,66,0.4),inset 0 2px 4px rgba(255,255,255,0.4),inset 0 -2px 6px rgba(0,0,0,0.1),0 0 0 4px rgba(255,159,67,0.7)}}
 @keyframes cardFloat{0%,100%{transform:translateY(0)}25%{transform:translateY(-4px)}75%{transform:translateY(-6px)}}
 @keyframes cardBounce{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
