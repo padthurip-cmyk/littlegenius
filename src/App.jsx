@@ -4943,7 +4943,7 @@ export default function App(){
     // Completed strokes — solid, persistent
     for(let i=0;i<upTo;i++){
       const s=strokes[i];if(!s)continue;
-      ctx.strokeStyle=SC[s.t]||"#6C5CE7";ctx.lineWidth=6;ctx.lineCap="round";ctx.lineJoin="round";ctx.globalAlpha=0.85;
+      ctx.strokeStyle=SC[s.t]||"#6C5CE7";ctx.lineWidth=10;ctx.lineCap="round";ctx.lineJoin="round";ctx.globalAlpha=0.9;
       drawStrokePath(ctx,s,W,H);
     }
     ctx.globalAlpha=1;
@@ -4964,7 +4964,7 @@ export default function App(){
       // Redraw background + all completed strokes up to sIdx
       drawStrokeBg(ctx,W,H,"",strokes,sIdx);
       // Draw current stroke progress (smooth animated line)
-      ctx.strokeStyle=color;ctx.lineWidth=7;ctx.lineCap="round";ctx.lineJoin="round";ctx.setLineDash([]);ctx.globalAlpha=1;
+      ctx.strokeStyle=color;ctx.lineWidth=10;ctx.lineCap="round";ctx.lineJoin="round";ctx.setLineDash([]);ctx.globalAlpha=1;
       ctx.beginPath();ctx.moveTo(path[0][0],path[0][1]);
       for(let i=1;i<=frame;i++)ctx.lineTo(path[i][0],path[i][1]);
       ctx.stroke();
@@ -4988,16 +4988,18 @@ export default function App(){
     await speak("Watch how I write "+letter,{rate:0.78,pitch:1.0});await wait(500);
     for(let i=0;i<strokes.length;i++){
       const s=strokes[i];
-      const ordinal=i===0?"First":i===1?"Next":"And now";
-      stop();await speak(ordinal+", a "+SN[s.t].toLowerCase()+"!",{rate:0.82,pitch:1.0});
-      await wait(350);
+      const ordinal=i===0?"First":i===1?"Then":"And finally";
+      const desc=SN[s.t].toLowerCase();
+      stop();await speak(ordinal+", watch me draw a "+desc+"! "+s.n+"!",{rate:0.78,pitch:1.0});
+      await wait(400);
       await new Promise(r=>animateStroke(canvas,strokes,i,r));
       // After animation finishes, redraw with this stroke as completed
       drawStrokeBg(ctx,W,H,letter,strokes,i+1);
       await wait(300);
-      stop();await speak(s.n+" done!",{rate:0.88,pitch:1.08});await wait(350);
+      stop();await speak("That's the "+s.n+"! Well done!",{rate:0.85,pitch:1.08});await wait(400);
     }
-    stop();await speak("Now your turn! Trace each line!",{rate:0.85,pitch:1.0});await wait(300);
+    const firstStroke=strokes[0];
+    stop();await speak("Now your turn! Start with the "+SN[firstStroke?.t||"standing"].toLowerCase()+"! Drag from the green dot to the red dot!",{rate:0.8,pitch:1.0});await wait(300);
     setStrokePhase("write");setStrokeCur(0);strokePoints.current=[];
     redrawWriteCanvas(canvas,letter,0,[]);
   };
@@ -5014,7 +5016,7 @@ export default function App(){
     for(let i=0;i<completedDrawings.length;i++){
       const cd=completedDrawings[i];if(!cd)continue;
       const s=strokes[i];
-      ctx.strokeStyle=SC[s?.t]||"#6C5CE7";ctx.lineWidth=6;ctx.lineCap="round";ctx.globalAlpha=0.9;ctx.setLineDash([]);
+      ctx.strokeStyle=SC[s?.t]||"#6C5CE7";ctx.lineWidth=10;ctx.lineCap="round";ctx.globalAlpha=1;ctx.setLineDash([]);
       ctx.beginPath();ctx.moveTo(cd[0][0],cd[0][1]);
       for(let j=1;j<cd.length;j++)ctx.lineTo(cd[j][0],cd[j][1]);
       ctx.stroke();
@@ -5023,7 +5025,7 @@ export default function App(){
     // Current stroke guide — dashed watermark with start/end dots
     if(curIdx<strokes.length){
       const s=strokes[curIdx];
-      ctx.strokeStyle=SC[s.t]||"#FF9F43";ctx.lineWidth=9;ctx.lineCap="round";ctx.setLineDash([12,8]);ctx.globalAlpha=0.25;
+      ctx.strokeStyle=SC[s.t]||"#FF9F43";ctx.lineWidth=12;ctx.lineCap="round";ctx.setLineDash([14,10]);ctx.globalAlpha=0.3;
       drawStrokePath(ctx,s,W,H);
       ctx.setLineDash([]);ctx.globalAlpha=1;
       // Start/end dots
@@ -5031,18 +5033,18 @@ export default function App(){
       const pts=s.p;
       const startPt=pts[0],endPt=pts[pts.length-1];
       // Green start dot with label
-      ctx.fillStyle="#22C55E";ctx.beginPath();ctx.arc(startPt[0]*sx2,startPt[1]*sy2,10,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle="#fff";ctx.font="bold 10px Fredoka";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillStyle="#22C55E";ctx.beginPath();ctx.arc(startPt[0]*sx2,startPt[1]*sy2,13,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#fff";ctx.font="bold 12px Fredoka";ctx.textAlign="center";ctx.textBaseline="middle";
       ctx.fillText("S",startPt[0]*sx2,startPt[1]*sy2);
       // Red end dot
-      ctx.fillStyle="#EF4444";ctx.beginPath();ctx.arc(endPt[0]*sx2,endPt[1]*sy2,10,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#EF4444";ctx.beginPath();ctx.arc(endPt[0]*sx2,endPt[1]*sy2,13,0,Math.PI*2);ctx.fill();
       ctx.fillStyle="#fff";ctx.fillText("E",endPt[0]*sx2,endPt[1]*sy2);
     }
     // Kid's current in-progress drawing
     const pts2=strokePoints.current;
     if(pts2.length>1){
       const s=curIdx<strokes.length?strokes[curIdx]:null;
-      ctx.strokeStyle=s?SC[s.t]||"#6C5CE7":"#6C5CE7";ctx.lineWidth=5;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=0.7;
+      ctx.strokeStyle=s?SC[s.t]||"#6C5CE7":"#6C5CE7";ctx.lineWidth=8;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=0.8;
       ctx.beginPath();ctx.moveTo(pts2[0][0],pts2[0][1]);
       for(let i=1;i<pts2.length;i++)ctx.lineTo(pts2[i][0],pts2[i][1]);
       ctx.stroke();ctx.globalAlpha=1;
@@ -5102,26 +5104,34 @@ export default function App(){
       redrawWriteCanvas(canvas,letter,strokeCur+1,strokeCompletedRef.current);
 
       boom();headYes();
-      stop();await speak("Great! You drew the "+s.n+"!",{rate:0.85,pitch:1.08});
+      const ordNum=strokeCur===0?"first":strokeCur===1?"second":"third";
+      stop();await speak("Great job! You drew the "+ordNum+" line! The "+s.n+"!",{rate:0.82,pitch:1.08});
       const next=strokeCur+1;
       if(next>=strokes.length){
         await wait(600);
         setStrokeDone(true);setStrokePhase("done");setStrokeCur(next);
-        boom();stop();await speak("Amazing! You wrote "+letter+"!",{rate:0.78,pitch:1.0});
+        boom();stop();await speak("Amazing! You finished writing the letter "+letter+"! All lines are perfect!",{rate:0.75,pitch:1.0});
         awardPoints(3,"writing",letter);
       } else {
         await wait(500);
         setStrokeCur(next);
         const ns=strokes[next];
-        if(ns){stop();await speak("Now draw the "+ns.n+"!",{rate:0.82,pitch:1.0});}
-        setTimeout(()=>redrawWriteCanvas(canvas,letter,next,strokeCompletedRef.current),100);
+        if(ns){
+          const nextOrd=next===1?"second":next===2?"third":"next";
+          stop();await speak("Now draw the "+nextOrd+" line! A "+SN[ns.t].toLowerCase()+"! "+ns.n+"!",{rate:0.8,pitch:1.0});
+        }
+        setTimeout(()=>redrawWriteCanvas(strokeCanvasRef.current,letter,next,strokeCompletedRef.current),50);
       }
     };
 
     const canvasInit=(el)=>{
-      if(!el)return;strokeCanvasRef.current=el;
-      el.width=el.offsetWidth;el.height=el.offsetHeight;
-      if(strokePhase==="write")redrawWriteCanvas(el,letter,strokeCur,strokeCompletedRef.current);
+      if(!el)return;
+      const isNew=strokeCanvasRef.current!==el;
+      strokeCanvasRef.current=el;
+      // ONLY set width/height on first mount — setting it clears the canvas bitmap!
+      if(isNew||!el.width){el.width=el.offsetWidth;el.height=el.offsetHeight;}
+      // Always redraw on mount/phase change
+      if(strokePhase==="write")setTimeout(()=>redrawWriteCanvas(el,letter,strokeCur,strokeCompletedRef.current),0);
     };
 
     const startLetterDemo=(idx)=>{
@@ -5129,8 +5139,11 @@ export default function App(){
       strokePoints.current=[];strokeCompletedRef.current=[];
       setTimeout(()=>{
         const c=strokeCanvasRef.current;
-        if(c){c.width=c.offsetWidth;c.height=c.offsetHeight;}
-        runStrokeDemo(c,letters[idx]);
+        if(c){
+          // Force resize on new letter (this intentionally clears for fresh start)
+          c.width=c.offsetWidth;c.height=c.offsetHeight;
+          runStrokeDemo(c,letters[idx]);
+        }
       },400);
     };
 
