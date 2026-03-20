@@ -1330,12 +1330,11 @@ const genArenaQ=(diff="easy")=>{const t=ARENA_Q_TYPES[Math.floor(Math.random()*A
 
 // ═══ FIRST-TIME QUESTIONNAIRE ═══
 const QUESTIONNAIRE=[
-  {q:"Which skill needs the most work?",opts:["Speaking clearly","Listening & understanding","Reading words","Writing letters & numbers"],key:"weakSkill"},
-  {q:"What topics does your child love?",opts:["Animals & Nature","Numbers & Counting","Colors & Shapes","Words & Stories"],key:"interest"},
-  {q:"Can they read simple words?",opts:["Yes, full sentences!","Short words (cat, dog)","Just letters","Not yet"],key:"readLevel"},
-  {q:"How far can they count?",opts:["Up to 100!","Up to 20","Up to 10","Just starting"],key:"countLevel"},
-  {q:"How do they learn best?",opts:["Watching & seeing","Listening & repeating","Hands-on practice","A mix of everything"],key:"learnStyle"},
-  {q:"Daily learning time?",opts:["10-15 minutes","15-30 minutes","30-60 minutes","Flexible"],key:"screenTime"},
+  {q:"What do you want to learn most?",opts:["Speaking & Pronunciation","Listening & Understanding","Reading & Spelling","Writing Letters & Numbers"],key:"primaryFocus"},
+  {q:"What's the most fun topic?",opts:["Animals & Nature","Numbers & Maths","Alphabets & Words","Colors & Shapes"],key:"favTopic"},
+  {q:"How good is your English?",opts:["I know lots of words!","I know some words","I'm just starting","I need lots of help"],key:"level"},
+  {q:"What do you want from this app?",opts:["Learn to speak clearly","Listen & understand stories","Read & spell words","Write neatly"],key:"goal"},
+  {q:"How do you like to learn?",opts:["Hearing & repeating","Watching & copying","Playing games","A bit of everything"],key:"style"},
 ];
 
 const STORIES = [
@@ -2718,6 +2717,8 @@ export default function App(){
     return()=>{onSpeakRef.current=null;onDoneRef.current=null;clearTimeout(teacherIdleRef.current);};
   },[]);
   useEffect(()=>{
+    // SAFETY: Always kill any playing speech when screen changes
+    stop();try{speechSynthesis.cancel();}catch(e){}
     const moods={home:"waving",numbers:"excited",phonics:"happy",shapes:"excited",colors:"happy",alphabet:"star",basics:"pointing",rewards:"excited",stories:"happy",settings:"happy"};
     const m=moods[scr];if(m)setTeacherMood(m);
     // Position owl based on screen
@@ -3161,6 +3162,7 @@ export default function App(){
   const[activeSpellIdx,setActiveSpellIdx]=useState(-1); // which letter is being spelled
   const[spellStatus,setSpellStatus]=useState([]); // per-letter: 'waiting'|'listening'|'correct'|'skipped'
   const pRef=useRef(false);
+  const navRef=useRef(0); // increments on every navigation — async flows check this to abort
   const nudgeRef=useRef(null);
   // Nudge: if kid doesn't tap mic within 10s, remind them
   const startNudge=()=>{clearTimeout(nudgeRef.current);nudgeRef.current=setTimeout(()=>{showTeacher("happy","Tap the 🎤 button to start!");},10000);};
@@ -3214,11 +3216,10 @@ export default function App(){
 
   const initDone=useRef(false);
   const welcomeSpoken=useRef(false);
-  // Welcome speech function — can be called from init OR first tap
   const doWelcome=useCallback(()=>{
     if(welcomeSpoken.current)return;
     welcomeSpoken.current=true;
-    speak("Welcome to Little Genius!",{rate:0.85,pitch:1.0});
+    speak("Welcome to Little Genius! Tap anywhere to start!",{rate:0.85,pitch:1.0});
     setTeacherMood("waving");
   },[speak]);
 
@@ -3229,10 +3230,11 @@ export default function App(){
     setOllieSize(100);
     setTimeout(()=>{
       const w=window.innerWidth,h=window.innerHeight;
-      // Position owl BELOW the button area, not on top of it
       setPandaPos({x:w/2-60,y:h/2+120});
     },100);
-  },[loaded]);
+    // AUTO-SPEAK on splash: Ollie speaks after 800ms
+    setTimeout(()=>{doWelcome();},800);
+  },[loaded,doWelcome]);
 
   const aCfg=prof?AGE_CFG[prof.age]||AGE_CFG[4]:AGE_CFG[4];
 
@@ -3269,7 +3271,23 @@ export default function App(){
   },[prof,save]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
-  const goHome=()=>{setJoyFly(false);setOllieSize(95);stop();pRef.current=false;guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.overflow="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
+  // ═══ MASTER KILL — stops ALL speech, mic, flows, pending timeouts ═══
+  const killAllFlows=()=>{
+    navRef.current++; // invalidate ALL pending async flows
+    stop(); // kill TTS via hook
+    try{speechSynthesis.cancel();}catch(e){} // direct browser cancel as safety backup
+    rec.stop(); // kill microphone
+    // Kill speaking flow token
+    if(sfPlayingRef.current&&sfPlayingRef.current.cancelled!==undefined)sfPlayingRef.current.cancelled=true;
+    sfPlayingRef.current=false;
+    // Kill listening flow
+    lfRef.current=false;
+    setLfPlaying(false);
+    // Kill learn/phonics flow
+    pRef.current=false;
+    setSfPhase("idle");
+  };
+  const goHome=()=>{killAllFlows();setJoyFly(false);setOllieSize(95);guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.overflow="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
 
   // ── Callbacks for mic ──
   const kidName = prof?.name || "Buddy";
@@ -3448,6 +3466,7 @@ export default function App(){
 
   // NUMBER PLAY FLOW
   const playNum=async(num)=>{
+    const myNav=navRef.current; // capture nav state
     if(pRef.current){stop();pRef.current=false;setNStep("idle");return;}
     pRef.current=true;setSelNum(num);setSpRes(null);setSpAcc(null);setAPhI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     const w=NW[num];const scene=getScene(num);
@@ -3457,25 +3476,25 @@ export default function App(){
     glow("num-display");
     glow("num-display");
     await speak(`This is the number, ${w}!`,{rate:0.7,pitch:1.0});
-    await wait(500);if(!pRef.current)return;
+    await wait(500);if(!pRef.current||navRef.current!==myNav)return;
 
     // Step 2: Interactive spelling (if enabled)
     if(learnModes.spelling){
       setNStep("spelling");
       await spellWord(w.replace(/\s/g,''));
-      await wait(400);if(!pRef.current)return;
+      await wait(400);if(!pRef.current||navRef.current!==myNav)return;
       await speak(`Awesome! That spells, ${w}.`,{rate:0.75,pitch:1.0});
-      await wait(500);if(!pRef.current)return;
+      await wait(500);if(!pRef.current||navRef.current!==myNav)return;
     }
 
     // Step 3: Sentence (if enabled)
     if(learnModes.sentence){
       setNStep("saying_sentence");
       glow("num-scene");
-      await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
+      await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current||navRef.current!==myNav)return;
       glow("num-sentence");
       await speak(scene.sentence,{rate:0.75,pitch:1.0});
-      await wait(600);if(!pRef.current)return;
+      await wait(600);if(!pRef.current||navRef.current!==myNav)return;
     }
 
     // Step 4: Phonics sounds (if enabled)
@@ -3483,16 +3502,16 @@ export default function App(){
       const phs=NPH[num];
       if(phs){
         setNStep("saying_phonics");
-        await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-        for(let i=0;i<phs.length;i++){if(!pRef.current)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
-        setAPhI(-1);await wait(400);if(!pRef.current)return;
-        await speak(`Now say it with me, ${w}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+        await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+        for(let i=0;i<phs.length;i++){if(!pRef.current||navRef.current!==myNav)return;setAPhI(i);await speak(gPh(phs[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
+        setAPhI(-1);await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+        await speak(`Now say it with me, ${w}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current||navRef.current!==myNav)return;
       }
     }
 
     // Step 5: Speaking practice (if enabled)
     if(learnModes.speak){
-      showTeacher('listening',`Your turn! Tap 🎤 and say ${w}!`);await wait(300);if(!pRef.current)return;
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${w}!`);await wait(300);if(!pRef.current||navRef.current!==myNav)return;
       stop();setNStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
     }else{
       pRef.current=false;
@@ -3508,6 +3527,7 @@ export default function App(){
 
   // PHONICS PLAY FLOW
   const playPh=async(wd)=>{
+    const myNav=navRef.current;
     if(pRef.current){stop();pRef.current=false;setPhStep("idle");return;}
     pRef.current=true;setPhW(wd);setPhRes(null);setPhAcc(null);setPhAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
 
@@ -3516,40 +3536,40 @@ export default function App(){
     glow("ph-word");
     glow("ph-word");
     await speak(`This word is, ${wd.word}!`,{rate:0.7,pitch:1.0});
-    await wait(500);if(!pRef.current)return;
+    await wait(500);if(!pRef.current||navRef.current!==myNav)return;
 
     // Step 2: Interactive spelling (if enabled)
     if(phModes.spelling){
       setPhStep("spelling");
       await spellWord(wd.word);
-      await wait(400);if(!pRef.current)return;
+      await wait(400);if(!pRef.current||navRef.current!==myNav)return;
       glow("ph-word");
       await speak(`Awesome! That spells, ${wd.word}.`,{rate:0.75,pitch:1.0});
-      await wait(500);if(!pRef.current)return;
+      await wait(500);if(!pRef.current||navRef.current!==myNav)return;
     }
 
     // Step 3: Sentence (if enabled)
     if(phModes.sentence){
       setPhStep("saying_sentence");
       glow("ph-sentence");
-      await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current)return;
+      await speak(`Here's a fun sentence!`,{rate:0.8,pitch:1.0});await wait(250);if(!pRef.current||navRef.current!==myNav)return;
       glow("ph-sentence");
       await speak(wd.sentence,{rate:0.75,pitch:1.0});
-      await wait(600);if(!pRef.current)return;
+      await wait(600);if(!pRef.current||navRef.current!==myNav)return;
     }
 
     // Step 4: Phonics sounds (if enabled)
     if(phModes.phonics){
       setPhStep("saying_phonics");
-      await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<wd.ph.length;i++){if(!pRef.current)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
-      setPhAI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`Now say it with me, ${wd.word}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak(`Repeat after me!`,{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+      for(let i=0;i<wd.ph.length;i++){if(!pRef.current||navRef.current!==myNav)return;setPhAI(i);await speak(gPh(wd.ph[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
+      setPhAI(-1);await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+      await speak(`Now say it with me, ${wd.word}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current||navRef.current!==myNav)return;
     }
 
     // Step 5: Speaking practice (if enabled)
     if(phModes.speak){
-      showTeacher('listening',`Your turn! Tap 🎤 and say ${wd.word}!`);await wait(300);if(!pRef.current)return;
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${wd.word}!`);await wait(300);if(!pRef.current||navRef.current!==myNav)return;
       stop();setPhStep("listening");pRef.current=false;setTeacherMood("happy");startNudge();
     }else{
       pRef.current=false;
@@ -3582,24 +3602,25 @@ export default function App(){
     },600);
   };
   const playShape=async(sh)=>{
+    const myNav=navRef.current;
     if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
     pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setShStep("saying_word");glow("shape-display");
-    await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+    await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
     setShStep("spelling");
-    await spellWord(sh.name);await wait(400);if(!pRef.current)return;
-    await speak(`Awesome! That spells, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+    await spellWord(sh.name);await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+    await speak(`Awesome! That spells, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
     setShStep("saying_sentence");glow("shape-sentence");
-    await speak(sh.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
+    await speak(sh.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current||navRef.current!==myNav)return;
     if(sh.ph){
       setShStep("saying_phonics");
-      await speak("Repeat after me!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<sh.ph.length;i++){if(!pRef.current)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
-      setShAI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`Now say it with me, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak("Repeat after me!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+      for(let i=0;i<sh.ph.length;i++){if(!pRef.current||navRef.current!==myNav)return;setShAI(i);await speak(gPh(sh.ph[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
+      setShAI(-1);await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+      await speak(`Now say it with me, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current||navRef.current!==myNav)return;
     }
     if(speakMode){
-      showTeacher('listening',`Your turn! Tap 🎤 and say ${sh.name}!`);await wait(300);if(!pRef.current)return;
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${sh.name}!`);await wait(300);if(!pRef.current||navRef.current!==myNav)return;
       stop();setShStep("listening");pRef.current=false;startNudge();
     }else{pRef.current=false;if(!isDone("shapes",sh.name))awardPoints(5,"shapes",sh.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setShStep("idle");}
   };
@@ -3624,24 +3645,25 @@ export default function App(){
     },600);
   };
   const playColor=async(co)=>{
+    const myNav=navRef.current;
     if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
     pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setCoStep("saying_word");glow("color-display");
-    await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current)return;
+    await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
     setCoStep("spelling");
-    await spellWord(co.name);await wait(400);if(!pRef.current)return;
-    await speak(`Awesome! That spells, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current)return;
+    await spellWord(co.name);await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+    await speak(`Awesome! That spells, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
     setCoStep("saying_sentence");glow("color-sentence");
-    await speak(co.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current)return;
+    await speak(co.sentence,{rate:0.75,pitch:1.0});await wait(600);if(!pRef.current||navRef.current!==myNav)return;
     if(co.ph){
       setCoStep("saying_phonics");
-      await speak("Repeat after me!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current)return;
-      for(let i=0;i<co.ph.length;i++){if(!pRef.current)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
-      setCoAI(-1);await wait(400);if(!pRef.current)return;
-      await speak(`Now say it with me, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current)return;
+      await speak("Repeat after me!",{rate:0.75,pitch:1.0});await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+      for(let i=0;i<co.ph.length;i++){if(!pRef.current||navRef.current!==myNav)return;setCoAI(i);await speak(gPh(co.ph[i]).s,{rate:0.5,pitch:1.0});await wait(700);}
+      setCoAI(-1);await wait(400);if(!pRef.current||navRef.current!==myNav)return;
+      await speak(`Now say it with me, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(400);if(!pRef.current||navRef.current!==myNav)return;
     }
     if(speakMode){
-      showTeacher('listening',`Your turn! Tap 🎤 and say ${co.name}!`);await wait(300);if(!pRef.current)return;
+      showTeacher('listening',`Your turn! Tap 🎤 and say ${co.name}!`);await wait(300);if(!pRef.current||navRef.current!==myNav)return;
       stop();setCoStep("listening");pRef.current=false;startNudge();
     }else{pRef.current=false;if(!isDone("colors",co.name))awardPoints(5,"colors",co.name);await speak(`Nice job ${kidName}!`,{rate:0.8,pitch:1.0});setCoStep("idle");}
   };
@@ -4130,11 +4152,9 @@ export default function App(){
   // ═══ SCREENS ═══
 
   if(scr==="splash")return<div onClick={async()=>{
-    // Speak welcome and WAIT for it to finish
+    // STOP speech immediately on tap
+    killAllFlows();
     welcomeSpoken.current=true;
-    speak("Welcome to Little Genius!",{rate:0.9,pitch:1.1});
-    await wait(1500);
-    stop();
     setOllieSize(95);
     if(prof){
       setScr("home");
@@ -4266,7 +4286,7 @@ export default function App(){
       {id:"arena",icon:"🏟️",label:"Arena"},
       {id:"rewards",icon:"🎁",label:"Rewards"},
       {id:"settings",icon:"⚙️",label:"Settings"},
-    ].map(t=><button key={t.id} onClick={()=>{sfxTap();stop();if(t.id==="home")goHome();else if(t.id==="parent_nav"){setShowPinModal(true);}else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
+    ].map(t=><button key={t.id} onClick={()=>{sfxTap();killAllFlows();if(t.id==="home")goHome();else if(t.id==="parent_nav"){setShowPinModal(true);}else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
       flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,
       padding:"6px 4px 8px",border:"none",cursor:"pointer",
       background:scr===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"transparent",
@@ -4293,8 +4313,12 @@ export default function App(){
           const newA=[...qAnswers,opt];setQAnswers(newA);
           if(qStep<QUESTIONNAIRE.length-1){setQStep(qStep+1);}
           else{saveQuizAnswers(newA);
-            const weakMap={"Speaking clearly":"speaking","Listening & understanding":"listening","Reading words":"reading","Writing letters & numbers":"writing"};
-            const weakAnswer=newA[0];if(weakMap[weakAnswer])try{localStorage.setItem("lg_priority_tile",weakMap[weakAnswer]);}catch(e){}
+            // Derive priority tile from Q1 (primaryFocus)
+            const focusMap={"Speaking & Pronunciation":"speaking","Listening & Understanding":"listening","Reading & Spelling":"reading","Writing Letters & Numbers":"writing"};
+            const focus=newA[0];if(focusMap[focus])try{localStorage.setItem("lg_priority_tile",focusMap[focus]);}catch(e){}
+            // Save favourite as structured data for My Favourite tile
+            const favData={focus:newA[0],topic:newA[1],level:newA[2],goal:newA[3],style:newA[4]};
+            try{localStorage.setItem("lg_favourite",JSON.stringify(favData));}catch(e){}
             setScr("home");setTeacherMood("star");if(localStorage.getItem("lg_want_tour")==="yes"){localStorage.removeItem("lg_want_tour");setTimeout(()=>doHomeTour(),1500);}}
         }} style={{
           padding:"14px 18px",border:"none",cursor:"pointer",fontFamily:"var(--font)",
@@ -4417,9 +4441,8 @@ export default function App(){
     return [];
   };
   const startSpeakFlow=(topic,mode)=>{
-    // Cancel any existing flow first
-    sfPlayingRef.current=false;
-    stop();rec.stop();
+    // Cancel everything first
+    killAllFlows();
     const m=mode||sfMode||"speakback";
     setSfMode(m);
     const items=buildSpeakItems(topic);
@@ -4629,7 +4652,7 @@ export default function App(){
   // ═══ LISTEN FLOW FUNCTIONS ═══
 
   const startListenFlow=(topic)=>{
-    stop();rec.stop();
+    killAllFlows();
     const items=buildSpeakItems(topic);
     if(!items.length){speak("No items found!",{rate:0.9});return;}
     setLfItems(items);setLfIdx(0);setLfTopic(topic);setLfPlaying(false);
@@ -4639,19 +4662,20 @@ export default function App(){
     setTimeout(()=>playLfItem(items,0),600);
   };
   const playLfItem=async(items,idx)=>{
-    if(idx>=items.length){setLfPlaying(false);lfRef.current=false;speak("All done! Great listening!",{rate:0.85,pitch:1.0});return;}
+    if(idx>=items.length){setLfPlaying(false);lfRef.current=false;stop();speak("All done! Great listening!",{rate:0.85,pitch:1.0});return;}
     lfRef.current=true;setLfPlaying(true);setLfIdx(idx);
     const item=items[idx];
     setTeacherMood("speaking");
-    await speak(item.say,{rate:0.7,pitch:1.0});
+    stop();await speak(item.say,{rate:0.7,pitch:1.0});
+    if(!lfRef.current)return;
     await wait(300);
     if(item.sub){
-      await speak(item.sub,{rate:0.8,pitch:1.0});
+      if(!lfRef.current)return;
+      stop();await speak(item.sub,{rate:0.8,pitch:1.0});
       await wait(400);
     }
     if(!lfRef.current)return;
     setLfPlaying(false);
-    // Auto-advance after 1.5s
     setTimeout(()=>{if(lfRef.current)playLfItem(items,idx+1);},1500);
   };
   const lfPause=()=>{stop();lfRef.current=false;setLfPlaying(false);};
@@ -4661,7 +4685,7 @@ export default function App(){
   // ═══ READING FLOW FUNCTIONS ═══
 
   const startReadFlow=(topic)=>{
-    stop();rec.stop();
+    killAllFlows();
     const items=buildSpeakItems(topic);
     if(!items.length){speak("No items found!",{rate:0.9});return;}
     setRfItems(items);setRfIdx(0);setRfScore(0);setRfTopic(topic);
@@ -4671,10 +4695,10 @@ export default function App(){
     setTimeout(()=>showRfItem(items,0),600);
   };
   const showRfItem=async(items,idx)=>{
-    if(idx>=items.length){setRfPhase("done");speak("All done! You scored "+rfScore+" out of "+items.length+"!",{rate:0.85});return;}
+    if(idx>=items.length){setRfPhase("done");stop();speak("All done! You scored "+rfScore+" out of "+items.length+"!",{rate:0.85});return;}
     const item=items[idx];setRfIdx(idx);
     setTeacherMood("speaking");
-    await speak(item.say,{rate:0.75,pitch:1.0});
+    stop();await speak(item.say,{rate:0.75,pitch:1.0});
     await wait(300);
     // Scramble the letters
     const letters=item.say.toUpperCase().split("");
@@ -4703,7 +4727,7 @@ export default function App(){
   };
 
   const goSubCat=(cat)=>{
-    sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
+    sfxTap();killAllFlows();movePandaTo("bottomRight");setTeacherMood("star");
     if(cat.cat)setPhCat(cat.cat);
     if(cat.tab)setLearnTab(cat.tab);
     if(cat.mop)setMathOp(cat.mop);
@@ -5518,34 +5542,55 @@ export default function App(){
         <h3 style={{fontSize:18,fontWeight:800,color:"var(--dark)",margin:"0 0 4px"}}>What shall we learn? 🦉</h3>
         <p style={{fontSize:12,fontWeight:600,color:"var(--gray)"}}>Pick a skill to start!</p>
       </div>
-      {/* ═══ MY CHOICE — Quick-access tile from questionnaire ═══ */}
+      {/* ═══ MY FAVOURITE — Targeted content based on questionnaire ═══ */}
       {(()=>{
         try{
-          const qa=JSON.parse(localStorage.getItem("lg_quiz_answers")||"null");
-          if(!qa||!qa[1])return null;
-          const interest=qa[1];
-          const choiceMap={
-            "Animals & Nature":{icon:"🐾",title:"Animals & Nature",route:()=>{setPhCat("animals");setLearnModes({spelling:false,phonics:false,sentence:true,speak:false});setScr("phonics");}},
-            "Numbers & Counting":{icon:"🔢",title:"Numbers & Counting",route:()=>{setLearnTab("numbers");setScr("learn");}},
-            "Colors & Shapes":{icon:"🎨",title:"Colors & Shapes",route:()=>{setLearnTab("colors");setScr("learn");}},
-            "Words & Stories":{icon:"📖",title:"Words & Stories",route:()=>{setScr("stories");}},
+          const fav=JSON.parse(localStorage.getItem("lg_favourite")||"null");
+          if(!fav||!fav.focus)return null;
+          // Build route based on primary focus + favourite topic
+          const focusRoutes={
+            "Speaking & Pronunciation":{icon:"🗣️",scr:"speaking",color:"linear-gradient(135deg,#6C5CE7,#A29BFE)",label:"Speaking Practice"},
+            "Listening & Understanding":{icon:"👂",scr:"listening",color:"linear-gradient(135deg,#00D2A0,#55EFC4)",label:"Listening Practice"},
+            "Reading & Spelling":{icon:"📖",scr:"reading",color:"linear-gradient(135deg,#FF9F43,#FECA57)",label:"Reading Practice"},
+            "Writing Letters & Numbers":{icon:"✍️",scr:"writing",color:"linear-gradient(135deg,#54A0FF,#74B9FF)",label:"Writing Practice"},
           };
-          const choice=choiceMap[interest];
-          if(!choice)return null;
-          return<div style={{padding:"0 16px 8px"}}>
-            <button onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");speak("Let's go to your favorite!",{rate:0.85,pitch:1.0});choice.route();}} style={{
-              width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 20px",
+          const topicRoutes={
+            "Animals & Nature":{icon:"🐾",cat:"animals",sub:"Animals & Nature"},
+            "Numbers & Maths":{icon:"🔢",cat:"numbers",sub:"Numbers & Counting"},
+            "Alphabets & Words":{icon:"🔤",cat:"abc",sub:"Letters A-Z"},
+            "Colors & Shapes":{icon:"🎨",cat:"colors",sub:"Colors & Shapes"},
+          };
+          const fr=focusRoutes[fav.focus]||focusRoutes["Speaking & Pronunciation"];
+          const tr=topicRoutes[fav.topic]||topicRoutes["Animals & Nature"];
+          const handleClick=()=>{
+            sfxTap();killAllFlows();movePandaTo("bottomRight");setTeacherMood("star");
+            // Route to the focus module with favourite topic
+            if(fav.focus==="Speaking & Pronunciation"){
+              startSpeakFlow(tr.cat,"speakback");
+            } else if(fav.focus==="Listening & Understanding"){
+              startListenFlow(tr.cat);
+            } else if(fav.focus==="Reading & Spelling"){
+              startReadFlow(tr.cat);
+            } else if(fav.focus==="Writing Letters & Numbers"){
+              setScr("strokelearn");setStrokePhase("pick");
+            } else {
+              setScr(fr.scr);
+            }
+          };
+          return<div style={{padding:"0 16px 10px"}}>
+            <button onClick={handleClick} style={{
+              width:"100%",display:"flex",alignItems:"center",gap:12,padding:"14px 18px",
               borderRadius:22,border:"none",cursor:"pointer",fontFamily:"var(--font)",
-              background:"linear-gradient(135deg,#FF9F43,#FECA57)",
-              boxShadow:"0 6px 20px rgba(255,159,67,0.3)",
-              animation:"gridPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both"
+              background:fr.color,
+              boxShadow:"0 6px 24px rgba(108,92,231,0.25)"
             }}>
-              <span style={{fontSize:36}}>{choice.icon}</span>
+              <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28}}>{tr.icon}</div>
               <div style={{flex:1,textAlign:"left"}}>
-                <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,0.8)",textTransform:"uppercase",letterSpacing:1}}>⭐ My Choice</div>
-                <div style={{fontSize:18,fontWeight:800,color:"#fff"}}>{choice.title}</div>
+                <div style={{fontSize:10,fontWeight:800,color:"rgba(255,255,255,0.85)",textTransform:"uppercase",letterSpacing:1.5}}>⭐ My Favourite</div>
+                <div style={{fontSize:16,fontWeight:800,color:"#fff"}}>{fr.label}</div>
+                <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.75)",marginTop:1}}>{tr.sub} · {fav.level==="I know lots of words!"?"Advanced":fav.level==="I know some words"?"Intermediate":"Beginner"}</div>
               </div>
-              <span style={{fontSize:24,color:"#fff"}}>→</span>
+              <span style={{fontSize:22,color:"rgba(255,255,255,0.9)"}}>→</span>
             </button>
           </div>;
         }catch(e){return null;}
@@ -5559,7 +5604,7 @@ export default function App(){
           {id:"mixquiz",icon:"🎯",title:"Mix Quiz",sub:"Numbers, math, letters & more!",bg:"linear-gradient(135deg,#EC407A,#F48FB1)"},
           {id:"stories",icon:"📚",title:"Stories",sub:"Read fun tales & learn",bg:"linear-gradient(135deg,#26C6DA,#4DD0E1)"},
         ];const priority=typeof localStorage!=="undefined"?localStorage.getItem("lg_priority_tile"):null;const sorted=priority?[...baseTiles].sort((a,b)=>a.id===priority?-1:b.id===priority?1:0):baseTiles;return sorted;})().map((t,i)=>
-          <button key={t.id} data-r="tile" data-tile={t.id} onClick={()=>{sfxTap();stop();movePandaTo("bottomRight");setTeacherMood("star");
+          <button key={t.id} data-r="tile" data-tile={t.id} onClick={()=>{sfxTap();killAllFlows();movePandaTo("bottomRight");setTeacherMood("star");
             speak(t.title+"! Let's go!",{rate:0.85,pitch:1.0});setScr(t.id);
           }} style={{
             display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"22px 10px 18px",
@@ -6212,7 +6257,7 @@ export default function App(){
     {/* Tab bar */}
     <div style={{display:"flex",gap:3,padding:"2px 6px",background:"#fff",flexShrink:0}}>
       {[{id:"numbers",label:"🔢 Numbers"},{id:"abc",label:"🔤 ABC"},{id:"shapes",label:"🔷 Shapes"},{id:"colors",label:"🎨 Colors"}].map(t=>
-        <button key={t.id} onClick={()=>{stop();movePandaTo("bottomRight");setTeacherMood("happy");setLearnTab(t.id);
+        <button key={t.id} onClick={()=>{killAllFlows();movePandaTo("bottomRight");setTeacherMood("happy");setLearnTab(t.id);
             const tabMsg={numbers:"Let's learn numbers!",abc:"Let's explore the alphabet!",shapes:"Let's discover shapes!",colors:"Let's learn colors!"};
             speak(tabMsg[t.id]||"Let's learn!",{rate:0.85,pitch:1.0});}}
           style={{flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
@@ -6317,7 +6362,7 @@ export default function App(){
     <div style={{display:"flex",gap:3,padding:"4px 8px",background:"#fff",borderBottom:"none",flexShrink:0}}>
       {[{id:"numquiz",label:"🔢 Numbers"},{id:"math",label:"➕ Math"},{id:"letters",label:"🔤 Letters"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
-          stop();movePandaTo("bottomRight");setTeacherMood("happy");setQuizTab(t.id);
+          killAllFlows();movePandaTo("bottomRight");setTeacherMood("happy");setQuizTab(t.id);
           if(t.id==="numquiz"){speak("Let's find numbers! Listen carefully!",{rate:0.85,pitch:1.0});if(!quizNum)setTimeout(()=>newQuiz(),800);}
           if(t.id==="math"){speak("Let's do math!",{rate:0.85,pitch:1.0});if(!mathProblem)setTimeout(()=>genMath(),800);}
           if(t.id==="letters"){speak("Let's match letters!",{rate:0.85,pitch:1.0});if(matchPairs.length===0)setTimeout(()=>startMatch(),800);}
