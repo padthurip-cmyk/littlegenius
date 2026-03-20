@@ -1280,8 +1280,8 @@ const chkStreak=p=>{const d=new Date().toDateString(),l=p?.lastActive;if(!l)retu
 
 // ═══ PARENT CONTROL CENTER + STUDY PLAN + REWARDS ENGINE ═══
 const PARENT_PIN_DEFAULT="1234";
-// ═══ YOUR ANTHROPIC API KEY — Replace with your key for AI Coach ═══
-const ANTHROPIC_KEY=""; // Paste your Anthropic API key here (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
+// AI Coach: calls your own server (Netlify function) — API key is NEVER in the browser
+const AI_PROXY_URL="/.netlify/functions/ai-coach"; // Your Netlify function URL
 const REWARD_CATALOG=[
   {cat:"Food",items:[{id:"burger",name:"Burger",emoji:"🍔",defPts:40},{id:"icecream",name:"Ice Cream",emoji:"🍦",defPts:20},{id:"pizza",name:"Pizza",emoji:"🍕",defPts:50},{id:"fries",name:"Fries",emoji:"🍟",defPts:15},{id:"cake",name:"Cake",emoji:"🎂",defPts:60},{id:"juice",name:"Juice Box",emoji:"🧃",defPts:10},{id:"cookie",name:"Cookies",emoji:"🍪",defPts:15},{id:"candy",name:"Candy",emoji:"🍬",defPts:10}]},
   {cat:"Toys",items:[{id:"lego",name:"Lego Set",emoji:"🧩",defPts:100},{id:"teddy",name:"Teddy Bear",emoji:"🧸",defPts:80},{id:"car",name:"Toy Car",emoji:"🚗",defPts:60},{id:"doll",name:"Doll",emoji:"🪆",defPts:70},{id:"puzzle",name:"Puzzle",emoji:"🧩",defPts:40},{id:"blocks",name:"Building Blocks",emoji:"🧱",defPts:50},{id:"ball",name:"Ball",emoji:"⚽",defPts:30},{id:"kite",name:"Kite",emoji:"🪁",defPts:35}]},
@@ -6098,18 +6098,18 @@ export default function App(){
       const weak=Object.entries(mS.cats).filter(([,d])=>d.total>0&&(d.correct/d.total)<0.5).map(([c])=>c);
       const strong=Object.entries(mS.cats).filter(([,d])=>d.total>0&&(d.correct/d.total)>=0.7).map(([c])=>c);
       const assignedNotDone=studyPlan.filter(t=>!t.done);
-      const canAskAI=aiQUsed<AI_MAX_Q&&ANTHROPIC_KEY;
+      const canAskAI=aiQUsed<AI_MAX_Q;
 
-      // API-powered AI question
+      // API-powered AI question via secure proxy
       const askAI=async(prompt)=>{
         if(!canAskAI)return;
         setAiLoading(true);
         const stats="Name="+name+", Age="+(prof?.age||5)+", Points="+(prof?.totalEarned||0)+", Screen time="+engageMins+"min, Performance="+perfLog.slice(-50).map(l=>l.cat+":"+l.correct+"/"+l.total).join(", ")+", Tasks="+studyPlan.map(t=>t.mod+"-"+t.topic+(t.done?" (done)":"")).join(", ");
         try{
-          const resp=await fetch("https://api.anthropic.com/v1/messages",{
+          const resp=await fetch(AI_PROXY_URL,{
             method:"POST",
-            headers:{"Content-Type":"application/json","x-api-key":ANTHROPIC_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-            body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:500,
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
               system:"You are Ollie, a friendly AI learning coach. Child data: "+stats+". Give warm, practical advice in 2-3 short paragraphs with emojis. Be specific about what to practice.",
               messages:[{role:"user",content:prompt}]})
           });
@@ -6117,7 +6117,7 @@ export default function App(){
           const text=data.content?.map(c=>c.text||"").join("")||"Couldn't get a response. Try again!";
           setAiHistory(h=>[...h,{q:prompt,a:text,ai:true}]);
           saveAiUsage(aiQUsed+1);
-        }catch(e){setAiHistory(h=>[...h,{q:prompt,a:"Connection error. Your offline insights are below!",ai:false}]);}
+        }catch(e){setAiHistory(h=>[...h,{q:prompt,a:"Offline — check your connection. Free insights below!",ai:false}]);}
         setAiLoading(false);setAiMsg("");
       };
 
@@ -6145,7 +6145,7 @@ export default function App(){
         <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginBottom:4}}>🧠 Smart Coach</h3>
 
         {/* AI Question Section */}
-        {ANTHROPIC_KEY&&<div style={{padding:14,borderRadius:20,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",marginBottom:14,boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}>
+        {<div style={{padding:14,borderRadius:20,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",marginBottom:14,boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
             <span style={{color:"#fff",fontWeight:800,fontSize:13}}>🤖 Ask AI Coach</span>
             <span style={{padding:"3px 10px",borderRadius:10,background:"rgba(255,255,255,0.2)",color:"#fff",fontSize:10,fontWeight:800}}>{AI_MAX_Q-aiQUsed} of {AI_MAX_Q} left this week</span>
@@ -6177,7 +6177,7 @@ export default function App(){
         </div>}
 
         {/* Free Local Insights — always available */}
-        <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>{ANTHROPIC_KEY?"📊 Free Insights (always available)":"📊 Smart Insights"}</div>
+        <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>"📊 Free Insights (always available)"</div>
         {insights.map((ins,i)=><div key={i} style={{display:"flex",gap:12,padding:"12px 14px",background:"#fff",borderRadius:18,boxShadow:"var(--shadow-card)",marginBottom:8,borderLeft:"4px solid "+ins.color}}>
           <span style={{fontSize:22,flexShrink:0}}>{ins.icon}</span>
           <div>
@@ -6200,9 +6200,7 @@ export default function App(){
           setAiHistory(h=>[...h,{q:"auto",a:"Assigned "+weak.slice(0,3).join(", ")+" to study plan!",ai:false}]);
         }} style={{width:"100%",padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",marginTop:10}}>📋 Auto-Assign Weak Areas</button>}
 
-        {!ANTHROPIC_KEY&&<div style={{marginTop:14,padding:10,borderRadius:14,background:"#F0F4FF",textAlign:"center"}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#6C5CE7"}}>💡 AI Coach available — contact developer to enable</div>
-        </div>}
+        
       </div>;
     })()}
     </div>
