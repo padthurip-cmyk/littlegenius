@@ -4868,26 +4868,26 @@ export default function App(){
   // ═══ LETTER STROKES — Each stroke: t=type, n=name, p=points ═══
   const LS={
     A:[{t:"slanting",n:"left slanting line",p:[[40,200],[100,25]]},{t:"slanting",n:"right slanting line",p:[[100,25],[160,200]]},{t:"sleeping",n:"sleeping line across",p:[[65,130],[135,130]]}],
-    B:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"top bump curve",p:[[55,25],[130,25],[130,110],[55,110]]},{t:"curve",n:"bottom bump curve",p:[[55,110],[140,110],[140,200],[55,200]]}],
-    C:[{t:"curve",n:"big open curve",p:[[155,55],[130,25],[70,25],[40,70],[40,160],[70,200],[130,200],[155,175]]}],
-    D:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"big belly curve",p:[[55,25],[130,25],[160,115],[130,200],[55,200]]}],
+    B:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"top bump curve",p:[[55,25],[75,15],[110,15],[130,30],[135,55],[135,80],[125,100],[110,110],[55,110]]},{t:"curve",n:"bottom bump curve",p:[[55,110],[80,110],[115,110],[140,125],[145,150],[145,170],[135,190],[110,200],[55,200]]}],
+    C:[{t:"curve",n:"big open curve",p:[[150,45],[140,25],[110,15],[80,15],[55,30],[40,55],[35,85],[35,140],[40,170],[55,195],[80,210],[110,210],[140,200],[150,180]]}],
+    D:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"big belly curve",p:[[55,25],[80,15],[115,15],[145,35],[160,70],[165,115],[160,160],[145,190],[115,210],[80,210],[55,200]]}],
     E:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"sleeping",n:"top sleeping line",p:[[55,25],[150,25]]},{t:"sleeping",n:"middle sleeping line",p:[[55,112],[140,112]]},{t:"sleeping",n:"bottom sleeping line",p:[[55,200],[150,200]]}],
     F:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"sleeping",n:"top sleeping line",p:[[55,25],[150,25]]},{t:"sleeping",n:"middle sleeping line",p:[[55,112],[140,112]]}],
-    G:[{t:"curve",n:"big open curve",p:[[155,55],[130,25],[70,25],[40,70],[40,160],[70,200],[130,200],[155,175]]},{t:"sleeping",n:"sleeping line inward",p:[[155,175],[155,120],[105,120]]}],
+    G:[{t:"curve",n:"big open curve",p:[[150,45],[140,25],[110,15],[80,15],[55,30],[40,55],[35,85],[35,140],[40,170],[55,195],[80,210],[110,210],[140,200],[150,180]]},{t:"sleeping",n:"sleeping line inward",p:[[150,180],[150,120],[105,120]]}],
     H:[{t:"standing",n:"left standing line",p:[[55,25],[55,200]]},{t:"standing",n:"right standing line",p:[[145,25],[145,200]]},{t:"sleeping",n:"sleeping line across",p:[[55,112],[145,112]]}],
     I:[{t:"sleeping",n:"top sleeping line",p:[[65,25],[135,25]]},{t:"standing",n:"standing line down",p:[[100,25],[100,200]]},{t:"sleeping",n:"bottom sleeping line",p:[[65,200],[135,200]]}],
-    J:[{t:"sleeping",n:"top sleeping line",p:[[55,25],[145,25]]},{t:"standing",n:"standing line down",p:[[120,25],[120,165]]},{t:"curve",n:"curve hook at bottom",p:[[120,165],[120,195],[95,200],[65,180]]}],
+    J:[{t:"sleeping",n:"top sleeping line",p:[[55,25],[145,25]]},{t:"standing",n:"standing line down",p:[[120,25],[120,165]]},{t:"curve",n:"curve hook at bottom",p:[[120,165],[120,180],[115,195],[100,205],[80,205],[65,195],[55,180]]}],
     K:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"slanting",n:"upper slanting line",p:[[145,25],[55,112]]},{t:"slanting",n:"lower slanting line",p:[[55,112],[145,200]]}],
     L:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"sleeping",n:"sleeping line right",p:[[55,200],[150,200]]}],
     M:[{t:"standing",n:"left standing line",p:[[30,200],[30,25]]},{t:"slanting",n:"slanting line down-right",p:[[30,25],[100,140]]},{t:"slanting",n:"slanting line up-right",p:[[100,140],[170,25]]},{t:"standing",n:"right standing line",p:[[170,25],[170,200]]}],
     N:[{t:"standing",n:"left standing line",p:[[50,200],[50,25]]},{t:"slanting",n:"slanting line across",p:[[50,25],[150,200]]},{t:"standing",n:"right standing line",p:[[150,200],[150,25]]}],
-    O:[{t:"curve",n:"big round curve",p:[[100,25],[50,25],[35,70],[35,155],[50,200],[100,200],[150,200],[165,155],[165,70],[150,25],[100,25]]}],
-    P:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"top bump curve",p:[[55,25],[130,25],[140,70],[130,110],[55,110]]}],
-    Q:[{t:"curve",n:"big round curve",p:[[100,25],[50,25],[35,70],[35,155],[50,200],[100,200],[150,200],[165,155],[165,70],[150,25],[100,25]]},{t:"slanting",n:"little slanting tail",p:[[120,170],[165,215]]}],
-    R:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"top bump curve",p:[[55,25],[130,25],[140,70],[130,110],[55,110]]},{t:"slanting",n:"slanting leg down",p:[[55,110],[145,200]]}],
-    S:[{t:"curve",n:"top curve",p:[[135,50],[120,25],[80,25],[55,50],[55,80],[80,105],[100,112]]},{t:"curve",n:"bottom curve",p:[[100,112],[120,120],[150,145],[150,175],[120,200],[80,200],[55,180]]}],
+    O:[{t:"curve",n:"big round curve",p:[[100,15],[70,15],[45,30],[30,60],[25,100],[25,130],[30,165],[45,195],[70,210],[100,210],[130,210],[155,195],[170,165],[175,130],[175,100],[170,60],[155,30],[130,15],[100,15]]}],
+    P:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"top bump curve",p:[[55,25],[80,15],[115,15],[135,30],[140,55],[140,80],[130,100],[110,112],[55,112]]}],
+    Q:[{t:"curve",n:"big round curve",p:[[100,15],[70,15],[45,30],[30,60],[25,100],[25,130],[30,165],[45,195],[70,210],[100,210],[130,210],[155,195],[170,165],[175,130],[175,100],[170,60],[155,30],[130,15],[100,15]]},{t:"slanting",n:"little slanting tail",p:[[120,175],[165,215]]}],
+    R:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"top bump curve",p:[[55,25],[80,15],[115,15],[135,30],[140,55],[140,80],[130,100],[110,112],[55,112]]},{t:"slanting",n:"slanting leg down",p:[[55,112],[145,200]]}],
+    S:[{t:"curve",n:"top curve",p:[[135,50],[130,30],[115,18],[95,15],[75,18],[58,30],[52,50],[52,70],[60,88],[78,100],[100,112]]},{t:"curve",n:"bottom curve",p:[[100,112],[122,124],[140,136],[148,155],[148,175],[140,192],[122,205],[100,210],[78,210],[60,200],[52,185]]}],
     T:[{t:"sleeping",n:"sleeping line on top",p:[[30,25],[170,25]]},{t:"standing",n:"standing line down",p:[[100,25],[100,200]]}],
-    U:[{t:"standing",n:"left standing line",p:[[50,25],[50,155]]},{t:"curve",n:"curve at bottom",p:[[50,155],[50,195],[100,200],[150,195],[150,155]]},{t:"standing",n:"right standing line",p:[[150,155],[150,25]]}],
+    U:[{t:"standing",n:"left standing line",p:[[50,25],[50,155]]},{t:"curve",n:"curve at bottom",p:[[50,155],[50,175],[55,190],[70,200],[85,205],[100,207],[115,205],[130,200],[145,190],[150,175],[150,155]]},{t:"standing",n:"right standing line",p:[[150,155],[150,25]]}],
     V:[{t:"slanting",n:"slanting line down-right",p:[[35,25],[100,200]]},{t:"slanting",n:"slanting line up-right",p:[[100,200],[165,25]]}],
     W:[{t:"slanting",n:"1st slanting down",p:[[15,25],[55,200]]},{t:"slanting",n:"1st slanting up",p:[[55,200],[100,90]]},{t:"slanting",n:"2nd slanting down",p:[[100,90],[145,200]]},{t:"slanting",n:"2nd slanting up",p:[[145,200],[185,25]]}],
     X:[{t:"slanting",n:"slanting line right-down",p:[[40,25],[160,200]]},{t:"slanting",n:"slanting line left-down",p:[[160,25],[40,200]]}],
@@ -4899,13 +4899,23 @@ export default function App(){
   const SN={"standing":"Standing Line","sleeping":"Sleeping Line","slanting":"Slanting Line","curve":"Curved Line"};
 
   // Draw a stroke path on canvas
-  // Draw a stroke path on canvas (smooth polyline)
+  // Draw a stroke path on canvas — uses smooth curves for curve types
   const drawStrokePath=(ctx,stroke,W,H,opts={})=>{
     const sx=W/200,sy=H/225;
     const pts=stroke.p;if(!pts||pts.length<2)return;
     ctx.beginPath();
     ctx.moveTo(pts[0][0]*sx,pts[0][1]*sy);
-    for(let i=1;i<pts.length;i++){ctx.lineTo(pts[i][0]*sx,pts[i][1]*sy);}
+    if(stroke.t==="curve"&&pts.length>2){
+      // Smooth curve through all points using quadratic bezier
+      for(let i=1;i<pts.length-1;i++){
+        const cx=pts[i][0]*sx,cy=pts[i][1]*sy;
+        const nx=pts[i+1][0]*sx,ny=pts[i+1][1]*sy;
+        const mx=(cx+nx)/2,my=(cy+ny)/2;
+        ctx.quadraticCurveTo(cx,cy,i<pts.length-2?mx:nx,i<pts.length-2?my:ny);
+      }
+    } else {
+      for(let i=1;i<pts.length;i++){ctx.lineTo(pts[i][0]*sx,pts[i][1]*sy);}
+    }
     ctx.stroke();
     if(opts.dots){
       const s=pts[0],e=pts[pts.length-1];
@@ -4914,18 +4924,38 @@ export default function App(){
     }
   };
 
-  // Build flat pixel path from stroke points for animation
+  // Build flat pixel path from stroke points for smooth animation
   const buildPixelPath=(stroke,W,H)=>{
     const sx=W/200,sy=H/225;
     const pts=stroke.p;if(!pts||pts.length<2)return[];
     const path=[];
-    path.push([pts[0][0]*sx,pts[0][1]*sy]);
-    for(let i=1;i<pts.length;i++){
-      const prev=path[path.length-1];
-      const ex=pts[i][0]*sx,ey=pts[i][1]*sy;
-      const dist=Math.sqrt((ex-prev[0])**2+(ey-prev[1])**2);
-      const steps=Math.max(15,Math.round(dist/3));
-      for(let t=1;t<=steps;t++){path.push([prev[0]+(ex-prev[0])*t/steps,prev[1]+(ey-prev[1])*t/steps]);}
+    if(stroke.t==="curve"&&pts.length>2){
+      // Smooth quadratic bezier interpolation
+      path.push([pts[0][0]*sx,pts[0][1]*sy]);
+      for(let i=1;i<pts.length-1;i++){
+        const px=path[path.length-1][0],py=path[path.length-1][1];
+        const cx=pts[i][0]*sx,cy=pts[i][1]*sy;
+        const nx=pts[i+1][0]*sx,ny=pts[i+1][1]*sy;
+        const ex2=i<pts.length-2?(cx+nx)/2:nx;
+        const ey2=i<pts.length-2?(cy+ny)/2:ny;
+        const steps=20;
+        for(let t2=1;t2<=steps;t2++){
+          const r=t2/steps;
+          const x=(1-r)*(1-r)*px+2*(1-r)*r*cx+r*r*ex2;
+          const y=(1-r)*(1-r)*py+2*(1-r)*r*cy+r*r*ey2;
+          path.push([x,y]);
+        }
+      }
+    } else {
+      // Straight line interpolation
+      path.push([pts[0][0]*sx,pts[0][1]*sy]);
+      for(let i=1;i<pts.length;i++){
+        const prev=path[path.length-1];
+        const ex3=pts[i][0]*sx,ey3=pts[i][1]*sy;
+        const dist=Math.sqrt((ex3-prev[0])**2+(ey3-prev[1])**2);
+        const steps=Math.max(15,Math.round(dist/3));
+        for(let t2=1;t2<=steps;t2++){path.push([prev[0]+(ex3-prev[0])*t2/steps,prev[1]+(ey3-prev[1])*t2/steps]);}
+      }
     }
     return path;
   };
@@ -5082,21 +5112,12 @@ export default function App(){
       const s=strokes[strokeCur];if(!s)return;
       const canvas=strokeCanvasRef.current;if(!canvas)return;
       const W=canvas.width,H=canvas.height;
-      const sx2=W/200,sy2=H/225;
-      const pts=s.p;
-      const guideStart=[pts[0][0]*sx2,pts[0][1]*sy2];
-      const guideEnd=[pts[pts.length-1][0]*sx2,pts[pts.length-1][1]*sy2];
 
-      // AUTO-STRAIGHTEN: Snap kid's drawing to the perfect guide line
-      // Build the ideal stroke path (straight line from guide start to end for non-curves, or polyline for curves)
-      const idealPath=[];
-      idealPath.push(guideStart);
-      if(pts.length>2){
-        for(let i=1;i<pts.length-1;i++)idealPath.push([pts[i][0]*sx2,pts[i][1]*sy2]);
-      }
-      idealPath.push(guideEnd);
+      // AUTO-STRAIGHTEN: Snap kid's drawing to the perfect smooth path
+      // Use buildPixelPath to get smooth bezier-interpolated points for curves
+      const idealPath=buildPixelPath(s,W,H);
 
-      // Store the snapped perfect line as completed
+      // Store the smooth snapped path as completed
       strokeCompletedRef.current=[...strokeCompletedRef.current,idealPath];
       strokePoints.current=[];
 
