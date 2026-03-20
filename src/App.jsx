@@ -3206,6 +3206,7 @@ export default function App(){
   const[strokeIdx,setStrokeIdx]=useState(0); // which letter 0-25
   const[strokeCur,setStrokeCur]=useState(0); // which stroke in current letter
   const[strokeDone,setStrokeDone]=useState(false);
+  const[strokePhase,setStrokePhase]=useState("pick"); // pick | demo | write | done
   const strokeCanvasRef=useRef(null);
   const strokeDrawing=useRef(false);
   const strokePoints=useRef([]);
@@ -4863,189 +4864,263 @@ export default function App(){
 
 
   // ═══ LETTER STROKES DATA — Each letter decomposed into basic lines ═══
-  const LETTER_STROKES={
-    A:[{type:"slanting",name:"slanting line up-right",p:[[50,200],[100,30]]},{type:"slanting",name:"slanting line down-right",p:[[100,30],[150,200]]},{type:"sleeping",name:"sleeping line across",p:[[70,130],[130,130]]}],
-    B:[{type:"standing",name:"standing line down",p:[[50,30],[50,200]]},{type:"curve",name:"curve on top",p:[[50,30],[110,30],[110,115],[50,115]]},{type:"curve",name:"curve on bottom",p:[[50,115],[120,115],[120,200],[50,200]]}],
-    C:[{type:"curve",name:"big curved line",p:[[150,50],[70,30],[40,100],[40,130],[70,200],[150,180]]}],
-    D:[{type:"standing",name:"standing line down",p:[[50,30],[50,200]]},{type:"curve",name:"big curve right",p:[[50,30],[140,60],[150,115],[140,170],[50,200]]}],
-    E:[{type:"standing",name:"standing line down",p:[[50,30],[50,200]]},{type:"sleeping",name:"sleeping line on top",p:[[50,30],[140,30]]},{type:"sleeping",name:"sleeping line in middle",p:[[50,115],[130,115]]},{type:"sleeping",name:"sleeping line at bottom",p:[[50,200],[140,200]]}],
-    F:[{type:"standing",name:"standing line down",p:[[50,30],[50,200]]},{type:"sleeping",name:"sleeping line on top",p:[[50,30],[140,30]]},{type:"sleeping",name:"sleeping line in middle",p:[[50,115],[130,115]]}],
-    G:[{type:"curve",name:"big curved line",p:[[150,50],[70,30],[40,100],[40,130],[70,200],[150,180]]},{type:"sleeping",name:"sleeping line inward",p:[[150,180],[150,115],[100,115]]}],
-    H:[{type:"standing",name:"standing line left",p:[[50,30],[50,200]]},{type:"standing",name:"standing line right",p:[[150,30],[150,200]]},{type:"sleeping",name:"sleeping line across",p:[[50,115],[150,115]]}],
-    I:[{type:"sleeping",name:"sleeping line on top",p:[[60,30],[140,30]]},{type:"standing",name:"standing line down",p:[[100,30],[100,200]]},{type:"sleeping",name:"sleeping line at bottom",p:[[60,200],[140,200]]}],
-    J:[{type:"sleeping",name:"sleeping line on top",p:[[60,30],[140,30]]},{type:"standing",name:"standing line down",p:[[120,30],[120,170]]},{type:"curve",name:"curve at bottom",p:[[120,170],[120,200],[80,200],[60,170]]}],
-    K:[{type:"standing",name:"standing line down",p:[[50,30],[50,200]]},{type:"slanting",name:"slanting line inward",p:[[140,30],[50,115]]},{type:"slanting",name:"slanting line outward",p:[[50,115],[140,200]]}],
-    L:[{type:"standing",name:"standing line down",p:[[50,30],[50,200]]},{type:"sleeping",name:"sleeping line right",p:[[50,200],[140,200]]}],
-    M:[{type:"standing",name:"standing line left",p:[[30,200],[30,30]]},{type:"slanting",name:"slanting line down",p:[[30,30],[100,130]]},{type:"slanting",name:"slanting line up",p:[[100,130],[170,30]]},{type:"standing",name:"standing line right",p:[[170,30],[170,200]]}],
-    N:[{type:"standing",name:"standing line left",p:[[50,200],[50,30]]},{type:"slanting",name:"slanting line across",p:[[50,30],[150,200]]},{type:"standing",name:"standing line right",p:[[150,200],[150,30]]}],
-    O:[{type:"curve",name:"big oval curve",p:[[100,30],[40,60],[30,115],[40,170],[100,200],[160,170],[170,115],[160,60],[100,30]]}],
-    P:[{type:"standing",name:"standing line down",p:[[50,30],[50,200]]},{type:"curve",name:"curve on top",p:[[50,30],[140,30],[150,75],[140,115],[50,115]]}],
-    Q:[{type:"curve",name:"big oval curve",p:[[100,30],[40,60],[30,115],[40,170],[100,200],[160,170],[170,115],[160,60],[100,30]]},{type:"slanting",name:"little slanting tail",p:[[120,170],[160,210]]}],
-    R:[{type:"standing",name:"standing line down",p:[[50,30],[50,200]]},{type:"curve",name:"curve on top",p:[[50,30],[140,30],[150,75],[140,115],[50,115]]},{type:"slanting",name:"slanting leg",p:[[50,115],[140,200]]}],
-    S:[{type:"curve",name:"top curve right",p:[[130,50],[100,30],[60,40],[50,75],[80,105]]},{type:"curve",name:"bottom curve left",p:[[80,105],[120,135],[150,160],[130,195],[100,200],[60,185]]}],
-    T:[{type:"sleeping",name:"sleeping line on top",p:[[30,30],[170,30]]},{type:"standing",name:"standing line down",p:[[100,30],[100,200]]}],
-    U:[{type:"standing",name:"standing line left",p:[[50,30],[50,160]]},{type:"curve",name:"curve at bottom",p:[[50,160],[50,200],[100,210],[150,200],[150,160]]},{type:"standing",name:"standing line right",p:[[150,160],[150,30]]}],
-    V:[{type:"slanting",name:"slanting line down",p:[[40,30],[100,200]]},{type:"slanting",name:"slanting line up",p:[[100,200],[160,30]]}],
-    W:[{type:"slanting",name:"slanting down",p:[[20,30],[60,200]]},{type:"slanting",name:"slanting up",p:[[60,200],[100,100]]},{type:"slanting",name:"slanting down",p:[[100,100],[140,200]]},{type:"slanting",name:"slanting up",p:[[140,200],[180,30]]}],
-    X:[{type:"slanting",name:"slanting line right",p:[[40,30],[160,200]]},{type:"slanting",name:"slanting line left",p:[[160,30],[40,200]]}],
-    Y:[{type:"slanting",name:"slanting line down",p:[[40,30],[100,120]]},{type:"slanting",name:"slanting line to center",p:[[160,30],[100,120]]},{type:"standing",name:"standing line down",p:[[100,120],[100,200]]}],
-    Z:[{type:"sleeping",name:"sleeping line on top",p:[[40,30],[160,30]]},{type:"slanting",name:"slanting line across",p:[[160,30],[40,200]]},{type:"sleeping",name:"sleeping line at bottom",p:[[40,200],[160,200]]}],
+  // ═══ LETTER STROKES — Each stroke: t=type, n=name, p=points ═══
+  const LS={
+    A:[{t:"slanting",n:"left slanting line",p:[[40,200],[100,25]]},{t:"slanting",n:"right slanting line",p:[[100,25],[160,200]]},{t:"sleeping",n:"sleeping line across",p:[[65,130],[135,130]]}],
+    B:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"top bump curve",p:[[55,25],[130,25],[130,110],[55,110]]},{t:"curve",n:"bottom bump curve",p:[[55,110],[140,110],[140,200],[55,200]]}],
+    C:[{t:"curve",n:"big open curve",p:[[155,55],[130,25],[70,25],[40,70],[40,160],[70,200],[130,200],[155,175]]}],
+    D:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"big belly curve",p:[[55,25],[130,25],[160,115],[130,200],[55,200]]}],
+    E:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"sleeping",n:"top sleeping line",p:[[55,25],[150,25]]},{t:"sleeping",n:"middle sleeping line",p:[[55,112],[140,112]]},{t:"sleeping",n:"bottom sleeping line",p:[[55,200],[150,200]]}],
+    F:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"sleeping",n:"top sleeping line",p:[[55,25],[150,25]]},{t:"sleeping",n:"middle sleeping line",p:[[55,112],[140,112]]}],
+    G:[{t:"curve",n:"big open curve",p:[[155,55],[130,25],[70,25],[40,70],[40,160],[70,200],[130,200],[155,175]]},{t:"sleeping",n:"sleeping line inward",p:[[155,175],[155,120],[105,120]]}],
+    H:[{t:"standing",n:"left standing line",p:[[55,25],[55,200]]},{t:"standing",n:"right standing line",p:[[145,25],[145,200]]},{t:"sleeping",n:"sleeping line across",p:[[55,112],[145,112]]}],
+    I:[{t:"sleeping",n:"top sleeping line",p:[[65,25],[135,25]]},{t:"standing",n:"standing line down",p:[[100,25],[100,200]]},{t:"sleeping",n:"bottom sleeping line",p:[[65,200],[135,200]]}],
+    J:[{t:"sleeping",n:"top sleeping line",p:[[55,25],[145,25]]},{t:"standing",n:"standing line down",p:[[120,25],[120,165]]},{t:"curve",n:"curve hook at bottom",p:[[120,165],[120,195],[95,200],[65,180]]}],
+    K:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"slanting",n:"upper slanting line",p:[[145,25],[55,112]]},{t:"slanting",n:"lower slanting line",p:[[55,112],[145,200]]}],
+    L:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"sleeping",n:"sleeping line right",p:[[55,200],[150,200]]}],
+    M:[{t:"standing",n:"left standing line",p:[[30,200],[30,25]]},{t:"slanting",n:"slanting line down-right",p:[[30,25],[100,140]]},{t:"slanting",n:"slanting line up-right",p:[[100,140],[170,25]]},{t:"standing",n:"right standing line",p:[[170,25],[170,200]]}],
+    N:[{t:"standing",n:"left standing line",p:[[50,200],[50,25]]},{t:"slanting",n:"slanting line across",p:[[50,25],[150,200]]},{t:"standing",n:"right standing line",p:[[150,200],[150,25]]}],
+    O:[{t:"curve",n:"big round curve",p:[[100,25],[50,25],[35,70],[35,155],[50,200],[100,200],[150,200],[165,155],[165,70],[150,25],[100,25]]}],
+    P:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"top bump curve",p:[[55,25],[130,25],[140,70],[130,110],[55,110]]}],
+    Q:[{t:"curve",n:"big round curve",p:[[100,25],[50,25],[35,70],[35,155],[50,200],[100,200],[150,200],[165,155],[165,70],[150,25],[100,25]]},{t:"slanting",n:"little slanting tail",p:[[120,170],[165,215]]}],
+    R:[{t:"standing",n:"standing line down",p:[[55,25],[55,200]]},{t:"curve",n:"top bump curve",p:[[55,25],[130,25],[140,70],[130,110],[55,110]]},{t:"slanting",n:"slanting leg down",p:[[55,110],[145,200]]}],
+    S:[{t:"curve",n:"top curve",p:[[135,50],[120,25],[80,25],[55,50],[55,80],[80,105],[100,112]]},{t:"curve",n:"bottom curve",p:[[100,112],[120,120],[150,145],[150,175],[120,200],[80,200],[55,180]]}],
+    T:[{t:"sleeping",n:"sleeping line on top",p:[[30,25],[170,25]]},{t:"standing",n:"standing line down",p:[[100,25],[100,200]]}],
+    U:[{t:"standing",n:"left standing line",p:[[50,25],[50,155]]},{t:"curve",n:"curve at bottom",p:[[50,155],[50,195],[100,200],[150,195],[150,155]]},{t:"standing",n:"right standing line",p:[[150,155],[150,25]]}],
+    V:[{t:"slanting",n:"slanting line down-right",p:[[35,25],[100,200]]},{t:"slanting",n:"slanting line up-right",p:[[100,200],[165,25]]}],
+    W:[{t:"slanting",n:"1st slanting down",p:[[15,25],[55,200]]},{t:"slanting",n:"1st slanting up",p:[[55,200],[100,90]]},{t:"slanting",n:"2nd slanting down",p:[[100,90],[145,200]]},{t:"slanting",n:"2nd slanting up",p:[[145,200],[185,25]]}],
+    X:[{t:"slanting",n:"slanting line right-down",p:[[40,25],[160,200]]},{t:"slanting",n:"slanting line left-down",p:[[160,25],[40,200]]}],
+    Y:[{t:"slanting",n:"left slanting to center",p:[[40,25],[100,120]]},{t:"slanting",n:"right slanting to center",p:[[160,25],[100,120]]},{t:"standing",n:"standing line down",p:[[100,120],[100,200]]}],
+    Z:[{t:"sleeping",n:"top sleeping line",p:[[40,25],[160,25]]},{t:"slanting",n:"slanting line across",p:[[160,25],[40,200]]},{t:"sleeping",n:"bottom sleeping line",p:[[40,200],[160,200]]}],
   };
-  const STROKE_COLORS={"standing":"#6C5CE7","sleeping":"#00D2A0","slanting":"#FF9F43","curve":"#EC407A"};
-  const STROKE_EMOJI={"standing":"📏","sleeping":"🛏️","slanting":"📐","curve":"🌈"};
+  const SC={"standing":"#6C5CE7","sleeping":"#00D2A0","slanting":"#FF9F43","curve":"#EC407A"};
+  const SE={"standing":"📏","sleeping":"🛏️","slanting":"📐","curve":"🌈"};
+  const SN={"standing":"Standing Line","sleeping":"Sleeping Line","slanting":"Slanting Line","curve":"Curved Line"};
+
+  // Draw a stroke path on canvas
+  const drawStrokePath=(ctx,stroke,W,H,opts={})=>{
+    const sx=W/200,sy=H/225;
+    const pts=stroke.p;if(!pts||pts.length<2)return;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0]*sx,pts[0][1]*sy);
+    for(let i=1;i<pts.length;i++){ctx.lineTo(pts[i][0]*sx,pts[i][1]*sy);}
+    ctx.stroke();
+    if(opts.dots){
+      const start=pts[0],endP=pts[pts.length-1];
+      ctx.fillStyle="#22C55E";ctx.beginPath();ctx.arc(start[0]*sx,start[1]*sy,7,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#EF4444";ctx.beginPath();ctx.arc(endP[0]*sx,endP[1]*sy,7,0,Math.PI*2);ctx.fill();
+    }
+  };
+
+  // Animate one stroke being drawn
+  const animateStroke=(canvas,strokes,sIdx,onDone)=>{
+    if(!canvas){if(onDone)onDone();return;}
+    const ctx=canvas.getContext("2d");
+    const W=canvas.width,H=canvas.height;
+    const stroke=strokes[sIdx];if(!stroke){if(onDone)onDone();return;}
+    const sx=W/200,sy=H/225;
+    const pts=stroke.p;if(!pts||pts.length<2){if(onDone)onDone();return;}
+    // Build pixel path
+    const path=[];
+    path.push([pts[0][0]*sx,pts[0][1]*sy]);
+    for(let i=1;i<pts.length;i++){
+      const prev=path[path.length-1];
+      const ex=pts[i][0]*sx,ey=pts[i][1]*sy;
+      const steps=25;
+      for(let t=1;t<=steps;t++){path.push([prev[0]+(ex-prev[0])*t/steps,prev[1]+(ey-prev[1])*t/steps]);}
+    }
+    let frame=0;
+    const anim=()=>{
+      if(frame>=path.length){if(onDone)onDone();return;}
+      ctx.clearRect(0,0,W,H);
+      // Grid
+      ctx.strokeStyle="rgba(108,92,231,0.05)";ctx.lineWidth=1;ctx.setLineDash([]);ctx.globalAlpha=1;
+      for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(i*W/4,0);ctx.lineTo(i*W/4,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*H/4);ctx.lineTo(W,i*H/4);ctx.stroke();}
+      // Completed strokes
+      for(let i=0;i<sIdx;i++){
+        const s=strokes[i];ctx.strokeStyle=SC[s.t]||"#6C5CE7";ctx.lineWidth=6;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=0.7;
+        drawStrokePath(ctx,s,W,H);
+      }
+      ctx.globalAlpha=1;
+      // Current animated stroke
+      ctx.strokeStyle=SC[stroke.t]||"#FF9F43";ctx.lineWidth=7;ctx.lineCap="round";ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(path[0][0],path[0][1]);
+      for(let i=1;i<=frame;i++)ctx.lineTo(path[i][0],path[i][1]);
+      ctx.stroke();
+      // Moving dot
+      const cur=path[frame];
+      ctx.fillStyle=SC[stroke.t]||"#FF9F43";ctx.beginPath();ctx.arc(cur[0],cur[1],6,0,Math.PI*2);ctx.fill();
+      frame+=2;
+      requestAnimationFrame(anim);
+    };
+    anim();
+  };
+
+  // Full demo: animate all strokes with speech
+  const runStrokeDemo=async(canvas,letter)=>{
+    const strokes=LS[letter];if(!strokes)return;
+    stop();await speak("Watch how I write "+letter,{rate:0.78,pitch:1.0});await wait(400);
+    for(let i=0;i<strokes.length;i++){
+      const s=strokes[i];
+      stop();await speak((i===0?"First":"Next")+", a "+SN[s.t].toLowerCase()+"!",{rate:0.82,pitch:1.0});
+      await wait(300);
+      await new Promise(r=>animateStroke(canvas,strokes,i,r));
+      await wait(400);
+      stop();await speak(s.n+" done!",{rate:0.85,pitch:1.05});await wait(300);
+    }
+    stop();await speak("Now it is your turn! Trace each line!",{rate:0.85,pitch:1.0});await wait(300);
+    setStrokePhase("write");setStrokeCur(0);strokePoints.current=[];
+    redrawStrokeCanvas(canvas,letter,0);
+  };
+
+  // Redraw canvas for write phase
+  const redrawStrokeCanvas=(canvas,letter,curIdx)=>{
+    if(!canvas)return;
+    const ctx=canvas.getContext("2d");
+    const W=canvas.width,H=canvas.height;
+    const strokes=LS[letter]||[];
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle="rgba(108,92,231,0.05)";ctx.lineWidth=1;ctx.setLineDash([]);ctx.globalAlpha=1;
+    for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(i*W/4,0);ctx.lineTo(i*W/4,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*H/4);ctx.lineTo(W,i*H/4);ctx.stroke();}
+    for(let i=0;i<curIdx;i++){
+      const s=strokes[i];ctx.strokeStyle=SC[s.t]||"#6C5CE7";ctx.lineWidth=6;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=0.8;
+      drawStrokePath(ctx,s,W,H);
+    }
+    ctx.globalAlpha=1;
+    if(curIdx<strokes.length){
+      const s=strokes[curIdx];
+      ctx.strokeStyle=SC[s.t]||"#FF9F43";ctx.lineWidth=8;ctx.lineCap="round";ctx.setLineDash([10,8]);ctx.globalAlpha=0.3;
+      drawStrokePath(ctx,s,W,H);
+      ctx.setLineDash([]);ctx.globalAlpha=1;
+      drawStrokePath(ctx,s,W,H,{dots:true});
+    }
+    const pts2=strokePoints.current;
+    if(pts2.length>1){
+      ctx.strokeStyle=curIdx<strokes.length?SC[strokes[curIdx].t]||"#6C5CE7":"#6C5CE7";ctx.lineWidth=5;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=1;
+      ctx.beginPath();ctx.moveTo(pts2[0][0],pts2[0][1]);
+      for(let i=1;i<pts2.length;i++)ctx.lineTo(pts2[i][0],pts2[i][1]);
+      ctx.stroke();
+    }
+  };
 
   // ═══ STROKE LEARN SCREEN ═══
   if(scr==="strokelearn"){
     const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
     const letter=letters[strokeIdx]||"A";
-    const strokes=LETTER_STROKES[letter]||[];
+    const strokes=LS[letter]||[];
     const curStroke=strokes[strokeCur];
-    const allDone=strokeCur>=strokes.length;
+    const allDone=strokePhase==="done";
     const progress=Math.round((strokeIdx/26)*100);
 
-    // Draw guide on canvas
-    const drawGuide=(canvas)=>{
-      if(!canvas)return;
-      const ctx=canvas.getContext("2d");
-      const W=canvas.width,H=canvas.height;
-      ctx.clearRect(0,0,W,H);
-      // Draw grid lines lightly
-      ctx.strokeStyle="rgba(108,92,231,0.06)";ctx.lineWidth=1;
-      for(let i=0;i<=10;i++){ctx.beginPath();ctx.moveTo(i*W/10,0);ctx.lineTo(i*W/10,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*H/10);ctx.lineTo(W,i*H/10);ctx.stroke();}
-      // Draw completed strokes solid
-      for(let i=0;i<strokeCur;i++){
-        const s=strokes[i];if(!s)continue;
-        ctx.strokeStyle=STROKE_COLORS[s.type]||"#6C5CE7";ctx.lineWidth=6;ctx.lineCap="round";ctx.lineJoin="round";
-        ctx.beginPath();
-        const pts=s.p;if(pts.length>=2){ctx.moveTo(pts[0][0]*W/200,pts[0][1]*H/240);for(let j=1;j<pts.length;j++)ctx.lineTo(pts[j][0]*W/200,pts[j][1]*H/240);}
-        ctx.stroke();
-      }
-      // Draw current stroke as dashed watermark guide
-      if(curStroke&&!allDone){
-        const s=curStroke;
-        ctx.strokeStyle=STROKE_COLORS[s.type]||"#FF9F43";ctx.lineWidth=8;ctx.lineCap="round";
-        ctx.setLineDash([12,8]);ctx.globalAlpha=0.35;
-        ctx.beginPath();
-        const pts=s.p;if(pts.length>=2){ctx.moveTo(pts[0][0]*W/200,pts[0][1]*H/240);for(let j=1;j<pts.length;j++)ctx.lineTo(pts[j][0]*W/200,pts[j][1]*H/240);}
-        ctx.stroke();
-        ctx.setLineDash([]);ctx.globalAlpha=1;
-        // Draw start dot (green) and end dot (red)
-        const start=pts[0],end=pts[pts.length-1];
-        ctx.fillStyle="#22C55E";ctx.beginPath();ctx.arc(start[0]*W/200,start[1]*H/240,8,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle="#FF6B6B";ctx.beginPath();ctx.arc(end[0]*W/200,end[1]*H/240,8,0,Math.PI*2);ctx.fill();
-      }
-      // Draw kid's drawing
-      const pts2=strokePoints.current;
-      if(pts2.length>1){
-        ctx.strokeStyle=curStroke?STROKE_COLORS[curStroke.type]||"#6C5CE7":"#6C5CE7";ctx.lineWidth=5;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=1;
-        ctx.beginPath();ctx.moveTo(pts2[0][0],pts2[0][1]);
-        for(let i=1;i<pts2.length;i++)ctx.lineTo(pts2[i][0],pts2[i][1]);
-        ctx.stroke();
-      }
-    };
-
     const handleStrokeStart=(e)=>{
+      if(strokePhase!=="write")return;
       e.preventDefault();strokeDrawing.current=true;strokePoints.current=[];
       const rect=e.target.getBoundingClientRect();
-      const t=e.touches?e.touches[0]:e;
-      strokePoints.current.push([t.clientX-rect.left,t.clientY-rect.top]);
+      const t2=e.touches?e.touches[0]:e;
+      strokePoints.current.push([t2.clientX-rect.left,t2.clientY-rect.top]);
     };
     const handleStrokeMove=(e)=>{
-      e.preventDefault();if(!strokeDrawing.current)return;
+      if(strokePhase!=="write"||!strokeDrawing.current)return;
+      e.preventDefault();
       const rect=e.target.getBoundingClientRect();
-      const t=e.touches?e.touches[0]:e;
-      strokePoints.current.push([t.clientX-rect.left,t.clientY-rect.top]);
-      drawGuide(strokeCanvasRef.current);
+      const t2=e.touches?e.touches[0]:e;
+      strokePoints.current.push([t2.clientX-rect.left,t2.clientY-rect.top]);
+      redrawStrokeCanvas(strokeCanvasRef.current,letter,strokeCur);
     };
-    const handleStrokeEnd=()=>{
+    const handleStrokeEnd=async()=>{
+      if(strokePhase!=="write")return;
       strokeDrawing.current=false;
-      if(strokePoints.current.length<5)return;
-      // Accept the stroke (simplified matching — accept any reasonable draw)
+      if(strokePoints.current.length<8)return;
       boom();headYes();
-      speak("Great job on the "+curStroke.name+"!",{rate:0.85,pitch:1.0});
+      const s=strokes[strokeCur];
+      stop();await speak("Great! You drew the "+s.n+"!",{rate:0.85,pitch:1.05});
       strokePoints.current=[];
       const next=strokeCur+1;
       if(next>=strokes.length){
-        // Letter complete!
-        setTimeout(()=>{
-          setStrokeDone(true);setStrokeCur(next);
-          boom();speak("You wrote the letter "+letter+"! Amazing!",{rate:0.82,pitch:1.0});
-          awardPoints(3,"writing",letter);
-        },800);
+        await wait(500);
+        setStrokeDone(true);setStrokePhase("done");setStrokeCur(next);
+        boom();stop();await speak("Amazing! You wrote the letter "+letter+"!",{rate:0.8,pitch:1.0});
+        awardPoints(3,"writing",letter);
       } else {
-        setTimeout(()=>{
-          setStrokeCur(next);
-          const nextS=strokes[next];
-          if(nextS)speak("Now draw a "+nextS.name+"!",{rate:0.82,pitch:1.0});
-          setTimeout(()=>drawGuide(strokeCanvasRef.current),100);
-        },800);
+        await wait(400);
+        setStrokeCur(next);
+        const ns=strokes[next];
+        if(ns){stop();await speak("Now draw a "+SN[ns.t].toLowerCase()+"!",{rate:0.82,pitch:1.0});}
+        setTimeout(()=>redrawStrokeCanvas(strokeCanvasRef.current,letter,next),100);
       }
     };
 
-    // Init canvas on mount
     const canvasInit=(el)=>{
       if(!el)return;strokeCanvasRef.current=el;
       el.width=el.offsetWidth;el.height=el.offsetHeight;
-      drawGuide(el);
+      if(strokePhase==="write")redrawStrokeCanvas(el,letter,strokeCur);
     };
 
+    const startLetterDemo=(idx)=>{
+      setStrokeIdx(idx);setStrokeCur(0);setStrokeDone(false);setStrokePhase("demo");
+      strokePoints.current=[];
+      setTimeout(()=>{
+        const c=strokeCanvasRef.current;
+        if(c){c.width=c.offsetWidth;c.height=c.offsetHeight;}
+        runStrokeDemo(c,letters[idx]);
+      },400);
+    };
+
+    // PICK phase
+    if(strokePhase==="pick")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+      <SubHead title="Learn to Write" onBack={()=>{stop();setScr("writing");}} points={prof?.points||0}/>
+      <div style={{flex:1,overflow:"auto",padding:"12px 16px"}}>
+        <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--dark)",textAlign:"center",margin:"0 0 4px"}}>Pick a Letter!</h3>
+        <p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:10}}>Watch animation first, then trace each stroke</p>
+        <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:12,flexWrap:"wrap"}}>
+          {["standing","sleeping","slanting","curve"].map(tp=><div key={tp} style={{display:"flex",alignItems:"center",gap:3,padding:"3px 8px",borderRadius:8,background:SC[tp]+"15",border:"1px solid "+SC[tp]+"33"}}>
+            <span style={{fontSize:10,fontWeight:700,color:SC[tp]}}>{SN[tp]}</span>
+          </div>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
+          {letters.map((l,i)=>{
+            const st=LS[l]||[];
+            const types=[...new Set(st.map(s=>s.t))];
+            return<button key={l} onClick={()=>startLetterDemo(i)} style={{
+              display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"12px 4px",
+              borderRadius:16,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-card)"
+            }}>
+              <span style={{fontSize:28,fontWeight:900,color:"#2D2B3D"}}>{l}</span>
+              <div style={{display:"flex",gap:2}}>{types.map((tp,j)=><span key={j} style={{width:6,height:6,borderRadius:3,background:SC[tp]}}/>)}</div>
+            </button>;
+          })}
+        </div>
+      </div>
+      <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    </div>;
+
+    // DEMO + WRITE + DONE
     return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
       <Confetti key={celebKey} active={confetti} type={celebType}/>
       {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
-      <SubHead title={"Write: "+letter} onBack={()=>{stop();setScr("writing");}} points={prof?.points||0}/>
-      <div style={{padding:"0 16px"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0"}}>
-          <div style={{flex:1,height:8,borderRadius:4,background:"#E8EAF6",overflow:"hidden"}}>
-            <div style={{height:"100%",borderRadius:4,background:"linear-gradient(90deg,#6C5CE7,#A29BFE)",width:`${progress}%`,transition:"width 0.5s"}}/>
-          </div>
-          <span style={{fontSize:13,fontWeight:800,color:"#6C5CE7"}}>{strokeIdx+1}/26</span>
+      <SubHead title={"Write: "+letter} onBack={()=>{stop();setStrokePhase("pick");}} points={prof?.points||0}/>
+      <div style={{padding:"0 16px"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:"4px 0"}}><div style={{flex:1,height:6,borderRadius:3,background:"#E8EAF6",overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:"linear-gradient(90deg,#6C5CE7,#A29BFE)",width:progress+"%",transition:"width 0.5s"}}/></div><span style={{fontSize:12,fontWeight:800,color:"#6C5CE7"}}>{strokeIdx+1}/26</span></div></div>
+      {strokePhase==="demo"&&<div style={{margin:"4px 16px",padding:"10px 14px",background:"linear-gradient(135deg,#FFF3E0,#FFECB3)",borderRadius:16,textAlign:"center"}}><div style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Watch carefully! I will show you how to write {letter}</div></div>}
+      {strokePhase==="write"&&curStroke&&<div style={{margin:"4px 16px",padding:"8px 14px",background:"#fff",borderRadius:16,boxShadow:"var(--shadow-card)",display:"flex",alignItems:"center",gap:8}}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:800,color:SC[curStroke.t]}}>{curStroke.n}</div><div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>Stroke {strokeCur+1}/{strokes.length} Follow green to red!</div></div></div>}
+      <div style={{margin:"8px 16px",position:"relative",background:"#fff",borderRadius:22,boxShadow:"0 4px 24px rgba(108,92,231,0.1)",overflow:"hidden"}}>
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:0}}>
+          <span style={{fontSize:160,fontWeight:900,color:"rgba(108,92,231,0.05)",fontFamily:"var(--font)"}}>{letter}</span>
         </div>
+        <canvas ref={canvasInit} onTouchStart={handleStrokeStart} onTouchMove={handleStrokeMove} onTouchEnd={handleStrokeEnd} onMouseDown={handleStrokeStart} onMouseMove={handleStrokeMove} onMouseUp={handleStrokeEnd} style={{width:"100%",height:270,display:"block",touchAction:"none",position:"relative",zIndex:1,cursor:strokePhase==="write"?"crosshair":"default"}}/>
       </div>
-      <div style={{flex:1,display:"flex",flexDirection:"column",padding:"4px 16px",overflow:"auto"}}>
-        {/* Stroke info */}
-        {!allDone&&curStroke&&<div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",background:"#fff",borderRadius:16,boxShadow:"var(--shadow-card)",marginBottom:8}}>
-          <span style={{fontSize:24}}>{STROKE_EMOJI[curStroke.type]}</span>
-          <div style={{flex:1}}>
-            <div style={{fontSize:12,fontWeight:800,color:STROKE_COLORS[curStroke.type]}}>Draw: {curStroke.name}</div>
-            <div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>Stroke {strokeCur+1} of {strokes.length} · Follow the dotted line!</div>
-          </div>
-          <div style={{width:28,height:28,borderRadius:14,background:"#22C55E",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#fff",fontSize:12,fontWeight:800}}>●</span></div>
-          <span style={{fontSize:9,color:"#8E8CA3"}}>start</span>
-          <div style={{width:28,height:28,borderRadius:14,background:"#FF6B6B",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#fff",fontSize:12,fontWeight:800}}>●</span></div>
-          <span style={{fontSize:9,color:"#8E8CA3"}}>end</span>
-        </div>}
-        {/* Canvas area */}
-        <div style={{position:"relative",background:"#fff",borderRadius:22,boxShadow:"0 4px 24px rgba(108,92,231,0.1)",overflow:"hidden",flexShrink:0}}>
-          {/* Letter watermark */}
-          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:0}}>
-            <span style={{fontSize:180,fontWeight:900,color:"rgba(108,92,231,0.06)",fontFamily:"var(--font)"}}>{letter}</span>
-          </div>
-          <canvas ref={canvasInit}
-            onTouchStart={handleStrokeStart} onTouchMove={handleStrokeMove} onTouchEnd={handleStrokeEnd}
-            onMouseDown={handleStrokeStart} onMouseMove={handleStrokeMove} onMouseUp={handleStrokeEnd}
-            style={{width:"100%",height:280,display:"block",touchAction:"none",position:"relative",zIndex:1,cursor:"crosshair"}}/>
+      <div style={{display:"flex",gap:4,padding:"4px 16px",flexWrap:"wrap"}}>
+        {strokes.map((s,i)=><div key={i} style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:700,background:i<strokeCur?SC[s.t]+"18":"#f5f5f5",color:i<strokeCur?SC[s.t]:i===strokeCur&&strokePhase==="write"?SC[s.t]:"#ccc",border:i===strokeCur&&strokePhase==="write"?"2px solid "+SC[s.t]:"2px solid transparent"}}>{i<strokeCur?"✅ ":i===strokeCur&&strokePhase==="write"?"✏️ ":"○ "}{s.n}</div>)}
+      </div>
+      {allDone&&<div style={{textAlign:"center",padding:"16px",margin:"0 16px"}}>
+        <div style={{fontSize:56}}>🎉</div>
+        <h3 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",margin:"6px 0"}}>You wrote {letter}!</h3>
+        <Stars count={4}/>
+        <div style={{display:"flex",gap:8,marginTop:12}}>
+          <button onClick={()=>{stop();setStrokeCur(0);setStrokeDone(false);setStrokePhase("demo");strokePoints.current=[];setTimeout(()=>{const c=strokeCanvasRef.current;if(c){c.width=c.offsetWidth;c.height=c.offsetHeight;}runStrokeDemo(c,letter);},300);}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Again</button>
+          {strokeIdx<25&&<button onClick={()=>{stop();startLetterDemo(strokeIdx+1);}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next: {letters[strokeIdx+1]}</button>}
+          <button onClick={()=>{stop();setStrokePhase("pick");}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>All Letters</button>
         </div>
-        {/* Completed strokes summary */}
-        {strokes.length>0&&<div style={{display:"flex",gap:4,marginTop:8,flexWrap:"wrap"}}>
-          {strokes.map((s,i)=><div key={i} style={{
-            padding:"4px 10px",borderRadius:10,fontSize:9,fontWeight:700,
-            background:i<strokeCur?STROKE_COLORS[s.type]+"22":"#f0f0f0",
-            color:i<strokeCur?STROKE_COLORS[s.type]:"#ccc",
-            border:i===strokeCur&&!allDone?`2px solid ${STROKE_COLORS[s.type]}`:"2px solid transparent"
-          }}>{i<strokeCur?"✅ ":i===strokeCur&&!allDone?"✏️ ":"○ "}{s.name}</div>)}
-        </div>}
-        {/* Done screen */}
-        {allDone&&<div style={{textAlign:"center",padding:"20px 10px",marginTop:8}}>
-          <div style={{fontSize:64}}>🎉</div>
-          <h3 style={{fontFamily:"var(--font)",fontSize:24,fontWeight:800,color:"#2D2B3D",margin:"8px 0"}}>You wrote {letter}!</h3>
-          <Stars count={4}/>
-          <div style={{display:"flex",gap:10,marginTop:14}}>
-            <button onClick={()=>{stop();setStrokeCur(0);setStrokeDone(false);strokePoints.current=[];setTimeout(()=>{drawGuide(strokeCanvasRef.current);speak("Let's practice "+letter+" again!",{rate:0.82});},200);}} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Again</button>
-            {strokeIdx<25&&<button onClick={()=>{stop();const ni=strokeIdx+1;setStrokeIdx(ni);setStrokeCur(0);setStrokeDone(false);strokePoints.current=[];setTimeout(()=>{drawGuide(strokeCanvasRef.current);const nl=letters[ni];speak("Now let's write "+nl+"!",{rate:0.82});},300);}} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next: {letters[strokeIdx+1]} →</button>}
-            <button onClick={()=>{stop();setScr("writing");}} style={{flex:1,padding:14,borderRadius:18,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🏠 Done</button>
-          </div>
-        </div>}
-      </div>
+      </div>}
       {TeacherBubble}<style>{CSS}</style>
     </div>;
   }
