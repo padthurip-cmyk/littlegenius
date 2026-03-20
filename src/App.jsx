@@ -3475,7 +3475,7 @@ export default function App(){
     setNStep("saying_number");
     glow("num-display");
     glow("num-display");
-    await speak(`This is the number, ${w}!`,{rate:0.7,pitch:1.0});
+    await stop();speak(`This is the number, ${w}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current||navRef.current!==myNav)return;
 
     // Step 2: Interactive spelling (if enabled)
@@ -3535,7 +3535,7 @@ export default function App(){
     setPhStep("saying_word");
     glow("ph-word");
     glow("ph-word");
-    await speak(`This word is, ${wd.word}!`,{rate:0.7,pitch:1.0});
+    await stop();speak(`This word is, ${wd.word}!`,{rate:0.7,pitch:1.0});
     await wait(500);if(!pRef.current||navRef.current!==myNav)return;
 
     // Step 2: Interactive spelling (if enabled)
@@ -3606,7 +3606,7 @@ export default function App(){
     if(pRef.current){stop();pRef.current=false;setShStep("idle");return;}
     pRef.current=true;setSelShape(sh);setShRes(null);setShAcc(null);setShAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setShStep("saying_word");glow("shape-display");
-    await speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
+    await stop();speak(`This shape is called, ${sh.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
     setShStep("spelling");
     await spellWord(sh.name);await wait(400);if(!pRef.current||navRef.current!==myNav)return;
     await speak(`Awesome! That spells, ${sh.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
@@ -3649,7 +3649,7 @@ export default function App(){
     if(pRef.current){stop();pRef.current=false;setCoStep("idle");return;}
     pRef.current=true;setSelColor(co);setCoRes(null);setCoAcc(null);setCoAI(-1);setActiveSpellIdx(-1);setSpellStatus([]);
     setCoStep("saying_word");glow("color-display");
-    await speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
+    await stop();speak(`This color is, ${co.name}!`,{rate:0.7,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
     setCoStep("spelling");
     await spellWord(co.name);await wait(400);if(!pRef.current||navRef.current!==myNav)return;
     await speak(`Awesome! That spells, ${co.name}.`,{rate:0.75,pitch:1.0});await wait(500);if(!pRef.current||navRef.current!==myNav)return;
@@ -3719,12 +3719,12 @@ export default function App(){
       setMathFb("correct");headYes();boom();
       setMathScore(s=>s+1);
       awardPoints(3,"math",`${mathProblem.a}${mathProblem.op}${mathProblem.b}`);
-      await speak(`${choice}! Yes, that's right!`,{rate:0.85,pitch:1.0});
+      await stop();speak(`${choice}! Yes, that's right!`,{rate:0.85,pitch:1.0});
       await wait(1000);
       genMath();
     } else {
       setMathFb("wrong");headNo();flashWrong();
-      await speak(`Oops! ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.8,pitch:1.0});
+      await stop();speak(`Oops! ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.8,pitch:1.0});
       await wait(2000);
       genMath();
     }
@@ -3743,7 +3743,7 @@ export default function App(){
     // Check if still on this letter after each step
     const ok=()=>alphaRef.current===letter&&pRef.current;
     glow("letter-big");
-    await speak(`${letter}!`,{rate:0.85,pitch:1.0});
+    await stop();speak(`${letter}!`,{rate:0.85,pitch:1.0});
     if(!ok())return;
     await wait(200);
     if(!ok())return;
@@ -3816,7 +3816,7 @@ export default function App(){
       setMatchIdx(nextIdx);setMatchOpts([]);
       boom();
       await wait(300);
-      await speak("Wow! You matched them all!",{rate:0.85,pitch:1.0});
+      await stop();speak("Wow! You matched them all!",{rate:0.85,pitch:1.0});
     } else {
       const correct=pairs[nextIdx].cap;
       setMatchIdx(nextIdx);
@@ -3891,7 +3891,7 @@ export default function App(){
     movePandaTo("bottomRight");
     setTimeout(()=>speak(`Find number ${NW[n]||n}!`,{rate:0.8,pitch:1.0}),300);
   };
-  const repeatQuiz=()=>{if(quizNum)speak(`Find number ${NW[quizNum]||quizNum}!`,{rate:0.8,pitch:1.0});};
+  const repeatQuiz=()=>{if(quizNum)stop();speak(`Find number ${NW[quizNum]||quizNum}!`,{rate:0.8,pitch:1.0});};
   const onQuizTap=async(tapped)=>{
     if(quizFb)return;
     setQuizTotal(t=>t+1);
@@ -3900,7 +3900,7 @@ export default function App(){
       headYes();
       if(!isDone("quiz",quizNum))awardPoints(3,"quiz",quizNum);
       const cheers=["Yes! That's "+NW[quizNum]+"!","Awesome! "+quizNum+" is correct!","Yay! You found "+NW[quizNum]+"!","Right! Great job!","Super! That's the one!"];
-      speak(cheers[Math.floor(Math.random()*cheers.length)],{rate:1.0,pitch:1.1});
+      stop();speak(cheers[Math.floor(Math.random()*cheers.length)],{rate:1.0,pitch:1.1});
       boom();
       await wait(1200);
       movePandaTo("bottomRight");
@@ -3908,11 +3908,11 @@ export default function App(){
     } else {
       setQuizFb({ok:false,n:tapped});setQuizStreak(0);
       headNo();flashWrong();
-      speak("Oops! Try again!",{rate:0.9,pitch:1.0});
+      stop();speak("Oops! Try again!",{rate:0.9,pitch:1.0});
       await wait(1000);
       setQuizFb(null);
       movePandaTo("bottomRight");
-      speak(`Find number ${NW[quizNum]||quizNum}!`,{rate:0.8,pitch:1.0});
+      stop();speak(`Find number ${NW[quizNum]||quizNum}!`,{rate:0.8,pitch:1.0});
     }
   };
   // Drawing pad
@@ -4024,14 +4024,14 @@ export default function App(){
     setWriteScore(score);
     if(score>=60&&!writeOkRef.current){
       setWriteOk(true);writeOkRef.current=true;
-      headYes();boom();speak(`Perfect!`,{rate:0.85,pitch:1.0});
+      headYes();boom();stop();speak(`Perfect!`,{rate:0.85,pitch:1.0});
       if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(5,"basics_w",writeMode==="numbers"?writeNum:writeChar);
       setTimeout(()=>{
         if(writeMode==="numbers"){
           setWriteNum(prev=>{
             const n=(prev%20)+1;
             setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
-            setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
+            setTimeout(()=>{initCanvas();stop();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
             return n;
           });
         } else {
@@ -4040,21 +4040,21 @@ export default function App(){
             const next=ALPHA_LETTERS[(idx+1)%26];
             const ch=writeCase==="caps"?next:next.toLowerCase();
             setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
-            setTimeout(()=>{initCanvas();speak(`Now write ${ch}.`,{rate:0.75,pitch:1.0});},300);
+            setTimeout(()=>{initCanvas();stop();speak(`Now write ${ch}.`,{rate:0.75,pitch:1.0});},300);
             return next;
           });
         }
       },2500);
     } else if(score>=35&&!writeOkRef.current){
       setWriteOk(true);writeOkRef.current=true;
-      headYes();boom();speak(`Good job!`,{rate:0.85,pitch:1.0});
+      headYes();boom();stop();speak(`Good job!`,{rate:0.85,pitch:1.0});
       if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(3,"basics_w",writeMode==="numbers"?writeNum:writeChar);
       setTimeout(()=>{
         if(writeMode==="numbers"){
           setWriteNum(prev=>{
             const n=(prev%20)+1;
             setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
-            setTimeout(()=>{initCanvas();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
+            setTimeout(()=>{initCanvas();stop();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
             return n;
           });
         } else {
@@ -4063,7 +4063,7 @@ export default function App(){
             const next=ALPHA_LETTERS[(idx+1)%26];
             const ch=writeCase==="caps"?next:next.toLowerCase();
             setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
-            setTimeout(()=>{initCanvas();speak(`Now write ${ch}.`,{rate:0.75,pitch:1.0});},300);
+            setTimeout(()=>{initCanvas();stop();speak(`Now write ${ch}.`,{rate:0.75,pitch:1.0});},300);
             return next;
           });
         }
@@ -4134,7 +4134,7 @@ export default function App(){
     owlTapRef.current++;
     setTeacherMood(reaction.mood);
     
-    speak(reaction.sound,{rate:1.0,pitch:1.1});
+    stop();speak(reaction.sound,{rate:1.0,pitch:1.1});
   };
 
   const TeacherBubble=<>{wrongFlash&&<div style={{position:"fixed",inset:0,background:"rgba(239,68,68,0.25)",zIndex:198,pointerEvents:"none",animation:"cWrongPulse 0.8s ease-out forwards"}}/>}<div style={{position:"fixed",left:pandaPos.x,top:pandaPos.y,zIndex:200,pointerEvents:"none",transition:dragRef.current?"none":joyFly?"left 0.3s ease-out, top 0.3s ease-out":"left 1s cubic-bezier(0.4,0,0.2,1), top 1s cubic-bezier(0.4,0,0.2,1)",filter:"drop-shadow(0 4px 10px rgba(0,0,0,.1))"}}>
@@ -4161,13 +4161,13 @@ export default function App(){
       await wait(600);
       movePandaTo("bottomRight");
       await wait(400);
-      speak("Hi "+(prof?.name||"friend")+"! Let's learn something new!",{rate:0.85,pitch:1.0});
+      stop();speak("Hi "+(prof?.name||"friend")+"! Ready to learn?",{rate:0.85,pitch:1.0});
     } else {
       setScr("onboard");setObSt(0);
       await wait(600);
       movePandaTo("bottomRight");
       await wait(400);
-      speak("Enter your name and age to get started!",{rate:0.85,pitch:1.0});
+      stop();speak("Enter your name to start!",{rate:0.85,pitch:1.0});
       setTeacherMood("happy");
     }
   }} style={{background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 30%,#74B9FF 60%,#55EFC4 100%)",backgroundSize:"300% 300%",animation:"gradientMove 6s ease infinite",position:"fixed",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",fontFamily:"var(--font)",cursor:"pointer"}}>
@@ -4204,7 +4204,7 @@ export default function App(){
           boxShadow:obA===a?"0 4px 12px rgba(252,128,25,.3)":"none"
         }}>{a}</button>)}
       </div>
-      <button onClick={()=>{sfxTap();setObSt(1);speak("Great! Now select your style!",{rate:0.85,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,boxShadow:"var(--shadow-btn)",letterSpacing:0.5}}>Next →</button>
+      <button onClick={()=>{sfxTap();setObSt(1);stop();speak("Pick your style!",{rate:0.85,pitch:1.0});setTeacherMood("excited");}} style={{width:"100%",padding:16,borderRadius:18,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:24,boxShadow:"var(--shadow-btn)",letterSpacing:0.5}}>Next →</button>
     </>:
     obSt===1?<>
       {/* Step 2: Gender + Avatar */}
@@ -4240,7 +4240,7 @@ export default function App(){
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:10,marginTop:24}}>
         <button onClick={()=>setObSt(0)} style={{padding:14,borderRadius:16,border:"2px solid #E8E0D8",background:"#fff",fontSize:15,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",color:"#8E8CA3"}}>← Back</button>
-        <button onClick={()=>{sfxTap();setObSt(2);speak("Would you like a quick tour?",{rate:0.85,pitch:1.0});setTeacherMood("happy");}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",boxShadow:"var(--shadow-btn)"}}>Next →</button>
+        <button onClick={()=>{sfxTap();setObSt(2);stop();speak("Want a quick tour?",{rate:0.85,pitch:1.0});setTeacherMood("happy");}} style={{padding:14,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:17,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",boxShadow:"var(--shadow-btn)"}}>Next →</button>
       </div>
     </>:
     obSt===2?<>
@@ -4253,7 +4253,7 @@ export default function App(){
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
         <button onClick={()=>{sfxTap();
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
-          save(newP);speak("Let's get to know you first!",{rate:0.85,pitch:1.0});setTeacherMood("star");
+          save(newP);stop();speak("Let me ask a few questions!",{rate:0.85,pitch:1.0});setTeacherMood("star");
           setScr("questionnaire");setQStep(0);setQAnswers([]);
           localStorage.setItem("lg_want_tour","yes");
         }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(0,210,160,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
@@ -4452,7 +4452,7 @@ export default function App(){
     const m=mode||sfMode||"speakback";
     setSfMode(m);
     const items=buildSpeakItems(topic);
-    if(!items.length){speak("No items found!",{rate:0.9});return;}
+    if(!items.length){stop();speak("No items found!",{rate:0.9});return;}
     setSfItems(items);setSfIdx(0);setSfScore(0);setSfTotal(0);setSfTopic(topic);
     setSfPhase("idle");setSfRes(null);setSfAcc(null);
     setScr("speakflow");
@@ -4632,9 +4632,9 @@ export default function App(){
     setSfRes(normalized);setSfAcc(acc);setSfPhase("result");setSfTotal(t=>t+1);
     const s=getStars(acc);const p=getStarPts(s);
     if(p>0){awardPoints(p,"speaking",item.say);boom();setSfScore(sc=>sc+1);headYes();
-      if(s>=4)speak("Perfect! "+acc+" percent!",{rate:0.9,pitch:1.0});
-      else speak("Good! "+acc+" percent!",{rate:0.9,pitch:1.0});
-    }else{flashWrong();headNo();speak("Try harder next time!",{rate:0.9,pitch:1.0});}
+      if(s>=4){stop();speak("Perfect! "+acc+" percent!",{rate:0.9,pitch:1.0});}
+      else{stop();speak("Good! "+acc+" percent!",{rate:0.9,pitch:1.0});}
+    }else{flashWrong();headNo();stop();speak("Try harder next time!",{rate:0.9,pitch:1.0});}
     setTimeout(()=>{
       const next=idx+1;
       if(next<items.length){
@@ -4660,7 +4660,7 @@ export default function App(){
   const startListenFlow=(topic)=>{
     killAllFlows();
     const items=buildSpeakItems(topic);
-    if(!items.length){speak("No items found!",{rate:0.9});return;}
+    if(!items.length){stop();speak("No items found!",{rate:0.9});return;}
     setLfItems(items);setLfIdx(0);setLfTopic(topic);setLfPlaying(false);
     lfRef.current=false;
     setScr("listenflow");
@@ -4693,7 +4693,7 @@ export default function App(){
   const startReadFlow=(topic)=>{
     killAllFlows();
     const items=buildSpeakItems(topic);
-    if(!items.length){speak("No items found!",{rate:0.9});return;}
+    if(!items.length){stop();speak("No items found!",{rate:0.9});return;}
     setRfItems(items);setRfIdx(0);setRfScore(0);setRfTopic(topic);
     setRfPhase("idle");
     setScr("readflow");
@@ -5616,7 +5616,7 @@ export default function App(){
           {id:"stories",icon:"📚",title:"Stories",sub:"Read fun tales & learn",bg:"linear-gradient(135deg,#26C6DA,#4DD0E1)"},
         ];const priority=typeof localStorage!=="undefined"?localStorage.getItem("lg_priority_tile"):null;const sorted=priority?[...baseTiles].sort((a,b)=>a.id===priority?-1:b.id===priority?1:0):baseTiles;return sorted;})().map((t,i)=>
           <button key={t.id} data-r="tile" data-tile={t.id} onClick={()=>{sfxTap();killAllFlows();movePandaTo("bottomRight");setTeacherMood("star");
-            speak(t.title+"! Let's go!",{rate:0.85,pitch:1.0});setScr(t.id);
+            setScr(t.id);
           }} style={{
             display:"flex",flexDirection:"column",alignItems:"center",gap:8,padding:"22px 10px 18px",
             borderRadius:24,border:"none",background:t.bg,cursor:"pointer",fontFamily:"var(--font)",
@@ -6270,7 +6270,7 @@ export default function App(){
       {[{id:"numbers",label:"🔢 Numbers"},{id:"abc",label:"🔤 ABC"},{id:"shapes",label:"🔷 Shapes"},{id:"colors",label:"🎨 Colors"}].map(t=>
         <button key={t.id} onClick={()=>{killAllFlows();movePandaTo("bottomRight");setTeacherMood("happy");setLearnTab(t.id);
             const tabMsg={numbers:"Let's learn numbers!",abc:"Let's explore the alphabet!",shapes:"Let's discover shapes!",colors:"Let's learn colors!"};
-            speak(tabMsg[t.id]||"Let's learn!",{rate:0.85,pitch:1.0});}}
+            stop();speak(tabMsg[t.id]||"Let's learn!",{rate:0.85,pitch:1.0});}}
           style={{flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",
             background:learnTab===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",color:learnTab===t.id?"#fff":"#A4B0BE",boxShadow:learnTab===t.id?"var(--shadow-btn)":"none"
           }}>{t.label}</button>
@@ -6374,10 +6374,10 @@ export default function App(){
       {[{id:"numquiz",label:"🔢 Numbers"},{id:"math",label:"➕ Math"},{id:"letters",label:"🔤 Letters"},{id:"write",label:"✏️ Write"}].map(t=>
         <button key={t.id} onClick={()=>{
           killAllFlows();movePandaTo("bottomRight");setTeacherMood("happy");setQuizTab(t.id);
-          if(t.id==="numquiz"){speak("Let's find numbers! Listen carefully!",{rate:0.85,pitch:1.0});if(!quizNum)setTimeout(()=>newQuiz(),800);}
+          if(t.id==="numquiz"){stop();speak("Let's find numbers!",{rate:0.85,pitch:1.0});if(!quizNum)setTimeout(()=>newQuiz(),800);}
           if(t.id==="math"){speak("Let's do math!",{rate:0.85,pitch:1.0});if(!mathProblem)setTimeout(()=>genMath(),800);}
           if(t.id==="letters"){speak("Let's match letters!",{rate:0.85,pitch:1.0});if(matchPairs.length===0)setTimeout(()=>startMatch(),800);}
-          if(t.id==="write"){speak("Let's practice writing!",{rate:0.85,pitch:1.0});setTimeout(()=>{initCanvas();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},1200);}
+          if(t.id==="write"){stop();speak("Let's practice writing!",{rate:0.85,pitch:1.0});setTimeout(()=>{initCanvas();stop();speak(`Write ${NW[writeNum]||writeNum}.`,{rate:0.75,pitch:1.0});},1200);}
         }} style={{flex:1,padding:"9px 4px",borderRadius:12,border:"none",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"var(--font)",
           background:quizTab===t.id?"linear-gradient(135deg,#54A0FF,#74B9FF)":"#F0F4FF",color:quizTab===t.id?"#fff":"#A4B0BE",boxShadow:quizTab===t.id?"var(--shadow-btn)":"none"}}>{t.label}</button>
       )}
@@ -6433,7 +6433,7 @@ export default function App(){
           <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);
               const opMsg={"+":"Let's do addition!","-":"Let's do subtraction!","×":"Let's do multiplication!","mix":"Mix it up!"};
-              speak(opMsg[o.id]||"Let's go!",{rate:0.85,pitch:1.0});
+              stop();speak(opMsg[o.id]||"Let's go!",{rate:0.85,pitch:1.0});
               setTimeout(()=>genMath(mathRange,o.id),800);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
             background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#F0F4FF",boxShadow:mathOp===o.id?"0 3px 12px rgba(255,159,67,0.25)":"none",color:mathOp===o.id?"#fff":"#636E72"
@@ -6483,7 +6483,7 @@ export default function App(){
           </div>
           {matchMode==="voiceQuiz"?
             <div style={{marginTop:6}}>
-              <button onClick={()=>speak(`${matchPairs[matchIdx]?.cap}`,{rate:0.6,pitch:1.0})} style={{
+              <button onClick={()=>{stop();speak(`${matchPairs[matchIdx]?.cap}`,{rate:0.6,pitch:1.0})}} style={{
                 fontSize:16,fontWeight:700,fontFamily:"var(--font)",
                 background:"linear-gradient(135deg,#FF8C42,#FFB066)",border:"none",borderRadius:16,
                 padding:"12px 24px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:8,margin:"0 auto"
@@ -6573,7 +6573,7 @@ export default function App(){
       </div>
       <div style={{display:"flex",gap:10,marginTop:10}}>
         <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"#fff",color:"#888",fontSize:14,fontWeight:700,cursor:"pointer"}}>🗑️ Clear</button>
-        <button onClick={()=>speak(`Write ${writeMode==="numbers"?(NW[writeNum]||writeNum):writeChar}.`,{rate:0.75})} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>🔊 Hear</button>
+        <button onClick={()=>{stop();speak(`Write ${writeMode==="numbers"?(NW[writeNum]||writeNum):writeChar}.`,{rate:0.75})}} style={{flex:1,padding:"10px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>🔊 Hear</button>
       </div>
     </div>}
 
@@ -6637,7 +6637,7 @@ export default function App(){
         <div style={{display:"flex",gap:4}}>
           {[{id:"mix",label:"Mix"},{id:"+",label:"+"},{id:"-",label:"−"},{id:"×",label:"×"}].map(o=><button key={o.id} onClick={()=>{setMathOp(o.id);
               const opMsg={"+":"Let's do addition!","-":"Let's do subtraction!","×":"Let's do multiplication!","mix":"Mix it up!"};
-              speak(opMsg[o.id]||"Let's go!",{rate:0.85,pitch:1.0});
+              stop();speak(opMsg[o.id]||"Let's go!",{rate:0.85,pitch:1.0});
               setTimeout(()=>genMath(mathRange,o.id),800);}} style={{
             padding:"7px 12px",borderRadius:12,border:"2px solid",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",
             background:mathOp===o.id?"linear-gradient(135deg,#FF9F43,#FECA57)":"#F0F4FF",boxShadow:mathOp===o.id?"0 3px 12px rgba(255,159,67,0.25)":"none",color:mathOp===o.id?"#fff":"#636E72"
@@ -6702,7 +6702,7 @@ export default function App(){
           <div style={{display:"flex",alignItems:"center",gap:10,paddingLeft:36}}>
             <span style={{fontFamily:"var(--font)",fontSize:52,fontWeight:900,color:"#6C5CE7",lineHeight:1}}>{writeNum}</span>
             <div style={{flex:1}}><div style={{fontWeight:800,fontSize:15,color:"#2D2B3D",textTransform:"capitalize"}}>{NW[writeNum]||""} {NUM_EMOJI[writeNum]||""}</div><div style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{NUM_STROKES[writeNum]||"Write it!"}</div></div>
-            <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
+            <button onClick={()=>{stop();speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})}} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
           </div>
         </div>
         {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#FFF5EB":writeScore>=50?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
@@ -6720,7 +6720,7 @@ export default function App(){
       </div>
       <div style={{display:"flex",gap:6,padding:"8px 10px",background:"#fff",borderTop:"1px solid rgba(255,255,255,.06)",flexShrink:0}}>
         <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🗑️ Clear</button>
-        <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 How</button>
+        <button onClick={()=>{stop();speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})}} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 How</button>
         <button onClick={nextWrite} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:"linear-gradient(135deg,var(--green),var(--cyan))",color:"#000",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next ➡️</button>
       </div>
     </div>}
@@ -6931,7 +6931,7 @@ export default function App(){
       <div style={{fontSize:18,fontWeight:800,color:"#2D2B3D",marginTop:4,...glowStyle("letter-sound")}}>"{ALPHA_DATA[selLetter]?.ph}" sound</div>
       <div style={{display:"flex",flexWrap:"wrap",gap:10,justifyContent:"center",marginTop:8}}>
         {ALPHA_DATA[selLetter]?.examples.map((ex,i)=>
-          <button key={i} onClick={()=>speak(`${selLetter} for ${ex.w}!`,{rate:0.85,pitch:1.0})} style={{
+          <button key={i} onClick={()=>{stop();speak(`${selLetter} for ${ex.w}!`,{rate:0.85,pitch:1.0})}} style={{
             display:"flex",flexDirection:"column",alignItems:"center",padding:"12px 14px",borderRadius:16,
             border:"2px solid #E8E0D8",background:"#fff",cursor:"pointer",minWidth:80,
             animation:`gridPop 0.3s ease ${i*0.08}s both`,
@@ -7003,7 +7003,7 @@ export default function App(){
           </div>
           {matchMode==="voiceQuiz"?
             <div style={{marginTop:6}}>
-              <button onClick={()=>speak(`${matchPairs[matchIdx]?.cap}`,{rate:0.65,pitch:1.0})} style={{
+              <button onClick={()=>{stop();speak(`${matchPairs[matchIdx]?.cap}`,{rate:0.65,pitch:1.0})}} style={{
                 fontSize:16,fontWeight:700,fontFamily:"var(--font)",
                 background:"linear-gradient(135deg,#FF8C42,#FFB066)",border:"none",borderRadius:16,
                 padding:"12px 24px",color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",gap:8,margin:"0 auto"
@@ -7150,7 +7150,7 @@ export default function App(){
               <div style={{fontWeight:800,fontSize:15,color:"#2D2B3D",textTransform:"capitalize"}}>{NW[writeNum]||""} {NUM_EMOJI[writeNum]||""}</div>
               <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{NUM_STROKES[writeNum]||"Write it!"}</div>
             </div>
-            <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
+            <button onClick={()=>{stop();speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})}} style={{padding:"8px 12px",borderRadius:10,border:"none",background:"#FF8C42",color:"#fff",fontSize:11,fontWeight:800,cursor:"pointer"}}>🔊</button>
           </div>
         </div>
         {writeScore!==null&&<div style={{padding:"5px 14px",background:writeScore>=85?"#FFF5EB":writeScore>=50?"#FFF8E1":"#FEF2F2",display:"flex",alignItems:"center",gap:8}}>
@@ -7187,7 +7187,7 @@ export default function App(){
       {/* Bottom controls */}
       <div style={{display:"flex",gap:6,padding:"8px 10px",background:"#fff",borderTop:"1px solid rgba(255,255,255,.06)",flexShrink:0}}>
         <button onClick={clearPad} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🗑️ Clear</button>
-        <button onClick={()=>speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 How</button>
+        <button onClick={()=>{stop();speak(`${NW[writeNum]||writeNum}. ${NUM_STROKES[writeNum]||""}`,{rate:0.75,pitch:1.0})}} style={{flex:1,padding:"10px",borderRadius:12,border:"2px solid #E8E0D8",background:"transparent",color:"#2D2B3D",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 How</button>
         <button onClick={nextWrite} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:"linear-gradient(135deg,var(--green),var(--cyan))",color:"#000",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next ➡️</button>
       </div>
     </div>}<div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{TeacherBubble}<style>{CSS}</style>
@@ -7229,7 +7229,7 @@ export default function App(){
         {storyPicked.text}
       </div>
       <div style={{display:"flex",gap:10,marginTop:16}}>
-        <button onClick={()=>{speak(storyPicked.text,{rate:0.8});}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#3B82F6",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>🔊 Read to Me</button>
+        <button onClick={()=>{stop();speak(storyPicked.text,{rate:0.8});}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#3B82F6",color:"#fff",fontSize:15,fontWeight:700,cursor:"pointer"}}>🔊 Read to Me</button>
         <button onClick={()=>{stop();setStoryStep("questions");setStoryIdx(0);speak("Now answer these questions!",{rate:0.85});}} style={{flex:1,padding:14,borderRadius:16,border:"none",background:"#4ADE80",color:"#2D2B3D",fontSize:15,fontWeight:700,cursor:"pointer"}}>📝 Questions</button>
       </div>
     </div>}
@@ -7253,16 +7253,16 @@ export default function App(){
             return<button key={oi} disabled={answered} onClick={async()=>{
               const correct=oi===storyPicked.questions[storyIdx].answer;
               const newAnswers=[...storyAnswers];newAnswers[storyIdx]=oi;setStoryAnswers(newAnswers);
-              if(correct){setStoryScore(s=>s+1);headYes();boom();speak("That's right!",{rate:0.9});}
-              else{headNo();flashWrong();speak("Not quite!",{rate:0.9});}
+              if(correct){setStoryScore(s=>s+1);headYes();boom();stop();speak("That's right!",{rate:0.9});}
+              else{headNo();flashWrong();stop();speak("Not quite!",{rate:0.9});}
               await wait(1800);
               if(storyIdx+1<storyPicked.questions.length){setStoryIdx(storyIdx+1);}
               else{
                 setStoryStep("done");
                 const pts=correct?(storyScore+1)*5:storyScore*5;
                 if(pts>0)awardPoints(pts,"stories",storyPicked.id);
-                if(storyScore+1>=storyPicked.questions.length){boom();speak("Perfect! You got them all right!",{rate:0.85});}
-                else speak("Good try! Keep reading!",{rate:0.85});
+                if(storyScore+1>=storyPicked.questions.length){boom();stop();speak("Perfect! You got them all right!",{rate:0.85});}
+                else stop();speak("Good try! Keep reading!",{rate:0.85});
               }
             }} style={{
               padding:"16px 18px",borderRadius:18,border:"2.5px solid",cursor:answered?"default":"pointer",
@@ -7305,7 +7305,7 @@ export default function App(){
 <p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>{ttsKey?"Using Google Cloud voice (sweet Ollie voice on all devices!)":"Using your device's built-in voice. Add a Google Cloud API key for a consistent sweet voice."}</p>
 <input value={ttsKey} onChange={e=>saveTtsKey(e.target.value.trim())} placeholder="Paste Google Cloud API key..." style={{width:"100%",padding:"10px 12px",border:"2px solid #E8E0D8",borderRadius:12,fontSize:12,fontWeight:600,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",background:"#fff"}}/>
 <div style={{display:"flex",gap:8,marginTop:8}}>
-<button onClick={()=>{speak("Hi! I'm Ollie! This is how I sound!",{rate:0.92,pitch:1.05});}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:ttsKey?"linear-gradient(135deg,#FF8C42,#FFB066)":"#E8E8E8",color:ttsKey?"#fff":"#666",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Test Voice</button>
+<button onClick={()=>{stop();speak("Hi! I'm Ollie! This is how I sound!",{rate:0.92,pitch:1.05});}} style={{flex:1,padding:"10px",borderRadius:12,border:"none",background:ttsKey?"linear-gradient(135deg,#FF8C42,#FFB066)":"#E8E8E8",color:ttsKey?"#fff":"#666",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔊 Test Voice</button>
 {ttsKey&&<button onClick={()=>saveTtsKey("")} style={{padding:"10px 14px",borderRadius:12,border:"2px solid #E8E0D8",background:"#fff",color:"#E23744",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Remove</button>}
 </div>
 {ttsKey&&<p style={{fontSize:10,color:"#22C55E",fontWeight:700,marginTop:6}}>✅ Cloud voice + speech recognition active</p>}
