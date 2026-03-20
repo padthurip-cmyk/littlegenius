@@ -3210,6 +3210,7 @@ export default function App(){
   const strokeCanvasRef=useRef(null);
   const strokeDrawing=useRef(false);
   const strokePoints=useRef([]);
+  const strokeCompletedRef=useRef([]);
 
   const initDone=useRef(false);
   const welcomeSpoken=useRef(false);
@@ -4898,6 +4899,7 @@ export default function App(){
   const SN={"standing":"Standing Line","sleeping":"Sleeping Line","slanting":"Slanting Line","curve":"Curved Line"};
 
   // Draw a stroke path on canvas
+  // Draw a stroke path on canvas (smooth polyline)
   const drawStrokePath=(ctx,stroke,W,H,opts={})=>{
     const sx=W/200,sy=H/225;
     const pts=stroke.p;if(!pts||pts.length<2)return;
@@ -4906,100 +4908,144 @@ export default function App(){
     for(let i=1;i<pts.length;i++){ctx.lineTo(pts[i][0]*sx,pts[i][1]*sy);}
     ctx.stroke();
     if(opts.dots){
-      const start=pts[0],endP=pts[pts.length-1];
-      ctx.fillStyle="#22C55E";ctx.beginPath();ctx.arc(start[0]*sx,start[1]*sy,7,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle="#EF4444";ctx.beginPath();ctx.arc(endP[0]*sx,endP[1]*sy,7,0,Math.PI*2);ctx.fill();
+      const s=pts[0],e=pts[pts.length-1];
+      ctx.fillStyle="#22C55E";ctx.beginPath();ctx.arc(s[0]*sx,s[1]*sy,8,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#EF4444";ctx.beginPath();ctx.arc(e[0]*sx,e[1]*sy,8,0,Math.PI*2);ctx.fill();
     }
   };
 
-  // Animate one stroke being drawn
-  const animateStroke=(canvas,strokes,sIdx,onDone)=>{
-    if(!canvas){if(onDone)onDone();return;}
-    const ctx=canvas.getContext("2d");
-    const W=canvas.width,H=canvas.height;
-    const stroke=strokes[sIdx];if(!stroke){if(onDone)onDone();return;}
+  // Build flat pixel path from stroke points for animation
+  const buildPixelPath=(stroke,W,H)=>{
     const sx=W/200,sy=H/225;
-    const pts=stroke.p;if(!pts||pts.length<2){if(onDone)onDone();return;}
-    // Build pixel path
+    const pts=stroke.p;if(!pts||pts.length<2)return[];
     const path=[];
     path.push([pts[0][0]*sx,pts[0][1]*sy]);
     for(let i=1;i<pts.length;i++){
       const prev=path[path.length-1];
       const ex=pts[i][0]*sx,ey=pts[i][1]*sy;
-      const steps=25;
+      const dist=Math.sqrt((ex-prev[0])**2+(ey-prev[1])**2);
+      const steps=Math.max(15,Math.round(dist/3));
       for(let t=1;t<=steps;t++){path.push([prev[0]+(ex-prev[0])*t/steps,prev[1]+(ey-prev[1])*t/steps]);}
     }
+    return path;
+  };
+
+  // Draw background: grid + watermark letter + all completed strokes
+  const drawStrokeBg=(ctx,W,H,letter,strokes,upTo)=>{
+    ctx.clearRect(0,0,W,H);
+    // Light grid
+    ctx.strokeStyle="rgba(108,92,231,0.06)";ctx.lineWidth=1;ctx.setLineDash([]);ctx.globalAlpha=1;
+    for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(i*W/4,0);ctx.lineTo(i*W/4,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*H/4);ctx.lineTo(W,i*H/4);ctx.stroke();}
+    // Middle dotted line
+    ctx.strokeStyle="rgba(108,92,231,0.12)";ctx.setLineDash([6,6]);
+    ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+    ctx.setLineDash([]);
+    // Completed strokes — solid, persistent
+    for(let i=0;i<upTo;i++){
+      const s=strokes[i];if(!s)continue;
+      ctx.strokeStyle=SC[s.t]||"#6C5CE7";ctx.lineWidth=6;ctx.lineCap="round";ctx.lineJoin="round";ctx.globalAlpha=0.85;
+      drawStrokePath(ctx,s,W,H);
+    }
+    ctx.globalAlpha=1;
+  };
+
+  // Animate one stroke smoothly — previous strokes stay visible
+  const animateStroke=(canvas,strokes,sIdx,onDone)=>{
+    if(!canvas){if(onDone)onDone();return;}
+    const ctx=canvas.getContext("2d");
+    const W=canvas.width,H=canvas.height;
+    const stroke=strokes[sIdx];if(!stroke){if(onDone)onDone();return;}
+    const path=buildPixelPath(stroke,W,H);
+    if(!path.length){if(onDone)onDone();return;}
     let frame=0;
+    const color=SC[stroke.t]||"#FF9F43";
     const anim=()=>{
       if(frame>=path.length){if(onDone)onDone();return;}
-      ctx.clearRect(0,0,W,H);
-      // Grid
-      ctx.strokeStyle="rgba(108,92,231,0.05)";ctx.lineWidth=1;ctx.setLineDash([]);ctx.globalAlpha=1;
-      for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(i*W/4,0);ctx.lineTo(i*W/4,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*H/4);ctx.lineTo(W,i*H/4);ctx.stroke();}
-      // Completed strokes
-      for(let i=0;i<sIdx;i++){
-        const s=strokes[i];ctx.strokeStyle=SC[s.t]||"#6C5CE7";ctx.lineWidth=6;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=0.7;
-        drawStrokePath(ctx,s,W,H);
-      }
-      ctx.globalAlpha=1;
-      // Current animated stroke
-      ctx.strokeStyle=SC[stroke.t]||"#FF9F43";ctx.lineWidth=7;ctx.lineCap="round";ctx.setLineDash([]);
+      // Redraw background + all completed strokes up to sIdx
+      drawStrokeBg(ctx,W,H,"",strokes,sIdx);
+      // Draw current stroke progress (smooth animated line)
+      ctx.strokeStyle=color;ctx.lineWidth=7;ctx.lineCap="round";ctx.lineJoin="round";ctx.setLineDash([]);ctx.globalAlpha=1;
       ctx.beginPath();ctx.moveTo(path[0][0],path[0][1]);
       for(let i=1;i<=frame;i++)ctx.lineTo(path[i][0],path[i][1]);
       ctx.stroke();
-      // Moving dot
+      // Animated dot at tip
       const cur=path[frame];
-      ctx.fillStyle=SC[stroke.t]||"#FF9F43";ctx.beginPath();ctx.arc(cur[0],cur[1],6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(cur[0],cur[1],9,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=color;ctx.beginPath();ctx.arc(cur[0],cur[1],7,0,Math.PI*2);ctx.fill();
       frame+=2;
       requestAnimationFrame(anim);
     };
     anim();
   };
 
-  // Full demo: animate all strokes with speech
+  // Full demo: animate all strokes one by one with speech
   const runStrokeDemo=async(canvas,letter)=>{
-    const strokes=LS[letter];if(!strokes)return;
-    stop();await speak("Watch how I write "+letter,{rate:0.78,pitch:1.0});await wait(400);
+    const strokes=LS[letter];if(!strokes||!canvas)return;
+    const ctx=canvas.getContext("2d");
+    const W=canvas.width,H=canvas.height;
+    stop();
+    drawStrokeBg(ctx,W,H,letter,strokes,0);
+    await speak("Watch how I write "+letter,{rate:0.78,pitch:1.0});await wait(500);
     for(let i=0;i<strokes.length;i++){
       const s=strokes[i];
-      stop();await speak((i===0?"First":"Next")+", a "+SN[s.t].toLowerCase()+"!",{rate:0.82,pitch:1.0});
-      await wait(300);
+      const ordinal=i===0?"First":i===1?"Next":"And now";
+      stop();await speak(ordinal+", a "+SN[s.t].toLowerCase()+"!",{rate:0.82,pitch:1.0});
+      await wait(350);
       await new Promise(r=>animateStroke(canvas,strokes,i,r));
-      await wait(400);
-      stop();await speak(s.n+" done!",{rate:0.85,pitch:1.05});await wait(300);
+      // After animation finishes, redraw with this stroke as completed
+      drawStrokeBg(ctx,W,H,letter,strokes,i+1);
+      await wait(300);
+      stop();await speak(s.n+" done!",{rate:0.88,pitch:1.08});await wait(350);
     }
-    stop();await speak("Now it is your turn! Trace each line!",{rate:0.85,pitch:1.0});await wait(300);
+    stop();await speak("Now your turn! Trace each line!",{rate:0.85,pitch:1.0});await wait(300);
     setStrokePhase("write");setStrokeCur(0);strokePoints.current=[];
-    redrawStrokeCanvas(canvas,letter,0);
+    redrawWriteCanvas(canvas,letter,0,[]);
   };
 
-  // Redraw canvas for write phase
-  const redrawStrokeCanvas=(canvas,letter,curIdx)=>{
+  // Redraw canvas for write phase — shows guide + completed + kid drawing
+  const redrawWriteCanvas=(canvas,letter,curIdx,completedDrawings)=>{
     if(!canvas)return;
     const ctx=canvas.getContext("2d");
     const W=canvas.width,H=canvas.height;
     const strokes=LS[letter]||[];
-    ctx.clearRect(0,0,W,H);
-    ctx.strokeStyle="rgba(108,92,231,0.05)";ctx.lineWidth=1;ctx.setLineDash([]);ctx.globalAlpha=1;
-    for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(i*W/4,0);ctx.lineTo(i*W/4,H);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*H/4);ctx.lineTo(W,i*H/4);ctx.stroke();}
-    for(let i=0;i<curIdx;i++){
-      const s=strokes[i];ctx.strokeStyle=SC[s.t]||"#6C5CE7";ctx.lineWidth=6;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=0.8;
-      drawStrokePath(ctx,s,W,H);
+    // Draw bg + completed strokes
+    drawStrokeBg(ctx,W,H,letter,strokes,0);
+    // Draw kid's completed straight lines
+    for(let i=0;i<completedDrawings.length;i++){
+      const cd=completedDrawings[i];if(!cd)continue;
+      const s=strokes[i];
+      ctx.strokeStyle=SC[s?.t]||"#6C5CE7";ctx.lineWidth=6;ctx.lineCap="round";ctx.globalAlpha=0.9;ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(cd[0][0],cd[0][1]);
+      for(let j=1;j<cd.length;j++)ctx.lineTo(cd[j][0],cd[j][1]);
+      ctx.stroke();
     }
     ctx.globalAlpha=1;
+    // Current stroke guide — dashed watermark with start/end dots
     if(curIdx<strokes.length){
       const s=strokes[curIdx];
-      ctx.strokeStyle=SC[s.t]||"#FF9F43";ctx.lineWidth=8;ctx.lineCap="round";ctx.setLineDash([10,8]);ctx.globalAlpha=0.3;
+      ctx.strokeStyle=SC[s.t]||"#FF9F43";ctx.lineWidth=9;ctx.lineCap="round";ctx.setLineDash([12,8]);ctx.globalAlpha=0.25;
       drawStrokePath(ctx,s,W,H);
       ctx.setLineDash([]);ctx.globalAlpha=1;
-      drawStrokePath(ctx,s,W,H,{dots:true});
+      // Start/end dots
+      const sx2=W/200,sy2=H/225;
+      const pts=s.p;
+      const startPt=pts[0],endPt=pts[pts.length-1];
+      // Green start dot with label
+      ctx.fillStyle="#22C55E";ctx.beginPath();ctx.arc(startPt[0]*sx2,startPt[1]*sy2,10,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#fff";ctx.font="bold 10px Fredoka";ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText("S",startPt[0]*sx2,startPt[1]*sy2);
+      // Red end dot
+      ctx.fillStyle="#EF4444";ctx.beginPath();ctx.arc(endPt[0]*sx2,endPt[1]*sy2,10,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#fff";ctx.fillText("E",endPt[0]*sx2,endPt[1]*sy2);
     }
+    // Kid's current in-progress drawing
     const pts2=strokePoints.current;
     if(pts2.length>1){
-      ctx.strokeStyle=curIdx<strokes.length?SC[strokes[curIdx].t]||"#6C5CE7":"#6C5CE7";ctx.lineWidth=5;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=1;
+      const s=curIdx<strokes.length?strokes[curIdx]:null;
+      ctx.strokeStyle=s?SC[s.t]||"#6C5CE7":"#6C5CE7";ctx.lineWidth=5;ctx.lineCap="round";ctx.setLineDash([]);ctx.globalAlpha=0.7;
       ctx.beginPath();ctx.moveTo(pts2[0][0],pts2[0][1]);
       for(let i=1;i<pts2.length;i++)ctx.lineTo(pts2[i][0],pts2[i][1]);
-      ctx.stroke();
+      ctx.stroke();ctx.globalAlpha=1;
     }
   };
 
@@ -5025,40 +5071,62 @@ export default function App(){
       const rect=e.target.getBoundingClientRect();
       const t2=e.touches?e.touches[0]:e;
       strokePoints.current.push([t2.clientX-rect.left,t2.clientY-rect.top]);
-      redrawStrokeCanvas(strokeCanvasRef.current,letter,strokeCur);
+      redrawWriteCanvas(strokeCanvasRef.current,letter,strokeCur,strokeCompletedRef.current);
     };
     const handleStrokeEnd=async()=>{
       if(strokePhase!=="write")return;
       strokeDrawing.current=false;
-      if(strokePoints.current.length<8)return;
-      boom();headYes();
-      const s=strokes[strokeCur];
-      stop();await speak("Great! You drew the "+s.n+"!",{rate:0.85,pitch:1.05});
+      if(strokePoints.current.length<5)return;
+      const s=strokes[strokeCur];if(!s)return;
+      const canvas=strokeCanvasRef.current;if(!canvas)return;
+      const W=canvas.width,H=canvas.height;
+      const sx2=W/200,sy2=H/225;
+      const pts=s.p;
+      const guideStart=[pts[0][0]*sx2,pts[0][1]*sy2];
+      const guideEnd=[pts[pts.length-1][0]*sx2,pts[pts.length-1][1]*sy2];
+
+      // AUTO-STRAIGHTEN: Snap kid's drawing to the perfect guide line
+      // Build the ideal stroke path (straight line from guide start to end for non-curves, or polyline for curves)
+      const idealPath=[];
+      idealPath.push(guideStart);
+      if(pts.length>2){
+        for(let i=1;i<pts.length-1;i++)idealPath.push([pts[i][0]*sx2,pts[i][1]*sy2]);
+      }
+      idealPath.push(guideEnd);
+
+      // Store the snapped perfect line as completed
+      strokeCompletedRef.current=[...strokeCompletedRef.current,idealPath];
       strokePoints.current=[];
+
+      // Redraw with snapped line
+      redrawWriteCanvas(canvas,letter,strokeCur+1,strokeCompletedRef.current);
+
+      boom();headYes();
+      stop();await speak("Great! You drew the "+s.n+"!",{rate:0.85,pitch:1.08});
       const next=strokeCur+1;
       if(next>=strokes.length){
-        await wait(500);
+        await wait(600);
         setStrokeDone(true);setStrokePhase("done");setStrokeCur(next);
-        boom();stop();await speak("Amazing! You wrote the letter "+letter+"!",{rate:0.8,pitch:1.0});
+        boom();stop();await speak("Amazing! You wrote "+letter+"!",{rate:0.78,pitch:1.0});
         awardPoints(3,"writing",letter);
       } else {
-        await wait(400);
+        await wait(500);
         setStrokeCur(next);
         const ns=strokes[next];
-        if(ns){stop();await speak("Now draw a "+SN[ns.t].toLowerCase()+"!",{rate:0.82,pitch:1.0});}
-        setTimeout(()=>redrawStrokeCanvas(strokeCanvasRef.current,letter,next),100);
+        if(ns){stop();await speak("Now draw the "+ns.n+"!",{rate:0.82,pitch:1.0});}
+        setTimeout(()=>redrawWriteCanvas(canvas,letter,next,strokeCompletedRef.current),100);
       }
     };
 
     const canvasInit=(el)=>{
       if(!el)return;strokeCanvasRef.current=el;
       el.width=el.offsetWidth;el.height=el.offsetHeight;
-      if(strokePhase==="write")redrawStrokeCanvas(el,letter,strokeCur);
+      if(strokePhase==="write")redrawWriteCanvas(el,letter,strokeCur,strokeCompletedRef.current);
     };
 
     const startLetterDemo=(idx)=>{
       setStrokeIdx(idx);setStrokeCur(0);setStrokeDone(false);setStrokePhase("demo");
-      strokePoints.current=[];
+      strokePoints.current=[];strokeCompletedRef.current=[];
       setTimeout(()=>{
         const c=strokeCanvasRef.current;
         if(c){c.width=c.offsetWidth;c.height=c.offsetHeight;}
@@ -5070,23 +5138,25 @@ export default function App(){
     if(strokePhase==="pick")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
       <SubHead title="Learn to Write" onBack={()=>{stop();setScr("writing");}} points={prof?.points||0}/>
       <div style={{flex:1,overflow:"auto",padding:"12px 16px"}}>
-        <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--dark)",textAlign:"center",margin:"0 0 4px"}}>Pick a Letter!</h3>
-        <p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:10}}>Watch animation first, then trace each stroke</p>
+        <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"var(--dark)",textAlign:"center",margin:"0 0 6px"}}>Pick a Letter!</h3>
+        <p style={{fontSize:11,color:"#8E8CA3",textAlign:"center",fontWeight:600,marginBottom:10}}>Watch the animation first, then trace each stroke</p>
         <div style={{display:"flex",gap:6,justifyContent:"center",marginBottom:12,flexWrap:"wrap"}}>
-          {["standing","sleeping","slanting","curve"].map(tp=><div key={tp} style={{display:"flex",alignItems:"center",gap:3,padding:"3px 8px",borderRadius:8,background:SC[tp]+"15",border:"1px solid "+SC[tp]+"33"}}>
-            <span style={{fontSize:10,fontWeight:700,color:SC[tp]}}>{SN[tp]}</span>
+          {["standing","sleeping","slanting","curve"].map(tp=><div key={tp} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:10,background:SC[tp]+"15",border:"1px solid "+SC[tp]+"33"}}>
+            <div style={{width:16,height:3,borderRadius:2,background:SC[tp]}}/>
+            <span style={{fontSize:9,fontWeight:700,color:SC[tp]}}>{SN[tp]}</span>
           </div>)}
         </div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
           {letters.map((l,i)=>{
             const st=LS[l]||[];
-            const types=[...new Set(st.map(s=>s.t))];
+            const types=[...new Set(st.map(s2=>s2.t))];
             return<button key={l} onClick={()=>startLetterDemo(i)} style={{
-              display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"12px 4px",
+              display:"flex",flexDirection:"column",alignItems:"center",gap:3,padding:"14px 4px",
               borderRadius:16,border:"none",background:"#fff",cursor:"pointer",fontFamily:"var(--font)",boxShadow:"var(--shadow-card)"
             }}>
               <span style={{fontSize:28,fontWeight:900,color:"#2D2B3D"}}>{l}</span>
               <div style={{display:"flex",gap:2}}>{types.map((tp,j)=><span key={j} style={{width:6,height:6,borderRadius:3,background:SC[tp]}}/>)}</div>
+              <span style={{fontSize:8,fontWeight:600,color:"#B0B0C0"}}>{st.length} strokes</span>
             </button>;
           })}
         </div>
@@ -5100,25 +5170,44 @@ export default function App(){
       {ptAnim&&<div style={{position:"fixed",top:20,right:20,zIndex:999,animation:"ptFly 1.5s ease-out forwards",fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:"#22C55E"}}>{ptAnim}</div>}
       <SubHead title={"Write: "+letter} onBack={()=>{stop();setStrokePhase("pick");}} points={prof?.points||0}/>
       <div style={{padding:"0 16px"}}><div style={{display:"flex",alignItems:"center",gap:10,padding:"4px 0"}}><div style={{flex:1,height:6,borderRadius:3,background:"#E8EAF6",overflow:"hidden"}}><div style={{height:"100%",borderRadius:3,background:"linear-gradient(90deg,#6C5CE7,#A29BFE)",width:progress+"%",transition:"width 0.5s"}}/></div><span style={{fontSize:12,fontWeight:800,color:"#6C5CE7"}}>{strokeIdx+1}/26</span></div></div>
-      {strokePhase==="demo"&&<div style={{margin:"4px 16px",padding:"10px 14px",background:"linear-gradient(135deg,#FFF3E0,#FFECB3)",borderRadius:16,textAlign:"center"}}><div style={{fontSize:13,fontWeight:800,color:"#E65100"}}>Watch carefully! I will show you how to write {letter}</div></div>}
-      {strokePhase==="write"&&curStroke&&<div style={{margin:"4px 16px",padding:"8px 14px",background:"#fff",borderRadius:16,boxShadow:"var(--shadow-card)",display:"flex",alignItems:"center",gap:8}}><div style={{flex:1}}><div style={{fontSize:13,fontWeight:800,color:SC[curStroke.t]}}>{curStroke.n}</div><div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>Stroke {strokeCur+1}/{strokes.length} Follow green to red!</div></div></div>}
-      <div style={{margin:"8px 16px",position:"relative",background:"#fff",borderRadius:22,boxShadow:"0 4px 24px rgba(108,92,231,0.1)",overflow:"hidden"}}>
-        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:0}}>
-          <span style={{fontSize:160,fontWeight:900,color:"rgba(108,92,231,0.05)",fontFamily:"var(--font)"}}>{letter}</span>
+      {/* Phase indicator */}
+      {strokePhase==="demo"&&<div style={{margin:"6px 16px",padding:"12px 16px",background:"linear-gradient(135deg,#FFF3E0,#FFECB3)",borderRadius:18,textAlign:"center"}}>
+        <div style={{fontSize:14,fontWeight:800,color:"#E65100"}}>👀 Watch carefully!</div>
+        <div style={{fontSize:11,fontWeight:600,color:"#BF360C",marginTop:2}}>I will show you each line for {letter}</div>
+      </div>}
+      {strokePhase==="write"&&curStroke&&<div style={{margin:"6px 16px",padding:"10px 16px",background:"#fff",borderRadius:18,boxShadow:"var(--shadow-card)",display:"flex",alignItems:"center",gap:10}}>
+        <div style={{width:36,height:36,borderRadius:12,background:SC[curStroke.t]+"20",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{width:20,height:4,borderRadius:2,background:SC[curStroke.t],transform:curStroke.t==="standing"?"rotate(90deg)":curStroke.t==="slanting"?"rotate(45deg)":curStroke.t==="curve"?"rotate(0deg)":"none",borderRadius:curStroke.t==="curve"?"50%":"2px"}}/></div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:14,fontWeight:800,color:SC[curStroke.t]}}>{curStroke.n}</div>
+          <div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>Stroke {strokeCur+1} of {strokes.length} · Drag from <span style={{color:"#22C55E",fontWeight:800}}>S</span> to <span style={{color:"#EF4444",fontWeight:800}}>E</span></div>
         </div>
-        <canvas ref={canvasInit} onTouchStart={handleStrokeStart} onTouchMove={handleStrokeMove} onTouchEnd={handleStrokeEnd} onMouseDown={handleStrokeStart} onMouseMove={handleStrokeMove} onMouseUp={handleStrokeEnd} style={{width:"100%",height:270,display:"block",touchAction:"none",position:"relative",zIndex:1,cursor:strokePhase==="write"?"crosshair":"default"}}/>
+      </div>}
+      {/* Canvas */}
+      <div style={{margin:"8px 16px",position:"relative",background:"#FAFBFF",borderRadius:22,boxShadow:"0 4px 24px rgba(108,92,231,0.08)",overflow:"hidden",border:"2px solid rgba(108,92,231,0.08)"}}>
+        <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none",zIndex:0}}>
+          <span style={{fontSize:150,fontWeight:900,color:"rgba(108,92,231,0.04)",fontFamily:"var(--font)"}}>{letter}</span>
+        </div>
+        <canvas ref={canvasInit} onTouchStart={handleStrokeStart} onTouchMove={handleStrokeMove} onTouchEnd={handleStrokeEnd} onMouseDown={handleStrokeStart} onMouseMove={handleStrokeMove} onMouseUp={handleStrokeEnd} style={{width:"100%",height:280,display:"block",touchAction:"none",position:"relative",zIndex:1,cursor:strokePhase==="write"?"crosshair":"default"}}/>
       </div>
-      <div style={{display:"flex",gap:4,padding:"4px 16px",flexWrap:"wrap"}}>
-        {strokes.map((s,i)=><div key={i} style={{padding:"3px 8px",borderRadius:8,fontSize:9,fontWeight:700,background:i<strokeCur?SC[s.t]+"18":"#f5f5f5",color:i<strokeCur?SC[s.t]:i===strokeCur&&strokePhase==="write"?SC[s.t]:"#ccc",border:i===strokeCur&&strokePhase==="write"?"2px solid "+SC[s.t]:"2px solid transparent"}}>{i<strokeCur?"✅ ":i===strokeCur&&strokePhase==="write"?"✏️ ":"○ "}{s.n}</div>)}
+      {/* Stroke checklist */}
+      <div style={{display:"flex",gap:4,padding:"6px 16px",flexWrap:"wrap",justifyContent:"center"}}>
+        {strokes.map((s2,i)=><div key={i} style={{
+          padding:"4px 10px",borderRadius:10,fontSize:10,fontWeight:700,
+          background:i<strokeCur?SC[s2.t]+"18":i===strokeCur&&strokePhase==="write"?"#fff":"#f5f5f5",
+          color:i<strokeCur?SC[s2.t]:i===strokeCur&&strokePhase==="write"?SC[s2.t]:"#ccc",
+          border:i===strokeCur&&strokePhase==="write"?"2px solid "+SC[s2.t]:"2px solid transparent",
+          boxShadow:i===strokeCur&&strokePhase==="write"?"0 2px 8px "+SC[s2.t]+"22":"none"
+        }}>{i<strokeCur?"\u2705 ":i===strokeCur&&strokePhase==="write"?"\u270F\uFE0F ":"\u25CB "}{s2.n}</div>)}
       </div>
+      {/* Done panel */}
       {allDone&&<div style={{textAlign:"center",padding:"16px",margin:"0 16px"}}>
-        <div style={{fontSize:56}}>🎉</div>
+        <div style={{fontSize:56}}>{"\uD83C\uDF89"}</div>
         <h3 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",margin:"6px 0"}}>You wrote {letter}!</h3>
         <Stars count={4}/>
         <div style={{display:"flex",gap:8,marginTop:12}}>
-          <button onClick={()=>{stop();setStrokeCur(0);setStrokeDone(false);setStrokePhase("demo");strokePoints.current=[];setTimeout(()=>{const c=strokeCanvasRef.current;if(c){c.width=c.offsetWidth;c.height=c.offsetHeight;}runStrokeDemo(c,letter);},300);}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Again</button>
-          {strokeIdx<25&&<button onClick={()=>{stop();startLetterDemo(strokeIdx+1);}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next: {letters[strokeIdx+1]}</button>}
-          <button onClick={()=>{stop();setStrokePhase("pick");}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>All Letters</button>
+          <button onClick={()=>{stop();startLetterDemo(strokeIdx);}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Again</button>
+          {strokeIdx<25&&<button onClick={()=>{stop();startLetterDemo(strokeIdx+1);}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Next: {letters[strokeIdx+1]} →</button>}
+          <button onClick={()=>{stop();setStrokePhase("pick");}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>📝 Letters</button>
         </div>
       </div>}
       {TeacherBubble}<style>{CSS}</style>
