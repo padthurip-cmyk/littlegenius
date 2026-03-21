@@ -3140,20 +3140,42 @@ export default function App(){
   const[engageStart]=useState(()=>Date.now());
   const[engageMins,setEngageMins]=useState(0);
   const[engageAwarded,setEngageAwarded]=useState(()=>{try{const s=localStorage.getItem("lg_engage_"+new Date().toDateString());return s?JSON.parse(s):[];}catch(e){return[];}});
+  // Assignment difficulty & timer
+  const[assignDiff,setAssignDiff]=useState("easy"); // easy, medium, hard
+  const[assignTime,setAssignTime]=useState(10); // minutes
   const[perfLog,setPerfLog]=useState(()=>{try{const s=localStorage.getItem("lg_perf");return s?JSON.parse(s):[];}catch(e){return[];}});
   const savePlan=(p)=>{setStudyPlan(p);localStorage.setItem("lg_studyplan",JSON.stringify(p));};
   const saveRewards=(r)=>{setCustomRewards(r);localStorage.setItem("lg_rewards",JSON.stringify(r));};
   const savePin=(p)=>{setParentPin(p);localStorage.setItem("lg_pin",p);};
   const logPerf=(cat,sub,correct,total)=>{const entry={cat,sub,correct,total,date:new Date().toISOString(),ts:Date.now()};const nl=[...perfLog,entry];setPerfLog(nl);localStorage.setItem("lg_perf",JSON.stringify(nl.slice(-500)));};
   // Engagement timer
+  const[lastMinAwarded,setLastMinAwarded]=useState(0);
   useEffect(()=>{const iv=setInterval(()=>{const m=Math.floor((Date.now()-engageStart)/60000);setEngageMins(m);
-    // Auto-award engagement points
-    const today=new Date().toDateString();
-    ENGAGE_TIERS.forEach(t=>{if(m>=t.mins&&!engageAwarded.includes(t.mins)){
-      const na=[...engageAwarded,t.mins];setEngageAwarded(na);localStorage.setItem("lg_engage_"+today,JSON.stringify(na));
-      if(prof){const np={...prof,points:(prof.points||0)+t.pts,totalEarned:(prof.totalEarned||0)+t.pts};save(np);setPtAnim(`+${t.pts} ⏱️`);}
-    }});
-  },15000);return()=>clearInterval(iv);},[engageStart,engageAwarded,prof]);
+    // Award 0.5 points per minute of active time
+    if(m>lastMinAwarded&&prof){
+      const minsToAward=m-lastMinAwarded;
+      const pts=Math.round(minsToAward*0.5*10)/10; // 0.5 per min
+      if(pts>=0.5){
+        const roundedPts=Math.floor(pts); // only award whole points
+        if(roundedPts>0){
+          const newPts=(prof.points||0)+roundedPts;
+          const np={...prof,points:newPts,totalEarned:(prof.totalEarned||0)+roundedPts};
+          save(np);setPtAnim(`+${roundedPts} ⏱️`);
+          // Check reward thresholds for time-based points too
+          try{
+            const rewards=JSON.parse(localStorage.getItem("lg_rewards")||"[]");
+            const oldPts=prof.points||0;
+            rewards.forEach(r=>{
+              if(oldPts<r.pts&&newPts>=r.pts){
+                setTimeout(()=>{boom();stop();speak("Hurray! You win the "+r.name+" prize! "+r.emoji,{rate:0.8,pitch:1.1});},500);
+              }
+            });
+          }catch(e){}
+        }
+        setLastMinAwarded(m);
+      }
+    }
+  },15000);return()=>clearInterval(iv);},[engageStart,lastMinAwarded,prof]);
   const[showStreakPop,setShowStreakPop]=useState(false);
   const[showBadgePop,setShowBadgePop]=useState(null);
   const[showLvlPop,setShowLvlPop]=useState(null);
@@ -3267,17 +3289,27 @@ export default function App(){
     const c={...(prof.completed||{})};
     if(!c[type])c[type]=[];
     const alreadyDone=c[type].includes(id);
-    if(alreadyDone) return; // already earned
+    if(alreadyDone) return;
     c[type].push(id);
-    const updated={
-      ...prof,
-      points:(prof.points||0)+pts,
-      totalEarned:(prof.totalEarned||0)+pts,
-      completed:c,
-    };
+    // Standardized: 1 point per correct answer
+    const award=1;
+    const newPts=(prof.points||0)+award;
+    const newTotal=(prof.totalEarned||0)+award;
+    const updated={...prof,points:newPts,totalEarned:newTotal,completed:c};
     save(updated);
-    flyPts(pts);
-  },[prof,save]);
+    flyPts(award);
+    // Check reward thresholds — announce if reached
+    try{
+      const rewards=JSON.parse(localStorage.getItem("lg_rewards")||"[]");
+      const oldPts=prof.points||0;
+      rewards.forEach(r=>{
+        if(oldPts<r.pts&&newPts>=r.pts){
+          // Just crossed threshold!
+          setTimeout(()=>{boom();stop();speak("Hurray! You win the "+r.name+" prize! "+r.emoji,{rate:0.8,pitch:1.1});},500);
+        }
+      });
+    }catch(e){}
+  },[prof,save,speak,stop]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
   // ═══ MASTER KILL — stops ALL speech, mic, flows, pending timeouts ═══
@@ -5913,83 +5945,203 @@ export default function App(){
     </div>
     <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",padding:"12px 16px 100px",minHeight:0}}>
 
-    {/* ═══ ASSIGN TAB — Module-based task assignment ═══ */}
+    {/* ═══ ASSIGN TAB — Clear tiles matching app modules exactly ═══ */}
     {parentTab==="assign"&&<div>
       <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:900,marginBottom:4}}>Assign Tasks</h3>
-      <p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:14}}>Tap a topic to assign. Locked until {prof?.name||"child"} completes it.</p>
-      
-      {/* Module Cards — big, clear, colorful tiles */}
-      {[
-        {mod:"speaking",icon:"🗣️",label:"Speaking",sub:"Pronunciation & voice practice",topics:["A-Z Letters","Animals","Food","Numbers","Colors","Shapes","Body Parts","Family","Nature"],color:"#6C5CE7",bg:"linear-gradient(135deg,#6C5CE7,#A29BFE)"},
-        {mod:"listening",icon:"👂",label:"Listening",sub:"Hear & understand sounds",topics:["A-Z Letters","Numbers","Animals","Food","Nature","Body Parts","Transport","Clothes","Weather"],color:"#00D2A0",bg:"linear-gradient(135deg,#00D2A0,#55EFC4)"},
-        {mod:"reading",icon:"📖",label:"Reading",sub:"Spell & match words",topics:["CVC Words","Sight Words","Animal Words","Food Words","Blends","Phonics Pairs"],color:"#FF9F43",bg:"linear-gradient(135deg,#FF9F43,#FECA57)"},
-        {mod:"writing",icon:"✍️",label:"Writing",sub:"Trace letters & numbers",topics:["Uppercase A-Z","Lowercase a-z","Numbers 0-9","Name Writing"],color:"#54A0FF",bg:"linear-gradient(135deg,#54A0FF,#74B9FF)"},
-      ].map(m=>{
-        const assigned=studyPlan.filter(t=>t.mod===m.mod);
-        const done=assigned.filter(t=>t.done).length;
-        return<div key={m.mod} style={{marginBottom:16,borderRadius:20,overflow:"hidden",border:"2px solid "+m.color+"30"}}>
-          {/* Module header tile */}
-          <div style={{background:m.bg,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:48,height:48,borderRadius:14,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{m.icon}</div>
-            <div style={{flex:1}}>
-              <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:900,color:"#fff"}}>{m.label}</div>
-              <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.8)"}}>{m.sub}</div>
-            </div>
-            {assigned.length>0&&<div style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,255,255,0.25)",textAlign:"center"}}>
-              <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{done}/{assigned.length}</div>
-              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>done</div>
-            </div>}
+      <p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:10}}>Set difficulty & time, then tap topics to assign.</p>
+
+      {/* Difficulty & Time selector */}
+      <div style={{display:"flex",gap:8,marginBottom:14}}>
+        <div style={{flex:1,padding:"10px 12px",borderRadius:16,background:"#fff",border:"2px solid #E8EAF6"}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Difficulty</div>
+          <div style={{display:"flex",gap:4}}>
+            {[{id:"easy",label:"Easy",icon:"🟢",color:"#22C55E"},{id:"medium",label:"Medium",icon:"🟡",color:"#FF9F43"},{id:"hard",label:"Hard",icon:"🔴",color:"#EF4444"}].map(d=>
+              <button key={d.id} onClick={()=>{sfxTap();setAssignDiff(d.id);}} style={{
+                flex:1,padding:"6px 2px",borderRadius:10,border:"none",cursor:"pointer",fontFamily:"var(--font)",
+                background:assignDiff===d.id?d.color+"20":"#F8F9FF",
+                border:assignDiff===d.id?"2px solid "+d.color:"2px solid transparent",
+                fontSize:10,fontWeight:800,color:assignDiff===d.id?d.color:"#8E8CA3"
+              }}>{d.icon} {d.label}</button>
+            )}
           </div>
-          {/* Topic pills */}
-          <div style={{padding:"10px 12px",background:"#fff",display:"flex",gap:6,flexWrap:"wrap"}}>
-            {m.topics.map(topic=>{
-              const task=studyPlan.find(t=>t.mod===m.mod&&t.topic===topic);
-              const isAssigned=!!task;
-              const isDone=task?.done;
-              return<button key={topic} onClick={()=>{
-                sfxTap();
-                if(isAssigned){savePlan(studyPlan.filter(t=>!(t.mod===m.mod&&t.topic===topic)));}
-                else{savePlan([...studyPlan,{mod:m.mod,topic,done:false,assignedAt:Date.now(),progress:0,score:0,attempts:0}]);}
-              }} style={{
-                padding:"8px 14px",borderRadius:14,
-                border:isDone?"2px solid #00D2A0":isAssigned?"2px solid "+m.color:"2px solid #E8EAF6",
-                background:isDone?"#E8F5E9":isAssigned?m.color+"12":"#FAFBFF",
+        </div>
+        <div style={{width:120,padding:"10px 12px",borderRadius:16,background:"#fff",border:"2px solid #E8EAF6"}}>
+          <div style={{fontSize:9,fontWeight:800,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>Session Time</div>
+          <div style={{display:"flex",gap:3}}>
+            {[5,10,15,20].map(t=>
+              <button key={t} onClick={()=>{sfxTap();setAssignTime(t);}} style={{
+                flex:1,padding:"6px 0",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"var(--font)",
+                background:assignTime===t?"#6C5CE7":"#F8F9FF",
+                fontSize:10,fontWeight:800,color:assignTime===t?"#fff":"#8E8CA3"
+              }}>{t}m</button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Points info */}
+      <div style={{display:"flex",gap:8,marginBottom:14}}>
+        <div style={{flex:1,padding:"8px 12px",borderRadius:12,background:"#ECFDF5",display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:14}}>✅</span>
+          <span style={{fontSize:10,fontWeight:700,color:"#16A34A"}}>+1 point per correct answer</span>
+        </div>
+        <div style={{flex:1,padding:"8px 12px",borderRadius:12,background:"#EFF6FF",display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:14}}>⏱️</span>
+          <span style={{fontSize:10,fontWeight:700,color:"#3B82F6"}}>+1 point per 2 minutes</span>
+        </div>
+      </div>
+
+      {/* ═══ SPEAKING — 4 modes + 20 topics ═══ */}
+      <div style={{marginBottom:16,borderRadius:22,overflow:"hidden",border:"2px solid #6C5CE720"}}>
+        <div style={{background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:48,height:48,borderRadius:14,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>🗣️</div>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:900,color:"#fff"}}>Speaking</div>
+            <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.8)"}}>4 modes × 20 topics</div>
+          </div>
+          <div style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,255,255,0.25)"}}>
+            <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{studyPlan.filter(t=>t.mod==="speaking"&&t.done).length}/{studyPlan.filter(t=>t.mod==="speaking").length}</div>
+          </div>
+        </div>
+        <div style={{padding:"10px 12px",background:"#fff"}}>
+          {/* Speaking Modes */}
+          <div style={{fontSize:11,fontWeight:800,color:"#6C5CE7",marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Practice Modes</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
+            {[{id:"speakback",icon:"🗣️",title:"Speak Back"},{id:"pronounce",icon:"🔤",title:"Pronounce"},{id:"phonics",icon:"🔡",title:"Phonics"},{id:"sentences",icon:"💬",title:"Sentences"}].map(mode=>{
+              const task=studyPlan.find(t=>t.mod==="speaking"&&t.topic===mode.title);
+              const isA=!!task;const isD=task?.done;
+              return<button key={mode.id} onClick={()=>{sfxTap();if(isA)savePlan(studyPlan.filter(t=>!(t.mod==="speaking"&&t.topic===mode.title)));else savePlan([...studyPlan,{mod:"speaking",topic:mode.title,mode:mode.id,done:false,assignedAt:Date.now(),completedAt:null,correct:0,total:0,attempts:0,difficulty:assignDiff,timeLimit:assignTime}]);}} style={{
+                padding:"10px 14px",borderRadius:16,display:"flex",alignItems:"center",gap:6,
+                border:isD?"2px solid #22C55E":isA?"2px solid #6C5CE7":"2px solid #E8EAF6",
+                background:isD?"#ECFDF5":isA?"#6C5CE710":"#fff",
                 fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
-                color:isDone?"#2E7D32":isAssigned?m.color:"#8E8CA3",
-                display:"flex",alignItems:"center",gap:4
-              }}>{isDone?"✅":isAssigned?"🔒":"○"} {topic}</button>;
+                color:isD?"#16A34A":isA?"#6C5CE7":"#8E8CA3"
+              }}><span style={{fontSize:16}}>{mode.icon}</span>{isD?"✅":isA?"🔒":"○"} {mode.title}</button>;
             })}
           </div>
-        </div>;
-      })}
+          {/* Speaking Topics */}
+          <div style={{fontSize:11,fontWeight:800,color:"#6C5CE7",marginBottom:6,textTransform:"uppercase",letterSpacing:1}}>Topics</div>
+          <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+            {[{i:"🔤",t:"A-Z Letters"},{i:"🔢",t:"Numbers"},{i:"🐾",t:"Animals"},{i:"🍎",t:"Food"},{i:"🍉",t:"Fruits"},{i:"🎨",t:"Colors"},{i:"🔷",t:"Shapes"},{i:"🫁",t:"Body Parts"},{i:"👨‍👩‍👧",t:"Family"},{i:"🌿",t:"Nature"},{i:"🚗",t:"Vehicles"},{i:"👕",t:"Clothes"},{i:"⚽",t:"Sports"},{i:"😊",t:"Feelings"},{i:"🏫",t:"School"},{i:"🌤️",t:"Weather"}].map(tp=>{
+              const task=studyPlan.find(t=>t.mod==="speaking"&&t.topic===tp.t);
+              const isA=!!task;const isD=task?.done;
+              return<button key={tp.t} onClick={()=>{sfxTap();if(isA)savePlan(studyPlan.filter(t=>!(t.mod==="speaking"&&t.topic===tp.t)));else savePlan([...studyPlan,{mod:"speaking",topic:tp.t,done:false,assignedAt:Date.now(),completedAt:null,correct:0,total:0,attempts:0,difficulty:assignDiff,timeLimit:assignTime}]);}} style={{
+                padding:"6px 10px",borderRadius:12,border:isD?"2px solid #22C55E":isA?"2px solid #6C5CE7":"1px solid #E8EAF6",background:isD?"#ECFDF5":isA?"#6C5CE708":"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",color:isD?"#16A34A":isA?"#6C5CE7":"#8E8CA3",display:"flex",alignItems:"center",gap:3
+              }}><span style={{fontSize:13}}>{tp.i}</span>{isD?"✅":isA?"🔒":""} {tp.t}</button>;
+            })}
+          </div>
+        </div>
+      </div>
 
-      {/* Assignment History */}
+      {/* ═══ LISTENING — 30 topics ═══ */}
+      <div style={{marginBottom:16,borderRadius:22,overflow:"hidden",border:"2px solid #00D2A020"}}>
+        <div style={{background:"linear-gradient(135deg,#00D2A0,#55EFC4)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:48,height:48,borderRadius:14,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>👂</div>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:900,color:"#fff"}}>Listening</div>
+            <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.8)"}}>30 topics to hear & understand</div>
+          </div>
+          <div style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,255,255,0.25)"}}>
+            <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{studyPlan.filter(t=>t.mod==="listening"&&t.done).length}/{studyPlan.filter(t=>t.mod==="listening").length}</div>
+          </div>
+        </div>
+        <div style={{padding:"10px 12px",background:"#fff",display:"flex",gap:5,flexWrap:"wrap"}}>
+          {[{i:"🔤",t:"A-Z Letters"},{i:"🔢",t:"Numbers"},{i:"🐾",t:"Animals"},{i:"🍎",t:"Food"},{i:"🍉",t:"Fruits"},{i:"🥬",t:"Vegetables"},{i:"🌿",t:"Nature"},{i:"🫁",t:"Body Parts"},{i:"👨‍👩‍👧",t:"Family"},{i:"👕",t:"Clothes"},{i:"🚗",t:"Vehicles"},{i:"🏫",t:"School"},{i:"⚽",t:"Sports"},{i:"🌍",t:"Countries"},{i:"🏃",t:"Actions"},{i:"😊",t:"Feelings"},{i:"🎒",t:"Things"},{i:"🏛️",t:"Places"},{i:"🎵",t:"Music"},{i:"🌤️",t:"Weather"},{i:"🏠",t:"Home Items"},{i:"🐚",t:"Ocean"},{i:"🧸",t:"Toys"},{i:"↔️",t:"Opposites"},{i:"⏰",t:"Time"},{i:"🎨",t:"Colors"},{i:"🔷",t:"Shapes"}].map(tp=>{
+            const task=studyPlan.find(t=>t.mod==="listening"&&t.topic===tp.t);
+            const isA=!!task;const isD=task?.done;
+            return<button key={tp.t} onClick={()=>{sfxTap();if(isA)savePlan(studyPlan.filter(t=>!(t.mod==="listening"&&t.topic===tp.t)));else savePlan([...studyPlan,{mod:"listening",topic:tp.t,done:false,assignedAt:Date.now(),completedAt:null,correct:0,total:0,attempts:0,difficulty:assignDiff,timeLimit:assignTime}]);}} style={{
+              padding:"6px 10px",borderRadius:12,border:isD?"2px solid #22C55E":isA?"2px solid #00D2A0":"1px solid #E8EAF6",background:isD?"#ECFDF5":isA?"#00D2A008":"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",color:isD?"#16A34A":isA?"#00D2A0":"#8E8CA3",display:"flex",alignItems:"center",gap:3
+            }}><span style={{fontSize:13}}>{tp.i}</span>{isD?"✅":isA?"🔒":""} {tp.t}</button>;
+          })}
+        </div>
+      </div>
+
+      {/* ═══ READING — Spelling & matching categories ═══ */}
+      <div style={{marginBottom:16,borderRadius:22,overflow:"hidden",border:"2px solid #FF9F4320"}}>
+        <div style={{background:"linear-gradient(135deg,#FF9F43,#FECA57)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:48,height:48,borderRadius:14,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>📖</div>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:900,color:"#fff"}}>Reading & Spelling</div>
+            <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.8)"}}>Spell words, match letters</div>
+          </div>
+          <div style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,255,255,0.25)"}}>
+            <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{studyPlan.filter(t=>t.mod==="reading"&&t.done).length}/{studyPlan.filter(t=>t.mod==="reading").length}</div>
+          </div>
+        </div>
+        <div style={{padding:"10px 12px",background:"#fff",display:"flex",gap:6,flexWrap:"wrap"}}>
+          {[{i:"🧩",t:"CVC Words (cat, dog)"},{i:"🔗",t:"Blends (stop, clip)"},{i:"👁️",t:"Sight Words"},{i:"🐾",t:"Animal Words"},{i:"🍎",t:"Food Words"},{i:"🌿",t:"Nature Words"},{i:"🫁",t:"Body Words"},{i:"👨‍👩‍👧",t:"People Words"},{i:"🚗",t:"Vehicle Words"},{i:"👕",t:"Clothes Words"}].map(tp=>{
+            const task=studyPlan.find(t=>t.mod==="reading"&&t.topic===tp.t);
+            const isA=!!task;const isD=task?.done;
+            return<button key={tp.t} onClick={()=>{sfxTap();if(isA)savePlan(studyPlan.filter(t=>!(t.mod==="reading"&&t.topic===tp.t)));else savePlan([...studyPlan,{mod:"reading",topic:tp.t,done:false,assignedAt:Date.now(),completedAt:null,correct:0,total:0,attempts:0,difficulty:assignDiff,timeLimit:assignTime}]);}} style={{
+              padding:"8px 12px",borderRadius:14,border:isD?"2px solid #22C55E":isA?"2px solid #FF9F43":"2px solid #E8EAF6",background:isD?"#ECFDF5":isA?"#FF9F4310":"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",color:isD?"#16A34A":isA?"#FF9F43":"#8E8CA3",display:"flex",alignItems:"center",gap:4
+            }}><span style={{fontSize:15}}>{tp.i}</span>{isD?"✅":isA?"🔒":"○"} {tp.t}</button>;
+          })}
+        </div>
+      </div>
+
+      {/* ═══ WRITING — Stroke-based letter & number writing ═══ */}
+      <div style={{marginBottom:16,borderRadius:22,overflow:"hidden",border:"2px solid #54A0FF20"}}>
+        <div style={{background:"linear-gradient(135deg,#54A0FF,#74B9FF)",padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:48,height:48,borderRadius:14,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>✍️</div>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:900,color:"#fff"}}>Writing</div>
+            <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.8)"}}>Standing, sleeping, slanting & curved lines</div>
+          </div>
+          <div style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,255,255,0.25)"}}>
+            <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{studyPlan.filter(t=>t.mod==="writing"&&t.done).length}/{studyPlan.filter(t=>t.mod==="writing").length}</div>
+          </div>
+        </div>
+        <div style={{padding:"10px 12px",background:"#fff",display:"flex",gap:6,flexWrap:"wrap"}}>
+          {[{i:"🖊️",t:"Uppercase A-Z"},{i:"✏️",t:"Lowercase a-z"},{i:"🔢",t:"Numbers 0-9"},{i:"📝",t:"Name Writing"},{i:"📏",t:"Standing Lines"},{i:"🛏️",t:"Sleeping Lines"},{i:"📐",t:"Slanting Lines"},{i:"🌈",t:"Curved Lines"}].map(tp=>{
+            const task=studyPlan.find(t=>t.mod==="writing"&&t.topic===tp.t);
+            const isA=!!task;const isD=task?.done;
+            return<button key={tp.t} onClick={()=>{sfxTap();if(isA)savePlan(studyPlan.filter(t=>!(t.mod==="writing"&&t.topic===tp.t)));else savePlan([...studyPlan,{mod:"writing",topic:tp.t,done:false,assignedAt:Date.now(),completedAt:null,correct:0,total:0,attempts:0,difficulty:assignDiff,timeLimit:assignTime}]);}} style={{
+              padding:"8px 12px",borderRadius:14,border:isD?"2px solid #22C55E":isA?"2px solid #54A0FF":"2px solid #E8EAF6",background:isD?"#ECFDF5":isA?"#54A0FF10":"#fff",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",color:isD?"#16A34A":isA?"#54A0FF":"#8E8CA3",display:"flex",alignItems:"center",gap:4
+            }}><span style={{fontSize:15}}>{tp.i}</span>{isD?"✅":isA?"🔒":"○"} {tp.t}</button>;
+          })}
+        </div>
+      </div>
+
+      {/* ═══ ASSIGNMENT HISTORY — individual tracking ═══ */}
       {studyPlan.length>0&&<>
-        <div style={{fontFamily:"var(--font)",fontSize:15,fontWeight:900,marginBottom:8,marginTop:4}}>📋 Assignment History</div>
+        <div style={{fontFamily:"var(--font)",fontSize:15,fontWeight:900,marginBottom:8,marginTop:4}}>📜 Assignment History ({studyPlan.filter(t=>t.done).length}/{studyPlan.length} completed)</div>
         {studyPlan.map((task,i)=>{
           const modColors={"speaking":"#6C5CE7","listening":"#00D2A0","reading":"#FF9F43","writing":"#54A0FF"};
           const modIcons={"speaking":"🗣️","listening":"👂","reading":"📖","writing":"✍️"};
+          const diffColors={"easy":"#22C55E","medium":"#FF9F43","hard":"#EF4444"};
+          const diffIcons={"easy":"🟢","medium":"🟡","hard":"🔴"};
+          const pct=task.total>0?Math.round(task.correct/task.total*100):0;
           const age=Math.round((Date.now()-task.assignedAt)/(3600000));
-          const ageStr=age<24?age+"h ago":Math.round(age/24)+"d ago";
-          return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:16,background:"#fff",border:"2px solid "+(task.done?"#00D2A0":"#E8EAF6"),marginBottom:6}}>
-            <div style={{width:36,height:36,borderRadius:10,background:modColors[task.mod]||"#6C5CE7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{modIcons[task.mod]||"📋"}</div>
+          const ageStr=age<1?"just now":age<24?age+"h ago":Math.round(age/24)+"d ago";
+          const doneStr=task.completedAt?new Date(task.completedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+          return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:18,background:"#fff",border:"2px solid "+(task.done?"#22C55E30":"#E8EAF6"),marginBottom:8}}>
+            <div style={{width:40,height:40,borderRadius:12,background:modColors[task.mod]||"#6C5CE7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{modIcons[task.mod]||"📋"}</div>
             <div style={{flex:1}}>
-              <div style={{fontWeight:800,fontSize:12,color:"#2D2B3D"}}>{task.topic}</div>
-              <div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>{task.mod} · Assigned {ageStr}{task.done?" · Score: "+(task.score||0)+"%":""}</div>
+              <div style={{fontWeight:800,fontSize:13,color:"#2D2B3D"}}>{task.topic}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>
+                <span style={{fontSize:9,fontWeight:700,color:"#8E8CA3",textTransform:"capitalize"}}>{task.mod}</span>
+                <span style={{fontSize:9,fontWeight:800,color:diffColors[task.difficulty]||"#8E8CA3"}}>{diffIcons[task.difficulty]||""} {task.difficulty||"easy"}</span>
+                {task.timeLimit&&<span style={{fontSize:9,fontWeight:700,color:"#3B82F6"}}>⏱️{task.timeLimit}m</span>}
+                <span style={{fontSize:9,fontWeight:600,color:"#A4B0BE"}}>{ageStr}</span>
+              </div>
+              {task.done&&<div style={{fontSize:10,fontWeight:700,color:"#16A34A",marginTop:3}}>✅ Completed {doneStr} · Accuracy: {pct}% · Score: {task.correct}/{task.total}</div>}
+              {!task.done&&<div style={{height:4,borderRadius:2,background:"#F0F4FF",marginTop:4,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:2,background:modColors[task.mod]||"#6C5CE7",width:(task.progress||0)+"%"}}/>
+              </div>}
             </div>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-              {task.done?<span style={{fontSize:10,fontWeight:800,color:"#00D2A0",padding:"3px 8px",borderRadius:8,background:"#E8F5E9"}}>DONE ✅</span>
-              :<span style={{fontSize:10,fontWeight:800,color:"#FF9F43",padding:"3px 8px",borderRadius:8,background:"#FFF3E0"}}>PENDING 🔒</span>}
-              <button onClick={()=>{sfxTap();savePlan(studyPlan.filter((_,j)=>j!==i));}} style={{fontSize:9,fontWeight:700,color:"#EF4444",background:"none",border:"none",cursor:"pointer",padding:0}}>Remove</button>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+              {task.done?<span style={{fontSize:9,fontWeight:800,color:"#16A34A",padding:"4px 10px",borderRadius:10,background:"#ECFDF5"}}>DONE ✅</span>
+              :<span style={{fontSize:9,fontWeight:800,color:"#FF9F43",padding:"4px 10px",borderRadius:10,background:"#FFF8F0"}}>PENDING 🔒</span>}
+              <button onClick={()=>{sfxTap();savePlan(studyPlan.filter((_,j)=>j!==i));}} style={{fontSize:9,fontWeight:700,color:"#EF4444",background:"none",border:"none",cursor:"pointer",padding:"2px"}}>Remove</button>
             </div>
           </div>;
         })}
         <div style={{display:"flex",gap:8,marginTop:8}}>
-          <button onClick={()=>{sfxTap();savePlan(studyPlan.map(t=>({...t,done:false,progress:0,score:0})));}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Reset All</button>
+          <button onClick={()=>{sfxTap();savePlan(studyPlan.map(t=>({...t,done:false,progress:0,correct:0,total:0,attempts:0,completedAt:null})));}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Reset All</button>
           <button onClick={()=>{sfxTap();savePlan([]);}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"#FEE2E2",color:"#EF4444",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)"}}>🗑 Clear All</button>
         </div>
       </>}
-      
+
       {/* PIN Change */}
       <div style={{marginTop:16,padding:14,borderRadius:18,background:"#fff",border:"2px solid #E8EAF6"}}>
         <div style={{fontWeight:800,fontSize:13,marginBottom:8}}>🔐 Change PIN</div>
@@ -5999,6 +6151,7 @@ export default function App(){
         </div>
       </div>
     </div>}
+
 
     {/* ═══ TRACKER TAB — Performance tracking with drilldown ═══ */}
     {parentTab==="tracker"&&(()=>{
@@ -6282,7 +6435,7 @@ export default function App(){
 
         {/* Auto-assign weak areas */}
         {weak.length>0&&<button onClick={()=>{sfxTap();
-          const nt=weak.slice(0,3).map(w=>({mod:"speaking",topic:w,done:false,assignedAt:Date.now(),progress:0}));
+          const nt=weak.slice(0,3).map(w=>({mod:"speaking",topic:w,done:false,assignedAt:Date.now(),progress:0,difficulty:"easy",timeLimit:10}));
           savePlan([...studyPlan,...nt.filter(n2=>!studyPlan.some(t=>t.mod===n2.mod&&t.topic===n2.topic))]);
           setAiHistory(h=>[...h,{q:"auto",a:"Assigned "+weak.slice(0,3).join(", ")+" to study plan!",ai:false}]);
         }} style={{width:"100%",padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)",marginTop:10}}>📋 Auto-Assign Weak Areas</button>}
