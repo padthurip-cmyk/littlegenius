@@ -4286,23 +4286,22 @@ export default function App(){
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
   const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework","speakflow","listenflow","readflow","strokelearn","parent","arena","numbers"].includes(scr);
-  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 32px)",maxWidth:488,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",boxShadow:"0 4px 30px rgba(108,92,231,0.15),0 1px 4px rgba(0,0,0,0.06)",borderRadius:24,padding:"4px"}}>
+  const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 20px)",maxWidth:504,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",borderRadius:20,padding:"4px",gap:4,boxShadow:"0 -2px 20px rgba(0,0,0,0.08)"}}>
     {[
-      {id:"home",icon:"🏠",label:"Home"},
-      {id:"parent_nav",icon:"👨‍👩‍👧",label:"Parent"},
-      {id:"studyplan",icon:"📋",label:"Plan"},
-      {id:"arena",icon:"🏟️",label:"Arena"},
-      {id:"rewards",icon:"🎁",label:"Rewards"},
-      {id:"settings",icon:"⚙️",label:"Settings"},
-    ].map(t=><button key={t.id} onClick={()=>{sfxTap();killAllFlows();if(t.id==="home")goHome();else if(t.id==="parent_nav"){setShowPinModal(true);}else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
+      {id:"home",icon:"🏠",label:"Home",bg:"#6C5CE7"},
+      {id:"parent_nav",icon:"👨‍👩‍👧",label:"Parent",bg:"#EC407A"},
+      {id:"studyplan",icon:"📋",label:"Plan",bg:"#FF9F43"},
+      {id:"arena",icon:"🏟️",label:"Arena",bg:"#00D2A0"},
+      {id:"rewards",icon:"🎁",label:"Rewards",bg:"#54A0FF"},
+      {id:"settings",icon:"⚙️",label:"Settings",bg:"#8E8CA3"},
+    ].map(t=>{const active=scr===t.id||(t.id==="parent_nav"&&scr==="parent");return<button key={t.id} onClick={()=>{sfxTap();killAllFlows();if(t.id==="home")goHome();else if(t.id==="parent_nav"){setShowPinModal(true);}else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
       flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,
-      padding:"6px 4px 8px",border:"none",cursor:"pointer",
-      background:scr===t.id?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"transparent",
-      borderRadius:20,
-      borderTop:"none"}}>
-      <span style={{fontSize:18,filter:scr===t.id?"none":"grayscale(0.4) opacity(0.5)"}}>{t.icon}</span>
-      <span style={{fontSize:9,fontWeight:700,color:scr===t.id?"#fff":"#A4B0BE"}}>{t.label}</span>
-    </button>)}
+      padding:"8px 2px 7px",border:"none",cursor:"pointer",
+      background:active?"linear-gradient(135deg,"+t.bg+","+t.bg+"CC)":t.bg+"18",
+      borderRadius:16}}>
+      <span style={{fontSize:19}}>{t.icon}</span>
+      <span style={{fontSize:9,fontWeight:800,color:active?"#fff":t.bg}}>{t.label}</span>
+    </button>;})}
   </div>:null;
 
 
@@ -5916,50 +5915,83 @@ export default function App(){
 
     {/* ═══ ASSIGN TAB — Module-based task assignment ═══ */}
     {parentTab==="assign"&&<div>
-      <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginBottom:6}}>Assign Learning Tasks</h3>
-      <p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:12}}>Pick tasks for {prof?.name||"your child"}. Locked until completed!</p>
+      <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:900,marginBottom:4}}>Assign Tasks</h3>
+      <p style={{fontSize:11,color:"#8E8CA3",fontWeight:600,marginBottom:14}}>Tap a topic to assign. Locked until {prof?.name||"child"} completes it.</p>
+      
+      {/* Module Cards — big, clear, colorful tiles */}
       {[
-        {mod:"speaking",icon:"🗣️",label:"Speaking",topics:["A-Z Letters","Animals","Food","Numbers","Colors","Shapes"],color:"#6C5CE7"},
-        {mod:"listening",icon:"👂",label:"Listening",topics:["A-Z Letters","Numbers","Animals","Food","Nature","Body Parts"],color:"#00D2A0"},
-        {mod:"reading",icon:"📖",label:"Reading",topics:["CVC Words","Sight Words","Animal Words","Food Words","Blends"],color:"#FF9F43"},
-        {mod:"writing",icon:"✍️",label:"Writing",topics:["Uppercase A-Z","Lowercase a-z","Numbers 0-9"],color:"#54A0FF"},
+        {mod:"speaking",icon:"🗣️",label:"Speaking",sub:"Pronunciation & voice practice",topics:["A-Z Letters","Animals","Food","Numbers","Colors","Shapes","Body Parts","Family","Nature"],color:"#6C5CE7",bg:"linear-gradient(135deg,#6C5CE7,#A29BFE)"},
+        {mod:"listening",icon:"👂",label:"Listening",sub:"Hear & understand sounds",topics:["A-Z Letters","Numbers","Animals","Food","Nature","Body Parts","Transport","Clothes","Weather"],color:"#00D2A0",bg:"linear-gradient(135deg,#00D2A0,#55EFC4)"},
+        {mod:"reading",icon:"📖",label:"Reading",sub:"Spell & match words",topics:["CVC Words","Sight Words","Animal Words","Food Words","Blends","Phonics Pairs"],color:"#FF9F43",bg:"linear-gradient(135deg,#FF9F43,#FECA57)"},
+        {mod:"writing",icon:"✍️",label:"Writing",sub:"Trace letters & numbers",topics:["Uppercase A-Z","Lowercase a-z","Numbers 0-9","Name Writing"],color:"#54A0FF",bg:"linear-gradient(135deg,#54A0FF,#74B9FF)"},
       ].map(m=>{
         const assigned=studyPlan.filter(t=>t.mod===m.mod);
-        return<div key={m.mod} style={{marginBottom:14}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-            <span style={{fontSize:20}}>{m.icon}</span>
-            <span style={{fontFamily:"var(--font)",fontSize:14,fontWeight:800,color:m.color}}>{m.label}</span>
-            <span style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginLeft:"auto"}}>{assigned.length} assigned</span>
+        const done=assigned.filter(t=>t.done).length;
+        return<div key={m.mod} style={{marginBottom:16,borderRadius:20,overflow:"hidden",border:"2px solid "+m.color+"30"}}>
+          {/* Module header tile */}
+          <div style={{background:m.bg,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:48,height:48,borderRadius:14,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>{m.icon}</div>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:900,color:"#fff"}}>{m.label}</div>
+              <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.8)"}}>{m.sub}</div>
+            </div>
+            {assigned.length>0&&<div style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,255,255,0.25)",textAlign:"center"}}>
+              <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{done}/{assigned.length}</div>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>done</div>
+            </div>}
           </div>
-          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {/* Topic pills */}
+          <div style={{padding:"10px 12px",background:"#fff",display:"flex",gap:6,flexWrap:"wrap"}}>
             {m.topics.map(topic=>{
-              const isAssigned=studyPlan.some(t=>t.mod===m.mod&&t.topic===topic);
-              const isDone=studyPlan.some(t=>t.mod===m.mod&&t.topic===topic&&t.done);
+              const task=studyPlan.find(t=>t.mod===m.mod&&t.topic===topic);
+              const isAssigned=!!task;
+              const isDone=task?.done;
               return<button key={topic} onClick={()=>{
                 sfxTap();
-                if(isAssigned){
-                  // Toggle: remove assignment or reset
-                  savePlan(studyPlan.filter(t=>!(t.mod===m.mod&&t.topic===topic)));
-                } else {
-                  // Assign task
-                  savePlan([...studyPlan,{mod:m.mod,topic,done:false,assignedAt:Date.now(),progress:0}]);
-                }
+                if(isAssigned){savePlan(studyPlan.filter(t=>!(t.mod===m.mod&&t.topic===topic)));}
+                else{savePlan([...studyPlan,{mod:m.mod,topic,done:false,assignedAt:Date.now(),progress:0,score:0,attempts:0}]);}
               }} style={{
-                padding:"8px 12px",borderRadius:14,border:isAssigned?"2px solid "+m.color:"2px solid #E8EAF6",
-                background:isDone?"#E8F5E9":isAssigned?m.color+"15":"#fff",
-                fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
-                color:isDone?"#2E7D32":isAssigned?m.color:"#8E8CA3"
-              }}>{isDone?"✅ ":isAssigned?"🔒 ":"○ "}{topic}</button>;
+                padding:"8px 14px",borderRadius:14,
+                border:isDone?"2px solid #00D2A0":isAssigned?"2px solid "+m.color:"2px solid #E8EAF6",
+                background:isDone?"#E8F5E9":isAssigned?m.color+"12":"#FAFBFF",
+                fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",
+                color:isDone?"#2E7D32":isAssigned?m.color:"#8E8CA3",
+                display:"flex",alignItems:"center",gap:4
+              }}>{isDone?"✅":isAssigned?"🔒":"○"} {topic}</button>;
             })}
           </div>
         </div>;
       })}
-      {studyPlan.length>0&&<div style={{marginTop:10,display:"flex",gap:8}}>
-        <button onClick={()=>{sfxTap();savePlan(studyPlan.map(t=>({...t,done:false,progress:0})));}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Reset All</button>
-        <button onClick={()=>{sfxTap();savePlan([]);}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"#FEE2E2",color:"#EF4444",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)"}}>🗑 Clear All</button>
-      </div>}
+
+      {/* Assignment History */}
+      {studyPlan.length>0&&<>
+        <div style={{fontFamily:"var(--font)",fontSize:15,fontWeight:900,marginBottom:8,marginTop:4}}>📋 Assignment History</div>
+        {studyPlan.map((task,i)=>{
+          const modColors={"speaking":"#6C5CE7","listening":"#00D2A0","reading":"#FF9F43","writing":"#54A0FF"};
+          const modIcons={"speaking":"🗣️","listening":"👂","reading":"📖","writing":"✍️"};
+          const age=Math.round((Date.now()-task.assignedAt)/(3600000));
+          const ageStr=age<24?age+"h ago":Math.round(age/24)+"d ago";
+          return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:16,background:"#fff",border:"2px solid "+(task.done?"#00D2A0":"#E8EAF6"),marginBottom:6}}>
+            <div style={{width:36,height:36,borderRadius:10,background:modColors[task.mod]||"#6C5CE7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{modIcons[task.mod]||"📋"}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:800,fontSize:12,color:"#2D2B3D"}}>{task.topic}</div>
+              <div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>{task.mod} · Assigned {ageStr}{task.done?" · Score: "+(task.score||0)+"%":""}</div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+              {task.done?<span style={{fontSize:10,fontWeight:800,color:"#00D2A0",padding:"3px 8px",borderRadius:8,background:"#E8F5E9"}}>DONE ✅</span>
+              :<span style={{fontSize:10,fontWeight:800,color:"#FF9F43",padding:"3px 8px",borderRadius:8,background:"#FFF3E0"}}>PENDING 🔒</span>}
+              <button onClick={()=>{sfxTap();savePlan(studyPlan.filter((_,j)=>j!==i));}} style={{fontSize:9,fontWeight:700,color:"#EF4444",background:"none",border:"none",cursor:"pointer",padding:0}}>Remove</button>
+            </div>
+          </div>;
+        })}
+        <div style={{display:"flex",gap:8,marginTop:8}}>
+          <button onClick={()=>{sfxTap();savePlan(studyPlan.map(t=>({...t,done:false,progress:0,score:0})));}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)"}}>🔄 Reset All</button>
+          <button onClick={()=>{sfxTap();savePlan([]);}} style={{flex:1,padding:12,borderRadius:16,border:"none",background:"#FEE2E2",color:"#EF4444",fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:"var(--font)"}}>🗑 Clear All</button>
+        </div>
+      </>}
+      
       {/* PIN Change */}
-      <div style={{marginTop:16,padding:14,borderRadius:18,background:"#fff",boxShadow:"var(--shadow-card)"}}>
+      <div style={{marginTop:16,padding:14,borderRadius:18,background:"#fff",border:"2px solid #E8EAF6"}}>
         <div style={{fontWeight:800,fontSize:13,marginBottom:8}}>🔐 Change PIN</div>
         <div style={{display:"flex",gap:8}}>
           <input value={pinInput} onChange={e=>setPinInput(e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="New 4-digit PIN" style={{flex:1,padding:"10px 14px",borderRadius:12,border:"2px solid #DFE6E9",fontSize:14,fontWeight:700,fontFamily:"var(--font)"}}/>
@@ -6053,6 +6085,47 @@ export default function App(){
             </div>;
           })
         }
+
+        {/* ═══ REPORT CARD ═══ */}
+        <div style={{marginTop:16,padding:16,borderRadius:20,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}>
+          <div style={{fontWeight:900,fontSize:16,color:"#fff",marginBottom:8}}>📄 Report Card</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            <div style={{padding:10,borderRadius:14,background:"rgba(255,255,255,0.15)",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>OVERALL</div>
+              <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{mS.pct}%</div>
+              <div style={{fontSize:8,fontWeight:700,color:mS.pct>=70?"#55EFC4":mS.pct>=40?"#FECA57":"#FDA7DF"}}>{mS.pct>=70?"Excellent":mS.pct>=40?"Good":"Needs Work"}</div>
+            </div>
+            <div style={{padding:10,borderRadius:14,background:"rgba(255,255,255,0.15)",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>TASKS</div>
+              <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{studyPlan.filter(t=>t.done).length}/{studyPlan.length}</div>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Completed</div>
+            </div>
+            <div style={{padding:10,borderRadius:14,background:"rgba(255,255,255,0.15)",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>ACTIVE TIME</div>
+              <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{engageMins}m</div>
+              <div style={{fontSize:8,fontWeight:700,color:engageMins>=15?"#55EFC4":"#FECA57"}}>{engageMins>=15?"On track":"More needed"}</div>
+            </div>
+            <div style={{padding:10,borderRadius:14,background:"rgba(255,255,255,0.15)",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>POINTS</div>
+              <div style={{fontSize:22,fontWeight:900,color:"#FECA57"}}>{prof?.totalEarned||0}</div>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Earned</div>
+            </div>
+          </div>
+          {/* Module breakdown */}
+          <div style={{marginTop:10}}>
+            {["speaking","listening","reading","writing"].map(mod=>{
+              const modLogs=monthLogs.filter(l=>l.cat&&l.cat.startsWith&&studyPlan.some(t=>t.mod===mod));
+              const modTasks=studyPlan.filter(t=>t.mod===mod);
+              const doneCnt=modTasks.filter(t=>t.done).length;
+              const icons={"speaking":"🗣️","listening":"👂","reading":"📖","writing":"✍️"};
+              return<div key={mod} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:10,background:"rgba(255,255,255,0.1)",marginTop:4}}>
+                <span style={{fontSize:14}}>{icons[mod]}</span>
+                <span style={{fontSize:11,fontWeight:800,color:"#fff",flex:1,textTransform:"capitalize"}}>{mod}</span>
+                <span style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.8)"}}>{doneCnt}/{modTasks.length} tasks</span>
+              </div>;
+            })}
+          </div>
+        </div>
       </div>;
     })()}
 
