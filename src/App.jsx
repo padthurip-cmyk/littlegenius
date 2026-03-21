@@ -2955,14 +2955,28 @@ export default function App(){
 
     if(correct){
       sfxWin();
-      // First correct answer — claim the point
       const newScore=(rm.scores?.[arenaId]||0)+1;
       fbUpdate("rooms/"+roomCode,{["scores/"+arenaId]:newScore,state:"result",answerBy:arenaId,["answers/"+arenaId]:{correct:true,ts:Date.now()}});
       setArenaMsg("🎉 You got it!");
     } else {
-      // Wrong answer — mark as answered but don't end round
+      // Wrong answer — mark as answered
       fbUpdate("rooms/"+roomCode,{["answers/"+arenaId]:{correct:false,ts:Date.now()}});
       setArenaMsg(opt===null?"⏰ Time's up!":"❌ Wrong! Wait for next round.");setTeacherMood("thinking");
+      
+      // HOST: Check if ALL active players have now answered (wrong) → end round immediately
+      if(rm.hostId===arenaId){
+        setTimeout(()=>{
+          const cur=arenaRoomRef.current||arenaRoom;
+          if(!cur||cur.state!=="playing"||cur.round!==rm.round)return;
+          const activePlayers=(cur.players||[]).filter(p=>!arenaEliminated.includes(p.id));
+          const answers=cur.answers||{};
+          // Count my answer too since Firebase might not have synced yet
+          const totalAnswered=Object.keys(answers).length+(answers[arenaId]?0:1);
+          if(totalAnswered>=activePlayers.length){
+            fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null});
+          }
+        },600);
+      }
     }
   };
 
@@ -2974,13 +2988,12 @@ export default function App(){
   useEffect(()=>{
     const rm=arenaRoomRef.current||arenaRoom;
     if(!rm||rm.hostId!==arenaId)return;
-    // If state changed to "result" via a correct answer, the round is done
-    if(rm.state==="result")return;
-    // Check if all players answered (all wrong) — end round with no winner
-    const players=rm.players||[];
+    if(rm.state!=="playing")return;
+    // Check if all active players answered (all wrong) — end round with no winner
+    const activePlayers=(rm.players||[]).filter(p=>!arenaEliminated.includes(p.id));
     const answers=rm.answers||{};
     const answeredCount=Object.keys(answers).length;
-    if(rm.state==="playing"&&answeredCount>=players.length&&!Object.values(answers).some(a=>a.correct)){
+    if(answeredCount>=activePlayers.length&&!Object.values(answers).some(a=>a.correct)){
       fbUpdate("rooms/"+rm.code,{state:"result",answerBy:null});
     }
   },[arenaRoom?.answers,arenaRoom?.state]);
@@ -5858,9 +5871,9 @@ export default function App(){
         </div>
       </div>
 
-      <div style={{textAlign:"center",padding:"8px 16px",borderRadius:16,background:arenaEliminated.includes(arenaId)?"rgba(255,107,129,0.2)":arenaAnswered?"rgba(255,255,255,0.08)":"linear-gradient(135deg,#FECA57,#FF9F43)",flexShrink:0}}>
-        <span style={{fontSize:14,fontWeight:800,color:arenaEliminated.includes(arenaId)?"#FF6B81":arenaAnswered?"rgba(255,255,255,0.5)":"#1B1464"}}>
-          {arenaEliminated.includes(arenaId)?"❌ You've been eliminated — watch the game!":arenaAnswered?"⏳ Waiting for others...":"⚡ FASTEST FINGER WINS!"}
+      <div style={{textAlign:"center",padding:"8px 16px",borderRadius:16,background:arenaEliminated.includes(arenaId)?"rgba(255,107,129,0.2)":arenaAnswered?"rgba(255,255,255,0.15)":"linear-gradient(135deg,#FECA57,#FF9F43)",flexShrink:0}}>
+        <span style={{fontSize:14,fontWeight:800,color:arenaEliminated.includes(arenaId)?"#FF6B81":arenaAnswered?"rgba(255,255,255,0.7)":"#1B1464"}}>
+          {arenaEliminated.includes(arenaId)?"👀 Watching — you're eliminated":arenaAnswered?"✅ Answered! Waiting for others...":"⚡ FASTEST FINGER WINS!"}
         </span>
       </div>
 
@@ -5878,11 +5891,11 @@ export default function App(){
             const isWrong=arenaFb&&arenaFb.answer===opt&&!arenaFb.correct;
             return<button key={String(opt)+i} disabled={!canAnswer} onClick={()=>canAnswer&&arenaAnswer(opt)} style={{
               padding:"22px 12px",borderRadius:22,border:"none",cursor:canAnswer?"pointer":"default",
-              background:isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":canAnswer?`linear-gradient(135deg,${ARENA_COLORS[i%4]},${ARENA_COLORS[i%4]}BB)`:"rgba(255,255,255,0.06)",
-              color:canAnswer||isCorrect||isWrong?"#fff":"rgba(255,255,255,0.25)",
+              background:isCorrect?"linear-gradient(135deg,#00D2A0,#55EFC4)":isWrong?"linear-gradient(135deg,#FF6B81,#EE5A6F)":`linear-gradient(135deg,${ARENA_COLORS[i%4]},${ARENA_COLORS[i%4]}BB)`,
+              color:"#fff",
               fontSize:typeof opt==="number"?28:18,fontWeight:800,fontFamily:"var(--font)",
-              boxShadow:canAnswer?`0 4px 14px ${ARENA_COLORS[i%4]}30`:"none",
-              opacity:canAnswer?1:isCorrect||isWrong?1:0.4,
+              boxShadow:`0 4px 14px ${ARENA_COLORS[i%4]}30`,
+              opacity:1,
               transform:isCorrect?"scale(1.08)":isWrong?"scale(0.94)":"scale(1)",textTransform:"capitalize"
             }}>{opt}</button>;
           })}
