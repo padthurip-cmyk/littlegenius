@@ -2576,13 +2576,15 @@ export default function App(){
     }catch(e){}
   };
   // Cloud sync handled by cloudSave (auto every 2min + on changes)
-  // Generate report card data
-  const generateReportCard=useCallback((perfData,studentProf,planData)=>{
-    const p=perfData||perfLog;const pr=studentProf||prof;const sp=planData||studyPlan;
+  // Generate report card data (reads from localStorage to avoid TDZ)
+  const generateReportCard=(perfData,studentProf,planData)=>{
+    const p=perfData||JSON.parse(localStorage.getItem("lg_perf")||"[]");
+    const pr=studentProf||JSON.parse(localStorage.getItem("lg4_cache")||"null")||{};
+    const sp=planData||JSON.parse(localStorage.getItem("lg_studyplan")||"[]");
     const now=new Date();const monthAgo=new Date(now-30*86400000);
     const ml=p.filter(l=>new Date(l.date)>=monthAgo);
-    const total=ml.reduce((a,l)=>a+l.total,0);
-    const correct=ml.reduce((a,l)=>a+l.correct,0);
+    const total=ml.reduce((a,l)=>a+(l.total||0),0);
+    const correct=ml.reduce((a,l)=>a+(l.correct||0),0);
     const pct=total>0?Math.round(correct/total*100):0;
     const modules={};
     ml.forEach(l=>{if(!modules[l.cat])modules[l.cat]={correct:0,total:0};modules[l.cat].correct+=l.correct;modules[l.cat].total+=l.total;});
@@ -2593,7 +2595,7 @@ export default function App(){
     });
     const tasksDone=sp.filter(t=>t.done).length;
     return{name:pr?.name||"Student",age:pr?.age||5,date:now.toLocaleDateString(),overallPct:pct,totalCorrect:correct,totalAttempts:total,moduleGrades,tasksDone,tasksTotal:sp.length,points:pr?.totalEarned||0};
-  },[perfLog,prof,studyPlan]);
+  };
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
   const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn");
   const[numRange,setNumRange]=useState("1-10");const[numSpelling,setNumSpelling]=useState(true);
