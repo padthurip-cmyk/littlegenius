@@ -3147,7 +3147,20 @@ export default function App(){
   const savePlan=(p)=>{setStudyPlan(p);localStorage.setItem("lg_studyplan",JSON.stringify(p));};
   const saveRewards=(r)=>{setCustomRewards(r);localStorage.setItem("lg_rewards",JSON.stringify(r));};
   const savePin=(p)=>{setParentPin(p);localStorage.setItem("lg_pin",p);};
-  const logPerf=(cat,sub,correct,total)=>{const entry={cat,sub,correct,total,date:new Date().toISOString(),ts:Date.now()};const nl=[...perfLog,entry];setPerfLog(nl);localStorage.setItem("lg_perf",JSON.stringify(nl.slice(-500)));};
+  const logPerf=(cat,sub,correct,total)=>{const entry={cat,sub,correct,total,date:new Date().toISOString(),ts:Date.now()};const nl=[...perfLog,entry];setPerfLog(nl);localStorage.setItem("lg_perf",JSON.stringify(nl.slice(-500)));
+    // Also update matching studyPlan tasks
+    const updated=studyPlan.map(t=>{
+      const taskCat=t.topic.toLowerCase().replace(/ /g,"_");
+      const modMatch=t.mod===cat||taskCat===cat||t.topic.toLowerCase()===cat.toLowerCase();
+      if(modMatch&&!t.done){
+        const nc=(t.correct||0)+correct;const nt=(t.total||0)+total;const np=total>0?Math.round(nc/nt*100):0;
+        const isDone=np>=60&&nt>=3; // Mark done at 60%+ with at least 3 attempts
+        return{...t,correct:nc,total:nt,progress:np,done:isDone,completedAt:isDone?Date.now():t.completedAt,attempts:(t.attempts||0)+1};
+      }
+      return t;
+    });
+    if(JSON.stringify(updated)!==JSON.stringify(studyPlan)){savePlan(updated);}
+  };
   // Engagement timer
   const[lastMinAwarded,setLastMinAwarded]=useState(0);
   useEffect(()=>{const iv=setInterval(()=>{const m=Math.floor((Date.now()-engageStart)/60000);setEngageMins(m);
@@ -3291,25 +3304,25 @@ export default function App(){
     const alreadyDone=c[type].includes(id);
     if(alreadyDone) return;
     c[type].push(id);
-    // Standardized: 1 point per correct answer
     const award=1;
     const newPts=(prof.points||0)+award;
     const newTotal=(prof.totalEarned||0)+award;
     const updated={...prof,points:newPts,totalEarned:newTotal,completed:c};
     save(updated);
     flyPts(award);
-    // Check reward thresholds — announce if reached
+    // Log to perfLog for tracker
+    logPerf(type,String(id),1,1);
+    // Check reward thresholds
     try{
       const rewards=JSON.parse(localStorage.getItem("lg_rewards")||"[]");
       const oldPts=prof.points||0;
       rewards.forEach(r=>{
         if(oldPts<r.pts&&newPts>=r.pts){
-          // Just crossed threshold!
           setTimeout(()=>{boom();stop();speak("Hurray! You win the "+r.name+" prize! "+r.emoji,{rate:0.8,pitch:1.1});},500);
         }
       });
     }catch(e){}
-  },[prof,save,speak,stop]);
+  },[prof,save,speak,stop,logPerf]);
   const isDone=(t,id)=>prof?.completed?.[t]?.includes(id);
   const getProgress=(t)=>{const c=prof?.completed?.[t]||[];if(t==="numbers")return Math.round((c.length/aCfg.max)*100);if(t==="phonics"){const x=Object.values(WCATS).reduce((s,cat)=>s+cat.words.length,0);return Math.round((c.length/x)*100);}if(t==="shapes")return Math.round((c.length/SHAPES.length)*100);if(t==="colors")return Math.round((c.length/COLORSDATA.length)*100);return 0;};
   // ═══ MASTER KILL — stops ALL speech, mic, flows, pending timeouts ═══
@@ -3344,7 +3357,7 @@ export default function App(){
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(w,result,alternatives);setSpRes(normalized);setSpAcc(acc);setNStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0){awardPoints(p,"numbers",selNum);boom();}else{flashWrong();}
+    if(p>0){awardPoints(p,"numbers",selNum);boom();}else{flashWrong();logPerf("numbers",String(selNum),0,1);}
     if(s>=4) showTeacher("cheering",`WOW ${kidName}! PERFECT! ⭐`);
     else if(s>=3) showTeacher("excited",`Great job ${kidName}! 🎉`);
     else if(s>=1) showTeacher("happy",`Nice try ${kidName}! 💪`);
@@ -3366,7 +3379,7 @@ export default function App(){
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(phW.word,result,alternatives);setPhRes(normalized);setPhAcc(acc);setPhStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0){awardPoints(p,"phonics",phW.word);boom();}else{flashWrong();}
+    if(p>0){awardPoints(p,"phonics",phW.word);boom();}else{flashWrong();logPerf("phonics",phW.word,0,1);}
     if(s>=4) showTeacher("cheering",`Amazing ${kidName}! ⭐`);
     else if(s>=3) showTeacher("excited",`Great job ${kidName}! 🎉`);
     else if(s>=1) showTeacher("happy",`Nice try ${kidName}! 💪`);
@@ -3634,7 +3647,7 @@ export default function App(){
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selShape.name,result,alternatives);setShRes(normalized);setShAcc(acc);setShStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0){awardPoints(p,"shapes",selShape.name);boom();}else{flashWrong();}
+    if(p>0){awardPoints(p,"shapes",selShape.name);boom();}else{flashWrong();logPerf("shapes",selShape.name,0,1);}
     if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
     else showTeacher("happy",`Nice try ${kidName}! 💪`);
     setTimeout(()=>{
@@ -3677,7 +3690,7 @@ export default function App(){
     const normalized=normalizeSpoken(result);
     const acc=calcAcc(selColor.name,result,alternatives);setCoRes(normalized);setCoAcc(acc);setCoStep("result");
     const s=getStars(acc);const p=getStarPts(s);
-    if(p>0){awardPoints(p,"colors",selColor.name);boom();}else{flashWrong();}
+    if(p>0){awardPoints(p,"colors",selColor.name);boom();}else{flashWrong();logPerf("colors",selColor.name,0,1);}
     if(s>=3) showTeacher("cheering",`${kidName}, you got it! ⭐`);
     else showTeacher("happy",`Nice try ${kidName}! 💪`);
     setTimeout(()=>{
@@ -4674,7 +4687,7 @@ export default function App(){
     if(p>0){awardPoints(p,"speaking",item.say);boom();setSfScore(sc=>sc+1);headYes();
       if(s>=4){stop();speak("Perfect! "+acc+" percent!",{rate:0.9,pitch:1.0});}
       else{stop();speak("Good! "+acc+" percent!",{rate:0.9,pitch:1.0});}
-    }else{flashWrong();headNo();stop();speak("Try harder next time!",{rate:0.9,pitch:1.0});}
+    }else{flashWrong();headNo();logPerf("speaking","wrong",0,1);stop();speak("Try harder next time!",{rate:0.9,pitch:1.0});}
     setTimeout(()=>{
       const next=idx+1;
       if(next<items.length){
