@@ -2735,6 +2735,8 @@ export default function App(){
   const[quizTab,setQuizTab]=useState("numquiz"); // "numquiz","math","letters","write"
   const prevScrRef=useRef("home"); // track where user navigated from
   const[writeNum,setWriteNum]=useState(1);
+  // Active assignment tracking — set when kid starts from Study Plan
+  const[activeAssignment,setActiveAssignment]=useState(null); // {mod, topic, maxNum, ...}
   const[writeMode,setWriteMode]=useState("numbers"); // "numbers" or "letters"
   const[writeChar,setWriteChar]=useState("A"); // current letter to write
   const[writeCase,setWriteCase]=useState("caps"); // "caps" or "small"
@@ -3340,6 +3342,7 @@ export default function App(){
     // Kill learn/phonics flow
     pRef.current=false;
     setSfPhase("idle");
+    setActiveAssignment(null);
   };
   const goHome=()=>{killAllFlows();setJoyFly(false);setOllieSize(95);guideTourRef.current=false;setGuideTour(false);const tourOv=document.getElementById("tour-overlay");if(tourOv)tourOv.remove();const hp2=document.getElementById("home-tiles");if(hp2){hp2.style.zIndex="";hp2.style.position="";}document.querySelectorAll("[data-tile]").forEach(t=>{t.style.transform="";t.style.zIndex="";t.style.boxShadow="";t.style.transition="";t.style.overflow="";t.style.borderRadius="";t.style.filter="";t.style.animation="";});setScr("home");setSelNum(null);setNStep("idle");setPhW(null);setPhStep("idle");setSelShape(null);setShStep("idle");setSelColor(null);setCoStep("idle");setMathProblem(null);setMathFb(null);setMathScore(0);setMathTotal(0);setSelLetter(null);setMatchPairs([]);setMatchLeft(null);setMatchDone([]);setMatchIdx(0);setMatchWrong(null);setMatchCorrect(null);setMatchOpts([]);drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);setQuizNum(null);setQuizOpts([]);setQuizFb(null);setQuizScore(0);setQuizStreak(0);setQuizTotal(0);quizUsedRef.current=[];setGlowTarget(null);prevScrRef.current="home";};
 
@@ -4082,8 +4085,16 @@ export default function App(){
       if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(5,"basics_w",writeMode==="numbers"?writeNum:writeChar);
       setTimeout(()=>{
         if(writeMode==="numbers"){
+          // Check assignment limit
+          if(activeAssignment&&activeAssignment.topic==="Numbers 0-9"&&writeNum>=9){
+            // Assignment complete!
+            const updated=studyPlan.map(t=>t.mod==="writing"&&t.topic==="Numbers 0-9"?{...t,done:true,completedAt:Date.now(),correct:(t.correct||0)+1,total:(t.total||0)+1}:t);
+            savePlan(updated);setActiveAssignment(null);
+            stop();speak("Great job! You completed the Numbers 0 to 9 assignment!",{rate:0.85,pitch:1.1});boom();
+            setTimeout(()=>setScr("studyplan"),3000);return;
+          }
           setWriteNum(prev=>{
-            const n=(prev%20)+1;
+            const n=activeAssignment&&activeAssignment.topic==="Numbers 0-9"?prev+1:(prev%20)+1;
             setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
             setTimeout(()=>{initCanvas();stop();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
             return n;
@@ -4105,8 +4116,15 @@ export default function App(){
       if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(3,"basics_w",writeMode==="numbers"?writeNum:writeChar);
       setTimeout(()=>{
         if(writeMode==="numbers"){
+          // Check assignment limit
+          if(activeAssignment&&activeAssignment.topic==="Numbers 0-9"&&writeNum>=9){
+            const updated=studyPlan.map(t=>t.mod==="writing"&&t.topic==="Numbers 0-9"?{...t,done:true,completedAt:Date.now(),correct:(t.correct||0)+1,total:(t.total||0)+1}:t);
+            savePlan(updated);setActiveAssignment(null);
+            stop();speak("Great job! You completed the Numbers 0 to 9 assignment!",{rate:0.85,pitch:1.1});boom();
+            setTimeout(()=>setScr("studyplan"),3000);return;
+          }
           setWriteNum(prev=>{
-            const n=(prev%20)+1;
+            const n=activeAssignment&&activeAssignment.topic==="Numbers 0-9"?prev+1:(prev%20)+1;
             setWriteOk(false);writeOkRef.current=false;setWriteScore(null);drawPtsRef.current=0;setDrawPts(0);
             setTimeout(()=>{initCanvas();stop();speak(`Now write ${NW[n]||n}.`,{rate:0.75,pitch:1.0});},300);
             return n;
@@ -4130,10 +4148,18 @@ export default function App(){
     drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);
   };
   const nextWrite=()=>{
-    setWriteNum(n=>n>=100?1:n+1);
+    // Check assignment limit for skip too
+    if(activeAssignment&&activeAssignment.topic==="Numbers 0-9"&&writeNum>=9){
+      const updated=studyPlan.map(t=>t.mod==="writing"&&t.topic==="Numbers 0-9"?{...t,done:true,completedAt:Date.now()}:t);
+      savePlan(updated);setActiveAssignment(null);
+      stop();speak("Great job! You completed the Numbers 0 to 9 assignment!",{rate:0.85,pitch:1.1});boom();
+      setTimeout(()=>setScr("studyplan"),3000);return;
+    }
+    const nextN=activeAssignment&&activeAssignment.topic==="Numbers 0-9"?writeNum+1:writeNum>=100?1:writeNum+1;
+    setWriteNum(nextN);
     drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);
     setTimeout(()=>{initCanvas();},100);
-    speak(`Write ${NW[writeNum>=100?1:writeNum+1]||writeNum+1}.`,{rate:0.75,pitch:1.0});
+    speak(`Write ${NW[nextN]||nextN}.`,{rate:0.75,pitch:1.0});
   };
 
     const buyR=(r)=>{if((prof?.points||0)<r.cost)return;save({...prof,points:prof.points-r.cost,rewards:[...(prof.rewards||[]),{...r,at:Date.now()}]});boom();setRwdMsg(`${r.emoji} Yay! You earned ${r.name}! Show your parents!`);setTimeout(()=>setRwdMsg(null),4000);};
@@ -6494,18 +6520,23 @@ export default function App(){
                 const diffIcons={easy:"🟢",medium:"🟡",hard:"🔴"};
                 const pct=task.total>0?Math.round(task.correct/task.total*100):0;
                 return<button key={j} onClick={()=>{sfxTap();killAllFlows();
+                  // Set active assignment for tracking
+                  setActiveAssignment({mod:task.mod,topic:task.topic,idx:j});
                   // Route directly to the specific assigned task
                   if(task.mod==="writing"){
-                    if(task.topic==="Uppercase A-Z"||task.topic==="Lowercase a-z")setScr("strokelearn");
-                    else if(task.topic==="Numbers 0-9"){setScr("quizzone");setQuizTab("write");setWriteMode("numbers");}
-                    else if(task.topic==="Name Writing"){setScr("quizzone");setQuizTab("write");setWriteMode("letters");}
+                    if(task.topic==="Uppercase A-Z"||task.topic==="Lowercase a-z"){setScr("strokelearn");setStrokePhase("pick");}
+                    else if(task.topic==="Numbers 0-9"){setWriteNum(0);setScr("quizzone");setQuizTab("write");setWriteMode("numbers");}
+                    else if(task.topic==="Name Writing"||task.topic==="Write Words"){setScr("quizzone");setQuizTab("write");setWriteMode("letters");}
                     else setScr("strokelearn");
                   } else if(task.mod==="speaking"){
-                    startSpeakFlow(task.topic.toLowerCase().replace(/ /g,"_").replace("a-z_letters","abc"),"speakback");
+                    const cat=task.topic.toLowerCase().replace(/ /g,"_").replace("a-z_letters","abc");
+                    startSpeakFlow(cat,"speakback");
                   } else if(task.mod==="listening"){
-                    startListenFlow(task.topic.toLowerCase().replace(/ /g,"_").replace("a-z_letters","abc"));
+                    const cat=task.topic.toLowerCase().replace(/ /g,"_").replace("a-z_letters","abc");
+                    startListenFlow(cat);
                   } else if(task.mod==="reading"){
-                    startReadFlow(task.topic.toLowerCase().replace(/ /g,"_").replace("a-z_letters","abc"));
+                    const cat=task.topic.toLowerCase().replace(/ /g,"_").replace("a-z_letters","abc");
+                    startReadFlow(cat);
                   } else {
                     setScr(mod);
                   }
