@@ -4331,24 +4331,23 @@ export default function App(){
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
   const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework","speakflow","listenflow","readflow","strokelearn","parent","arena","numbers"].includes(scr);
-  const PinModal=showPinModal?<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
-        <span style={{fontSize:48}}>🔒</span>
-        <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
-        <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
-        <div style={{display:"flex",gap:8,justifyContent:"center",margin:"16px 0"}}>
-          {[1,2,3,4].map(i=><div key={i} style={{width:52,height:52,borderRadius:14,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9"}}>{pinInput.length>=i?"●":"○"}</div>)}
+  const PinModal=showPinModal?<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:24,padding:"20px 22px",maxWidth:300,width:"100%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <span style={{fontSize:36}}>🔒</span>
+        <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,margin:"6px 0 2px"}}>Parent Access</h3>
+        <div style={{display:"flex",gap:8,justifyContent:"center",margin:"12px 0 10px"}}>
+          {[1,2,3,4].map(i=><div key={i} style={{width:42,height:42,borderRadius:12,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9"}}>{pinInput.length>=i?"●":"○"}</div>)}
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:240,margin:"0 auto"}}>
-          {[1,2,3,4,5,6,7,8,9,0,"⌫"].map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6,maxWidth:260,margin:"0 auto"}}>
+          {[1,2,3,4,5,6,7,8,9,"⌫",0,"✓"].map((n,i)=><button key={i} onClick={()=>{
             sfxTap();
             if(n==="⌫"){setPinInput(p=>p.slice(0,-1));}
+            else if(n==="✓"){/* no-op */}
             else{const np=pinInput+n;setPinInput(np);
               if(np.length===4){if(np===parentPin){setShowPinModal(false);setPinInput("");setScr("parent");setParentMode(true);}else{setPinInput("");}}
             }
-          }} style={{padding:"14px",borderRadius:14,border:"none",background:n==="⌫"?"#FEE2E2":"#F0F4FF",fontSize:n==="⌫"?18:22,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"#FF6B81":"var(--dark)"}}>{n}</button>)}
+          }} style={{padding:"12px 0",borderRadius:12,border:"none",background:n==="⌫"?"#FEE2E2":n==="✓"?"#ECFDF5":"#F0F4FF",fontSize:n==="⌫"||n==="✓"?16:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"#FF6B81":n==="✓"?"#22C55E":"var(--dark)"}}>{n}</button>)}
         </div>
-        <p style={{fontSize:10,color:"#A4B0BE",marginTop:10}}>Default PIN: 1234</p>
       </div>
     </div>:null;
 
