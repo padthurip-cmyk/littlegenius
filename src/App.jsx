@@ -6493,7 +6493,23 @@ export default function App(){
               {tasks.map((task,j)=>{
                 const diffIcons={easy:"🟢",medium:"🟡",hard:"🔴"};
                 const pct=task.total>0?Math.round(task.correct/task.total*100):0;
-                return<button key={j} onClick={()=>{sfxTap();killAllFlows();setScr(mod);}} style={{
+                return<button key={j} onClick={()=>{sfxTap();killAllFlows();
+                  // Route directly to the specific assigned task
+                  if(task.mod==="writing"){
+                    if(task.topic==="Uppercase A-Z"||task.topic==="Lowercase a-z")setScr("strokelearn");
+                    else if(task.topic==="Numbers 0-9"){setScr("quizzone");setQuizTab("write");setWriteMode("numbers");}
+                    else if(task.topic==="Name Writing"){setScr("quizzone");setQuizTab("write");setWriteMode("letters");}
+                    else setScr("strokelearn");
+                  } else if(task.mod==="speaking"){
+                    startSpeakFlow(task.topic.toLowerCase().replace(/ /g,"_").replace("a-z_letters","abc"),"speakback");
+                  } else if(task.mod==="listening"){
+                    startListenFlow(task.topic.toLowerCase().replace(/ /g,"_").replace("a-z_letters","abc"));
+                  } else if(task.mod==="reading"){
+                    startReadFlow(task.topic.toLowerCase().replace(/ /g,"_").replace("a-z_letters","abc"));
+                  } else {
+                    setScr(mod);
+                  }
+                }} style={{
                   display:"flex",alignItems:"center",gap:10,padding:"10px 12px",width:"100%",
                   borderRadius:14,border:"none",cursor:"pointer",background:task.done?"#ECFDF5":"#F8F9FF",marginBottom:4,textAlign:"left"
                 }}>
