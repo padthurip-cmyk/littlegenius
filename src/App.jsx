@@ -2780,8 +2780,9 @@ export default function App(){
       }
     }catch(e){}
   },[arenaMsg]);
-  const[arenaDiff,setArenaDiff]=useState("easy");
+  const[arenaDiff,setArenaDiff]=useState(()=>localStorage.getItem("lg_arena_diff")||"easy");
   const[arenaRounds,setArenaRounds]=useState(10);
+  const[arenaEliminated,setArenaEliminated]=useState([]); // eliminated player IDs
   const[fbReady,setFbReady]=useState(false);const fbConfig=FIREBASE_CONFIG;
   const[fbError,setFbError]=useState("");
   
@@ -2831,27 +2832,14 @@ export default function App(){
     if(data.state==="paused"){setArenaPaused(true);setArenaPhase("playing");return;}
     setArenaPaused(false);
     if(data.state==="playing"&&data.question){
-      const turnChanged=data.turnPlayerId!==lastTurnRef.current;
       const roundChanged=data.round!==lastRoundRef.current;
-      // FIX: ALWAYS reset answer state when turn or round changes — even if already "playing"
-      if(roundChanged||turnChanged){
+      if(roundChanged){
         lastRoundRef.current=data.round;
-        lastTurnRef.current=data.turnPlayerId;
         setArenaAnswered(false);setArenaFb(null);
-        setArenaSec(Math.max(0,Math.ceil(6-(Date.now()-(data.turnStartedAt||Date.now()))/1000)));
-        // Ollie announces whose turn
-        const tp=players.find(p=>p.id===data.turnPlayerId);
-        if(tp){
-          const isMe=tp.id===arenaId;
-          if(roundChanged){
-            setArenaMsg(isMe?"🎯 It's YOUR turn! Go go go!":"🦉 It's "+tp.name+"'s turn!");
-          } else {
-            setArenaMsg(isMe?"🎯 Your turn now! Quick!":"🦉 "+tp.name+"'s turn!");
-          }
-          setTeacherMood(isMe?"star":"happy");
-          // FIX: Speak turn announcement for better awareness
-          if(isMe) speak("Your turn!",{rate:1.0,pitch:1.1});
-        }
+        setArenaSec(Math.max(0,Math.ceil(10-(Date.now()-(data.turnStartedAt||Date.now()))/1000)));
+        setArenaMsg("⚡ Round "+data.round+"! Answer fast!");
+        setTeacherMood("star");
+        speak("Round "+data.round+"! Go!",{rate:1.1,pitch:1.1});
       }
       setArenaPhase("playing");
     } else if(data.state==="result"){
@@ -2885,7 +2873,7 @@ export default function App(){
     if(!fbReady)return;
     const roomCode=genRoomCode();
     const me={id:arenaId,name:arenaName||prof?.name||"Player 1",avatar:ARENA_AVATARS[0],color:ARENA_COLORS[0],isHost:true};
-    const room={code:roomCode,players:{[arenaId]:me},playerOrder:[arenaId],hostId:arenaId,state:"waiting",question:null,turnIdx:0,turnPlayerId:arenaId,scores:{[arenaId]:0},round:0,maxRounds:arenaRounds,diff:arenaDiff,createdAt:Date.now()};
+    const room={code:roomCode,players:{[arenaId]:me},playerOrder:[arenaId],hostId:arenaId,state:"waiting",question:null,scores:{[arenaId]:0},round:0,maxRounds:arenaRounds,diff:arenaDiff,createdAt:Date.now(),answers:null};
     fbWrite("rooms/"+roomCode,room).then(()=>{
       setArenaRoom({...room,players:[me]});setArenaPhase("lobby");setFbError("");
       const unsub=fbListen("rooms/"+roomCode,onRoomData,onRoomDeleted);
@@ -2942,23 +2930,20 @@ export default function App(){
     onRoomDeleted();
   };
 
-  // Host starts round → write question to Firebase
+  // Host starts round → everyone sees question, first correct answer wins
   const arenaStartRound=()=>{
     const rm=arenaRoomRef.current||arenaRoom;
     if(!rm||rm.hostId!==arenaId||!fbReady)return;
     const q=genArenaQ(rm.diff||"easy");
-    const players=rm.players||[];
-    const firstPlayer=players[0];
     const nextRound=(rm.round||0)+1;
     lastRoundRef.current=nextRound;
     fbUpdate("rooms/"+rm.code,{
-      question:q,turnIdx:0,turnPlayerId:firstPlayer?.id||arenaId,
-      round:nextRound,state:"playing",answerBy:null,turnStartedAt:Date.now(),lastAnswer:null
+      question:q,round:nextRound,state:"playing",answerBy:null,turnStartedAt:Date.now(),answers:null
     });
-    setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
+    setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(10);setArenaMsg("⚡ First to answer wins!");
   };
 
-  // Player answers → write to Firebase
+  // Any player answers → first correct answer wins the point
   const arenaAnswer=(opt)=>{
     if(arenaAnswered)return;
     const rm=arenaRoomRef.current||arenaRoom;
@@ -2970,88 +2955,54 @@ export default function App(){
 
     if(correct){
       sfxWin();
+      // First correct answer — claim the point
       const newScore=(rm.scores?.[arenaId]||0)+1;
-      fbUpdate("rooms/"+roomCode,{["scores/"+arenaId]:newScore,state:"result",answerBy:arenaId});
+      fbUpdate("rooms/"+roomCode,{["scores/"+arenaId]:newScore,state:"result",answerBy:arenaId,["answers/"+arenaId]:{correct:true,ts:Date.now()}});
+      setArenaMsg("🎉 You got it!");
     } else {
-      // Wrong or timeout → write answer marker so host can advance
-      // FIX: Always write lastAnswer for ANY wrong answer (not just turn player)
-      // This ensures the host watchdog detects the answer even on slow networks
-      if(rm.turnPlayerId===arenaId){
-        fbUpdate("rooms/"+roomCode,{["lastAnswer"]:{playerId:arenaId,correct:false,turnIdx:rm.turnIdx,round:rm.round,ts:Date.now()}});
-        // FIX: If I'm the HOST AND the turn player, advance immediately instead of waiting for watchdog
-        if(rm.hostId===arenaId){
-          setTimeout(()=>{
-            const cur=arenaRoomRef.current;
-            if(!cur||cur.state!=="playing")return;
-            // Only advance if we're still on the same turn
-            if(cur.turnIdx===rm.turnIdx&&cur.round===rm.round){
-              const players=cur.players||[];
-              const nextIdx=((cur.turnIdx||0)+1)%players.length;
-              if(nextIdx===0){
-                fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null,lastAnswer:null});
-              } else {
-                const nextPid=players[nextIdx]?.id;
-                fbUpdate("rooms/"+roomCode,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now(),lastAnswer:null});
-              }
-            }
-          },500); // Small delay to let Firebase sync
-        }
-      }
-      setArenaMsg(opt===null?"⏰ Time's up!":"❌ Wrong answer!");setTeacherMood("thinking");
+      // Wrong answer — mark as answered but don't end round
+      fbUpdate("rooms/"+roomCode,{["answers/"+arenaId]:{correct:false,ts:Date.now()}});
+      setArenaMsg(opt===null?"⏰ Time's up!":"❌ Wrong! Wait for next round.");setTeacherMood("thinking");
     }
   };
 
-  // ═══ HOST TURN ENGINE — Only host writes state changes (eliminates cross-device race conditions) ═══
+  // ═══ HOST ENGINE — Timer-based, no turns ═══
   const advanceTimerRef=useRef(null);
   const hostWatchdogRef=useRef(null);
 
-  // HOST: Watch for wrong answers via lastAnswer marker
+  // HOST: If someone answers correctly (state changes to "result"), or time expires → advance
   useEffect(()=>{
     const rm=arenaRoomRef.current||arenaRoom;
-    if(!rm||rm.hostId!==arenaId||rm.state!=="playing")return;
-    const la=rm.lastAnswer;
-    if(!la||la.round!==rm.round||la.turnIdx!==rm.turnIdx)return;
-    // A player answered wrong — host advances turn
+    if(!rm||rm.hostId!==arenaId)return;
+    // If state changed to "result" via a correct answer, the round is done
+    if(rm.state==="result")return;
+    // Check if all players answered (all wrong) — end round with no winner
     const players=rm.players||[];
-    const nextIdx=((rm.turnIdx||0)+1)%players.length;
-    const roomCode=rm.code;
-    if(nextIdx===0){
-      // All players missed this round → show result
-      fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null,lastAnswer:null});
-    } else {
-      const nextPid=players[nextIdx]?.id;
-      fbUpdate("rooms/"+roomCode,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now(),lastAnswer:null});
+    const answers=rm.answers||{};
+    const answeredCount=Object.keys(answers).length;
+    if(rm.state==="playing"&&answeredCount>=players.length&&!Object.values(answers).some(a=>a.correct)){
+      fbUpdate("rooms/"+rm.code,{state:"result",answerBy:null});
     }
-  },[arenaRoom?.lastAnswer?.ts]);
+  },[arenaRoom?.answers,arenaRoom?.state]);
 
-  // HOST: Watchdog timer — if current turn player doesn't answer within 7s, force advance
+  // HOST: Watchdog timer — if nobody answers correctly within 11s, end round
   useEffect(()=>{
     if(hostWatchdogRef.current)clearTimeout(hostWatchdogRef.current);
     const rm=arenaRoomRef.current||arenaRoom;
     if(!rm||rm.hostId!==arenaId||rm.state!=="playing"||arenaPaused)return;
     const turnStart=rm.turnStartedAt||Date.now();
     const elapsed=Date.now()-turnStart;
-    const remaining=Math.max(100,7000-elapsed); // FIX: 7s total (6s visible + 1s buffer) — was 8s
+    const remaining=Math.max(100,11000-elapsed);
     hostWatchdogRef.current=setTimeout(()=>{
       const cur=arenaRoomRef.current||arenaRoom;
       if(!cur||cur.state!=="playing")return;
-      // Double-check: is the turn STILL on the same player? (prevents double-advance)
-      if(cur.turnPlayerId!==rm.turnPlayerId||cur.turnIdx!==rm.turnIdx||cur.round!==rm.round)return;
-      // Force advance: treat as wrong answer
-      const players=cur.players||[];
-      const nextIdx=((cur.turnIdx||0)+1)%players.length;
-      const roomCode=cur.code;
-      if(nextIdx===0){
-        fbUpdate("rooms/"+roomCode,{state:"result",answerBy:null,lastAnswer:null});
-      } else {
-        const nextPid=players[nextIdx]?.id;
-        fbUpdate("rooms/"+roomCode,{turnIdx:nextIdx,turnPlayerId:nextPid,turnStartedAt:Date.now(),lastAnswer:null});
-      }
+      if(cur.round!==rm.round)return;
+      fbUpdate("rooms/"+cur.code,{state:"result",answerBy:null});
     },remaining);
     return()=>{if(hostWatchdogRef.current)clearTimeout(hostWatchdogRef.current);};
-  },[arenaRoom?.turnPlayerId,arenaRoom?.turnIdx,arenaRoom?.round,arenaPaused]);
+  },[arenaRoom?.round,arenaRoom?.state,arenaPaused]);
 
-  // HOST: Auto-advance from result → next round (or gameover)
+  // HOST: Auto-advance from result → next round (with elimination)
   useEffect(()=>{
     const rm=arenaRoomRef.current||arenaRoom;
     if(!rm||rm.hostId!==arenaId)return;
@@ -3064,27 +3015,53 @@ export default function App(){
         const currentRound=cur.round||0;
         const maxR=cur.maxRounds||10;
         const roomCode=cur.code;
-        if(currentRound>=maxR){
+        const allPlayers=cur.players||[];
+        const activePlayers=allPlayers.filter(p=>!arenaEliminated.includes(p.id));
+
+        // Check elimination: every N rounds, eliminate lowest scorer (if 3+ active)
+        const elimEvery=Math.max(2,Math.ceil(maxR/(Math.max(1,allPlayers.length-1))));
+        if(currentRound>0&&currentRound%elimEvery===0&&activePlayers.length>2){
+          const sorted=[...activePlayers].sort((a,b)=>(cur.scores?.[b.id]||0)-(cur.scores?.[a.id]||0));
+          const loser=sorted[sorted.length-1];
+          if(loser){
+            setArenaEliminated(prev=>[...prev,loser.id]);
+            // Announce elimination
+            stop();speak(loser.name+" has been eliminated!",{rate:0.9,pitch:0.9});
+          }
+        }
+
+        // Check if game should end
+        const remainingAfterElim=activePlayers.length-(currentRound>0&&currentRound%elimEvery===0&&activePlayers.length>2?1:0);
+        if(currentRound>=maxR||remainingAfterElim<=1){
+          // Game over — announce winner
+          const sorted=[...allPlayers].sort((a,b)=>(cur.scores?.[b.id]||0)-(cur.scores?.[a.id]||0));
+          const champion=sorted[0];
+          if(champion){
+            stop();speak(champion.name+" is the champion!",{rate:0.85,pitch:1.1});
+          }
           fbUpdate("rooms/"+roomCode,{state:"gameover"});
         } else {
+          // Next round
           const q=genArenaQ(cur.diff||"easy");
-          const players=cur.players||[];
-          const fp=players[0];
           const nr=currentRound+1;
           lastRoundRef.current=nr;
+
+          // Announce finalists if down to 2
+          if(remainingAfterElim===2){
+            stop();speak("Final showdown!",{rate:1.0,pitch:1.1});
+          }
+
           fbUpdate("rooms/"+roomCode,{
-            question:q,turnIdx:0,turnPlayerId:fp?.id||arenaId,
-            round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now(),lastAnswer:null
+            question:q,round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now(),answers:null
           });
-          setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(6);
+          setArenaPhase("playing");setArenaAnswered(false);setArenaFb(null);setArenaSec(10);
         }
-      },2500);
+      },3500);
     }
     return()=>{if(advanceTimerRef.current)clearTimeout(advanceTimerRef.current);};
-  },[arenaPhase,arenaRoom?.round]);
+  },[arenaPhase,arenaRoom?.round,arenaEliminated]);
 
-  // ALL DEVICES: Visual countdown timer (display only — no game logic)
-  // FIX: Use ref for arenaAnswered to avoid stale closure in setInterval
+  // ALL DEVICES: Visual countdown timer (10 seconds — everyone sees same timer)
   const arenaAnsweredRef=useRef(false);
   useEffect(()=>{arenaAnsweredRef.current=arenaAnswered;},[arenaAnswered]);
   
@@ -3092,39 +3069,27 @@ export default function App(){
     if(arenaPhase!=="playing"||arenaPaused)return;
     const rm=arenaRoomRef.current||arenaRoom;
     if(!rm||!rm.turnStartedAt)return;
-    // Sync timer from Firebase turnStartedAt for cross-device accuracy
-    const calcSec=()=>Math.max(0,Math.ceil(6-(Date.now()-rm.turnStartedAt)/1000));
+    const calcSec=()=>Math.max(0,Math.ceil(10-(Date.now()-rm.turnStartedAt)/1000));
     setArenaSec(calcSec());
     const iv=setInterval(()=>{
       const s=calcSec();
       setArenaSec(s);
-      // FIX: Use ref instead of stale closure for arenaAnswered
-      const curRm=arenaRoomRef.current;
-      if(s<=0&&!arenaAnsweredRef.current&&curRm?.turnPlayerId===arenaId){
+      // Auto-timeout when timer hits 0
+      if(s<=0&&!arenaAnsweredRef.current){
         arenaAnswer(null);
       }
-    },250); // 250ms for smoother countdown
+    },250);
     return()=>clearInterval(iv);
   },[arenaRoom?.turnStartedAt,arenaPhase,arenaPaused]);
-  
-  // FIX: Universal fallback watchdog — if ANY device sees turn stuck for 10s, non-host forces UI reset
-  useEffect(()=>{
-    if(arenaPhase!=="playing")return;
-    const rm=arenaRoomRef.current||arenaRoom;
-    if(!rm||!rm.turnStartedAt)return;
-    const elapsed=Date.now()-rm.turnStartedAt;
-    if(elapsed>10000){
-      // Turn has been stuck — force UI to show waiting state instead of frozen
-      setArenaMsg("⏳ Waiting for next turn...");
-    }
-  },[arenaRoom?.turnStartedAt,arenaPhase]);
 
-  // Reset answer state when turn or round changes
+  // Reset answer state when round changes
   useEffect(()=>{
     if(arenaPhase==="playing"){
-      setArenaAnswered(false);setArenaFb(null);
+      setArenaAnswered(false);setArenaFb(null);setArenaSec(10);
+      arenaAnsweredRef.current=false;
+      setArenaMsg("⚡ First to answer wins!");
     }
-  },[arenaRoom?.turnPlayerId,arenaRoom?.turnIdx,arenaRoom?.round]);
+  },[arenaRoom?.round]);
 
   // Cleanup Firebase listener
   useEffect(()=>()=>{
@@ -3140,8 +3105,22 @@ export default function App(){
   const[studyPlan,setStudyPlan]=useState(()=>{try{const s=localStorage.getItem("lg_studyplan");return s?JSON.parse(s):[];}catch(e){return[];}});
   const[customRewards,setCustomRewards]=useState(()=>{try{const s=localStorage.getItem("lg_rewards");return s?JSON.parse(s):[];}catch(e){return[];}});
   const[parentPin,setParentPin]=useState(()=>localStorage.getItem("lg_pin")||PARENT_PIN_DEFAULT);
-  const[engageStart]=useState(()=>Date.now());
   const[engageMins,setEngageMins]=useState(0);
+  const activeSecondsRef=useRef(0);
+  const lastActivityRef=useRef(Date.now());
+  const idleThreshold=30000; // 30 seconds idle = pause timer
+  // Track user activity
+  useEffect(()=>{
+    const onActivity=()=>{lastActivityRef.current=Date.now();};
+    window.addEventListener("touchstart",onActivity);window.addEventListener("mousedown",onActivity);
+    window.addEventListener("keydown",onActivity);window.addEventListener("scroll",onActivity);
+    const iv=setInterval(()=>{
+      const isActive=(Date.now()-lastActivityRef.current)<idleThreshold;
+      if(isActive)activeSecondsRef.current+=1;
+      setEngageMins(Math.floor(activeSecondsRef.current/60));
+    },1000);
+    return()=>{clearInterval(iv);window.removeEventListener("touchstart",onActivity);window.removeEventListener("mousedown",onActivity);window.removeEventListener("keydown",onActivity);window.removeEventListener("scroll",onActivity);};
+  },[]);
   const[engageAwarded,setEngageAwarded]=useState(()=>{try{const s=localStorage.getItem("lg_engage_"+new Date().toDateString());return s?JSON.parse(s):[];}catch(e){return[];}});
   // Assignment difficulty & timer
   const[assignDiff,setAssignDiff]=useState("easy"); // easy, medium, hard
@@ -3150,48 +3129,35 @@ export default function App(){
   const savePlan=(p)=>{setStudyPlan(p);localStorage.setItem("lg_studyplan",JSON.stringify(p));};
   const saveRewards=(r)=>{setCustomRewards(r);localStorage.setItem("lg_rewards",JSON.stringify(r));};
   const savePin=(p)=>{setParentPin(p);localStorage.setItem("lg_pin",p);};
-  const logPerf=(cat,sub,correct,total)=>{const entry={cat,sub,correct,total,date:new Date().toISOString(),ts:Date.now()};const nl=[...perfLog,entry];setPerfLog(nl);localStorage.setItem("lg_perf",JSON.stringify(nl.slice(-500)));
-    // Also update matching studyPlan tasks
+  const logPerf=(cat,sub,correct,total,extra={})=>{
+    const entry={cat,sub,correct,total,score:extra.score||null,action:extra.action||"answer",date:new Date().toISOString(),ts:Date.now()};
+    const nl=[...perfLog,entry];setPerfLog(nl);localStorage.setItem("lg_perf",JSON.stringify(nl.slice(-1000)));
+    // Update matching studyPlan tasks
     const updated=studyPlan.map(t=>{
       const taskCat=t.topic.toLowerCase().replace(/ /g,"_");
       const modMatch=t.mod===cat||taskCat===cat||t.topic.toLowerCase()===cat.toLowerCase();
       if(modMatch&&!t.done){
-        const nc=(t.correct||0)+correct;const nt=(t.total||0)+total;const np=total>0?Math.round(nc/nt*100):0;
-        const isDone=np>=60&&nt>=3; // Mark done at 60%+ with at least 3 attempts
+        const nc=(t.correct||0)+correct;const nt=(t.total||0)+total;const np=nt>0?Math.round(nc/nt*100):0;
+        const isDone=np>=60&&nt>=3;
         return{...t,correct:nc,total:nt,progress:np,done:isDone,completedAt:isDone?Date.now():t.completedAt,attempts:(t.attempts||0)+1};
       }
       return t;
     });
     if(JSON.stringify(updated)!==JSON.stringify(studyPlan)){savePlan(updated);}
   };
-  // Engagement timer
+  // Award 1 point per 2 minutes of ACTIVE time
   const[lastMinAwarded,setLastMinAwarded]=useState(0);
-  useEffect(()=>{const iv=setInterval(()=>{const m=Math.floor((Date.now()-engageStart)/60000);setEngageMins(m);
-    // Award 0.5 points per minute of active time
-    if(m>lastMinAwarded&&prof){
-      const minsToAward=m-lastMinAwarded;
-      const pts=Math.round(minsToAward*0.5*10)/10; // 0.5 per min
-      if(pts>=0.5){
-        const roundedPts=Math.floor(pts); // only award whole points
-        if(roundedPts>0){
-          const newPts=(prof.points||0)+roundedPts;
-          const np={...prof,points:newPts,totalEarned:(prof.totalEarned||0)+roundedPts};
-          save(np);setPtAnim(`+${roundedPts} ⏱️`);
-          // Check reward thresholds for time-based points too
-          try{
-            const rewards=JSON.parse(localStorage.getItem("lg_rewards")||"[]");
-            const oldPts=prof.points||0;
-            rewards.forEach(r=>{
-              if(oldPts<r.pts&&newPts>=r.pts){
-                setTimeout(()=>{boom();stop();speak("Hurray! You win the "+r.name+" prize! "+r.emoji,{rate:0.8,pitch:1.1});},500);
-              }
-            });
-          }catch(e){}
-        }
-        setLastMinAwarded(m);
-      }
+  useEffect(()=>{
+    if(engageMins>lastMinAwarded&&engageMins%2===0&&prof){
+      const newPts=(prof.points||0)+1;
+      const np={...prof,points:newPts,totalEarned:(prof.totalEarned||0)+1};
+      save(np);setPtAnim("+1 ⏱️");
+      setLastMinAwarded(engageMins);
+      try{const rewards=JSON.parse(localStorage.getItem("lg_rewards")||"[]");const oldPts=prof.points||0;
+        rewards.forEach(r=>{if(oldPts<r.pts&&newPts>=r.pts)setTimeout(()=>{boom();stop();speak("Hurray! You win the "+r.name+" prize! "+r.emoji,{rate:0.8,pitch:1.1});},500);});
+      }catch(e){}
     }
-  },15000);return()=>clearInterval(iv);},[engageStart,lastMinAwarded,prof]);
+  },[engageMins,lastMinAwarded,prof]);
   const[showStreakPop,setShowStreakPop]=useState(false);
   const[showBadgePop,setShowBadgePop]=useState(null);
   const[showLvlPop,setShowLvlPop]=useState(null);
@@ -5873,10 +5839,12 @@ export default function App(){
           <button onClick={()=>{if(window.confirm("Reset game? Everyone will be disconnected.")){arenaResetGame();}}} style={{padding:"6px 12px",borderRadius:12,border:"none",background:"rgba(255,107,129,0.3)",color:"#FF6B81",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>🔄</button>
         </div>}
         <div style={{display:"flex",gap:6}}>
-          {(arenaRoom.players||[]).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:12,background:arenaRoom.turnPlayerId===p.id?"#FECA57":"rgba(255,255,255,0.1)",color:arenaRoom.turnPlayerId===p.id?"#1B1464":"#fff"}}>
+          {(arenaRoom.players||[]).map((p,i)=>{
+            const answered=arenaRoom.answers&&arenaRoom.answers[p.id];
+            return<div key={p.id} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:12,background:answered?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.1)",color:"#fff"}}>
             <span style={{fontSize:14}}>{ARENA_AVATARS[i%4]}</span>
             <span style={{fontSize:12,fontWeight:800}}>{arenaRoom.scores?.[p.id]||0}</span>
-          </div>)}
+          </div>;})}
         </div>
       </div>
 
@@ -5884,16 +5852,15 @@ export default function App(){
         <div style={{position:"relative",display:"inline-block"}}>
           <svg width={80} height={80} style={{transform:"rotate(-90deg)"}}>
             <circle cx={40} cy={40} r={34} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth={8}/>
-            <circle cx={40} cy={40} r={34} fill="none" stroke={arenaSec<=2?"#FF6B81":"#FECA57"} strokeWidth={8} strokeDasharray={2*Math.PI*34} strokeDashoffset={2*Math.PI*34*(1-arenaSec/6)} strokeLinecap="round" style={{transition:"stroke-dashoffset 0.3s linear"}}/>
+            <circle cx={40} cy={40} r={34} fill="none" stroke={arenaSec<=3?"#FF6B81":"#FECA57"} strokeWidth={8} strokeDasharray={2*Math.PI*34} strokeDashoffset={2*Math.PI*34*(1-arenaSec/10)} strokeLinecap="round" style={{transition:"stroke-dashoffset 0.3s linear"}}/>
           </svg>
-          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:800,color:arenaSec<=2?"#FF6B81":"#FECA57"}}>{arenaSec}</div>
+          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:800,color:arenaSec<=3?"#FF6B81":"#FECA57"}}>{arenaSec}</div>
         </div>
       </div>
 
-      <div style={{textAlign:"center",padding:"8px 16px",borderRadius:16,background:arenaRoom.turnPlayerId===arenaId?"linear-gradient(135deg,#FECA57,#FF9F43)":"rgba(255,255,255,0.08)",flexShrink:0}}>
-        <span style={{fontSize:14,fontWeight:800,color:arenaRoom.turnPlayerId===arenaId?"#1B1464":"rgba(255,255,255,0.7)"}}>
-          {arenaRoom.turnPlayerId===arenaId?(arenaSec>0?"🎯 YOUR TURN — Answer now!":"⏳ Submitting..."):
-           arenaSec>0?`⏳ ${(arenaRoom.players||[]).find(p=>p.id===arenaRoom.turnPlayerId)?.name||"Player"}'s turn`:"⏳ Advancing..."}
+      <div style={{textAlign:"center",padding:"8px 16px",borderRadius:16,background:arenaEliminated.includes(arenaId)?"rgba(255,107,129,0.2)":arenaAnswered?"rgba(255,255,255,0.08)":"linear-gradient(135deg,#FECA57,#FF9F43)",flexShrink:0}}>
+        <span style={{fontSize:14,fontWeight:800,color:arenaEliminated.includes(arenaId)?"#FF6B81":arenaAnswered?"rgba(255,255,255,0.5)":"#1B1464"}}>
+          {arenaEliminated.includes(arenaId)?"❌ You've been eliminated — watch the game!":arenaAnswered?"⏳ Waiting for others...":"⚡ FASTEST FINGER WINS!"}
         </span>
       </div>
 
@@ -5903,8 +5870,8 @@ export default function App(){
       </div>
 
       {(()=>{
-        const isMyTurn=arenaRoom.turnPlayerId===arenaId;
-        const canAnswer=isMyTurn&&!arenaAnswered&&arenaSec>0;
+        const amEliminated=arenaEliminated.includes(arenaId);
+        const canAnswer=!arenaAnswered&&arenaSec>0&&!amEliminated;
         return<div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
           {arenaRoom.question.options.map((opt,i)=>{
             const isCorrect=arenaFb&&opt===arenaRoom.question.answer;
@@ -5923,51 +5890,111 @@ export default function App(){
       })()}
     </div>}
 
-    {/* ═══ ROUND RESULT ═══ */}
-    {arenaRoom&&arenaPhase==="result"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px 24px",gap:14}}>
-      <div style={{fontSize:56,animation:"floatY 1.5s ease-in-out infinite"}}>{arenaRoom.answerBy?"🎉":"😢"}</div>
-      <h2 style={{fontSize:22,fontWeight:800}}>Round {arenaRoom.round} Complete!</h2>
-      <div style={{fontSize:15,color:"rgba(255,255,255,0.7)"}}>Answer: <strong style={{color:"#FECA57"}}>{String(arenaRoom.question?.answer)}</strong></div>
-      {arenaRoom.answerBy&&<div style={{fontSize:13,color:"#55EFC4"}}>✅ {(arenaRoom.players||[]).find(p=>p.id===arenaRoom.answerBy)?.name||"Someone"} got it right!</div>}
-      <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:8,marginTop:4}}>
-        {(arenaRoom.players||[]).sort((a,b)=>(arenaRoom.scores?.[b.id]||0)-(arenaRoom.scores?.[a.id]||0)).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 16px",borderRadius:18,background:i===0?"linear-gradient(135deg,#FECA57,#FF9F43)":"rgba(255,255,255,0.08)"}}>
-          <span style={{fontSize:13,fontWeight:800,color:i===0?"#1B1464":"rgba(255,255,255,0.5)"}}>{["🥇","🥈","🥉","🏅"][i]}</span>
-          <span style={{fontSize:24}}>{ARENA_AVATARS[(arenaRoom.players||[]).indexOf(p)%4]}</span>
-          <span style={{flex:1,fontWeight:700,fontSize:14,color:i===0?"#1B1464":"#fff"}}>{p.name}</span>
-          <span style={{fontSize:18,fontWeight:800,color:i===0?"#1B1464":"#FECA57"}}>{arenaRoom.scores?.[p.id]||0}</span>
-        </div>)}
-      </div>
-      <p style={{fontSize:11,color:"rgba(255,255,255,0.35)"}}>Next question coming...</p>
-    </div>}
+    {/* ═══ ROUND RESULT + ELIMINATION ═══ */}
+    {arenaRoom&&arenaPhase==="result"&&(()=>{
+      const players=(arenaRoom.players||[]).filter(p=>!arenaEliminated.includes(p.id));
+      const sorted=[...players].sort((a,b)=>(arenaRoom.scores?.[b.id]||0)-(arenaRoom.scores?.[a.id]||0));
+      const round=arenaRoom.round||0;
+      const elimEvery=Math.max(2,Math.ceil(arenaRoom.maxRounds/(Math.max(1,(arenaRoom.players||[]).length-1))));
+      const isElimRound=round>0&&round%elimEvery===0&&players.length>2;
+      const eliminee=isElimRound?sorted[sorted.length-1]:null;
+      const isFinale=players.length===2&&!isElimRound;
+      const winner=(arenaRoom.players||[]).find(p=>p.id===arenaRoom.answerBy);
 
-    {/* ═══ GAME OVER ═══ */}
-    {arenaRoom&&arenaPhase==="gameover"&&<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px 24px",gap:12}}>
-      <div style={{fontSize:64,animation:"floatY 1.5s ease-in-out infinite"}}>🏆</div>
-      <h2 style={{fontSize:26,fontWeight:800}}>Game Over!</h2>
-      <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:10}}>
-        {(arenaRoom.players||[]).sort((a,b)=>(arenaRoom.scores?.[b.id]||0)-(arenaRoom.scores?.[a.id]||0)).map((p,i)=><div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"16px 18px",borderRadius:22,background:i===0?"linear-gradient(135deg,#FECA57,#FF9F43)":"rgba(255,255,255,0.08)",transform:i===0?"scale(1.05)":"scale(1)",boxShadow:i===0?"0 6px 24px rgba(254,202,87,0.3)":"none"}}>
-          <span style={{fontSize:24}}>{["🥇","🥈","🥉","🏅"][i]}</span>
-          <span style={{fontSize:32}}>{ARENA_AVATARS[(arenaRoom.players||[]).indexOf(p)%4]}</span>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:800,fontSize:16,color:i===0?"#1B1464":"#fff"}}>{p.name}{p.id===arenaId?" (You)":""}</div>
-            <div style={{fontSize:11,color:i===0?"rgba(27,20,100,0.6)":"rgba(255,255,255,0.5)"}}>{arenaRoom.scores?.[p.id]||0}/{arenaRoom.maxRounds} correct</div>
+      return<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"16px 24px",gap:10}}>
+        <div style={{fontSize:48,animation:"floatY 1.5s ease-in-out infinite"}}>{isElimRound?"⚔️":winner?"🎉":"😢"}</div>
+        <h2 style={{fontSize:20,fontWeight:800}}>Round {round}{isElimRound?" — Elimination!":""}</h2>
+        <div style={{fontSize:14,color:"rgba(255,255,255,0.7)"}}>Answer: <strong style={{color:"#FECA57"}}>{String(arenaRoom.question?.answer)}</strong></div>
+        {winner&&<div style={{fontSize:13,color:"#55EFC4",fontWeight:700}}>⚡ {winner.name} was fastest!</div>}
+        {!winner&&<div style={{fontSize:13,color:"#FF6B81",fontWeight:700}}>Nobody got it right!</div>}
+
+        {/* Scoreboard */}
+        <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:6,marginTop:4}}>
+          {sorted.map((p,i)=>{
+            const isElim=eliminee&&p.id===eliminee.id;
+            return<div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:16,background:isElim?"linear-gradient(135deg,#FF6B81,#EE5A6F)":i===0?"linear-gradient(135deg,#FECA57,#FF9F43)":"rgba(255,255,255,0.08)",animation:isElim?"shake 0.5s ease-in-out":"none"}}>
+              <span style={{fontSize:12,fontWeight:800,color:i===0?"#1B1464":"rgba(255,255,255,0.5)"}}>{["🥇","🥈","🥉","🏅"][i]}</span>
+              <span style={{fontSize:22}}>{ARENA_AVATARS[(arenaRoom.players||[]).indexOf(p)%4]}</span>
+              <span style={{flex:1,fontWeight:700,fontSize:13,color:isElim?"#fff":i===0?"#1B1464":"#fff"}}>{p.name}{isElim?" — ELIMINATED!":""}</span>
+              <span style={{fontSize:16,fontWeight:800,color:i===0?"#1B1464":"#FECA57"}}>{arenaRoom.scores?.[p.id]||0}</span>
+            </div>;
+          })}
+        </div>
+
+        {/* Eliminated announcement */}
+        {isElimRound&&eliminee&&<div style={{padding:"12px 20px",borderRadius:16,background:"rgba(255,107,129,0.2)",textAlign:"center",marginTop:4}}>
+          <div style={{fontSize:14,fontWeight:800,color:"#FF6B81"}}>❌ {eliminee.name} has been eliminated!</div>
+          <div style={{fontSize:11,color:"rgba(255,255,255,0.5)",marginTop:2}}>{players.length-1} players remaining</div>
+        </div>}
+
+        {/* Finalists announcement */}
+        {isFinale&&<div style={{padding:"12px 20px",borderRadius:16,background:"rgba(254,202,87,0.2)",textAlign:"center",marginTop:4}}>
+          <div style={{fontSize:16,fontWeight:900,color:"#FECA57"}}>🏆 FINAL SHOWDOWN!</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginTop:2}}>{sorted[0]?.name} vs {sorted[1]?.name}</div>
+        </div>}
+
+        {/* Already eliminated players */}
+        {arenaEliminated.length>0&&<div style={{width:"100%",maxWidth:320,marginTop:4}}>
+          <div style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.3)",marginBottom:4}}>Eliminated:</div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+            {arenaEliminated.map(eid=>{const ep=(arenaRoom.players||[]).find(p=>p.id===eid);return ep?<span key={eid} style={{padding:"4px 10px",borderRadius:10,background:"rgba(255,107,129,0.15)",fontSize:10,fontWeight:700,color:"#FF6B81"}}>{ep.name} ❌</span>:null;})}
           </div>
-          <span style={{fontSize:28,fontWeight:800,color:i===0?"#1B1464":"#FECA57"}}>{arenaRoom.scores?.[p.id]||0}</span>
-        </div>)}
-      </div>
-      <div style={{display:"flex",gap:10,marginTop:10}}>
-        <button onClick={()=>{sfxTap();lastRoundRef.current=0;lastTurnRef.current="";if(arenaRoom.hostId===arenaId){fbUpdate("rooms/"+arenaRoom.code,{round:0,state:"waiting",question:null,lastAnswer:null,scores:Object.fromEntries((arenaRoom.players||[]).map(p=>[p.id,0]))});}setArenaPhase("lobby");}} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Play Again 🔄</button>
-        <button onClick={()=>{
-          sfxTap();
-          if(fbListenerRef.current){fbListenerRef.current();fbListenerRef.current=null;}
-          if(arenaRoom){
-            if(arenaRoom.hostId===arenaId){fbWrite("rooms/"+arenaRoom.code,null);}
-            else{fbUpdate("rooms/"+arenaRoom.code,{["players/"+arenaId]:null,["scores/"+arenaId]:null});}
-          }
-          onRoomDeleted();goHome();
-        }} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Exit 👋</button>
-      </div>
-    </div>}
+        </div>}
+
+        <p style={{fontSize:10,color:"rgba(255,255,255,0.3)"}}>Next round in 3 seconds...</p>
+      </div>;
+    })()}
+
+    {/* ═══ GAME OVER — Winner + Prizes ═══ */}
+    {arenaRoom&&arenaPhase==="gameover"&&(()=>{
+      const allPlayers=(arenaRoom.players||[]).sort((a,b)=>(arenaRoom.scores?.[b.id]||0)-(arenaRoom.scores?.[a.id]||0));
+      const prizes=JSON.parse(localStorage.getItem("lg_arena_prizes")||'["🏆 Champion","🥈 Runner Up","🥉 Third Place"]');
+      const champion=allPlayers[0];
+      const isChampMe=champion?.id===arenaId;
+
+      return<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px 24px",gap:10}}>
+        <div style={{fontSize:72,animation:"floatY 1.5s ease-in-out infinite"}}>🏆</div>
+        <h2 style={{fontSize:28,fontWeight:900,color:"#FECA57"}}>Game Over!</h2>
+        {isChampMe&&<div style={{fontSize:18,fontWeight:800,color:"#55EFC4",animation:"numPulse 1.5s ease-in-out infinite"}}>🎉 YOU WON! 🎉</div>}
+
+        {/* Prize podium */}
+        <div style={{width:"100%",maxWidth:340,display:"flex",flexDirection:"column",gap:8}}>
+          {allPlayers.map((p,i)=>{
+            const score=arenaRoom.scores?.[p.id]||0;
+            const prize=prizes[i]||"Participant";
+            const isMe=p.id===arenaId;
+            const bg=i===0?"linear-gradient(135deg,#FECA57,#FF9F43)":i===1?"linear-gradient(135deg,#C0C0C0,#E8E8E8)":i===2?"linear-gradient(135deg,#CD7F32,#DDA85B)":"rgba(255,255,255,0.08)";
+            const tc=i<=2?"#1B1464":"#fff";
+            return<div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 18px",borderRadius:22,background:bg,transform:i===0?"scale(1.05)":"scale(1)",boxShadow:i===0?"0 6px 24px rgba(254,202,87,0.4)":"none"}}>
+              <span style={{fontSize:28}}>{["🥇","🥈","🥉","🏅"][i]||"🎮"}</span>
+              <span style={{fontSize:28}}>{ARENA_AVATARS[(arenaRoom.players||[]).indexOf(p)%4]}</span>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:15,color:tc}}>{p.name}{isMe?" (You)":""}</div>
+                <div style={{fontSize:11,fontWeight:700,color:i<=2?tc+"99":"rgba(255,255,255,0.5)"}}>{prize}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:24,fontWeight:900,color:i===0?"#1B1464":"#FECA57"}}>{score}</div>
+                <div style={{fontSize:9,fontWeight:600,color:i<=2?tc+"77":"rgba(255,255,255,0.4)"}}>pts</div>
+              </div>
+            </div>;
+          })}
+        </div>
+
+        {/* Play again / Exit */}
+        <div style={{display:"flex",gap:10,marginTop:8}}>
+          <button onClick={()=>{sfxTap();lastRoundRef.current=0;setArenaEliminated([]);if(arenaRoom.hostId===arenaId){fbUpdate("rooms/"+arenaRoom.code,{round:0,state:"waiting",question:null,answers:null,scores:Object.fromEntries((arenaRoom.players||[]).map(p=>[p.id,0]))});}setArenaPhase("lobby");}} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Play Again 🔄</button>
+          <button onClick={()=>{
+            sfxTap();
+            if(fbListenerRef.current){fbListenerRef.current();fbListenerRef.current=null;}
+            if(arenaRoom){
+              if(arenaRoom.hostId===arenaId){fbWrite("rooms/"+arenaRoom.code,null);}
+              else{fbUpdate("rooms/"+arenaRoom.code,{["players/"+arenaId]:null,["scores/"+arenaId]:null});}
+            }
+            onRoomDeleted();goHome();
+          }} style={{padding:"14px 24px",borderRadius:18,border:"none",background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>Exit 👋</button>
+        </div>
+      </div>;
+    })()}
 
     </div>
     <style>{CSS}</style>
@@ -6185,8 +6212,44 @@ export default function App(){
         </div>
       </>}
 
-      {/* PIN Change */}
+      {/* Arena Settings */}
       <div style={{marginTop:16,padding:14,borderRadius:18,background:"#fff",border:"2px solid #E8EAF6"}}>
+        <div style={{fontWeight:800,fontSize:13,marginBottom:8}}>🏟️ Arena Settings</div>
+        <div style={{fontSize:10,fontWeight:600,color:"#8E8CA3",marginBottom:8}}>Set difficulty, topics & prizes for multiplayer</div>
+        <div style={{display:"flex",gap:6,marginBottom:10}}>
+          {[{id:"easy",l:"Easy",c:"#22C55E"},{id:"medium",l:"Medium",c:"#FF9F43"},{id:"hard",l:"Hard",c:"#EF4444"},{id:"mix",l:"Mix",c:"#6C5CE7"}].map(d=>
+            <button key={d.id} onClick={()=>{sfxTap();try{localStorage.setItem("lg_arena_diff",d.id);}catch(e){}}} style={{
+              flex:1,padding:"8px 4px",borderRadius:10,border:"2px solid "+(localStorage.getItem("lg_arena_diff")===d.id?d.c:"transparent"),
+              background:localStorage.getItem("lg_arena_diff")===d.id?d.c+"18":"#F8F9FF",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:localStorage.getItem("lg_arena_diff")===d.id?d.c:"#8E8CA3"
+            }}>{d.l}</button>
+          )}
+        </div>
+        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:6}}>Topics:</div>
+        <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
+          {["Numbers","Math","Alphabet","Shapes","Colors","Phonics","Counting"].map(t=>{
+            const key="lg_arena_topics";
+            const saved=JSON.parse(localStorage.getItem(key)||"[]");
+            const isOn=saved.length===0||saved.includes(t);
+            return<button key={t} onClick={()=>{sfxTap();const cur=JSON.parse(localStorage.getItem(key)||"[]");if(cur.includes(t))localStorage.setItem(key,JSON.stringify(cur.filter(x=>x!==t)));else localStorage.setItem(key,JSON.stringify([...cur,t]));}} style={{
+              padding:"5px 10px",borderRadius:10,border:isOn?"2px solid #6C5CE7":"2px solid #E8EAF6",
+              background:isOn?"#6C5CE712":"#fff",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",color:isOn?"#6C5CE7":"#8E8CA3"
+            }}>{isOn?"✅":""} {t}</button>;
+          })}
+        </div>
+        {/* Prize Levels */}
+        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",marginBottom:6}}>🏆 Prize Levels:</div>
+        <div style={{display:"flex",flexDirection:"column",gap:4}}>
+          {[{rank:"1st",emoji:"🥇",default:"Champion",color:"#FECA57"},{rank:"2nd",emoji:"🥈",default:"Runner Up",color:"#C0C0C0"},{rank:"3rd",emoji:"🥉",default:"Third Place",color:"#CD7F32"}].map((p,i)=>{
+            const prizes=JSON.parse(localStorage.getItem("lg_arena_prizes")||"[]");
+            return<div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:16}}>{p.emoji}</span>
+              <input defaultValue={prizes[i]||p.default} onBlur={e=>{const pr=JSON.parse(localStorage.getItem("lg_arena_prizes")||'["Champion","Runner Up","Third Place"]');pr[i]=e.target.value||p.default;localStorage.setItem("lg_arena_prizes",JSON.stringify(pr));}} style={{flex:1,padding:"6px 10px",borderRadius:8,border:"2px solid #E8EAF6",fontSize:11,fontWeight:700,fontFamily:"var(--font)"}}/>
+            </div>;
+          })}
+        </div>
+      </div>
+      {/* PIN Change */}
+      <div style={{marginTop:14,padding:14,borderRadius:18,background:"#fff",border:"2px solid #E8EAF6"}}>
         <div style={{fontWeight:800,fontSize:13,marginBottom:8}}>🔐 Change PIN</div>
         <div style={{display:"flex",gap:8}}>
           <input value={pinInput} onChange={e=>setPinInput(e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="New 4-digit PIN" style={{flex:1,padding:"10px 14px",borderRadius:12,border:"2px solid #DFE6E9",fontSize:14,fontWeight:700,fontFamily:"var(--font)"}}/>
@@ -6196,128 +6259,141 @@ export default function App(){
     </div>}
 
 
-    {/* ═══ TRACKER TAB — Performance tracking with drilldown ═══ */}
+    {/* ═══ TRACKER TAB — Comprehensive performance tracking ═══ */}
     {parentTab==="tracker"&&(()=>{
+      const name=prof?.name||"Child";
       const now=new Date();const today=now.toDateString();
       const weekAgo=new Date(now-7*86400000);const monthAgo=new Date(now-30*86400000);
       const todayLogs=perfLog.filter(l=>new Date(l.date).toDateString()===today);
       const weekLogs=perfLog.filter(l=>new Date(l.date)>=weekAgo);
       const monthLogs=perfLog.filter(l=>new Date(l.date)>=monthAgo);
       const calcStats=(logs)=>{
-        if(!logs.length)return{total:0,correct:0,pct:0,cats:{},sessions:0};
+        if(!logs.length)return{total:0,correct:0,pct:0,cats:{},sessions:0,wrong:0};
         let total=0,correct=0;const cats={};const dates=new Set();
         logs.forEach(l=>{total+=l.total;correct+=l.correct;dates.add(new Date(l.date).toDateString());if(!cats[l.cat])cats[l.cat]={correct:0,total:0,wrong:0};cats[l.cat].correct+=l.correct;cats[l.cat].total+=l.total;cats[l.cat].wrong+=(l.total-l.correct);});
         return{total,correct,wrong:total-correct,pct:total>0?Math.round(correct/total*100):0,cats,sessions:dates.size};
       };
       const dS=calcStats(todayLogs),wS=calcStats(weekLogs),mS=calcStats(monthLogs);
+      const modIcons={speaking:"🗣️",listening:"👂",reading:"📖",writing:"✍️"};
+      const modColors={speaking:"#6C5CE7",listening:"#00D2A0",reading:"#FF9F43",writing:"#54A0FF"};
+
       return<div>
-        <h3 style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,marginBottom:6}}>📊 {prof?.name||"Child"}'s Progress</h3>
-        {/* Period summary cards */}
+        {/* ═══ OVERVIEW TILES ═══ */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:14}}>
+          <div style={{padding:16,borderRadius:20,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",textAlign:"center"}}>
+            <div style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.7)",textTransform:"uppercase"}}>Active Time</div>
+            <div style={{fontSize:28,fontWeight:900,color:"#fff"}}>{engageMins}m</div>
+            <div style={{fontSize:9,fontWeight:700,color:"#FECA57"}}>{engageMins>=15?"✅ On track":"⏱ Keep going"}</div>
+            <div style={{fontSize:8,fontWeight:600,color:"rgba(255,255,255,0.5)",marginTop:2}}>Pauses when idle 30s</div>
+          </div>
+          <div style={{padding:16,borderRadius:20,background:"linear-gradient(135deg,#FF9F43,#FECA57)",textAlign:"center"}}>
+            <div style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.7)",textTransform:"uppercase"}}>Total Points</div>
+            <div style={{fontSize:28,fontWeight:900,color:"#fff"}}>{prof?.totalEarned||0}</div>
+            <div style={{fontSize:9,fontWeight:700,color:"#fff"}}>+1 per correct · +1 per 2min</div>
+          </div>
+        </div>
+
+        {/* ═══ ACCURACY TILES — Daily / Weekly / Monthly ═══ */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
-          {[{label:"Today",s:dS,c:"#6C5CE7"},{label:"This Week",s:wS,c:"#54A0FF"},{label:"This Month",s:mS,c:"#00D2A0"}].map(p=>
-            <div key={p.label} style={{padding:12,borderRadius:18,background:`linear-gradient(135deg,${p.c},${p.c}AA)`,textAlign:"center"}}>
-              <div style={{color:"rgba(255,255,255,0.8)",fontSize:9,fontWeight:700}}>{p.label}</div>
-              <div style={{color:"#fff",fontSize:26,fontWeight:900,margin:"2px 0"}}>{p.s.pct}%</div>
-              <div style={{color:"rgba(255,255,255,0.7)",fontSize:9,fontWeight:600}}>✅{p.s.correct} ❌{p.s.wrong}</div>
+          {[{l:"Today",s:dS,c:"#6C5CE7"},{l:"This Week",s:wS,c:"#54A0FF"},{l:"This Month",s:mS,c:"#00D2A0"}].map(p=>
+            <div key={p.l} style={{padding:12,borderRadius:16,background:"#fff",border:"2px solid "+p.c+"20",textAlign:"center"}}>
+              <div style={{fontSize:9,fontWeight:800,color:p.c,textTransform:"uppercase"}}>{p.l}</div>
+              <div style={{fontSize:24,fontWeight:900,color:p.c,margin:"2px 0"}}>{p.s.pct}%</div>
+              <div style={{fontSize:9,fontWeight:600,color:"#8E8CA3"}}>✅{p.s.correct} ❌{p.s.wrong}</div>
+              <div style={{fontSize:8,fontWeight:600,color:"#A4B0BE"}}>{p.s.total} attempts</div>
             </div>
           )}
         </div>
-        {/* Detailed stats */}
+
+        {/* ═══ MODULE PERFORMANCE TILES ═══ */}
+        <div style={{fontWeight:900,fontSize:15,marginBottom:8}}>📊 Module Performance</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8,marginBottom:14}}>
-          <div style={{padding:12,borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",textAlign:"center"}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#8E8CA3"}}>SCREEN TIME</div>
-            <div style={{fontSize:22,fontWeight:900,color:"#6C5CE7"}}>{engageMins}m</div>
-          </div>
-          <div style={{padding:12,borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",textAlign:"center"}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#8E8CA3"}}>TOTAL POINTS</div>
-            <div style={{fontSize:22,fontWeight:900,color:"#FF9F43"}}>{prof?.totalEarned||0}</div>
-          </div>
-          <div style={{padding:12,borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",textAlign:"center"}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#8E8CA3"}}>RIGHT ANSWERS</div>
-            <div style={{fontSize:22,fontWeight:900,color:"#00D2A0"}}>{mS.correct}</div>
-          </div>
-          <div style={{padding:12,borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",textAlign:"center"}}>
-            <div style={{fontSize:9,fontWeight:700,color:"#8E8CA3"}}>WRONG ANSWERS</div>
-            <div style={{fontSize:22,fontWeight:900,color:"#EF4444"}}>{mS.wrong}</div>
-          </div>
-        </div>
-        {/* Assigned tasks status */}
-        {studyPlan.length>0&&<>
-          <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>📋 Assigned Tasks Status</div>
-          {studyPlan.map((task,i)=>{
-            const logs=perfLog.filter(l=>l.cat===task.topic.toLowerCase().replace(/ /g,"_"));
-            const taskCorrect=logs.reduce((a,l)=>a+l.correct,0);
-            const taskTotal=logs.reduce((a,l)=>a+l.total,0);
-            const pct=taskTotal>0?Math.round(taskCorrect/taskTotal*100):0;
-            return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",marginBottom:6}}>
-              <span style={{fontSize:10,fontWeight:800,color:task.done?"#00D2A0":"#FF9F43"}}>{task.done?"✅":"🔒"}</span>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:11,textTransform:"capitalize"}}>{task.mod} · {task.topic}</div>
-                <div style={{height:6,borderRadius:3,background:"#F0F4FF",marginTop:3,overflow:"hidden"}}>
-                  <div style={{height:"100%",borderRadius:3,background:pct>=70?"linear-gradient(90deg,#00D2A0,#55EFC4)":"linear-gradient(90deg,#FF9F43,#FECA57)",width:pct+"%"}}/>
-                </div>
+          {["speaking","listening","reading","writing"].map(mod=>{
+            const modLogs=monthLogs.filter(l=>l.cat===mod);
+            const tasks=studyPlan.filter(t=>t.mod===mod);
+            const done=tasks.filter(t=>t.done).length;
+            const mCorrect=modLogs.reduce((a,l)=>a+l.correct,0);
+            const mTotal=modLogs.reduce((a,l)=>a+l.total,0);
+            const mPct=mTotal>0?Math.round(mCorrect/mTotal*100):0;
+            const started=mTotal>0;
+            return<div key={mod} style={{padding:14,borderRadius:18,background:"#fff",border:"2px solid "+modColors[mod]+"25",position:"relative",overflow:"hidden"}}>
+              <div style={{position:"absolute",top:0,left:0,height:4,width:mPct+"%",background:modColors[mod],borderRadius:2}}/>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:22}}>{modIcons[mod]}</span>
+                <span style={{fontSize:13,fontWeight:900,color:modColors[mod],textTransform:"capitalize"}}>{mod}</span>
               </div>
-              <span style={{fontSize:12,fontWeight:800,color:pct>=70?"#00D2A0":"#FF9F43"}}>{pct}%</span>
+              <div style={{fontSize:22,fontWeight:900,color:started?modColors[mod]:"#D1D5DB"}}>{started?mPct+"%":"—"}</div>
+              <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                <span style={{fontSize:9,fontWeight:700,color:"#8E8CA3"}}>{started?"✅"+mCorrect+" ❌"+(mTotal-mCorrect):"Not started"}</span>
+                {tasks.length>0&&<span style={{fontSize:9,fontWeight:700,color:modColors[mod]}}>{done}/{tasks.length} tasks</span>}
+              </div>
+            </div>;
+          })}
+        </div>
+
+        {/* ═══ ASSIGNED TASKS — Detailed Status ═══ */}
+        {studyPlan.length>0&&<>
+          <div style={{fontWeight:900,fontSize:15,marginBottom:8}}>📋 Assignment Status</div>
+          {studyPlan.map((task,i)=>{
+            const pct=task.progress||0;
+            const status=task.done?"DONE":task.total>0?"IN PROGRESS":"NOT STARTED";
+            const statusColor=task.done?"#16A34A":task.total>0?"#FF9F43":"#D1D5DB";
+            const doneDate=task.completedAt?new Date(task.completedAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+            return<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:18,background:"#fff",border:"2px solid "+statusColor+"30",marginBottom:8}}>
+              <div style={{width:40,height:40,borderRadius:12,background:modColors[task.mod]||"#6C5CE7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{modIcons[task.mod]||"📋"}</div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:800,fontSize:13,color:"#2D2B3D"}}>{task.topic}</div>
+                <div style={{fontSize:10,fontWeight:600,color:"#8E8CA3",textTransform:"capitalize"}}>{task.mod} · {task.difficulty||"easy"} · {task.attempts||0} attempts</div>
+                {task.done&&<div style={{fontSize:10,fontWeight:700,color:"#16A34A"}}>✅ Done {doneDate} · {pct}% · {task.correct}/{task.total} correct</div>}
+                {!task.done&&task.total>0&&<div style={{height:5,borderRadius:3,background:"#F0F4FF",marginTop:4,overflow:"hidden"}}>
+                  <div style={{height:"100%",borderRadius:3,background:modColors[task.mod],width:pct+"%"}}/>
+                </div>}
+              </div>
+              <div style={{padding:"4px 10px",borderRadius:10,background:statusColor+"18"}}>
+                <div style={{fontSize:9,fontWeight:800,color:statusColor}}>{status}</div>
+              </div>
             </div>;
           })}
         </>}
-        {/* Drilldown by category */}
-        <div style={{fontWeight:800,fontSize:14,marginTop:12,marginBottom:8}}>📈 Category Drilldown</div>
-        {Object.entries(mS.cats).length===0?<p style={{color:"#A4B0BE",fontSize:12}}>No data yet — start learning!</p>:
-          Object.entries(mS.cats).sort((a,b)=>b[1].total-a[1].total).map(([cat,data])=>{
-            const pct=data.total>0?Math.round(data.correct/data.total*100):0;
-            return<div key={cat} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderRadius:16,background:"#fff",boxShadow:"var(--shadow-card)",marginBottom:6}}>
-              <span style={{fontSize:10,fontWeight:800,color:pct>=70?"#00D2A0":"#EF4444"}}>{pct>=70?"💪":"📉"}</span>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:11,textTransform:"capitalize"}}>{cat}</div>
-                <div style={{height:6,borderRadius:3,background:"#F0F4FF",marginTop:3,overflow:"hidden"}}>
-                  <div style={{height:"100%",borderRadius:3,background:pct>=70?"linear-gradient(90deg,#00D2A0,#55EFC4)":pct>=40?"linear-gradient(90deg,#FF9F43,#FECA57)":"linear-gradient(90deg,#EF4444,#FDA7DF)",width:pct+"%"}}/>
-                </div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:13,fontWeight:800,color:pct>=70?"#00D2A0":"#EF4444"}}>{pct}%</div>
-                <div style={{fontSize:8,color:"#8E8CA3"}}>✅{data.correct} ❌{data.wrong}</div>
-              </div>
-            </div>;
-          })
-        }
 
-        {/* ═══ REPORT CARD ═══ */}
-        <div style={{marginTop:16,padding:16,borderRadius:20,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",boxShadow:"0 4px 20px rgba(108,92,231,0.2)"}}>
-          <div style={{fontWeight:900,fontSize:16,color:"#fff",marginBottom:8}}>📄 Report Card</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-            <div style={{padding:10,borderRadius:14,background:"rgba(255,255,255,0.15)",textAlign:"center"}}>
-              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>OVERALL</div>
-              <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{mS.pct}%</div>
-              <div style={{fontSize:8,fontWeight:700,color:mS.pct>=70?"#55EFC4":mS.pct>=40?"#FECA57":"#FDA7DF"}}>{mS.pct>=70?"Excellent":mS.pct>=40?"Good":"Needs Work"}</div>
+        {/* ═══ COMPILED REPORT CARD ═══ */}
+        <div style={{marginTop:14,padding:18,borderRadius:22,background:"linear-gradient(135deg,#1B1464,#6C5CE7)",boxShadow:"0 6px 24px rgba(27,20,100,0.3)"}}>
+          <div style={{fontWeight:900,fontSize:17,color:"#fff",marginBottom:12}}>📄 {name}'s Report Card</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+            <div style={{padding:12,borderRadius:14,background:"rgba(255,255,255,0.1)",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>ACCURACY</div>
+              <div style={{fontSize:26,fontWeight:900,color:"#fff"}}>{mS.pct}%</div>
+              <div style={{fontSize:9,fontWeight:700,color:mS.pct>=70?"#55EFC4":mS.pct>=40?"#FECA57":"#FDA7DF"}}>{mS.pct>=70?"⭐ Excellent":mS.pct>=40?"👍 Good":"💪 Needs Practice"}</div>
             </div>
-            <div style={{padding:10,borderRadius:14,background:"rgba(255,255,255,0.15)",textAlign:"center"}}>
-              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>TASKS</div>
-              <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{studyPlan.filter(t=>t.done).length}/{studyPlan.length}</div>
-              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Completed</div>
+            <div style={{padding:12,borderRadius:14,background:"rgba(255,255,255,0.1)",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>COMPLETION</div>
+              <div style={{fontSize:26,fontWeight:900,color:"#fff"}}>{studyPlan.length>0?Math.round(studyPlan.filter(t=>t.done).length/studyPlan.length*100):0}%</div>
+              <div style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>{studyPlan.filter(t=>t.done).length}/{studyPlan.length} tasks done</div>
             </div>
-            <div style={{padding:10,borderRadius:14,background:"rgba(255,255,255,0.15)",textAlign:"center"}}>
-              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>ACTIVE TIME</div>
-              <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{engageMins}m</div>
-              <div style={{fontSize:8,fontWeight:700,color:engageMins>=15?"#55EFC4":"#FECA57"}}>{engageMins>=15?"On track":"More needed"}</div>
+            <div style={{padding:12,borderRadius:14,background:"rgba(255,255,255,0.1)",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>ACTIVE TIME</div>
+              <div style={{fontSize:26,fontWeight:900,color:"#fff"}}>{engageMins}m</div>
+              <div style={{fontSize:9,fontWeight:700,color:engageMins>=15?"#55EFC4":"#FECA57"}}>{engageMins>=15?"✅ Great focus":"⏱ Keep going"}</div>
             </div>
-            <div style={{padding:10,borderRadius:14,background:"rgba(255,255,255,0.15)",textAlign:"center"}}>
-              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>POINTS</div>
-              <div style={{fontSize:22,fontWeight:900,color:"#FECA57"}}>{prof?.totalEarned||0}</div>
-              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.7)"}}>Earned</div>
+            <div style={{padding:12,borderRadius:14,background:"rgba(255,255,255,0.1)",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>TOTAL SCORE</div>
+              <div style={{fontSize:26,fontWeight:900,color:"#FECA57"}}>{prof?.totalEarned||0}</div>
+              <div style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.6)"}}>points earned</div>
             </div>
           </div>
-          {/* Module breakdown */}
-          <div style={{marginTop:10}}>
+          {/* Module grades */}
+          <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:4}}>
             {["speaking","listening","reading","writing"].map(mod=>{
-              const modLogs=monthLogs.filter(l=>l.cat&&l.cat.startsWith&&studyPlan.some(t=>t.mod===mod));
-              const modTasks=studyPlan.filter(t=>t.mod===mod);
-              const doneCnt=modTasks.filter(t=>t.done).length;
-              const icons={"speaking":"🗣️","listening":"👂","reading":"📖","writing":"✍️"};
-              return<div key={mod} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",borderRadius:10,background:"rgba(255,255,255,0.1)",marginTop:4}}>
-                <span style={{fontSize:14}}>{icons[mod]}</span>
-                <span style={{fontSize:11,fontWeight:800,color:"#fff",flex:1,textTransform:"capitalize"}}>{mod}</span>
-                <span style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.8)"}}>{doneCnt}/{modTasks.length} tasks</span>
+              const ml=monthLogs.filter(l=>l.cat===mod);
+              const mc=ml.reduce((a,l)=>a+l.correct,0);const mt=ml.reduce((a,l)=>a+l.total,0);
+              const mp=mt>0?Math.round(mc/mt*100):null;
+              const grade=mp===null?"—":mp>=90?"A+":mp>=80?"A":mp>=70?"B":mp>=60?"C":mp>=50?"D":"F";
+              const gradeColor=mp===null?"#666":mp>=70?"#55EFC4":mp>=50?"#FECA57":"#FDA7DF";
+              return<div key={mod} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:"rgba(255,255,255,0.08)"}}>
+                <span style={{fontSize:16}}>{modIcons[mod]}</span>
+                <span style={{fontSize:12,fontWeight:800,color:"#fff",flex:1,textTransform:"capitalize"}}>{mod}</span>
+                <span style={{fontSize:10,fontWeight:700,color:"rgba(255,255,255,0.5)"}}>{mt>0?mc+"/"+mt:"—"}</span>
+                <span style={{fontSize:16,fontWeight:900,color:gradeColor,minWidth:28,textAlign:"center"}}>{grade}</span>
               </div>;
             })}
           </div>
@@ -6462,7 +6538,52 @@ export default function App(){
         </div>}
 
         {/* Free Local Insights — always available */}
-        <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>"📊 Free Insights (always available)"</div>
+        {/* ═══ DYNAMIC CHARTS ═══ */}
+        {mS.total>0&&<div style={{marginBottom:14}}>
+          <div style={{fontWeight:900,fontSize:14,marginBottom:8}}>📊 Performance Charts</div>
+          {/* Module accuracy bar chart */}
+          <div style={{padding:14,borderRadius:18,background:"#fff",border:"2px solid #E8EAF620",marginBottom:10}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#8E8CA3",marginBottom:8}}>Accuracy by Module</div>
+            {["speaking","listening","reading","writing"].map(mod=>{
+              const ml=monthLogs.filter(l=>l.cat===mod);
+              const mc=ml.reduce((a,l)=>a+l.correct,0);const mt=ml.reduce((a,l)=>a+l.total,0);
+              const mp=mt>0?Math.round(mc/mt*100):0;
+              const barColor={speaking:"#6C5CE7",listening:"#00D2A0",reading:"#FF9F43",writing:"#54A0FF"}[mod];
+              const icon={speaking:"🗣️",listening:"👂",reading:"📖",writing:"✍️"}[mod];
+              return<div key={mod} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                <span style={{fontSize:14,width:20}}>{icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{height:18,borderRadius:9,background:"#F0F4FF",overflow:"hidden",position:"relative"}}>
+                    <div style={{height:"100%",borderRadius:9,background:`linear-gradient(90deg,${barColor},${barColor}BB)`,width:mp+"%",transition:"width 0.5s",minWidth:mp>0?20:0}}/>
+                    <span style={{position:"absolute",right:6,top:2,fontSize:9,fontWeight:800,color:mp>60?"#fff":"#8E8CA3"}}>{mt>0?mp+"%":"—"}</span>
+                  </div>
+                </div>
+                <span style={{fontSize:9,fontWeight:700,color:"#8E8CA3",width:35,textAlign:"right"}}>{mc}/{mt}</span>
+              </div>;
+            })}
+          </div>
+          {/* Daily activity chart (last 7 days) */}
+          <div style={{padding:14,borderRadius:18,background:"#fff",border:"2px solid #E8EAF620"}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#8E8CA3",marginBottom:8}}>Activity This Week</div>
+            <div style={{display:"flex",alignItems:"flex-end",gap:4,height:80}}>
+              {Array.from({length:7}).map((_,i)=>{
+                const d=new Date();d.setDate(d.getDate()-(6-i));
+                const dayLogs=perfLog.filter(l=>new Date(l.date).toDateString()===d.toDateString());
+                const count=dayLogs.length;
+                const maxCount=Math.max(1,...Array.from({length:7}).map((_,j)=>{const dd=new Date();dd.setDate(dd.getDate()-(6-j));return perfLog.filter(l=>new Date(l.date).toDateString()===dd.toDateString()).length;}));
+                const h=count>0?Math.max(12,Math.round((count/maxCount)*70)):4;
+                const isToday=i===6;
+                return<div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                  {count>0&&<span style={{fontSize:8,fontWeight:800,color:"#6C5CE7"}}>{count}</span>}
+                  <div style={{width:"100%",height:h,borderRadius:6,background:isToday?"linear-gradient(180deg,#6C5CE7,#A29BFE)":count>0?"#E8EAF6":"#F5F5F5",transition:"height 0.3s"}}/>
+                  <span style={{fontSize:7,fontWeight:700,color:isToday?"#6C5CE7":"#A4B0BE"}}>{["S","M","T","W","T","F","S"][d.getDay()]}</span>
+                </div>;
+              })}
+            </div>
+          </div>
+        </div>}
+
+        <div style={{fontWeight:800,fontSize:14,marginBottom:8}}>📊 Free Insights (always available)</div>
         {insights.map((ins,i)=><div key={i} style={{display:"flex",gap:12,padding:"12px 14px",background:"#fff",borderRadius:18,boxShadow:"var(--shadow-card)",marginBottom:8,borderLeft:"4px solid "+ins.color}}>
           <span style={{fontSize:22,flexShrink:0}}>{ins.icon}</span>
           <div>
