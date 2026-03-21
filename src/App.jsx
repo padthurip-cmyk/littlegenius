@@ -4331,6 +4331,27 @@ export default function App(){
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
   const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework","speakflow","listenflow","readflow","strokelearn","parent","arena","numbers"].includes(scr);
+  const PinModal=showPinModal?<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <span style={{fontSize:48}}>🔒</span>
+        <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
+        <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
+        <div style={{display:"flex",gap:8,justifyContent:"center",margin:"16px 0"}}>
+          {[1,2,3,4].map(i=><div key={i} style={{width:52,height:52,borderRadius:14,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9"}}>{pinInput.length>=i?"●":"○"}</div>)}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:240,margin:"0 auto"}}>
+          {[1,2,3,4,5,6,7,8,9,0,"⌫"].map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
+            sfxTap();
+            if(n==="⌫"){setPinInput(p=>p.slice(0,-1));}
+            else{const np=pinInput+n;setPinInput(np);
+              if(np.length===4){if(np===parentPin){setShowPinModal(false);setPinInput("");setScr("parent");setParentMode(true);}else{setPinInput("");}}
+            }
+          }} style={{padding:"14px",borderRadius:14,border:"none",background:n==="⌫"?"#FEE2E2":"#F0F4FF",fontSize:n==="⌫"?18:22,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"#FF6B81":"var(--dark)"}}>{n}</button>)}
+        </div>
+        <p style={{fontSize:10,color:"#A4B0BE",marginTop:10}}>Default PIN: 1234</p>
+      </div>
+    </div>:null;
+
   const BottomNav=showNav?<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"calc(100% - 20px)",maxWidth:504,display:"flex",background:"#fff",border:"none",zIndex:90,fontFamily:"var(--font)",borderRadius:20,padding:"4px",gap:4,boxShadow:"0 -2px 20px rgba(0,0,0,0.08)"}}>
     {[
       {id:"home",icon:"🏠",label:"Home",bg:"#6C5CE7"},
@@ -4347,6 +4368,7 @@ export default function App(){
       <span style={{fontSize:19}}>{t.icon}</span>
       <span style={{fontSize:9,fontWeight:800,color:active?"#fff":t.bg}}>{t.label}</span>
     </button>;})}
+    {PinModal}
   </div>:null;
 
 
@@ -5692,28 +5714,7 @@ export default function App(){
         </button>)}
       </div>
     </div>
-        {/* ═══ PIN MODAL ═══ */}
-    {showPinModal&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"28px 24px",maxWidth:320,width:"90%",textAlign:"center",boxShadow:"var(--shadow-float)"}}>
-        <span style={{fontSize:48}}>🔒</span>
-        <h3 style={{fontFamily:"var(--font)",fontSize:18,fontWeight:800,margin:"8px 0"}}>Parent Access</h3>
-        <p style={{fontSize:12,color:"#A4B0BE",fontWeight:600}}>Enter PIN to continue</p>
-        <div style={{display:"flex",gap:8,justifyContent:"center",margin:"16px 0"}}>
-          {[1,2,3,4].map(i=><div key={i} style={{width:52,height:52,borderRadius:14,background:pinInput.length>=i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:800,color:pinInput.length>=i?"#fff":"#DFE6E9",boxShadow:"var(--shadow-card)"}}>{pinInput.length>=i?"●":"○"}</div>)}
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,maxWidth:240,margin:"0 auto"}}>
-          {[1,2,3,4,5,6,7,8,9,0,"⌫"].map((n,i)=>n===""?<div key={i}/>:<button key={i} onClick={()=>{
-            sfxTap();
-            if(n==="⌫"){setPinInput(p=>p.slice(0,-1));}
-            else{const np=pinInput+n;setPinInput(np);
-              if(np.length===4){if(np===parentPin){setShowPinModal(false);setPinInput("");setScr("parent");setParentMode(true);}else{setPinInput("");}}
-            }
-          }} style={{padding:"14px",borderRadius:14,border:"none",background:n==="⌫"?"#FEE2E2":"#F0F4FF",fontSize:n==="⌫"?18:22,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"#FF6B81":"var(--dark)",boxShadow:"var(--shadow-card)"}}>{n}</button>)}
-        </div>
-        <p style={{fontSize:10,color:"#A4B0BE",marginTop:10}}>Default PIN: 1234</p>
-      </div>
-    </div>}
-    {BottomNav}{TeacherBubble}<style>{CSS}</style>
+        {BottomNav}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
 
@@ -6470,43 +6471,52 @@ export default function App(){
         <h3 style={{fontFamily:"var(--font)",fontSize:20,fontWeight:800,color:"var(--dark)",marginTop:12}}>No study plan yet!</h3>
         <p style={{fontSize:13,color:"#A4B0BE",fontWeight:600,marginTop:6}}>Ask your parents to create one for you</p>
       </div>:
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {studyPlan.map((task,i)=>{
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {/* Group tasks by module */}
+        {["speaking","listening","reading","writing"].map(mod=>{
+          const tasks=studyPlan.filter(t=>t.mod===mod);
+          if(!tasks.length)return null;
           const modIcons={speaking:"🗣️",listening:"👂",reading:"📖",writing:"✍️"};
-          const modColors={speaking:"#6C5CE7",listening:"#00D2A0",reading:"#FF9F43",writing:"#54A0FF"};
+          const modLabels={speaking:"Speaking",listening:"Listening",reading:"Reading",writing:"Writing"};
           const modBg={speaking:"linear-gradient(135deg,#6C5CE7,#A29BFE)",listening:"linear-gradient(135deg,#00D2A0,#55EFC4)",reading:"linear-gradient(135deg,#FF9F43,#FECA57)",writing:"linear-gradient(135deg,#54A0FF,#74B9FF)"};
-          const diffIcons={easy:"🟢",medium:"🟡",hard:"🔴"};
-          const isDone=task.done;
-          const mc=modColors[task.mod]||"#6C5CE7";
-          return<button key={i} data-r="tile" onClick={()=>{sfxTap();killAllFlows();
-            if(task.mod==="speaking")setScr("speaking");
-            else if(task.mod==="listening")setScr("listening");
-            else if(task.mod==="reading")setScr("reading");
-            else if(task.mod==="writing")setScr("writing");
-            else setScr("home");
-          }} style={{
-            display:"flex",alignItems:"center",gap:14,padding:"16px 16px",borderRadius:22,border:"none",cursor:"pointer",
-            background:isDone?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#fff",
-            boxShadow:isDone?"0 4px 14px rgba(0,210,160,0.2)":"0 2px 10px rgba(0,0,0,0.06)",
-            borderLeft:isDone?"none":"4px solid "+mc}}>
-            <div style={{width:48,height:48,borderRadius:14,background:isDone?"rgba(255,255,255,0.25)":mc+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>
-              {isDone?"✅":(modIcons[task.mod]||"📚")}
-            </div>
-            <div style={{flex:1,textAlign:"left"}}>
-              <div style={{fontWeight:800,fontSize:16,color:isDone?"#fff":"var(--dark)"}}>{task.topic}</div>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
-                <span style={{fontSize:10,fontWeight:700,color:isDone?"rgba(255,255,255,0.8)":"#8E8CA3",textTransform:"capitalize"}}>{task.mod}</span>
-                {task.difficulty&&<span style={{fontSize:10,fontWeight:700,color:isDone?"rgba(255,255,255,0.8)":"#8E8CA3"}}>{diffIcons[task.difficulty]||""} {task.difficulty}</span>}
-                {task.timeLimit&&<span style={{fontSize:10,fontWeight:700,color:isDone?"rgba(255,255,255,0.8)":"#3B82F6"}}>⏱️{task.timeLimit}m</span>}
+          const modColors={speaking:"#6C5CE7",listening:"#00D2A0",reading:"#FF9F43",writing:"#54A0FF"};
+          const done=tasks.filter(t=>t.done).length;
+          const allDone=done===tasks.length;
+          return<div key={mod} style={{borderRadius:22,overflow:"hidden",border:"2px solid "+(allDone?"#22C55E30":modColors[mod]+"20")}}>
+            {/* Module header */}
+            <div style={{background:allDone?"linear-gradient(135deg,#22C55E,#55EFC4)":modBg[mod],padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:44,height:44,borderRadius:14,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{allDone?"✅":modIcons[mod]}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{modLabels[mod]}</div>
+                <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.8)"}}>{done}/{tasks.length} completed</div>
               </div>
-              {isDone&&<div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.9)",marginTop:2}}>Completed! 🎉 {task.correct||0}/{task.total||0} correct</div>}
             </div>
-            <div style={{padding:"8px 14px",borderRadius:14,background:isDone?"rgba(255,255,255,0.2)":modBg[task.mod]||"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:12,fontWeight:800}}>
-              {isDone?"Done ✅":"Go →"}
+            {/* Topic list inside */}
+            <div style={{background:"#fff",padding:"8px 10px"}}>
+              {tasks.map((task,j)=>{
+                const diffIcons={easy:"🟢",medium:"🟡",hard:"🔴"};
+                const pct=task.total>0?Math.round(task.correct/task.total*100):0;
+                return<button key={j} onClick={()=>{sfxTap();killAllFlows();setScr(mod);}} style={{
+                  display:"flex",alignItems:"center",gap:10,padding:"10px 12px",width:"100%",
+                  borderRadius:14,border:"none",cursor:"pointer",background:task.done?"#ECFDF5":"#F8F9FF",marginBottom:4,textAlign:"left"
+                }}>
+                  <span style={{fontSize:18}}>{task.done?"✅":"📝"}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:800,fontSize:13,color:task.done?"#16A34A":"#2D2B3D"}}>{task.topic}</div>
+                    <div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>
+                      {diffIcons[task.difficulty]||""} {task.difficulty||"easy"} {task.timeLimit?"· ⏱️"+task.timeLimit+"m":""}
+                      {task.done?" · "+pct+"% accuracy":""}
+                    </div>
+                  </div>
+                  <div style={{padding:"6px 12px",borderRadius:12,background:task.done?"#22C55E":modBg[mod],color:"#fff",fontSize:11,fontWeight:800}}>
+                    {task.done?"Done ✅":"Go →"}
+                  </div>
+                </button>;
+              })}
             </div>
-          </button>;
+          </div>;
         })}
-        {/* Points info */}
+        {/* Summary cards */}
         <div style={{display:"flex",gap:8,marginTop:4}}>
           <div style={{flex:1,padding:"10px 12px",borderRadius:14,background:"#ECFDF5",textAlign:"center"}}>
             <div style={{fontSize:9,fontWeight:700,color:"#16A34A"}}>POINTS</div>
