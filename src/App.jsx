@@ -2136,7 +2136,22 @@ const useRec=()=>{
   return{start,stop,warmUp,quickListen,on,txt,err,countdown,vol,phase,supported,engineUsed};
 };
 
-const useStore=()=>{const[d,setD]=useState(null);const[ok,setOk]=useState(false);useEffect(()=>{(async()=>{try{const r=await window.storage.get("lg4");if(r?.value)setD(JSON.parse(r.value));}catch(e){}setOk(true);})();},[]);const save=useCallback(async(nd)=>{setD(nd);try{await window.storage.set("lg4",JSON.stringify(nd));}catch(e){}},[]);return{data:d,save,loaded:ok};};
+const useStore=()=>{
+  const[d,setD]=useState(null);const[ok,setOk]=useState(false);
+  useEffect(()=>{(async()=>{
+    // Try window.storage first (Anthropic persistent), then localStorage
+    try{const r=await window.storage.get("lg4");if(r?.value){setD(JSON.parse(r.value));setOk(true);return;}}catch(e){}
+    try{const r=localStorage.getItem("lg4_cache");if(r){setD(JSON.parse(r));}}catch(e){}
+    setOk(true);
+  })();},[]);
+  const save=useCallback(async(nd)=>{
+    setD(nd);
+    // Save to all layers: memory → localStorage cache → window.storage → Firebase
+    try{localStorage.setItem("lg4_cache",JSON.stringify(nd));}catch(e){}
+    try{await window.storage.set("lg4",JSON.stringify(nd));}catch(e){}
+  },[]);
+  return{data:d,save,loaded:ok};
+};
 
 // Small components
 
@@ -2523,6 +2538,62 @@ const PH_STEPS=[{id:"saying_word",icon:"🔊",label:"Word"},{id:"spelling",icon:
 export default function App(){
   const{data:prof,save,loaded}=useStore();const{speak,stop,onSpeakRef,onDoneRef,cloudPlayingRef,ttsKey,saveTtsKey}=useSpeech();const rec=useRec();
   const[scr,setScr]=useState("splash");
+  // ═══ ROLE & CLASSROOM SYSTEM ═══
+  const[userRole,setUserRole]=useState(()=>localStorage.getItem("lg_role")||null); // "student"|"teacher"|null
+  const[studentId,setStudentId]=useState(()=>localStorage.getItem("lg_student_id")||null);
+  const[classCode,setClassCode]=useState(()=>localStorage.getItem("lg_class_code")||null);
+  const[teacherData,setTeacherData]=useState(null); // {students:[],classCode,name}
+  const[teacherStudents,setTeacherStudents]=useState(()=>{try{return JSON.parse(localStorage.getItem("lg_teacher_students")||"[]");}catch(e){return[];}});
+  const[selectedStudent,setSelectedStudent]=useState(null);
+  const[teacherAiUsed,setTeacherAiUsed]=useState(()=>{try{const s=localStorage.getItem("lg_teacher_ai");if(s){const d=JSON.parse(s);const wk=Math.floor(Date.now()/(7*86400000));return d.week===wk?d.count:0;}return 0;}catch(e){return 0;}});
+  const TEACHER_AI_MAX=20;
+  const[loginId,setLoginId]=useState("");
+  const[loginError,setLoginError]=useState("");
+  const[teacherName,setTeacherName]=useState("");
+  const[newStudentName,setNewStudentName]=useState("");
+  const[teacherTab,setTeacherTab]=useState("students");
+  // Generate unique student/class ID
+  const genUniqueId=(len=6)=>{const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let r="";for(let i=0;i<len;i++)r+=c[Math.floor(Math.random()*c.length)];return r;};
+  // Save role
+  const saveRole=(role)=>{setUserRole(role);localStorage.setItem("lg_role",role);};
+  // Save student ID
+  const saveStudentId=(id)=>{setStudentId(id);localStorage.setItem("lg_student_id",id);};
+  // Save class code
+  const saveClassCode=(code)=>{setClassCode(code);localStorage.setItem("lg_class_code",code);};
+  // ═══ ACTIVITY TRACKING — track start/end of every function ═══
+  const activityLog=useRef([]);
+  const trackActivity=(action,details={})=>{
+    const entry={action,details,ts:Date.now(),screen:scr};
+    activityLog.current.push(entry);
+    // Keep last 500 entries
+    if(activityLog.current.length>500)activityLog.current=activityLog.current.slice(-500);
+    // Save to localStorage monthly
+    try{
+      const key="lg_activity_"+new Date().toISOString().slice(0,7);
+      const existing=JSON.parse(localStorage.getItem(key)||"[]");
+      existing.push(entry);
+      localStorage.setItem(key,JSON.stringify(existing.slice(-2000)));
+    }catch(e){}
+  };
+  // Cloud sync handled by cloudSave (auto every 2min + on changes)
+  // Generate report card data
+  const generateReportCard=useCallback((perfData,studentProf,planData)=>{
+    const p=perfData||perfLog;const pr=studentProf||prof;const sp=planData||studyPlan;
+    const now=new Date();const monthAgo=new Date(now-30*86400000);
+    const ml=p.filter(l=>new Date(l.date)>=monthAgo);
+    const total=ml.reduce((a,l)=>a+l.total,0);
+    const correct=ml.reduce((a,l)=>a+l.correct,0);
+    const pct=total>0?Math.round(correct/total*100):0;
+    const modules={};
+    ml.forEach(l=>{if(!modules[l.cat])modules[l.cat]={correct:0,total:0};modules[l.cat].correct+=l.correct;modules[l.cat].total+=l.total;});
+    const moduleGrades=Object.entries(modules).map(([mod,d])=>{
+      const mp=d.total>0?Math.round(d.correct/d.total*100):0;
+      const grade=mp>=90?"A+":mp>=80?"A":mp>=70?"B":mp>=60?"C":mp>=50?"D":"F";
+      return{mod,correct:d.correct,total:d.total,pct:mp,grade};
+    });
+    const tasksDone=sp.filter(t=>t.done).length;
+    return{name:pr?.name||"Student",age:pr?.age||5,date:now.toLocaleDateString(),overallPct:pct,totalCorrect:correct,totalAttempts:total,moduleGrades,tasksDone,tasksTotal:sp.length,points:pr?.totalEarned||0};
+  },[perfLog,prof,studyPlan]);
   const[obN,setObN]=useState("");const[obA,setObA]=useState(4);const[obG,setObG]=useState("boy");const[obAv,setObAv]=useState(0);const[obSt,setObSt]=useState(0);
   const[selNum,setSelNum]=useState(null);const[numTab,setNumTab]=useState("learn");
   const[numRange,setNumRange]=useState("1-10");const[numSpelling,setNumSpelling]=useState(true);
@@ -3139,12 +3210,86 @@ export default function App(){
   const[assignDiff,setAssignDiff]=useState("easy"); // easy, medium, hard
   const[assignTime,setAssignTime]=useState(10); // minutes
   const[perfLog,setPerfLog]=useState(()=>{try{const s=localStorage.getItem("lg_perf");return s?JSON.parse(s):[];}catch(e){return[];}});
-  const savePlan=(p)=>{setStudyPlan(p);localStorage.setItem("lg_studyplan",JSON.stringify(p));};
-  const saveRewards=(r)=>{setCustomRewards(r);localStorage.setItem("lg_rewards",JSON.stringify(r));};
-  const savePin=(p)=>{setParentPin(p);localStorage.setItem("lg_pin",p);};
+  const savePlan=(p)=>{setStudyPlan(p);localStorage.setItem("lg_studyplan",JSON.stringify(p));cloudSave({studyPlan:p});};
+  const saveRewards=(r)=>{setCustomRewards(r);localStorage.setItem("lg_rewards",JSON.stringify(r));cloudSave({rewards:r});};
+  const savePin=(p)=>{setParentPin(p);localStorage.setItem("lg_pin",p);cloudSave({pin:p});};
+
+  // ═══ CLOUD SAVE — Write ALL user data to Firebase under users/{studentId} ═══
+  const cloudSaveTimer=useRef(null);
+  const cloudSave=useCallback((partial={})=>{
+    if(!studentId||!fbReady)return;
+    // Debounce: batch multiple saves into one write
+    if(cloudSaveTimer.current)clearTimeout(cloudSaveTimer.current);
+    cloudSaveTimer.current=setTimeout(()=>{
+      try{
+        const data={
+          profile:prof?{name:prof.name,age:prof.age,gender:prof.gender,avatar:prof.avatar,points:prof.points||0,totalEarned:prof.totalEarned||0,completed:prof.completed||{},rewards:prof.rewards||[],at:prof.at}:null,
+          perfLog:perfLog.slice(-500),
+          studyPlan,
+          settings:{pin:parentPin,rewards:customRewards,favourite:localStorage.getItem("lg_favourite"),arenaDiff:localStorage.getItem("lg_arena_diff"),arenaPrizes:localStorage.getItem("lg_arena_prizes")},
+          meta:{role:userRole,classCode,lastActive:Date.now(),engageMins,studentId},
+          ...partial
+        };
+        fbUpdate("users/"+studentId,data);
+        // Also update class view if in a class
+        if(classCode){
+          fbUpdate("classes/"+classCode+"/students/"+studentId,{
+            name:prof?.name,age:prof?.age,points:prof?.points||0,totalEarned:prof?.totalEarned||0,
+            engageMins,lastActive:Date.now(),
+            perfSummary:{total:perfLog.reduce((a,l)=>a+l.total,0),correct:perfLog.reduce((a,l)=>a+l.correct,0)},
+            studyPlan:studyPlan.map(t=>({mod:t.mod,topic:t.topic,done:!!t.done,progress:t.progress||0,correct:t.correct||0,total:t.total||0}))
+          });
+        }
+      }catch(e){console.log("cloudSave error:",e);}
+    },2000); // 2s debounce
+  },[studentId,fbReady,prof,perfLog,studyPlan,parentPin,customRewards,userRole,classCode,engageMins]);
+
+  // ═══ CLOUD LOAD — Restore ALL data from Firebase on login ═══
+  const cloudLoad=useCallback(async(id)=>{
+    if(!fbReady)return false;
+    try{
+      const ref=fbRef("users/"+id);
+      if(!ref)return false;
+      const snap=await new Promise((res,rej)=>{ref.once("value",s=>res(s),e=>rej(e));});
+      const data=snap.val();
+      if(!data)return false;
+      // Restore profile
+      if(data.profile){save(data.profile);}
+      // Restore perfLog
+      if(data.perfLog&&data.perfLog.length){setPerfLog(data.perfLog);localStorage.setItem("lg_perf",JSON.stringify(data.perfLog));}
+      // Restore studyPlan
+      if(data.studyPlan){setStudyPlan(data.studyPlan);localStorage.setItem("lg_studyplan",JSON.stringify(data.studyPlan));}
+      // Restore settings
+      if(data.settings){
+        if(data.settings.pin){setParentPin(data.settings.pin);localStorage.setItem("lg_pin",data.settings.pin);}
+        if(data.settings.rewards){setCustomRewards(data.settings.rewards);localStorage.setItem("lg_rewards",JSON.stringify(data.settings.rewards));}
+        if(data.settings.favourite)localStorage.setItem("lg_favourite",data.settings.favourite);
+        if(data.settings.arenaDiff)localStorage.setItem("lg_arena_diff",data.settings.arenaDiff);
+        if(data.settings.arenaPrizes)localStorage.setItem("lg_arena_prizes",data.settings.arenaPrizes);
+      }
+      // Restore meta
+      if(data.meta){
+        if(data.meta.classCode){saveClassCode(data.meta.classCode);}
+      }
+      return true;
+    }catch(e){console.log("cloudLoad error:",e);return false;}
+  },[fbReady,save]);
+
+  // Auto cloud-save every 2 minutes + on profile changes
+  useEffect(()=>{
+    if(!studentId||!fbReady)return;
+    const iv=setInterval(()=>cloudSave(),120000);
+    const t=setTimeout(()=>cloudSave(),5000);
+    return()=>{clearInterval(iv);clearTimeout(t);};
+  },[studentId,fbReady,cloudSave]);
+  // Sync on every profile change
+  useEffect(()=>{if(prof&&studentId&&fbReady)cloudSave({profile:prof});},[prof]);
   const logPerf=(cat,sub,correct,total,extra={})=>{
+    trackActivity("answer",{cat,sub,correct,total,...extra});
     const entry={cat,sub,correct,total,score:extra.score||null,action:extra.action||"answer",date:new Date().toISOString(),ts:Date.now()};
     const nl=[...perfLog,entry];setPerfLog(nl);localStorage.setItem("lg_perf",JSON.stringify(nl.slice(-1000)));
+    // Sync to Firebase
+    if(studentId)setTimeout(()=>cloudSave({perfLog:nl}),100);
     // Update matching studyPlan tasks
     const updated=studyPlan.map(t=>{
       const taskCat=t.topic.toLowerCase().replace(/ /g,"_");
@@ -4216,24 +4361,275 @@ export default function App(){
 
   // ═══ SCREENS ═══
 
+  // ═══ ROLE SELECTION SCREEN ═══
+  if(scr==="roleselect")return<div style={{background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 30%,#74B9FF 60%,#55EFC4 100%)",backgroundSize:"300% 300%",animation:"gradientMove 6s ease infinite",position:"fixed",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",fontFamily:"var(--font)",padding:20}}>
+    <div style={{textAlign:"center",zIndex:2,animation:"slideUp 0.5s ease-out"}}>
+      <div style={{fontSize:56,animation:"mascotB 2s ease-in-out infinite"}}>🦉</div>
+      <h1 style={{fontSize:32,fontWeight:900,color:"#fff",marginBottom:4}}>Little Genius</h1>
+      <p style={{color:"rgba(255,255,255,0.8)",fontSize:14,fontWeight:600,marginBottom:24}}>Who are you?</p>
+      <div style={{display:"flex",flexDirection:"column",gap:14,width:280}}>
+        <button onClick={()=>{sfxTap();saveRole("student");trackActivity("role_selected",{role:"student"});
+          if(prof){
+            // Existing student — generate ID if missing
+            if(!studentId){const id=genUniqueId();saveStudentId(id);}
+            setScr("home");
+          }else setScr("onboard");
+        }} style={{padding:"22px 16px",borderRadius:22,border:"none",background:"linear-gradient(135deg,#FECA57,#FF9F43)",color:"#1B1464",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 24px rgba(254,202,87,0.3)",display:"flex",alignItems:"center",justifyContent:"center",gap:12}}>
+          <span style={{fontSize:36}}>👦</span> I'm a Student
+        </button>
+        <button onClick={()=>{sfxTap();saveRole("teacher");trackActivity("role_selected",{role:"teacher"});setScr("teacherlogin");}} style={{padding:"22px 16px",borderRadius:22,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 6px 24px rgba(108,92,231,0.3)",display:"flex",alignItems:"center",justifyContent:"center",gap:12}}>
+          <span style={{fontSize:36}}>👩‍🏫</span> I'm a Teacher
+        </button>
+      </div>
+      <button onClick={()=>{sfxTap();setScr("studentlogin");}} style={{marginTop:16,padding:"10px 20px",borderRadius:14,border:"2px solid rgba(255,255,255,0.3)",background:"transparent",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>🔑 Log in with Student ID</button>
+    </div>
+    <style>{CSS}</style>
+  </div>;
+
+  // ═══ STUDENT LOGIN (with unique ID) ═══
+  if(scr==="studentlogin")return<div style={{background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font)",padding:20}}>
+    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:28,padding:"28px 22px",maxWidth:380,width:"100%",textAlign:"center",animation:"slideUp 0.5s ease-out"}}>
+      <div style={{fontSize:48}}>🔑</div>
+      <h2 style={{fontSize:22,fontWeight:900,color:"#2D2B3D",margin:"8px 0"}}>Student Login</h2>
+      <p style={{fontSize:12,color:"#8E8CA3",fontWeight:600,marginBottom:16}}>Enter your unique Student ID</p>
+      <input value={loginId} onChange={e=>setLoginId(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,6))} placeholder="XXXXXX" maxLength={6} style={{width:"100%",padding:"16px",borderRadius:16,border:"2px solid #E8EAF6",fontSize:28,fontWeight:800,fontFamily:"monospace",textAlign:"center",letterSpacing:6,outline:"none",boxSizing:"border-box"}}/>
+      {loginError&&<p style={{color:"#EF4444",fontSize:11,fontWeight:700,marginTop:6}}>{loginError}</p>}
+      <button onClick={async()=>{
+        sfxTap();setLoginError("");
+        if(loginId.length!==6){setLoginError("Enter 6-character ID");return;}
+        trackActivity("student_login",{id:loginId});
+        // Load ALL data from Firebase
+        saveStudentId(loginId);saveRole("student");
+        const loaded=await cloudLoad(loginId);
+        if(loaded){
+          setScr("home");return;
+        }
+        // If Firebase has no data, check if this is a local ID
+        if(localStorage.getItem("lg_student_id")===loginId&&prof){
+          setScr("home");return;
+        }
+        setLoginError("Student ID not found. Check your ID or create a new profile.");
+      }} disabled={loginId.length!==6} style={{width:"100%",marginTop:14,padding:"14px",borderRadius:16,border:"none",background:loginId.length===6?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#E8EAF6",color:loginId.length===6?"#fff":"#A4B0BE",fontSize:16,fontWeight:800,cursor:loginId.length===6?"pointer":"default",fontFamily:"var(--font)"}}>Login →</button>
+      <button onClick={()=>{sfxTap();setScr("roleselect");}} style={{marginTop:10,padding:"10px",borderRadius:12,border:"none",background:"transparent",color:"#6C5CE7",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>← Back</button>
+    </div>
+    <style>{CSS}</style>
+  </div>;
+
+  // ═══ TEACHER LOGIN / CREATE CLASSROOM ═══
+  if(scr==="teacherlogin")return<div style={{background:"linear-gradient(135deg,#1B1464,#6C5CE7)",position:"fixed",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"var(--font)",padding:20}}>
+    <div style={{background:"rgba(255,255,255,0.97)",borderRadius:28,padding:"28px 22px",maxWidth:380,width:"100%",textAlign:"center",animation:"slideUp 0.5s ease-out"}}>
+      <div style={{fontSize:48}}>👩‍🏫</div>
+      <h2 style={{fontSize:22,fontWeight:900,color:"#2D2B3D",margin:"8px 0"}}>Teacher Setup</h2>
+      <input value={teacherName} onChange={e=>setTeacherName(e.target.value)} placeholder="Your name" style={{width:"100%",padding:"14px",borderRadius:16,border:"2px solid #E8EAF6",fontSize:16,fontWeight:700,fontFamily:"var(--font)",outline:"none",boxSizing:"border-box",marginBottom:10}}/>
+      <button onClick={()=>{
+        if(!teacherName.trim())return;sfxTap();
+        const code=classCode||genUniqueId(5);
+        saveClassCode(code);
+        trackActivity("teacher_create_class",{code,name:teacherName});
+        // Write class to Firebase
+        if(fbReady)fbUpdate("classes/"+code,{teacher:teacherName,createdAt:Date.now()});
+        setScr("teacher");
+      }} style={{width:"100%",padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:16,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>
+        {classCode?"Open My Classroom":"Create Classroom"} 🏫
+      </button>
+      {classCode&&<div style={{marginTop:12,padding:"10px 14px",borderRadius:12,background:"#F0F4FF"}}>
+        <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>Your Class Code:</div>
+        <div style={{fontSize:24,fontWeight:900,color:"#6C5CE7",letterSpacing:4,fontFamily:"monospace"}}>{classCode}</div>
+      </div>}
+      <button onClick={()=>{sfxTap();setScr("roleselect");}} style={{marginTop:10,padding:"10px",borderRadius:12,border:"none",background:"transparent",color:"#6C5CE7",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>← Back</button>
+    </div>
+    <style>{CSS}</style>
+  </div>;
+
+  // ═══ TEACHER DASHBOARD ═══
+  if(scr==="teacher")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",background:"linear-gradient(135deg,#1B1464,#6C5CE7)",color:"#fff",flexShrink:0}}>
+      <button onClick={()=>{sfxTap();setScr("roleselect");}} style={{padding:"6px 14px",borderRadius:12,border:"2px solid rgba(255,255,255,0.3)",background:"transparent",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>← Exit</button>
+      <div style={{textAlign:"center"}}>
+        <div style={{fontSize:16,fontWeight:900}}>🏫 Classroom</div>
+        <div style={{fontSize:10,fontWeight:600,color:"rgba(255,255,255,0.7)"}}>Code: <span style={{fontFamily:"monospace",letterSpacing:3,fontSize:14,fontWeight:800,color:"#FECA57"}}>{classCode}</span></div>
+      </div>
+      <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",fontWeight:600}}>🤖 {TEACHER_AI_MAX-teacherAiUsed}/{TEACHER_AI_MAX} AI</div>
+    </div>
+    {/* Teacher tabs */}
+    <div style={{display:"flex",gap:2,padding:"4px 8px",background:"#fff",flexShrink:0}}>
+      {[{id:"students",l:"👥 Students"},{id:"assign",l:"📋 Assign"},{id:"reports",l:"📊 Reports"},{id:"ai",l:"🤖 AI Coach"}].map(t=>
+        <button key={t.id} onClick={()=>{sfxTap();setTeacherTab(t.id);}} style={{
+          flex:1,padding:"8px 2px",borderRadius:10,border:"none",fontWeight:700,fontSize:10,cursor:"pointer",fontFamily:"var(--font)",
+          background:teacherTab===t.id?"linear-gradient(135deg,#1B1464,#6C5CE7)":"#F0F4FF",
+          color:teacherTab===t.id?"#fff":"#A4B0BE"
+        }}>{t.l}</button>
+      )}
+    </div>
+    <div style={{flex:1,overflowY:"auto",padding:"12px 16px 100px"}}>
+      {/* ═══ STUDENTS TAB ═══ */}
+      {teacherTab==="students"&&<div>
+        <div style={{fontWeight:900,fontSize:16,marginBottom:8}}>👥 My Students ({teacherStudents.length}/20)</div>
+        {/* Add student */}
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          <input value={newStudentName} onChange={e=>setNewStudentName(e.target.value)} placeholder="Student name..." style={{flex:1,padding:"10px 14px",borderRadius:14,border:"2px solid #E8EAF6",fontSize:14,fontWeight:700,fontFamily:"var(--font)",outline:"none"}}/>
+          <button onClick={()=>{
+            if(!newStudentName.trim()||teacherStudents.length>=20)return;sfxTap();
+            const sid=genUniqueId();
+            const newStudent={id:sid,name:newStudentName.trim(),addedAt:Date.now(),classCode};
+            const updated=[...teacherStudents,newStudent];
+            setTeacherStudents(updated);
+            localStorage.setItem("lg_teacher_students",JSON.stringify(updated));
+            // Write to Firebase
+            if(fbReady){
+              fbUpdate("classes/"+classCode+"/students/"+sid,{name:newStudentName.trim(),addedAt:Date.now()});
+              fbUpdate("students/"+sid,{classCode,profile:{name:newStudentName.trim()}});
+            }
+            setNewStudentName("");
+            trackActivity("teacher_add_student",{sid,name:newStudentName.trim()});
+          }} style={{padding:"10px 18px",borderRadius:14,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>+ Add</button>
+        </div>
+        {/* Student list */}
+        {teacherStudents.length===0?<div style={{textAlign:"center",padding:30}}>
+          <div style={{fontSize:48}}>📋</div>
+          <p style={{color:"#A4B0BE",fontSize:13,fontWeight:600,marginTop:8}}>No students yet. Add students above.</p>
+          <p style={{color:"#A4B0BE",fontSize:11,fontWeight:600}}>Share class code <strong style={{color:"#6C5CE7"}}>{classCode}</strong> with students</p>
+        </div>:
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {teacherStudents.map((s,i)=><button key={s.id} onClick={()=>{sfxTap();setSelectedStudent(s);setTeacherTab("reports");
+            // Load student data from Firebase
+            if(fbReady){const ref=fbRef("classes/"+classCode+"/students/"+s.id);if(ref)ref.once("value",snap=>{const d=snap.val();if(d)setSelectedStudent({...s,...d});});}
+          }} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 16px",borderRadius:18,border:"none",cursor:"pointer",background:"#fff",boxShadow:"0 2px 8px rgba(0,0,0,0.04)",textAlign:"left"}}>
+            <div style={{width:42,height:42,borderRadius:14,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:900}}>{s.name?.[0]?.toUpperCase()||"?"}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:800,fontSize:14,color:"#2D2B3D"}}>{s.name}</div>
+              <div style={{fontSize:10,fontWeight:600,color:"#8E8CA3"}}>ID: <span style={{fontFamily:"monospace",color:"#6C5CE7"}}>{s.id}</span></div>
+            </div>
+            <div style={{fontSize:10,fontWeight:700,color:s.lastActive&&(Date.now()-s.lastActive<300000)?"#22C55E":"#A4B0BE"}}>{s.lastActive&&(Date.now()-s.lastActive<300000)?"🟢 Online":"⚪ Offline"}</div>
+            <span style={{fontSize:16,color:"#A4B0BE"}}>→</span>
+          </button>)}
+        </div>}
+      </div>}
+
+      {/* ═══ REPORTS TAB — Drill-down student details ═══ */}
+      {teacherTab==="reports"&&<div>
+        {selectedStudent?<div>
+          <button onClick={()=>setSelectedStudent(null)} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#F0F4FF",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",color:"#6C5CE7",marginBottom:10}}>← All Students</button>
+          <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px",borderRadius:20,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",marginBottom:14}}>
+            <div style={{width:52,height:52,borderRadius:16,background:"rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:24,fontWeight:900}}>{selectedStudent.name?.[0]?.toUpperCase()||"?"}</div>
+            <div>
+              <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>{selectedStudent.name}</div>
+              <div style={{fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.7)"}}>ID: {selectedStudent.id} · Age: {selectedStudent.age||"—"}</div>
+            </div>
+          </div>
+          {/* Stats grid */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:14}}>
+            <div style={{padding:12,borderRadius:14,background:"#ECFDF5",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"#16A34A"}}>ACCURACY</div>
+              <div style={{fontSize:22,fontWeight:900,color:"#16A34A"}}>{selectedStudent.perfSummary?Math.round((selectedStudent.perfSummary.correct||0)/(selectedStudent.perfSummary.total||1)*100):0}%</div>
+            </div>
+            <div style={{padding:12,borderRadius:14,background:"#EFF6FF",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"#3B82F6"}}>ACTIVE TIME</div>
+              <div style={{fontSize:22,fontWeight:900,color:"#3B82F6"}}>{selectedStudent.engageMins||0}m</div>
+            </div>
+            <div style={{padding:12,borderRadius:14,background:"#FFF8F0",textAlign:"center"}}>
+              <div style={{fontSize:8,fontWeight:700,color:"#FF9F43"}}>POINTS</div>
+              <div style={{fontSize:22,fontWeight:900,color:"#FF9F43"}}>{selectedStudent.points||0}</div>
+            </div>
+          </div>
+          {/* Task status */}
+          {selectedStudent.studyPlan&&selectedStudent.studyPlan.length>0&&<>
+            <div style={{fontWeight:800,fontSize:13,marginBottom:6}}>📋 Assigned Tasks</div>
+            {selectedStudent.studyPlan.map((t,i)=><div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:14,background:"#fff",border:"1px solid #E8EAF6",marginBottom:4}}>
+              <span style={{fontSize:14}}>{t.done?"✅":"📝"}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:12,fontWeight:700}}>{t.topic} <span style={{color:"#8E8CA3",textTransform:"capitalize"}}>({t.mod})</span></div>
+                {t.done&&<div style={{fontSize:10,color:"#16A34A",fontWeight:600}}>{t.progress||0}% · {t.correct}/{t.total}</div>}
+              </div>
+              <span style={{fontSize:10,fontWeight:700,color:t.done?"#16A34A":"#FF9F43"}}>{t.done?"DONE":"PENDING"}</span>
+            </div>)}
+          </>}
+          {/* Export button */}
+          <button onClick={()=>{
+            sfxTap();trackActivity("teacher_export_report",{student:selectedStudent.id});
+            const rc=generateReportCard(null,{name:selectedStudent.name,age:selectedStudent.age,totalEarned:selectedStudent.points},selectedStudent.studyPlan||[]);
+            const html=`<!DOCTYPE html><html><head><title>Report - ${rc.name}</title><style>*{font-family:system-ui;margin:0;padding:0}body{padding:30px;max-width:600px;margin:0 auto}h1{color:#6C5CE7;font-size:28px}h2{color:#333;font-size:18px;margin:20px 0 8px}.card{background:#f8f9ff;border-radius:16px;padding:16px;margin:8px 0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.stat{text-align:center;padding:14px;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,0.06)}.stat-label{font-size:10px;font-weight:700;color:#888;text-transform:uppercase}.stat-value{font-size:28px;font-weight:900;margin:4px 0}.grade{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;background:#fff;margin:4px 0}.grade-letter{font-size:22px;font-weight:900;min-width:36px;text-align:center}</style></head><body><h1>📄 ${rc.name}'s Report Card</h1><p style="color:#888;font-size:13px">Little Genius · ${rc.date}</p><div class="grid"><div class="stat"><div class="stat-label">Accuracy</div><div class="stat-value" style="color:#6C5CE7">${rc.overallPct}%</div></div><div class="stat"><div class="stat-label">Points</div><div class="stat-value" style="color:#FF9F43">${rc.points}</div></div><div class="stat"><div class="stat-label">Tasks</div><div class="stat-value" style="color:#00D2A0">${rc.tasksDone}/${rc.tasksTotal}</div></div></div><h2>Module Grades</h2>${rc.moduleGrades.map(g=>`<div class="grade"><div class="grade-letter" style="color:${g.pct>=70?"#16A34A":"#EF4444"}">${g.grade}</div><div style="flex:1"><div style="font-weight:700;text-transform:capitalize">${g.mod}</div><div style="font-size:11px;color:#888">${g.correct}/${g.total} correct · ${g.pct}%</div></div></div>`).join("")}<p style="margin-top:20px;font-size:11px;color:#aaa">Generated by Little Genius · ${new Date().toLocaleString()}</p></body></html>`;
+            const blob=new Blob([html],{type:"text/html"});
+            const url=URL.createObjectURL(blob);
+            const a=document.createElement("a");a.href=url;a.download=`report-${rc.name}-${new Date().toISOString().slice(0,10)}.html`;a.click();
+            URL.revokeObjectURL(url);
+          }} style={{width:"100%",marginTop:12,padding:"14px",borderRadius:16,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#1B1464",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>📥 Export Report Card</button>
+        </div>:
+        <div>
+          <div style={{fontWeight:900,fontSize:16,marginBottom:8}}>📊 Student Reports</div>
+          <p style={{fontSize:12,color:"#8E8CA3",fontWeight:600,marginBottom:12}}>Tap a student to see their detailed report</p>
+          {teacherStudents.map(s=><button key={s.id} onClick={()=>{sfxTap();setSelectedStudent(s);
+            if(fbReady){const ref=fbRef("classes/"+classCode+"/students/"+s.id);if(ref)ref.once("value",snap=>{const d=snap.val();if(d)setSelectedStudent({...s,...d});});}
+          }} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderRadius:16,border:"none",cursor:"pointer",background:"#fff",boxShadow:"0 2px 6px rgba(0,0,0,0.04)",marginBottom:6,width:"100%",textAlign:"left"}}>
+            <div style={{width:36,height:36,borderRadius:12,background:"#6C5CE718",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:900,color:"#6C5CE7"}}>{s.name?.[0]?.toUpperCase()}</div>
+            <span style={{flex:1,fontWeight:700,fontSize:13}}>{s.name}</span>
+            <span style={{fontSize:12,color:"#6C5CE7"}}>View →</span>
+          </button>)}
+        </div>}
+      </div>}
+
+      {/* ═══ AI COACH TAB (Teacher - 20 queries/week) ═══ */}
+      {teacherTab==="ai"&&<div>
+        <div style={{fontWeight:900,fontSize:16,marginBottom:8}}>🤖 AI Coach <span style={{fontSize:11,fontWeight:600,color:"#8E8CA3"}}>({TEACHER_AI_MAX-teacherAiUsed}/{TEACHER_AI_MAX} left this week)</span></div>
+        {teacherStudents.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>
+          {teacherStudents.map(s=><button key={s.id} onClick={()=>{sfxTap();setSelectedStudent(s);}} style={{padding:"6px 12px",borderRadius:10,border:selectedStudent?.id===s.id?"2px solid #6C5CE7":"2px solid #E8EAF6",background:selectedStudent?.id===s.id?"#6C5CE718":"#fff",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)",color:selectedStudent?.id===s.id?"#6C5CE7":"#8E8CA3"}}>{s.name}</button>)}
+        </div>}
+        <div style={{padding:12,borderRadius:16,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)"}}>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+            {["How is this student doing?","Suggest a learning plan","What should they focus on?","Generate weekly report"].map(q=><button key={q} onClick={()=>{sfxTap();setAiMsg(q+(selectedStudent?" for "+selectedStudent.name:""));}} style={{padding:"6px 12px",borderRadius:10,background:"rgba(255,255,255,0.15)",border:"none",color:"#fff",fontSize:10,fontWeight:700,cursor:"pointer",fontFamily:"var(--font)"}}>{q}</button>)}
+          </div>
+          <div style={{display:"flex",gap:6}}>
+            <input value={aiMsg} onChange={e=>setAiMsg(e.target.value)} placeholder="Ask about a student..." style={{flex:1,padding:"10px 14px",borderRadius:12,border:"none",fontSize:13,fontWeight:600,fontFamily:"var(--font)",outline:"none"}}/>
+            <button onClick={()=>{
+              if(!aiMsg.trim()||teacherAiUsed>=TEACHER_AI_MAX)return;sfxTap();
+              trackActivity("teacher_ai_query",{query:aiMsg});
+              const wk=Math.floor(Date.now()/(7*86400000));
+              setTeacherAiUsed(prev=>{const n=prev+1;localStorage.setItem("lg_teacher_ai",JSON.stringify({week:wk,count:n}));return n;});
+              // Use same AI coach endpoint
+              setAiLoading(true);
+              const stats=selectedStudent?"Student: "+JSON.stringify(selectedStudent):"Class: "+teacherStudents.length+" students";
+              fetch(AI_API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+                system:"You are an AI learning coach for teachers. "+stats+". Give detailed, actionable insights with data. Be specific.",
+                messages:[{role:"user",content:aiMsg}]
+              })}).then(r=>r.json()).then(d=>{
+                const text=d.content?.map(c=>c.text||"").join("")||"No response";
+                setAiHistory(h=>[...h,{q:aiMsg,a:text,ai:true}]);setAiLoading(false);setAiMsg("");
+              }).catch(e=>{setAiHistory(h=>[...h,{q:aiMsg,a:"Error: "+e.message,ai:false}]);setAiLoading(false);setAiMsg("");});
+            }} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"#FECA57",color:"#1B1464",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)"}}>{aiLoading?"...":"Ask"}</button>
+          </div>
+        </div>
+        {aiHistory.length>0&&<div style={{marginTop:10}}>
+          {aiHistory.map((h,i)=><div key={i} style={{marginBottom:8}}>
+            <div style={{padding:"6px 12px",borderRadius:12,background:"#6C5CE718",fontSize:11,fontWeight:700,color:"#6C5CE7",display:"inline-block",marginBottom:3}}>{h.q}</div>
+            <div style={{padding:"12px 14px",borderRadius:14,background:h.ai?"#fff":"#FEF2F2",fontSize:12,fontWeight:600,color:h.ai?"#2D2B3D":"#DC2626",lineHeight:1.6,whiteSpace:"pre-wrap",border:h.ai?"1px solid #E8EAF6":"1px solid #FECACA"}}>{h.a}</div>
+          </div>)}
+        </div>}
+      </div>}
+    </div>
+    <style>{CSS}</style>
+  </div>;
+
+  // ═══ SPLASH SCREEN ═══
   if(scr==="splash")return<div onClick={async()=>{
-    // STOP speech immediately on tap
     killAllFlows();
     welcomeSpoken.current=true;
     setOllieSize(95);
-    if(prof){
+    trackActivity("splash_tap");
+    // Generate student ID if missing
+    if(!studentId){const id=genUniqueId();saveStudentId(id);}
+    // Route based on role
+    if(!userRole){
+      setScr("roleselect");
+    } else if(userRole==="teacher"){
+      setScr("teacher");
+    } else if(prof){
       setScr("home");
-      await wait(600);
-      movePandaTo("bottomRight");
-      await wait(400);
+      await wait(600);movePandaTo("bottomRight");await wait(400);
       stop();speak("Hi "+(prof?.name||"friend")+"! Ready to learn?",{rate:0.85,pitch:1.0});
     } else {
       setScr("onboard");setObSt(0);
-      await wait(600);
-      movePandaTo("bottomRight");
-      await wait(400);
-      stop();speak("Enter your name to start!",{rate:0.85,pitch:1.0});
-      setTeacherMood("happy");
+      await wait(600);movePandaTo("bottomRight");await wait(400);
+      stop();speak("Enter your name to start!",{rate:0.85,pitch:1.0});setTeacherMood("happy");
     }
   }} style={{background:"linear-gradient(135deg,#6C5CE7 0%,#A29BFE 30%,#74B9FF 60%,#55EFC4 100%)",backgroundSize:"300% 300%",animation:"gradientMove 6s ease infinite",position:"fixed",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",overflow:"hidden",fontFamily:"var(--font)",cursor:"pointer"}}>
     <Particles count={15} emojis={["⭐","✨","🌟","💫"]}/>
@@ -4318,7 +4714,10 @@ export default function App(){
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12}}>
         <button onClick={()=>{sfxTap();
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
-          save(newP);stop();speak("Let me ask a few questions!",{rate:0.85,pitch:1.0});setTeacherMood("star");
+          save(newP);
+          // Generate student ID and save to Firebase
+          if(!studentId){const id=genUniqueId();saveStudentId(id);}
+          stop();speak("Let me ask a few questions!",{rate:0.85,pitch:1.0});setTeacherMood("star");
           setScr("questionnaire");setQStep(0);setQAnswers([]);
           localStorage.setItem("lg_want_tour","yes");
         }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#00D2A0,#55EFC4)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(0,210,160,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
@@ -4327,7 +4726,9 @@ export default function App(){
         </button>
         <button onClick={()=>{sfxTap();
           const newP={name:obN||"Buddy",age:obA,gender:obG,avatar:obAv,points:0,totalEarned:0,completed:{},rewards:[],at:Date.now()};
-          save(newP);killAllFlows();speak("Let's go!",{rate:0.85,pitch:1.0});setTeacherMood("star");
+          save(newP);
+          if(!studentId){const id=genUniqueId();saveStudentId(id);}
+          killAllFlows();speak("Let's go!",{rate:0.85,pitch:1.0});setTeacherMood("star");
           setScr("home");
         }} style={{padding:20,borderRadius:20,border:"none",background:"linear-gradient(135deg,#FF9F43,#FECA57)",color:"#fff",fontSize:20,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",boxShadow:"0 4px 16px rgba(255,159,67,0.25)",display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
           <span style={{fontSize:32}}>🚀</span>
@@ -5615,6 +6016,7 @@ export default function App(){
         <div>
           <div style={{color:"#fff",fontWeight:800,fontSize:18,lineHeight:1,textShadow:"0 1px 3px rgba(0,0,0,.1)"}}>{prof?.name||"Buddy"}</div>
           <div style={{color:"rgba(255,255,255,.85)",fontSize:13,fontWeight:600}}>Age {prof?.age||4}</div>
+          {studentId&&<div style={{color:"rgba(255,255,255,.5)",fontSize:9,fontWeight:600,fontFamily:"monospace"}}>ID: {studentId}</div>}
         </div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -7888,6 +8290,13 @@ export default function App(){
 
   // ═══ SETTINGS ═══
   if(scr==="settings")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Settings" onBack={goHome} points={prof?.points||0}/><div style={{padding:18}}><div style={{textAlign:"center",padding:24,background:"#fff",borderRadius:24,boxShadow:"var(--shadow-card)"}}><span style={{fontSize:56,display:"block",animation:"mascotB 3s ease-in-out infinite"}}>{AVATARS[prof?.gender||"boy"][prof?.avatar||0]}</span><h2 style={{fontFamily:"var(--font)",fontSize:24,fontWeight:700,margin:"6px 0 2px"}}>{prof?.name}</h2><p style={{color:"#8E8CA3",fontSize:13,fontWeight:600}}>Age {prof?.age} • {aCfg.diff}</p></div><div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginTop:14}}>{[{n:prof?.totalEarned||0,l:"Points Earned",c:"#FF8C42"},{n:(prof?.completed?.numbers||[]).length,l:"Numbers",c:"#FF6B6B"},{n:(prof?.completed?.phonics||[]).length,l:"Words",c:"#4ECDC4"},{n:(prof?.rewards||[]).length,l:"Rewards",c:"#FBBF24"}].map((s,i)=><div key={i} style={{background:"linear-gradient(145deg,#fff,#F8FAFF)",borderRadius:22,padding:18,textAlign:"center",border:"none",boxShadow:"var(--shadow-card)"}}><span style={{fontFamily:"var(--font)",fontSize:28,fontWeight:800,color:s.c,display:"block"}}>{s.n}</span><span style={{fontSize:10,fontWeight:700,color:"#8E8CA3"}}>{s.l}</span></div>)}</div><button onClick={()=>{setScr("onboard");setObSt(0);}} style={{width:"100%",padding:14,borderRadius:18,border:"none",background:"#fff",color:"#6C5CE7",fontSize:14,fontWeight:800,fontFamily:"var(--font)",cursor:"pointer",marginTop:14}}>🔄 Change Profile</button>
+    {studentId&&<div style={{marginTop:12,padding:14,borderRadius:18,background:"#fff",textAlign:"center"}}>
+      <div style={{fontSize:10,fontWeight:700,color:"#8E8CA3",textTransform:"uppercase"}}>Your Student ID</div>
+      <div style={{fontSize:24,fontWeight:900,color:"#6C5CE7",fontFamily:"monospace",letterSpacing:4}}>{studentId}</div>
+      <div style={{fontSize:10,fontWeight:600,color:"#A4B0BE",marginTop:2}}>Share this to log in on any device</div>
+      {classCode&&<div style={{marginTop:6,fontSize:10,fontWeight:600,color:"#8E8CA3"}}>Class: <span style={{color:"#6C5CE7",fontFamily:"monospace"}}>{classCode}</span></div>}
+    </div>}
+    <button onClick={()=>{sfxTap();setScr("roleselect");saveRole(null);}} style={{width:"100%",padding:12,borderRadius:16,border:"none",background:"#FEE2E2",color:"#EF4444",fontSize:13,fontWeight:700,fontFamily:"var(--font)",cursor:"pointer",marginTop:8}}>🔄 Switch Role (Student/Teacher)</button>
 {/* Voice Settings */}
 <div style={{marginTop:16,padding:16,background:"#fff",borderRadius:20,border:"none"}}>
 <div style={{fontSize:13,fontWeight:800,color:"#6C5CE7",marginBottom:8}}>🔊 Voice Settings</div>
