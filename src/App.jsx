@@ -6459,46 +6459,53 @@ export default function App(){
       </div>:
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {studyPlan.map((task,i)=>{
-          const topic=STUDY_TOPICS.find(t=>t.id===task.topicId);
-          const isDone=task.completed;
-          return<button key={i} data-r="tile" onClick={()=>{sfxTap();
-            // Route to the appropriate screen based on topic
-            if(task.topicId==="numbers"){setScr("learn");setLearnTab("numbers");}
-            else if(task.topicId==="alphabet"){setScr("learn");setLearnTab("abc");}
-            else if(task.topicId==="shapes"){setScr("learn");setLearnTab("shapes");}
-            else if(task.topicId==="colors"){setScr("learn");setLearnTab("colors");}
-            else if(task.topicId==="phonics"){setScr("phonics");}
-            else if(task.topicId==="math"){setScr("quizzone");setQuizTab("math");}
-            else if(task.topicId==="writing"){setScr("quizzone");setQuizTab("write");}
+          const modIcons={speaking:"🗣️",listening:"👂",reading:"📖",writing:"✍️"};
+          const modColors={speaking:"#6C5CE7",listening:"#00D2A0",reading:"#FF9F43",writing:"#54A0FF"};
+          const modBg={speaking:"linear-gradient(135deg,#6C5CE7,#A29BFE)",listening:"linear-gradient(135deg,#00D2A0,#55EFC4)",reading:"linear-gradient(135deg,#FF9F43,#FECA57)",writing:"linear-gradient(135deg,#54A0FF,#74B9FF)"};
+          const diffIcons={easy:"🟢",medium:"🟡",hard:"🔴"};
+          const isDone=task.done;
+          const mc=modColors[task.mod]||"#6C5CE7";
+          return<button key={i} data-r="tile" onClick={()=>{sfxTap();killAllFlows();
+            if(task.mod==="speaking")setScr("speaking");
+            else if(task.mod==="listening")setScr("listening");
+            else if(task.mod==="reading")setScr("reading");
+            else if(task.mod==="writing")setScr("writing");
+            else setScr("home");
           }} style={{
-            display:"flex",alignItems:"center",gap:14,padding:"18px 16px",borderRadius:22,border:"none",cursor:"pointer",
+            display:"flex",alignItems:"center",gap:14,padding:"16px 16px",borderRadius:22,border:"none",cursor:"pointer",
             background:isDone?"linear-gradient(135deg,#00D2A0,#55EFC4)":"#fff",
-            boxShadow:isDone?"0 4px 14px rgba(0,210,160,0.2)":"var(--shadow-card)"}}>
-            <span style={{fontSize:32}}>{isDone?"✅":topic?.emoji||"📚"}</span>
-            <div style={{flex:1,textAlign:"left"}}>
-              <div style={{fontWeight:800,fontSize:16,color:isDone?"#fff":"var(--dark)"}}>{topic?.name||task.topicId} — {task.subId}</div>
-              <div style={{fontSize:11,fontWeight:600,color:isDone?"rgba(255,255,255,0.8)":"#A4B0BE",marginTop:2}}>{isDone?"Completed! 🎉":"Tap to start"}</div>
+            boxShadow:isDone?"0 4px 14px rgba(0,210,160,0.2)":"0 2px 10px rgba(0,0,0,0.06)",
+            borderLeft:isDone?"none":"4px solid "+mc}}>
+            <div style={{width:48,height:48,borderRadius:14,background:isDone?"rgba(255,255,255,0.25)":mc+"18",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26}}>
+              {isDone?"✅":(modIcons[task.mod]||"📚")}
             </div>
-            <div style={{padding:"6px 12px",borderRadius:12,background:isDone?"rgba(255,255,255,0.2)":"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:11,fontWeight:800}}>
-              {isDone?"Done":"Go →"}
+            <div style={{flex:1,textAlign:"left"}}>
+              <div style={{fontWeight:800,fontSize:16,color:isDone?"#fff":"var(--dark)"}}>{task.topic}</div>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3}}>
+                <span style={{fontSize:10,fontWeight:700,color:isDone?"rgba(255,255,255,0.8)":"#8E8CA3",textTransform:"capitalize"}}>{task.mod}</span>
+                {task.difficulty&&<span style={{fontSize:10,fontWeight:700,color:isDone?"rgba(255,255,255,0.8)":"#8E8CA3"}}>{diffIcons[task.difficulty]||""} {task.difficulty}</span>}
+                {task.timeLimit&&<span style={{fontSize:10,fontWeight:700,color:isDone?"rgba(255,255,255,0.8)":"#3B82F6"}}>⏱️{task.timeLimit}m</span>}
+              </div>
+              {isDone&&<div style={{fontSize:11,fontWeight:700,color:"rgba(255,255,255,0.9)",marginTop:2}}>Completed! 🎉 {task.correct||0}/{task.total||0} correct</div>}
+            </div>
+            <div style={{padding:"8px 14px",borderRadius:14,background:isDone?"rgba(255,255,255,0.2)":modBg[task.mod]||"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:12,fontWeight:800}}>
+              {isDone?"Done ✅":"Go →"}
             </div>
           </button>;
         })}
-        {/* Engagement time tracker */}
-        <div style={{padding:16,borderRadius:22,background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",marginTop:8,boxShadow:"0 4px 14px rgba(108,92,231,0.2)"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div>
-              <div style={{color:"#fff",fontWeight:800,fontSize:14}}>⏱️ Active Time Today</div>
-              <div style={{color:"rgba(255,255,255,0.8)",fontSize:24,fontWeight:800,marginTop:4}}>{engageMins} min</div>
-            </div>
-            <div style={{textAlign:"right"}}>
-              {ENGAGE_TIERS.map(t=><div key={t.mins} style={{fontSize:10,fontWeight:700,color:engageMins>=t.mins?"#FECA57":"rgba(255,255,255,0.4)",marginBottom:2}}>
-                {engageMins>=t.mins?"✅":"○"} {t.label} → +{t.pts}pts
-              </div>)}
-            </div>
+        {/* Points info */}
+        <div style={{display:"flex",gap:8,marginTop:4}}>
+          <div style={{flex:1,padding:"10px 12px",borderRadius:14,background:"#ECFDF5",textAlign:"center"}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#16A34A"}}>POINTS</div>
+            <div style={{fontSize:22,fontWeight:900,color:"#16A34A"}}>{prof?.points||0}</div>
           </div>
-          <div style={{height:8,borderRadius:4,background:"rgba(255,255,255,0.2)",marginTop:8,overflow:"hidden"}}>
-            <div style={{height:"100%",borderRadius:4,background:"#FECA57",width:`${Math.min(100,(engageMins/60)*100)}%`,transition:"width 1s"}}/>
+          <div style={{flex:1,padding:"10px 12px",borderRadius:14,background:"#EFF6FF",textAlign:"center"}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#3B82F6"}}>ACTIVE TIME</div>
+            <div style={{fontSize:22,fontWeight:900,color:"#3B82F6"}}>{engageMins}m</div>
+          </div>
+          <div style={{flex:1,padding:"10px 12px",borderRadius:14,background:"#FFF8F0",textAlign:"center"}}>
+            <div style={{fontSize:9,fontWeight:700,color:"#FF9F43"}}>DONE</div>
+            <div style={{fontSize:22,fontWeight:900,color:"#FF9F43"}}>{studyPlan.filter(t=>t.done).length}/{studyPlan.length}</div>
           </div>
         </div>
       </div>}
