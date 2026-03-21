@@ -1,15 +1,14 @@
 [build]
   command = "npm run build"
   publish = "dist"
-
 [build.environment]
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
   NODE_VERSION = "20"
 
+[functions]
+  directory = "netlify/functions"
+
 # ═══ CRITICAL: Cross-Origin Isolation for SharedArrayBuffer ═══
-# ONNX Runtime WASM threading needs SharedArrayBuffer
-# SharedArrayBuffer requires COEP + COOP headers
-# Without these: Whisper AI runs single-threaded (3-4x slower on phones)
 [[headers]]
   for = "/*"
   [headers.values]
@@ -37,7 +36,13 @@
   [headers.values]
     Cache-Control = "no-cache"
 
-# ═══ SPA routing ═══
+# ═══ IMPORTANT: Let Netlify functions pass through — must be BEFORE catch-all ═══
+[[redirects]]
+  from = "/.netlify/*"
+  to = "/.netlify/:splat"
+  status = 200
+
+# ═══ SPA routing (catch-all LAST) ═══
 [[redirects]]
   from = "/*"
   to = "/index.html"
