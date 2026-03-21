@@ -3,14 +3,25 @@ exports.handler = async (event) => {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
   };
 
   if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: H, body: "" };
-  if (event.httpMethod !== "POST") return { statusCode: 405, headers: H, body: JSON.stringify({ error: "POST only" }) };
-
+  
   const apiKey = process.env.ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return { statusCode: 500, headers: H, body: JSON.stringify({ error: "ANTHROPIC_KEY not set" }) };
+
+  // GET = debug mode — shows if key is loaded (masked)
+  if (event.httpMethod === "GET") {
+    const masked = apiKey ? apiKey.slice(0,10) + "..." + apiKey.slice(-4) : "NOT SET";
+    const allVars = Object.keys(process.env).filter(k => k.includes("ANTHRO") || k.includes("API")).join(", ");
+    return { 
+      statusCode: 200, headers: H, 
+      body: JSON.stringify({ key_loaded: !!apiKey, key_preview: masked, matching_vars: allVars || "none found" }) 
+    };
+  }
+
+  if (event.httpMethod !== "POST") return { statusCode: 405, headers: H, body: JSON.stringify({ error: "POST only" }) };
+  if (!apiKey) return { statusCode: 500, headers: H, body: JSON.stringify({ error: "No API key found in env vars" }) };
 
   let body;
   try { body = JSON.parse(event.body || "{}"); } catch (e) {
