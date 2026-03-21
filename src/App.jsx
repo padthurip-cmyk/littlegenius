@@ -3210,9 +3210,9 @@ export default function App(){
   const[assignDiff,setAssignDiff]=useState("easy"); // easy, medium, hard
   const[assignTime,setAssignTime]=useState(10); // minutes
   const[perfLog,setPerfLog]=useState(()=>{try{const s=localStorage.getItem("lg_perf");return s?JSON.parse(s):[];}catch(e){return[];}});
-  const savePlan=(p)=>{setStudyPlan(p);localStorage.setItem("lg_studyplan",JSON.stringify(p));try{cloudSave();}catch(e){}};
-  const saveRewards=(r)=>{setCustomRewards(r);localStorage.setItem("lg_rewards",JSON.stringify(r));try{cloudSave();}catch(e){}};
-  const savePin=(p)=>{setParentPin(p);localStorage.setItem("lg_pin",p);try{cloudSave();}catch(e){}};
+  const savePlan=(p)=>{setStudyPlan(p);localStorage.setItem("lg_studyplan",JSON.stringify(p));};
+  const saveRewards=(r)=>{setCustomRewards(r);localStorage.setItem("lg_rewards",JSON.stringify(r));};
+  const savePin=(p)=>{setParentPin(p);localStorage.setItem("lg_pin",p);};
 
   // ═══ CLOUD SAVE — Write ALL user data to Firebase under users/{studentId} ═══
   const cloudSaveTimer=useRef(null);
@@ -3221,27 +3221,31 @@ export default function App(){
     if(cloudSaveTimer.current)clearTimeout(cloudSaveTimer.current);
     cloudSaveTimer.current=setTimeout(()=>{
       try{
-        const curProf=prof;const curPlan=studyPlan;const curPerf=perfLog;
+        // Read latest from localStorage (always up-to-date)
+        const curProf=JSON.parse(localStorage.getItem("lg4_cache")||"null");
+        const curPerf=JSON.parse(localStorage.getItem("lg_perf")||"[]");
+        const curPlan=JSON.parse(localStorage.getItem("lg_studyplan")||"[]");
         const data={
-          profile:curProf?{name:curProf.name,age:curProf.age,gender:curProf.gender,avatar:curProf.avatar,points:curProf.points||0,totalEarned:curProf.totalEarned||0,completed:curProf.completed||{},rewards:curProf.rewards||[],at:curProf.at}:null,
+          profile:curProf||null,
           perfLog:curPerf.slice(-500),
           studyPlan:curPlan,
           settings:{pin:localStorage.getItem("lg_pin"),rewards:localStorage.getItem("lg_rewards"),favourite:localStorage.getItem("lg_favourite"),arenaDiff:localStorage.getItem("lg_arena_diff")},
-          meta:{role:userRole,classCode,lastActive:Date.now(),studentId},
+          meta:{role:localStorage.getItem("lg_role"),classCode:localStorage.getItem("lg_class_code"),lastActive:Date.now(),studentId},
           ...partial
         };
         fbUpdate("users/"+studentId,data);
-        if(classCode){
-          fbUpdate("classes/"+classCode+"/students/"+studentId,{
+        const cc=localStorage.getItem("lg_class_code");
+        if(cc){
+          fbUpdate("classes/"+cc+"/students/"+studentId,{
             name:curProf?.name,age:curProf?.age,points:curProf?.points||0,
             lastActive:Date.now(),
-            perfSummary:{total:curPerf.reduce((a,l)=>a+l.total,0),correct:curPerf.reduce((a,l)=>a+l.correct,0)},
+            perfSummary:{total:curPerf.reduce((a,l)=>a+(l.total||0),0),correct:curPerf.reduce((a,l)=>a+(l.correct||0),0)},
             studyPlan:curPlan.map(t=>({mod:t.mod,topic:t.topic,done:!!t.done,progress:t.progress||0,correct:t.correct||0,total:t.total||0}))
           });
         }
       }catch(e){}
     },3000);
-  },[studentId,fbReady,classCode,userRole]); // Minimal deps — reads state directly
+  },[studentId,fbReady]); // Minimal deps — reads state directly
 
   // ═══ CLOUD LOAD — Restore ALL data from Firebase on login ═══
   const cloudLoad=useCallback(async(id)=>{
@@ -3282,12 +3286,15 @@ export default function App(){
   },[studentId,fbReady]);
   // Sync on profile change (debounced via cloudSave)
   useEffect(()=>{if(prof&&studentId&&fbReady){const t=setTimeout(()=>cloudSave(),5000);return()=>clearTimeout(t);}},[prof?.points,prof?.name,studentId,fbReady]);
+  // Sync on studyPlan change
+  useEffect(()=>{if(studentId&&fbReady&&studyPlan.length>0){const t=setTimeout(()=>cloudSave(),3000);return()=>clearTimeout(t);}},[studyPlan.length,studentId,fbReady]);
+  // Sync on perfLog change  
+  useEffect(()=>{if(studentId&&fbReady&&perfLog.length>0){const t=setTimeout(()=>cloudSave(),4000);return()=>clearTimeout(t);}},[perfLog.length,studentId,fbReady]);
   const logPerf=(cat,sub,correct,total,extra={})=>{
     trackActivity("answer",{cat,sub,correct,total,...extra});
     const entry={cat,sub,correct,total,score:extra.score||null,action:extra.action||"answer",date:new Date().toISOString(),ts:Date.now()};
     const nl=[...perfLog,entry];setPerfLog(nl);localStorage.setItem("lg_perf",JSON.stringify(nl.slice(-1000)));
-    // Sync to Firebase
-    if(studentId)try{setTimeout(()=>cloudSave(),500);}catch(e){}
+    // Cloud sync triggered by useEffect watching perfLog changes
     // Update matching studyPlan tasks
     const updated=studyPlan.map(t=>{
       const taskCat=t.topic.toLowerCase().replace(/ /g,"_");
