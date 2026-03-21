@@ -4367,7 +4367,6 @@ export default function App(){
       <span style={{fontSize:19}}>{t.icon}</span>
       <span style={{fontSize:9,fontWeight:800,color:active?"#fff":t.bg}}>{t.label}</span>
     </button>;})}
-    {PinModal}
   </div>:null;
 
 
@@ -4846,7 +4845,7 @@ export default function App(){
           )}
         </div>
       </div>
-      <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+      <div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
     </div>
   );
   if(scr==="speaking")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
@@ -4882,7 +4881,7 @@ export default function App(){
         )}
       </div>
     </div>
-    <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
   </div>;
   if(scr==="listening")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <Particles count={6}/>
@@ -4904,7 +4903,7 @@ export default function App(){
         )}
       </div>
     </div>
-    <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
   </div>;
   if(scr==="reading")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <Particles count={6}/>
@@ -4926,7 +4925,7 @@ export default function App(){
         )}
       </div>
     </div>
-    <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
   </div>;
   if(scr==="writing")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}>
     <Particles count={6}/>
@@ -4963,9 +4962,9 @@ export default function App(){
         )}
       </div>
     </div>
-    <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
   </div>;
-  if(scr==="homework")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Homework 📝" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,padding:20}}><span style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>📝</span><h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",textAlign:"center"}}>Coming Soon!</h2><p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,textAlign:"center"}}>Parents will assign homework tasks here</p></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style></div>;
+  if(scr==="homework")return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"auto",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><SubHead title="Homework 📝" onBack={goHome} points={prof?.points||0}/><div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12,padding:20}}><span style={{fontSize:64,animation:"mascotB 2s ease-in-out infinite"}}>📝</span><h2 style={{fontFamily:"var(--font)",fontSize:22,fontWeight:800,color:"#2D2B3D",textAlign:"center"}}>Coming Soon!</h2><p style={{fontSize:13,color:"#8E8CA3",fontWeight:600,textAlign:"center"}}>Parents will assign homework tasks here</p></div><div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style></div>;
 
 
   // ═══ LETTER STROKES DATA — Each letter decomposed into basic lines ═══
@@ -5299,7 +5298,7 @@ export default function App(){
           })}
         </div>
       </div>
-      <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+      <div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
     </div>;
 
     // DEMO + WRITE + DONE
@@ -5401,7 +5400,7 @@ export default function App(){
           </div>
         </div>
       </div>
-      <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+      <div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
     </div>;
   }
 
@@ -5471,7 +5470,7 @@ export default function App(){
           </div>}
         </>}
       </div>
-      <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+      <div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
     </div>;
   }
 
@@ -5713,7 +5712,7 @@ export default function App(){
         </button>)}
       </div>
     </div>
-        {BottomNav}{TeacherBubble}<style>{CSS}</style>
+        {BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
 
@@ -6457,7 +6456,7 @@ export default function App(){
       </div>;
     })()}
     </div>
-    <div style={{height:90,flexShrink:0}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:90,flexShrink:0}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
 
@@ -6533,7 +6532,7 @@ export default function App(){
       </div>}
     </div>
     
-    {BottomNav}{TeacherBubble}<style>{CSS}</style>
+    {BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
   // ═══ NUMBER DETAIL with ANIMATED SCENE ═══
@@ -6763,7 +6762,7 @@ export default function App(){
       </div>
     </div>}
 
-    <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
   // ═══ QUIZ ZONE ═══
@@ -6978,7 +6977,7 @@ export default function App(){
       </div>
     </div>}
 
-    <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{BottomNav}{TeacherBubble}<style>{CSS}</style>
+    <div style={{height:90,flexShrink:0,pointerEvents:"none"}}/>{BottomNav}{PinModal}{TeacherBubble}<style>{CSS}</style>
   </div>;
 
   if(scr==="numbers"&&!selNum)return<div style={{fontFamily:"var(--font)",height:"100vh",overflow:"hidden",background:"var(--bg)",maxWidth:520,margin:"0 auto",display:"flex",flexDirection:"column"}}><Particles count={8}/><SubHead title="Numbers" onBack={goHome} points={prof?.points||0}/>
