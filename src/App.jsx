@@ -1280,8 +1280,8 @@ const chkStreak=p=>{const d=new Date().toDateString(),l=p?.lastActive;if(!l)retu
 
 // ═══ PARENT CONTROL CENTER + STUDY PLAN + REWARDS ENGINE ═══
 const PARENT_PIN_DEFAULT="1234";
-// AI Coach: calls your own server (Netlify function) — API key is NEVER in the browser
-const AI_PROXY_URL="/.netlify/functions/ai-coach"; // Your Netlify function URL
+// AI Coach: Secure server proxy — API key NEVER in browser code
+const AI_API_URL="/.netlify/functions/ai-coach";
 const REWARD_CATALOG=[
   {cat:"Food",items:[{id:"burger",name:"Burger",emoji:"🍔",defPts:40},{id:"icecream",name:"Ice Cream",emoji:"🍦",defPts:20},{id:"pizza",name:"Pizza",emoji:"🍕",defPts:50},{id:"fries",name:"Fries",emoji:"🍟",defPts:15},{id:"cake",name:"Cake",emoji:"🎂",defPts:60},{id:"juice",name:"Juice Box",emoji:"🧃",defPts:10},{id:"cookie",name:"Cookies",emoji:"🍪",defPts:15},{id:"candy",name:"Candy",emoji:"🍬",defPts:10}]},
   {cat:"Toys",items:[{id:"lego",name:"Lego Set",emoji:"🧩",defPts:100},{id:"teddy",name:"Teddy Bear",emoji:"🧸",defPts:80},{id:"car",name:"Toy Car",emoji:"🚗",defPts:60},{id:"doll",name:"Doll",emoji:"🪆",defPts:70},{id:"puzzle",name:"Puzzle",emoji:"🧩",defPts:40},{id:"blocks",name:"Building Blocks",emoji:"🧱",defPts:50},{id:"ball",name:"Ball",emoji:"⚽",defPts:30},{id:"kite",name:"Kite",emoji:"🪁",defPts:35}]},
@@ -6100,24 +6100,38 @@ export default function App(){
       const assignedNotDone=studyPlan.filter(t=>!t.done);
       const canAskAI=aiQUsed<AI_MAX_Q;
 
-      // API-powered AI question via secure proxy
+      // AI-powered question via secure Netlify function
       const askAI=async(prompt)=>{
         if(!canAskAI)return;
         setAiLoading(true);
         const stats="Name="+name+", Age="+(prof?.age||5)+", Points="+(prof?.totalEarned||0)+", Screen time="+engageMins+"min, Performance="+perfLog.slice(-50).map(l=>l.cat+":"+l.correct+"/"+l.total).join(", ")+", Tasks="+studyPlan.map(t=>t.mod+"-"+t.topic+(t.done?" (done)":"")).join(", ");
         try{
-          const resp=await fetch(AI_PROXY_URL,{
+          const resp=await fetch(AI_API_URL,{
             method:"POST",
             headers:{"Content-Type":"application/json"},
             body:JSON.stringify({
               system:"You are Ollie, a friendly AI learning coach. Child data: "+stats+". Give warm, practical advice in 2-3 short paragraphs with emojis. Be specific about what to practice.",
               messages:[{role:"user",content:prompt}]})
           });
-          const data=await resp.json();
-          const text=data.content?.map(c=>c.text||"").join("")||"Couldn't get a response. Try again!";
-          setAiHistory(h=>[...h,{q:prompt,a:text,ai:true}]);
-          saveAiUsage(aiQUsed+1);
-        }catch(e){setAiHistory(h=>[...h,{q:prompt,a:"Offline — check your connection. Free insights below!",ai:false}]);}
+          const rawText=await resp.text();
+          let data;
+          try{data=JSON.parse(rawText);}catch(pe){
+            setAiHistory(h=>[...h,{q:prompt,a:"Server returned non-JSON: "+rawText.slice(0,200),ai:false}]);
+            setAiLoading(false);setAiMsg("");return;
+          }
+          if(!resp.ok){
+            const errMsg=data.error?.message||data.error||"Status "+resp.status;
+            setAiHistory(h=>[...h,{q:prompt,a:"Error ("+resp.status+"): "+errMsg,ai:false}]);
+            setAiLoading(false);setAiMsg("");return;
+          }
+          if(data.error){
+            setAiHistory(h=>[...h,{q:prompt,a:"API Error: "+(data.error.message||JSON.stringify(data.error)),ai:false}]);
+          } else {
+            const text=data.content?.map(c=>c.text||"").join("")||"No response text.";
+            setAiHistory(h=>[...h,{q:prompt,a:text,ai:true}]);
+            saveAiUsage(aiQUsed+1);
+          }
+        }catch(e){setAiHistory(h=>[...h,{q:prompt,a:"Fetch failed: "+e.message,ai:false}]);}
         setAiLoading(false);setAiMsg("");
       };
 
