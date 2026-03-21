@@ -2736,7 +2736,8 @@ export default function App(){
   const prevScrRef=useRef("home"); // track where user navigated from
   const[writeNum,setWriteNum]=useState(1);
   // Active assignment tracking — set when kid starts from Study Plan
-  const[activeAssignment,setActiveAssignment]=useState(null); // {mod, topic, maxNum, ...}
+  const[activeAssignment,setActiveAssignment]=useState(null);
+  const assignScoreRef=useRef({correct:0,total:0,scores:[]}); // {mod, topic, maxNum, ...}
   const[writeMode,setWriteMode]=useState("numbers"); // "numbers" or "letters"
   const[writeChar,setWriteChar]=useState("A"); // current letter to write
   const[writeCase,setWriteCase]=useState("caps"); // "caps" or "small"
@@ -4083,14 +4084,15 @@ export default function App(){
       setWriteOk(true);writeOkRef.current=true;
       headYes();boom();stop();speak(`Perfect!`,{rate:0.85,pitch:1.0});
       if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(5,"basics_w",writeMode==="numbers"?writeNum:writeChar);
+      // Track real score for assignment
+      if(activeAssignment){assignScoreRef.current.correct++;assignScoreRef.current.total++;assignScoreRef.current.scores.push(score);}
       setTimeout(()=>{
         if(writeMode==="numbers"){
-          // Check assignment limit
           if(activeAssignment&&activeAssignment.topic==="Numbers 0-9"&&writeNum>=9){
-            // Assignment complete!
-            const updated=studyPlan.map(t=>t.mod==="writing"&&t.topic==="Numbers 0-9"?{...t,done:true,completedAt:Date.now(),correct:(t.correct||0)+1,total:(t.total||0)+1}:t);
+            const s=assignScoreRef.current;const avgAcc=s.scores.length>0?Math.round(s.scores.reduce((a,b)=>a+b,0)/s.scores.length):100;
+            const updated=studyPlan.map(t=>t.mod==="writing"&&t.topic==="Numbers 0-9"?{...t,done:true,completedAt:Date.now(),correct:s.correct,total:s.total,progress:avgAcc}:t);
             savePlan(updated);setActiveAssignment(null);
-            stop();speak("Great job! You completed the Numbers 0 to 9 assignment!",{rate:0.85,pitch:1.1});boom();
+            stop();speak("Great job! You completed Numbers 0 to 9 with "+avgAcc+" percent accuracy!",{rate:0.85,pitch:1.1});boom();
             setTimeout(()=>setScr("studyplan"),3000);return;
           }
           setWriteNum(prev=>{
@@ -4114,13 +4116,15 @@ export default function App(){
       setWriteOk(true);writeOkRef.current=true;
       headYes();boom();stop();speak(`Good job!`,{rate:0.85,pitch:1.0});
       if(!isDone("basics_w",writeMode==="numbers"?writeNum:writeChar)) awardPoints(3,"basics_w",writeMode==="numbers"?writeNum:writeChar);
+      // Track real score for assignment
+      if(activeAssignment){assignScoreRef.current.correct++;assignScoreRef.current.total++;assignScoreRef.current.scores.push(score);}
       setTimeout(()=>{
         if(writeMode==="numbers"){
-          // Check assignment limit
           if(activeAssignment&&activeAssignment.topic==="Numbers 0-9"&&writeNum>=9){
-            const updated=studyPlan.map(t=>t.mod==="writing"&&t.topic==="Numbers 0-9"?{...t,done:true,completedAt:Date.now(),correct:(t.correct||0)+1,total:(t.total||0)+1}:t);
+            const s=assignScoreRef.current;const avgAcc=s.scores.length>0?Math.round(s.scores.reduce((a,b)=>a+b,0)/s.scores.length):100;
+            const updated=studyPlan.map(t=>t.mod==="writing"&&t.topic==="Numbers 0-9"?{...t,done:true,completedAt:Date.now(),correct:s.correct,total:s.total,progress:avgAcc}:t);
             savePlan(updated);setActiveAssignment(null);
-            stop();speak("Great job! You completed the Numbers 0 to 9 assignment!",{rate:0.85,pitch:1.1});boom();
+            stop();speak("Great job! You completed Numbers 0 to 9 with "+avgAcc+" percent accuracy!",{rate:0.85,pitch:1.1});boom();
             setTimeout(()=>setScr("studyplan"),3000);return;
           }
           setWriteNum(prev=>{
@@ -4148,11 +4152,13 @@ export default function App(){
     drawPtsRef.current=0;setDrawPts(0);setWriteOk(false);writeOkRef.current=false;setWriteScore(null);
   };
   const nextWrite=()=>{
-    // Check assignment limit for skip too
+    // Track skip as 0 score for assignment
+    if(activeAssignment){assignScoreRef.current.total++;assignScoreRef.current.scores.push(0);}
     if(activeAssignment&&activeAssignment.topic==="Numbers 0-9"&&writeNum>=9){
-      const updated=studyPlan.map(t=>t.mod==="writing"&&t.topic==="Numbers 0-9"?{...t,done:true,completedAt:Date.now()}:t);
+      const s=assignScoreRef.current;const avgAcc=s.scores.length>0?Math.round(s.scores.reduce((a,b)=>a+b,0)/s.scores.length):0;
+      const updated=studyPlan.map(t=>t.mod==="writing"&&t.topic==="Numbers 0-9"?{...t,done:true,completedAt:Date.now(),correct:s.correct,total:s.total,progress:avgAcc}:t);
       savePlan(updated);setActiveAssignment(null);
-      stop();speak("Great job! You completed the Numbers 0 to 9 assignment!",{rate:0.85,pitch:1.1});boom();
+      stop();speak("Assignment done! "+avgAcc+" percent accuracy.",{rate:0.85,pitch:1.0});boom();
       setTimeout(()=>setScr("studyplan"),3000);return;
     }
     const nextN=activeAssignment&&activeAssignment.topic==="Numbers 0-9"?writeNum+1:writeNum>=100?1:writeNum+1;
@@ -6389,12 +6395,14 @@ export default function App(){
           }
           if(data.error){
             setAiHistory(h=>[...h,{q:prompt,a:"API Error: "+(data.error.message||JSON.stringify(data.error)),ai:false}]);
+            setAiLoading(false);setAiMsg("");
           } else {
-            const text=data.content?.map(c=>c.text||"").join("")||"No response text.";
+            const text=data.content?.map(c=>c.text||"").join("")||"No response text. Raw: "+JSON.stringify(data).slice(0,200);
             setAiHistory(h=>[...h,{q:prompt,a:text,ai:true}]);
             saveAiUsage(aiQUsed+1);
+            setAiLoading(false);setAiMsg("");
           }
-        }catch(e){setAiHistory(h=>[...h,{q:prompt,a:"Fetch failed: "+e.message,ai:false}]);}
+        }catch(e){setAiHistory(h=>[...h,{q:prompt,a:"Fetch failed: "+e.message,ai:false}]);setAiLoading(false);setAiMsg("");}
         setAiLoading(false);setAiMsg("");
       };
 
@@ -6445,11 +6453,11 @@ export default function App(){
         </div>}
 
         {/* AI Chat History */}
-        {aiHistory.filter(h=>h.ai).length>0&&<div style={{marginBottom:14}}>
+        {aiHistory.length>0&&<div style={{marginBottom:14}}>
           <div style={{fontWeight:800,fontSize:13,marginBottom:6}}>🤖 AI Responses</div>
-          {aiHistory.filter(h=>h.ai).map((h,i)=><div key={i} style={{marginBottom:10}}>
+          {aiHistory.map((h,i)=><div key={i} style={{marginBottom:10}}>
             <div style={{padding:"6px 12px",borderRadius:"12px 12px 4px 12px",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontSize:11,fontWeight:600,marginBottom:4,display:"inline-block"}}>{h.q}</div>
-            <div style={{padding:"12px 14px",borderRadius:"4px 16px 16px 16px",background:"#fff",boxShadow:"var(--shadow-card)",fontSize:12,fontWeight:600,color:"#2D2B3D",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{h.a}</div>
+            <div style={{padding:"12px 14px",borderRadius:"4px 16px 16px 16px",background:h.ai?"#fff":"#FEF2F2",boxShadow:"0 2px 8px rgba(0,0,0,0.04)",fontSize:12,fontWeight:600,color:h.ai?"#2D2B3D":"#DC2626",lineHeight:1.6,whiteSpace:"pre-wrap",border:h.ai?"none":"1px solid #FECACA"}}>{h.a}</div>
           </div>)}
         </div>}
 
@@ -6518,10 +6526,11 @@ export default function App(){
             <div style={{background:"#fff",padding:"8px 10px"}}>
               {tasks.map((task,j)=>{
                 const diffIcons={easy:"🟢",medium:"🟡",hard:"🔴"};
-                const pct=task.total>0?Math.round(task.correct/task.total*100):0;
+                const pct=task.progress||0;
                 return<button key={j} onClick={()=>{sfxTap();killAllFlows();
                   // Set active assignment for tracking
                   setActiveAssignment({mod:task.mod,topic:task.topic,idx:j});
+                  assignScoreRef.current={correct:0,total:0,scores:[]};
                   // Route directly to the specific assigned task
                   if(task.mod==="writing"){
                     if(task.topic==="Uppercase A-Z"||task.topic==="Lowercase a-z"){setScr("strokelearn");setStrokePhase("pick");}
