@@ -1309,13 +1309,13 @@ const genRoomCode=()=>{const c="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let r="";for(l
 const genPlayerId=()=>"P"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 const ARENA_Q_TYPES=[
   // Number identification
-  {type:"number_id",gen:(diff)=>{const n=diff==="easy"?Math.ceil(Math.random()*10):diff==="medium"?Math.ceil(Math.random()*50):Math.ceil(Math.random()*100);const opts=new Set([n]);while(opts.size<4){let o=n+Math.floor(Math.random()*7)-3;if(o<1)o=Math.ceil(Math.random()*10);opts.add(o);}return{q:`What number is "${NW[n]||n}"?`,answer:n,options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔢",cat:"Numbers"};}},
+  {type:"number_id",gen:(diff)=>{const n=diff==="easy"?Math.ceil(Math.random()*10):diff==="medium"?Math.ceil(Math.random()*50):Math.ceil(Math.random()*100);const opts=new Set([n]);let tries=0;while(opts.size<4&&tries<50){tries++;let o=n+Math.floor(Math.random()*7)-3;if(o<1)o=Math.ceil(Math.random()*10);if(o!==n)opts.add(o);}while(opts.size<4)opts.add(n+opts.size*2);return{q:`What number is "${NW[n]||n}"?`,answer:n,options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔢",cat:"Numbers"};}},
   // Number word spelling
   {type:"number_word",gen:(diff)=>{const mx=diff==="easy"?10:diff==="medium"?20:50;const n=Math.ceil(Math.random()*mx);const correct=NW[n]||String(n);const opts=new Set([correct]);const nearby=[n-1,n+1,n+2,n-2].filter(x=>x>0&&NW[x]);nearby.forEach(x=>opts.add(NW[x]));while(opts.size<4){const r=Math.ceil(Math.random()*mx);if(NW[r])opts.add(NW[r]);}return{q:`How do you spell the number ${n}?`,answer:correct,options:[...opts].sort(()=>Math.random()-0.5),emoji:"✏️",cat:"Numbers"};}},
   // Math — Addition
-  {type:"math_add",gen:(diff)=>{const mx=diff==="easy"?10:diff==="medium"?20:50;const a=Math.ceil(Math.random()*mx);const b=Math.ceil(Math.random()*(mx/2));const ans=a+b;const opts=new Set([ans]);while(opts.size<4){let o=ans+Math.floor(Math.random()*7)-3;if(o<0)o=Math.ceil(Math.random()*5);opts.add(o);}return{q:`${a} + ${b} = ?`,answer:ans,options:[...opts].sort(()=>Math.random()-0.5),emoji:"➕",cat:"Math"};}},
+  {type:"math_add",gen:(diff)=>{const mx=diff==="easy"?10:diff==="medium"?20:50;const a=Math.ceil(Math.random()*mx);const b=Math.ceil(Math.random()*(mx/2));const ans=a+b;const opts=new Set([ans]);let tries=0;while(opts.size<4&&tries<50){tries++;let o=ans+Math.floor(Math.random()*7)-3;if(o<0)o=Math.ceil(Math.random()*5);if(o!==ans)opts.add(o);}while(opts.size<4)opts.add(ans+opts.size*2);return{q:`${a} + ${b} = ?`,answer:ans,options:[...opts].sort(()=>Math.random()-0.5),emoji:"➕",cat:"Math"};}},
   // Math — Subtraction
-  {type:"math_sub",gen:(diff)=>{const mx=diff==="easy"?10:diff==="medium"?20:50;const a=Math.ceil(Math.random()*mx);const b=Math.ceil(Math.random()*Math.min(a,mx/2));const ans=a-b;const opts=new Set([ans]);while(opts.size<4){let o=ans+Math.floor(Math.random()*7)-3;if(o<0)o=Math.ceil(Math.random()*5);opts.add(o);}return{q:`${a} − ${b} = ?`,answer:ans,options:[...opts].sort(()=>Math.random()-0.5),emoji:"➖",cat:"Math"};}},
+  {type:"math_sub",gen:(diff)=>{const mx=diff==="easy"?10:diff==="medium"?20:50;const a=Math.ceil(Math.random()*mx);const b=Math.ceil(Math.random()*Math.min(a,mx/2));const ans=a-b;const opts=new Set([ans]);let tries=0;while(opts.size<4&&tries<50){tries++;let o=ans+Math.floor(Math.random()*7)-3;if(o<0)o=Math.ceil(Math.random()*5);if(o!==ans)opts.add(o);}while(opts.size<4)opts.add(ans+opts.size*2);return{q:`${a} − ${b} = ?`,answer:ans,options:[...opts].sort(()=>Math.random()-0.5),emoji:"➖",cat:"Math"};}},
   // Alphabet — uppercase to lowercase
   {type:"alpha_case",gen:()=>{const i=Math.floor(Math.random()*26);const L=ALPHA_LETTERS[i];const opts=new Set([L.toLowerCase()]);while(opts.size<4)opts.add(ALPHA_LETTERS[Math.floor(Math.random()*26)].toLowerCase());return{q:`What is the lowercase of "${L}"?`,answer:L.toLowerCase(),options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔤",cat:"Alphabet"};}},
   // Alphabet — letter order
@@ -1327,9 +1327,28 @@ const ARENA_Q_TYPES=[
   // Phonics — word identification
   {type:"phonics",gen:()=>{const cats=Object.keys(WCATS);const cat=cats[Math.floor(Math.random()*cats.length)];const words=WCATS[cat]?.words||[];if(words.length<4)return{q:"What sound does 🐱 make?",answer:"meow",options:["meow","woof","moo","baa"].sort(()=>Math.random()-0.5),emoji:"🐱",cat:"Phonics"};const w=words[Math.floor(Math.random()*words.length)];const opts=new Set([w.word]);while(opts.size<4){const rw=words[Math.floor(Math.random()*words.length)];opts.add(rw.word);}return{q:`What is this? ${w.img}`,answer:w.word,options:[...opts].sort(()=>Math.random()-0.5),emoji:w.img,cat:"Phonics"};}},
   // Counting
-  {type:"counting",gen:(diff)=>{const n=diff==="easy"?Math.ceil(Math.random()*5):diff==="medium"?Math.ceil(Math.random()*10):Math.ceil(Math.random()*15);const emoji=["🍎","🌟","🐟","🦋","🎈"][Math.floor(Math.random()*5)];const opts=new Set([n]);while(opts.size<4){let o=n+Math.floor(Math.random()*5)-2;if(o<1)o=Math.ceil(Math.random()*3);opts.add(o);}return{q:`Count: ${emoji.repeat(n)}`,answer:n,options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔢",cat:"Counting"};}},
+  {type:"counting",gen:(diff)=>{const n=diff==="easy"?Math.ceil(Math.random()*5):diff==="medium"?Math.ceil(Math.random()*10):Math.ceil(Math.random()*15);const emoji=["🍎","🌟","🐟","🦋","🎈"][Math.floor(Math.random()*5)];const opts=new Set([n]);let tries=0;while(opts.size<4&&tries<50){tries++;let o=n+Math.floor(Math.random()*5)-2;if(o<1)o=Math.ceil(Math.random()*3);if(o!==n)opts.add(o);}while(opts.size<4)opts.add(n+opts.size);return{q:`Count: ${emoji.repeat(n)}`,answer:n,options:[...opts].sort(()=>Math.random()-0.5),emoji:"🔢",cat:"Counting"};}},
 ];
-const genArenaQ=(diff="easy")=>{const t=ARENA_Q_TYPES[Math.floor(Math.random()*ARENA_Q_TYPES.length)];return t.gen(diff);};
+const genArenaQ=(diff="easy")=>{
+  // FIX: Read parent-set topic filter from localStorage
+  let allowedTopics=[];
+  try{const s=localStorage.getItem("lg_arena_topics");if(s)allowedTopics=JSON.parse(s);}catch(e){}
+  // Map topic names to categories used in ARENA_Q_TYPES
+  const topicCatMap={"Numbers":"Numbers","Math":"Math","Alphabet":"Alphabet","Shapes":"Shapes","Colors":"Colors","Phonics":"Phonics","Counting":"Counting"};
+  let filtered=ARENA_Q_TYPES;
+  if(allowedTopics.length>0){
+    const allowedCats=allowedTopics.map(t=>topicCatMap[t]).filter(Boolean);
+    filtered=ARENA_Q_TYPES.filter(qt=>{
+      // Generate a sample to check its cat — we stored cat in the gen output
+      // Instead, map type to cat directly
+      const typeCat={"number_id":"Numbers","number_word":"Numbers","math_add":"Math","math_sub":"Math","alpha_case":"Alphabet","alpha_next":"Alphabet","shape_id":"Shapes","color_id":"Colors","phonics":"Phonics","counting":"Counting"};
+      return allowedCats.includes(typeCat[qt.type]);
+    });
+    if(filtered.length===0)filtered=ARENA_Q_TYPES; // fallback if nothing selected
+  }
+  const t=filtered[Math.floor(Math.random()*filtered.length)];
+  return t.gen(diff);
+};
 
 
 // ═══ FIRST-TIME QUESTIONNAIRE ═══
@@ -1663,23 +1682,42 @@ const normalizeSpoken=(text)=>{
   return t.trim();
 };
 // FIX: calcAcc now accepts alternatives array and returns best match
+// CRITICAL: raw exact match ALWAYS returns 100, short words get generous scoring
 const calcAcc=(expected,spoken,alternatives)=>{
   if(!expected||!spoken)return 0;
-  const e=expected.trim().toLowerCase();
-  // FIX: Check RAW spoken text first (before normalization strips it), then normalized
-  const raw=spoken.trim().toLowerCase().replace(/[^a-z0-9\s]/g,"").trim();
-  const candidates=[raw,normalizeSpoken(spoken),...(alternatives||[]).map(a=>[a.trim().toLowerCase().replace(/[^a-z0-9\s]/g,"").trim(),normalizeSpoken(a)]).flat()].filter(Boolean);
+  const e=expected.trim().toLowerCase().replace(/[^a-z0-9\s]/g,"").trim();
+  if(!e)return 0;
+  // Build ALL possible candidate strings from spoken + alternatives
+  const makeCandidates=(text)=>{
+    if(!text)return[];
+    const t=text.trim().toLowerCase();
+    const raw=t.replace(/[^a-z0-9\s]/g,"").trim();
+    const noSpaces=raw.replace(/\s+/g,"");
+    const normalized=normalizeSpoken(text);
+    const normNoSpaces=normalized.replace(/\s+/g,"");
+    return[t,raw,noSpaces,normalized,normNoSpaces].filter(Boolean);
+  };
+  const candidates=[...makeCandidates(spoken),...(alternatives||[]).flatMap(a=>makeCandidates(a))];
+  // Deduplicate
+  const unique=[...new Set(candidates)];
+  const eNoSpaces=e.replace(/\s+/g,"");
   let bestAcc=0;
-  for(const b of candidates){
+  for(const b of unique){
     if(!b)continue;
-    if(e===b){bestAcc=100;break;}
-    // Also check if the spoken word CONTAINS the expected word (kid says "it's a circle" → "circle")
-    if(b.includes(e)){bestAcc=Math.max(bestAcc,95);continue;}
-    if(e.includes(b)&&b.length>=e.length*0.6){bestAcc=Math.max(bestAcc,85);continue;}
+    // EXACT match — always 100%
+    if(e===b||eNoSpaces===b.replace(/\s+/g,"")){return 100;}
+    // Spoken CONTAINS expected (kid says "it's a circle" → "circle")
+    if(b.includes(e)&&e.length>=2){bestAcc=Math.max(bestAcc,95);continue;}
+    // Expected CONTAINS spoken (kid says "circ" for "circle") 
+    if(e.includes(b)&&b.length>=e.length*0.5){bestAcc=Math.max(bestAcc,85);continue;}
     // Levenshtein distance
     const m=Array.from({length:e.length+1},(_,i)=>Array.from({length:b.length+1},(_,j)=>i===0?j:j===0?i:0));
     for(let i=1;i<=e.length;i++)for(let j=1;j<=b.length;j++)m[i][j]=e[i-1]===b[j-1]?m[i-1][j-1]:1+Math.min(m[i-1][j],m[i][j-1],m[i-1][j-1]);
-    const acc=Math.max(0,Math.round((1-m[e.length][b.length]/Math.max(e.length,b.length))*100));
+    const dist=m[e.length][b.length];
+    let acc=Math.max(0,Math.round((1-dist/Math.max(e.length,b.length))*100));
+    // BOOST for short words: 1 char off on 3-letter word should be 80+, not 67
+    if(e.length<=4&&dist===1)acc=Math.max(acc,80);
+    if(e.length<=4&&dist===0)acc=100;
     bestAcc=Math.max(bestAcc,acc);
   }
   return bestAcc;
@@ -6308,7 +6346,7 @@ export default function App(){
               fontSize:typeof opt==="number"?28:18,fontWeight:800,fontFamily:"var(--font)",
               boxShadow:`0 4px 14px ${ARENA_COLORS[i%4]}30`,
               opacity:1,
-              transform:isCorrect?"scale(1.08)":isWrong?"scale(0.94)":"scale(1)",textTransform:"capitalize"
+              transform:isCorrect?"scale(1.08)":isWrong?"scale(0.94)":"scale(1)"
             }}>{opt}</button>;
           })}
         </div>;
@@ -6647,7 +6685,7 @@ export default function App(){
         <div style={{fontSize:10,fontWeight:600,color:"#8E8CA3",marginBottom:8}}>Set difficulty, topics & prizes for multiplayer</div>
         <div style={{display:"flex",gap:6,marginBottom:10}}>
           {[{id:"easy",l:"Easy",c:"#22C55E"},{id:"medium",l:"Medium",c:"#FF9F43"},{id:"hard",l:"Hard",c:"#EF4444"},{id:"mix",l:"Mix",c:"#6C5CE7"}].map(d=>
-            <button key={d.id} onClick={()=>{sfxTap();try{localStorage.setItem("lg_arena_diff",d.id);}catch(e){}}} style={{
+            <button key={d.id} onClick={()=>{sfxTap();try{localStorage.setItem("lg_arena_diff",d.id);}catch(e){}setArenaDiff(d.id);}} style={{
               flex:1,padding:"8px 4px",borderRadius:10,border:"2px solid "+(localStorage.getItem("lg_arena_diff")===d.id?d.c:"transparent"),
               background:localStorage.getItem("lg_arena_diff")===d.id?d.c+"18":"#F8F9FF",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:localStorage.getItem("lg_arena_diff")===d.id?d.c:"#8E8CA3"
             }}>{d.l}</button>
@@ -6682,7 +6720,7 @@ export default function App(){
         <div style={{fontWeight:800,fontSize:13,marginBottom:8}}>🔐 Change PIN</div>
         <div style={{display:"flex",gap:8}}>
           <input value={pinInput} onChange={e=>setPinInput(e.target.value.replace(/\D/g,"").slice(0,4))} placeholder="New 4-digit PIN" style={{flex:1,padding:"10px 14px",borderRadius:12,border:"2px solid #DFE6E9",fontSize:14,fontWeight:700,fontFamily:"var(--font)"}}/>
-          <button onClick={()=>{if(pinInput.length===4){savePin(pinInput);setPinInput("");alert("PIN updated!");}}} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer"}}>Save</button>
+          <button onClick={()=>{if(pinInput.length===4){savePin(pinInput);setParentPin(pinInput);setPinInput("");alert("PIN updated!");}}} style={{padding:"10px 16px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#6C5CE7,#A29BFE)",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer"}}>Save</button>
         </div>
       </div>
     </div>}
