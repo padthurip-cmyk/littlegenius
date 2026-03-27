@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
+// FIX: localStorage polyfill — artifact iframe blocks localStorage
+try{localStorage.getItem('__t');}catch(e){const _s={};Object.defineProperty(window,'localStorage',{value:{getItem:k=>_s[k]??null,setItem:(k,v)=>{_s[k]=String(v);},removeItem:k=>{delete _s[k];},clear:()=>{for(const k in _s)delete _s[k];},get length(){return Object.keys(_s).length;},key:i=>Object.keys(_s)[i]??null}});}
 
 // ═══ FIREBASE CONFIG — Set your project URL here (one-time developer setup) ═══
 // Go to firebase.google.com → Create project → Realtime Database → Test mode
@@ -1664,8 +1666,9 @@ const normalizeSpoken=(text)=>{
 const calcAcc=(expected,spoken,alternatives)=>{
   if(!expected||!spoken)return 0;
   const e=expected.trim().toLowerCase();
-  // Check primary result AND all alternatives for best match
-  const candidates=[normalizeSpoken(spoken),...(alternatives||[]).map(a=>normalizeSpoken(a))];
+  // FIX: Check RAW spoken text first (before normalization strips it), then normalized
+  const raw=spoken.trim().toLowerCase().replace(/[^a-z0-9\s]/g,"").trim();
+  const candidates=[raw,normalizeSpoken(spoken),...(alternatives||[]).map(a=>[a.trim().toLowerCase().replace(/[^a-z0-9\s]/g,"").trim(),normalizeSpoken(a)]).flat()].filter(Boolean);
   let bestAcc=0;
   for(const b of candidates){
     if(!b)continue;
@@ -2504,17 +2507,20 @@ const ResultBox=({acc,result,expected,onRetry,onDone,color,kidName,currentPoints
     {/* Mascot message */}
     <Mascot mood={s>=4?"cheering":s>=3?"excited":s>=1?"happy":"sad"}
       msg={s>=4?`WOW ${nm}! SUPERSTAR! 🌟`:s>=3?`Great job ${nm}! 🎉`:s>=1?`Good try ${nm}! 💪`:`Keep trying ${nm}! 💫`}/>
-    {/* HEARD vs EXPECTED - clear split box */}
+    {/* HEARD vs EXPECTED - FIX: Show success message when correct, correction only when wrong */}
+    {acc>=80?<div style={{padding:"14px 16px",borderRadius:14,background:"#F0FDF4",border:"2px solid #22C55E44",textAlign:"center",margin:"6px 0"}}>
+      <div style={{fontSize:20,fontWeight:900,color:"#16A34A"}}>✅ Perfect! You said "{result}" correctly!</div>
+    </div>:
     <div style={{display:"flex",gap:6,margin:"6px 0"}}>
       <div style={{flex:1,padding:"8px 10px",borderRadius:14,background:pass?"#F0FDF4":"#FEF2F2",border:`2px solid ${pass?"#22C55E33":"#EF444433"}`,textAlign:"center"}}>
         <div style={{fontSize:9,fontWeight:800,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1}}>You said</div>
-        <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:pass?"#16A34A":"#DC2626",marginTop:2}}>"{result}"</div>
+        <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:pass?"#16A34A":"#DC2626",marginTop:2}}>"{result||"..."}"</div>
       </div>
       <div style={{flex:1,padding:"8px 10px",borderRadius:14,background:"#fff",border:"2px solid #FF8C4233",textAlign:"center"}}>
         <div style={{fontSize:9,fontWeight:800,color:"#8E8CA3",textTransform:"uppercase",letterSpacing:1}}>Correct</div>
         <div style={{fontFamily:"var(--font)",fontSize:16,fontWeight:800,color:"#6C5CE7",marginTop:2}}>"{expected}"</div>
       </div>
-    </div>
+    </div>}
     {/* Points */}
     {p>0&&<div style={{fontSize:18,fontWeight:900,color:"#22C55E",fontFamily:"var(--font)",textAlign:"center",margin:"4px 0"}}>+{p} points! 💰</div>}
     {/* Reward hint */}
@@ -2854,7 +2860,7 @@ export default function App(){
     }catch(e){}
   },[arenaMsg]);
   const[arenaDiff,setArenaDiff]=useState(()=>localStorage.getItem("lg_arena_diff")||"easy");
-  const[arenaRounds,setArenaRounds]=useState(10);
+  const[arenaRounds,setArenaRounds]=useState(20);
   const[arenaEliminated,setArenaEliminated]=useState([]); // eliminated player IDs
   const[fbReady,setFbReady]=useState(false);const fbConfig=FIREBASE_CONFIG;
   const[fbError,setFbError]=useState("");
@@ -2865,15 +2871,14 @@ export default function App(){
   // Firebase config from localStorage
   // Firebase config is hardcoded — no user setup needed
 
-  // Initialize Firebase
+  // Initialize Firebase — FIX: Dynamic SDK loading
   useEffect(()=>{
-    if(!FIREBASE_CONFIG?.databaseURL||typeof window.firebase==="undefined")return;
-    try{
-      if(!window.firebase.apps?.length){
-        window.firebase.initializeApp(FIREBASE_CONFIG);
-      }
-      setFbReady(true);setFbError("");
-    }catch(e){setFbError("Firebase init failed: "+e.message);}
+    if(!FIREBASE_CONFIG?.databaseURL)return;
+    const initFb=()=>{try{if(window.firebase&&!window.firebase.apps?.length)window.firebase.initializeApp(FIREBASE_CONFIG);if(window.firebase){setFbReady(true);setFbError("");}else setFbError("Firebase not loaded");}catch(e){setFbError("Firebase init failed: "+e.message);}};
+    if(typeof window.firebase!=="undefined"){initFb();return;}
+    const s=document.createElement("script");s.src="https://www.gstatic.com/firebasejs/9.23.0/firebase-compat.js";
+    s.onload=()=>{const s2=document.createElement("script");s2.src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js";s2.onload=initFb;s2.onerror=()=>setFbError("Firebase DB SDK failed");document.head.appendChild(s2);};
+    s.onerror=()=>setFbError("Firebase SDK failed to load");document.head.appendChild(s);
   },[]); // Init once on mount
 
   // Firebase helpers
@@ -3088,7 +3093,7 @@ export default function App(){
     return()=>{if(hostWatchdogRef.current)clearTimeout(hostWatchdogRef.current);};
   },[arenaRoom?.round,arenaRoom?.state,arenaPaused]);
 
-  // HOST: Auto-advance from result → next round (with elimination)
+  // HOST: Auto-advance from result → next round (NO mid-game elimination — everyone plays all 20 Qs)
   useEffect(()=>{
     const rm=arenaRoomRef.current||arenaRoom;
     if(!rm||rm.hostId!==arenaId)return;
@@ -3099,43 +3104,21 @@ export default function App(){
         const cur=arenaRoomRef.current||arenaRoom;
         if(!cur||cur.state!=="result")return;
         const currentRound=cur.round||0;
-        const maxR=cur.maxRounds||10;
+        const maxR=cur.maxRounds||20;
         const roomCode=cur.code;
-        const allPlayers=cur.players||[];
-        const activePlayers=allPlayers.filter(p=>!arenaEliminated.includes(p.id));
 
-        // Check elimination: every N rounds, eliminate lowest scorer (if 3+ active)
-        const elimEvery=Math.max(2,Math.ceil(maxR/(Math.max(1,allPlayers.length-1))));
-        if(currentRound>0&&currentRound%elimEvery===0&&activePlayers.length>2){
-          const sorted=[...activePlayers].sort((a,b)=>(cur.scores?.[b.id]||0)-(cur.scores?.[a.id]||0));
-          const loser=sorted[sorted.length-1];
-          if(loser){
-            setArenaEliminated(prev=>[...prev,loser.id]);
-            // Announce elimination
-            stop();speak(loser.name+" has been eliminated!",{rate:0.9,pitch:0.9});
-          }
-        }
-
-        // Check if game should end
-        const remainingAfterElim=activePlayers.length-(currentRound>0&&currentRound%elimEvery===0&&activePlayers.length>2?1:0);
-        if(currentRound>=maxR||remainingAfterElim<=1){
-          // Game over — announce winner
+        if(currentRound>=maxR){
+          // Game over — lowest score gets eliminated
+          fbUpdate("rooms/"+roomCode,{state:"gameover"});
+          const allPlayers=cur.players||[];
           const sorted=[...allPlayers].sort((a,b)=>(cur.scores?.[b.id]||0)-(cur.scores?.[a.id]||0));
           const champion=sorted[0];
-          if(champion){
-            stop();speak(champion.name+" is the champion!",{rate:0.85,pitch:1.1});
-          }
-          fbUpdate("rooms/"+roomCode,{state:"gameover"});
+          if(champion){stop();speak(champion.name+" is the champion!",{rate:0.85,pitch:1.1});}
         } else {
-          // Next round
+          // Next round — everyone plays
           const q=genArenaQ(cur.diff||"easy");
           const nr=currentRound+1;
           lastRoundRef.current=nr;
-
-          // Announce finalists if down to 2
-          if(remainingAfterElim===2){
-            stop();speak("Final showdown!",{rate:1.0,pitch:1.1});
-          }
 
           fbUpdate("rooms/"+roomCode,{
             question:q,round:nr,state:"playing",answerBy:null,turnStartedAt:Date.now(),answers:null
@@ -3145,7 +3128,7 @@ export default function App(){
       },3500);
     }
     return()=>{if(advanceTimerRef.current)clearTimeout(advanceTimerRef.current);};
-  },[arenaPhase,arenaRoom?.round,arenaEliminated]);
+  },[arenaPhase,arenaRoom?.round]);
 
   // ALL DEVICES: Visual countdown timer (10 seconds — everyone sees same timer)
   const arenaAnsweredRef=useRef(false);
@@ -3187,10 +3170,12 @@ export default function App(){
   const[parentMode,setParentMode]=useState(false);
   const[pinInput,setPinInput]=useState("");
   const[showPinModal,setShowPinModal]=useState(false);
+  const[pinMode,setPinMode]=useState("ask"); // "ask" | "set" | "confirm"
+  const[newPinTemp,setNewPinTemp]=useState(""); // temp storage during set flow
   const[parentTab,setParentTab]=useState("assign"); // assign, tracker, rewards, dashboard
   const[studyPlan,setStudyPlan]=useState(()=>{try{const s=localStorage.getItem("lg_studyplan");return s?JSON.parse(s):[];}catch(e){return[];}});
   const[customRewards,setCustomRewards]=useState(()=>{try{const s=localStorage.getItem("lg_rewards");return s?JSON.parse(s):[];}catch(e){return[];}});
-  const[parentPin,setParentPin]=useState(()=>localStorage.getItem("lg_pin")||PARENT_PIN_DEFAULT);
+  const[parentPin,setParentPin]=useState(()=>{try{return localStorage.getItem("lg_pin")||"";}catch(e){return"";}});
   const[engageMins,setEngageMins]=useState(0);
   const activeSecondsRef=useRef(0);
   const lastActivityRef=useRef(Date.now());
@@ -3889,10 +3874,14 @@ export default function App(){
     }
     
     const choices=new Set([answer]);
-    while(choices.size<4){
-      const wrong=answer+Math.floor(Math.random()*7)-3;
-      if(wrong>=0&&wrong!==answer)choices.add(wrong);
+    let tries=0;
+    while(choices.size<4&&tries<100){
+      tries++;
+      const offset=Math.floor(Math.random()*Math.max(8,answer+4))+1;
+      const wrong=Math.random()>0.5?answer+offset:Math.max(0,answer-offset);
+      if(wrong!==answer)choices.add(wrong);
     }
+    while(choices.size<4)choices.add(answer+choices.size*3);
     setMathProblem({a,b,op,answer});
     setMathChoices(shuffle([...choices]));
     setMathFb(null);setMathAnswer(null);
@@ -3908,13 +3897,13 @@ export default function App(){
       setMathFb("correct");headYes();boom();
       setMathScore(s=>s+1);
       awardPoints(3,"math",`${mathProblem.a}${mathProblem.op}${mathProblem.b}`);
-      await stop();speak(`${choice}! Yes, that's right!`,{rate:0.85,pitch:1.0});
-      await wait(1000);
+      await speak(`${choice}! Yes, that's right!`,{rate:0.85,pitch:1.0});
+      await wait(1500);
       genMath();
     } else {
       setMathFb("wrong");headNo();flashWrong();
-      await stop();speak(`Oops! ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.8,pitch:1.0});
-      await wait(2000);
+      await speak(`Oops! ${mathProblem.a} ${mathProblem.op==="+"?"plus":mathProblem.op==="-"?"minus":"times"} ${mathProblem.b} equals ${mathProblem.answer}.`,{rate:0.75,pitch:1.0});
+      await wait(2500);
       genMath();
     }
   };
@@ -4750,10 +4739,11 @@ export default function App(){
 
   // ═══ BOTTOM NAV BAR (renders on home, learn, quizzone, phonics, stories, rewards) ═══
   const showNav=["home","speaking","listening","reading","writing","maths","mixquiz","learn","quizzone","phonics","stories","rewards","settings","studyplan","homework","speakflow","listenflow","readflow","strokelearn","parent","arena","numbers"].includes(scr);
-  const PinModal=showPinModal?<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");}}>
+  const PinModal=showPinModal?<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>{setShowPinModal(false);setPinInput("");setPinMode("ask");}}>
       <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:28,padding:"24px",width:280,textAlign:"center",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
         <div style={{fontSize:40}}>🔒</div>
-        <div style={{fontFamily:"var(--font)",fontSize:17,fontWeight:800,margin:"6px 0 14px"}}>Parent Access</div>
+        <div style={{fontFamily:"var(--font)",fontSize:17,fontWeight:800,margin:"6px 0 4px"}}>{pinMode==="set"?"Set a New PIN":pinMode==="confirm"?"Confirm Your PIN":"Enter PIN"}</div>
+        <div style={{fontSize:12,color:"#8E8CA3",fontWeight:600,marginBottom:14}}>{pinMode==="set"?"Choose a 4-digit PIN":pinMode==="confirm"?"Enter the same PIN again":"Enter your 4-digit PIN to access"}</div>
         <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:16}}>
           {[0,1,2,3].map(i=><div key={i} style={{width:44,height:44,borderRadius:22,background:pinInput.length>i?"linear-gradient(135deg,#6C5CE7,#A29BFE)":"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:900,color:pinInput.length>i?"#fff":"#CCC",transition:"all 0.15s"}}>{pinInput.length>i?"●":"○"}</div>)}
         </div>
@@ -4762,7 +4752,20 @@ export default function App(){
             sfxTap();
             if(n==="⌫"){setPinInput(p=>p.slice(0,-1));}
             else{const np=pinInput+n;setPinInput(np);
-              if(np.length===4){setTimeout(()=>{if((pinInput+n)===parentPin){setShowPinModal(false);setPinInput("");setScr("parent");setParentMode(true);}else{setPinInput("");}},150);}
+              if(np.length===4){setTimeout(()=>{
+                if(pinMode==="set"){
+                  // Step 1: Save temp PIN and ask to confirm
+                  setNewPinTemp(np);setPinInput("");setPinMode("confirm");
+                } else if(pinMode==="confirm"){
+                  // Step 2: Check if matches temp PIN
+                  if(np===newPinTemp){savePin(np);setParentPin(np);setShowPinModal(false);setPinInput("");setPinMode("ask");setNewPinTemp("");setScr("parent");setParentMode(true);}
+                  else{setPinInput("");setPinMode("set");setNewPinTemp("");/* flash error */}
+                } else {
+                  // Step 3: Normal PIN check
+                  if(np===parentPin){setShowPinModal(false);setPinInput("");setScr("parent");setParentMode(true);}
+                  else{setPinInput("");}
+                }
+              },150);}
             }
           }} style={{width:68,height:52,borderRadius:14,border:"none",background:n==="⌫"?"#FEE2E2":"#F0F4FF",fontSize:n==="⌫"?20:24,fontWeight:800,cursor:"pointer",fontFamily:"var(--font)",color:n==="⌫"?"#FF6B81":"#2D2B3D",display:"flex",alignItems:"center",justifyContent:"center"}}>{n}</button>)}
         </div>
@@ -4777,7 +4780,7 @@ export default function App(){
       {id:"arena",icon:"🏟️",label:"Arena",bg:"#00D2A0"},
       {id:"rewards",icon:"🎁",label:"Rewards",bg:"#54A0FF"},
       {id:"settings",icon:"⚙️",label:"Settings",bg:"#8E8CA3"},
-    ].map(t=>{const active=scr===t.id||(t.id==="parent_nav"&&scr==="parent");return<button key={t.id} onClick={()=>{sfxTap();killAllFlows();if(t.id==="home")goHome();else if(t.id==="parent_nav"){setShowPinModal(true);}else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
+    ].map(t=>{const active=scr===t.id||(t.id==="parent_nav"&&scr==="parent");return<button key={t.id} onClick={()=>{sfxTap();killAllFlows();if(t.id==="home")goHome();else if(t.id==="parent_nav"){setPinInput("");if(!parentPin){setPinMode("set");}else{setPinMode("ask");}setShowPinModal(true);}else{movePandaTo("bottomRight");setTeacherMood("star");setScr(t.id);}}} style={{
       flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,
       padding:"8px 2px 7px",border:"none",cursor:"pointer",
       background:active?"linear-gradient(135deg,"+t.bg+","+t.bg+"CC)":t.bg+"18",
@@ -6373,6 +6376,9 @@ export default function App(){
       const prizes=JSON.parse(localStorage.getItem("lg_arena_prizes")||'["🏆 Champion","🥈 Runner Up","🥉 Third Place"]');
       const champion=allPlayers[0];
       const isChampMe=champion?.id===arenaId;
+      // FIX: Find lowest scorer for elimination
+      const lowestScore=allPlayers.length>1?(arenaRoom.scores?.[allPlayers[allPlayers.length-1]?.id]||0):-1;
+      const lowestId=allPlayers.length>1?allPlayers[allPlayers.length-1]?.id:null;
 
       return<div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px 24px",gap:10}}>
         <div style={{fontSize:72,animation:"floatY 1.5s ease-in-out infinite"}}>🏆</div>
@@ -6385,18 +6391,19 @@ export default function App(){
             const score=arenaRoom.scores?.[p.id]||0;
             const prize=prizes[i]||"Participant";
             const isMe=p.id===arenaId;
-            const bg=i===0?"linear-gradient(135deg,#FECA57,#FF9F43)":i===1?"linear-gradient(135deg,#C0C0C0,#E8E8E8)":i===2?"linear-gradient(135deg,#CD7F32,#DDA85B)":"rgba(255,255,255,0.08)";
-            const tc=i<=2?"#1B1464":"#fff";
-            return<div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 18px",borderRadius:22,background:bg,transform:i===0?"scale(1.05)":"scale(1)",boxShadow:i===0?"0 6px 24px rgba(254,202,87,0.4)":"none"}}>
-              <span style={{fontSize:28}}>{["🥇","🥈","🥉","🏅"][i]||"🎮"}</span>
+            const isEliminated=allPlayers.length>1&&p.id===lowestId;
+            const bg=isEliminated?"linear-gradient(135deg,#FF6B81,#EE5A6F)":i===0?"linear-gradient(135deg,#FECA57,#FF9F43)":i===1?"linear-gradient(135deg,#C0C0C0,#E8E8E8)":i===2?"linear-gradient(135deg,#CD7F32,#DDA85B)":"rgba(255,255,255,0.08)";
+            const tc=isEliminated?"#fff":i<=2?"#1B1464":"#fff";
+            return<div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"14px 18px",borderRadius:22,background:bg,transform:i===0?"scale(1.05)":"scale(1)",boxShadow:i===0?"0 6px 24px rgba(254,202,87,0.4)":"none",border:isEliminated?"3px solid #FF6B81":"none",opacity:isEliminated?0.85:1}}>
+              <span style={{fontSize:28}}>{isEliminated?"💀":["🥇","🥈","🥉","🏅"][i]||"🎮"}</span>
               <span style={{fontSize:28}}>{ARENA_AVATARS[(arenaRoom.players||[]).indexOf(p)%4]}</span>
               <div style={{flex:1}}>
                 <div style={{fontWeight:800,fontSize:15,color:tc}}>{p.name}{isMe?" (You)":""}</div>
-                <div style={{fontSize:11,fontWeight:700,color:i<=2?tc+"99":"rgba(255,255,255,0.5)"}}>{prize}</div>
+                <div style={{fontSize:11,fontWeight:700,color:isEliminated?"rgba(255,255,255,0.8)":i<=2?tc+"99":"rgba(255,255,255,0.5)"}}>{isEliminated?"❌ ELIMINATED":prize}</div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontSize:24,fontWeight:900,color:i===0?"#1B1464":"#FECA57"}}>{score}</div>
-                <div style={{fontSize:9,fontWeight:600,color:i<=2?tc+"77":"rgba(255,255,255,0.4)"}}>pts</div>
+                <div style={{fontSize:24,fontWeight:900,color:isEliminated?"#fff":i===0?"#1B1464":"#FECA57"}}>{score}</div>
+                <div style={{fontSize:9,fontWeight:600,color:isEliminated?"rgba(255,255,255,0.6)":i<=2?tc+"77":"rgba(255,255,255,0.4)"}}>/{arenaRoom.maxRounds||20}</div>
               </div>
             </div>;
           })}
